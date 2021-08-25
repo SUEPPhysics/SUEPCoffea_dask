@@ -175,6 +175,7 @@ if __name__ == '__main__':
 
         env_extra = [
             'export XRD_RUNFORKHANDLER=1',
+            'export XRD_STREAMTIMEOUT=10'
             f'export X509_USER_PROXY={_x509_path}',
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
