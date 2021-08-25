@@ -86,7 +86,7 @@ The fastjet package is already included in the relevant singularity image and it
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run with 
 ```bash
-python runner.py --wf SUEP --executor dask/lpc
+python runner.py --wf SUEP --executor dask/lpc --isMC=1 --era=2018
 ```
 
 ### Condor@CERN (lxplus)
@@ -94,7 +94,7 @@ Only one port is available per node, so its possible one has to try different no
 one with `8786` being open. Other than that, no additional configurations should be necessary.
 
 ```bash
-python runner.py --wf SUEP --executor dask/lxplus
+python runner.py --wf SUEP --executor dask/lxplus --isMC=1 --era=2018
 ```
 
 ### Coffea-casa (Nebraska AF)
@@ -105,7 +105,7 @@ https://coffea-casa.readthedocs.io/en/latest/cc_user.html
 
 After setting up and checking out this repository (either via the online terminal or git widget utility run with
 ```bash
-python runner.py --wf SUEP --executor dask/casa
+python runner.py --wf SUEP --executor dask/casa --isMC=1 --era=2018
 ```
 Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
 
@@ -114,7 +114,7 @@ Authentication is handled automatically via login auth token instead of a proxy.
 
 After setting up and checking out this repository (either via the online terminal or git widget utility run with
 ```bash
-python runner.py --wf SUEP --executor dask/mit
+python runner.py --wf SUEP --executor dask/mit --isMC=1 --era=2018
 ```
 uses 'dashboard_address': 8000
 ssh -L 8000:localhos:8000 <uname>@t3home000.mit.edu
