@@ -48,6 +48,8 @@ conda install dask
 pip install --pre fastjet
 pip install vector
 ```
+For work at the LPC the fastjet package is already included in the relevant singularity image and it's not required to install it in the local environment (see below)
+
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 ### Running jupyter remotely
@@ -79,6 +81,8 @@ makes this quite a bit easier and for some sites the ``native'' implementation i
 However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL.
 
 ### Condor@FNAL (CMSLPC)
+The fastjet package is already included in the relevant singularity image and it's not required to install it in the local environment
+
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run with 
 ```bash
