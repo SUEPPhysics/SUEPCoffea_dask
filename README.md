@@ -35,7 +35,7 @@ conda create --name coffea python=3.7
 # activate environment `coffea`
 conda activate coffea
 ```
-Install coffea, xrootd, and more:
+Install coffea, xrootd, and more. SUEP analysis uses Fastjet with awkward array input (fastjet>=3.3.4.0rc8) and vector:
 ```
 pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
 conda install -c conda-forge xrootd
@@ -108,7 +108,7 @@ Authentication is handled automatically via login auth token instead of a proxy.
 
 After setting up and checking out this repository (either via the online terminal or git widget utility run with
 ```bash
-python runner.py --wf SUEP --executor dask/miy
+python runner.py --wf SUEP --executor dask/mit
 ```
 uses 'dashboard_address': 8000
 ssh -L 8000:localhos:8000 <uname>@t3home000.mit.edu
