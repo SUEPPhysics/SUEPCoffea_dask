@@ -1,9 +1,9 @@
-# BTVNanoCommissioning
-Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
+# SUEP Coffea Dask
+Repository for SUEP using fastjet with awkward input from PFnano nanoAOD samples
 
 
 ## Structure
-Example worfkflow for ttbar is included. 
+Example worfkflow for SUEP is included. 
 
 Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
 the histograms we need. Workflow processors can be passed to the `runner.py` script 
@@ -12,7 +12,7 @@ along with the fileset these should run over. Multiple executors can be chosen
 
 To run the example, run:
 ```
-python runner.py --workflow ttcom
+python runner.py --workflow SUEP
 ```
 
 Example plots can be found in ` make_some_plots.ipynb` though we might want to make
@@ -45,6 +45,8 @@ conda install -c conda-forge dask-jobqueue
 conda install -c anaconda bokeh 
 conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
+pip install --pre fastjet
+pip install vector
 ```
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
@@ -80,7 +82,7 @@ However, some sites have certain restrictions for various reasons, in particular
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run with 
 ```bash
-python runner.py --wf ttcom --executor dask/lpc
+python runner.py --wf SUEP --executor dask/lpc
 ```
 
 ### Condor@CERN (lxplus)
@@ -88,7 +90,7 @@ Only one port is available per node, so its possible one has to try different no
 one with `8786` being open. Other than that, no additional configurations should be necessary.
 
 ```bash
-python runner.py --wf ttcom --executor dask/lxplus
+python runner.py --wf SUEP --executor dask/lxplus
 ```
 
 ### Coffea-casa (Nebraska AF)
@@ -97,6 +99,18 @@ https://coffea-casa.readthedocs.io/en/latest/cc_user.html
 
 After setting up and checking out this repository (either via the online terminal or git widget utility run with
 ```bash
-python runner.py --wf ttcom --executor dask/casa
+python runner.py --wf SUEP --executor dask/casa
 ```
 Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
+
+
+### Condor@MIT (T3home000)
+
+After setting up and checking out this repository (either via the online terminal or git widget utility run with
+```bash
+python runner.py --wf SUEP --executor dask/miy
+```
+uses 'dashboard_address': 8000
+ssh -L 8000:localhos:8000 <uname>@t3home000.mit.edu
+  
+http://localhost:8000/status
