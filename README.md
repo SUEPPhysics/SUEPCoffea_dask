@@ -48,7 +48,7 @@ conda install dask
 pip install --pre fastjet
 pip install vector
 ```
-For work at the LPC the fastjet package is already included in the relevant singularity image and it's not required to install it in the local environment (see below)
+For work at the LPC or coffea-casa the fastjet package is already included in the relevant singularity image and it's not required to install it in the local environment (see below)
 
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
@@ -98,6 +98,8 @@ python runner.py --wf SUEP --executor dask/lxplus
 ```
 
 ### Coffea-casa (Nebraska AF)
+The fastjet package is already included in the relevant singularity image and it's not required to install it in the local environment
+
 Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instuctions see
 https://coffea-casa.readthedocs.io/en/latest/cc_user.html
 
