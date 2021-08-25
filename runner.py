@@ -39,11 +39,11 @@ def get_main_parser():
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'fattag'],
+                        choices=['SUEP'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
-    parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json',
+    parser.add_argument('--samples', '--json', dest='samplejson', default='SUEP_files_simple.json',
                         help='JSON file containing dataset and file locations (default: %(default)s)'
                         )
 
@@ -51,7 +51,7 @@ def get_main_parser():
     parser.add_argument('--executor', 
                         choices=[
                             'iterative', 'futures', 'parsl/slurm', 'parsl/condor', 
-                            'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 'dask/casa',
+                            'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 'dask/mit', 'dask/casa',
                         ], 
                         default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
@@ -62,14 +62,18 @@ def get_main_parser():
                              '- `dask/condor` - tested at DESY, RWTH'
                              '- `dask/lpc` - custom lpc/condor setup (due to write access restrictions)'
                              '- `dask/lxplus` - custom lxplus/condor setup (due to port restrictions)'
+                             '- `dask/mit` - custom mit/condor setup'
                         )
     parser.add_argument('-j', '--workers', type=int, default=12,
                         help='Number of workers (cores/threads) to use for multi-worker executors '
                              '(e.g. futures or condor) (default: %(default)s)')
-    parser.add_argument('-s', '--scaleout', type=int, default=6,
+    parser.add_argument('-s', '--scaleout', type=int, default=1,
                         help='Number of nodes to scale out to if using slurm/condor. Total number of '
                              'concurrent threads is ``workers x scaleout`` (default: %(default)s)'
                         )
+    parser.add_argument("--max-scaleout", dest="max_scaleout", type=int, default=250,
+                        help="The maximum number of nodes to adapt the cluster to. (default: %(default)s)"
+                       )
     parser.add_argument('--voms', default=None, type=str,
                         help='Path to voms proxy, accessible to worker nodes. By default a copy will be made to $HOME.'
                         )
@@ -78,8 +82,12 @@ def get_main_parser():
     parser.add_argument('--skipbadfiles', action='store_true', help='Skip bad files.')
     parser.add_argument('--only', type=str, default=None, help='Only process specific dataset or file')
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
-    parser.add_argument('--chunk', type=int, default=500000, metavar='N', help='Number of events per process chunk')
+    parser.add_argument('--chunk', type=int, default=20000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
+    parser.add_argument('--isMC', type=int, default=1, help="Specify if the file is MC or data")
+    parser.add_argument('--era', type=str, default="2018", help="Specify the year")
+    parser.add_argument('--doSyst', type=int, default=1, help="Turn systematics on or off")
+    parser.add_argument('--dataset', type=str, default="X", help="Dataset to find xsection")
     return parser
 
 
@@ -88,7 +96,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.output == parser.get_default('output'):
         args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
-
 
     # load dataset
     with open(args.samplejson) as f:
@@ -142,9 +149,9 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # load workflow
-    if args.workflow == "ttcom":
-        from workflows.ttbar_validation2 import NanoProcessor
-        processor_instance = NanoProcessor()
+    if args.workflow == "SUEP":
+        from workflows.SUEP_coffea import SUEP_cluster
+        processor_instance = SUEP_cluster(isMC=args.isMC, era=int(args.era), do_syst=1, syst_var='', sample=args.dataset)
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor
     #     processor_instance = NanoProcessor()
@@ -279,7 +286,7 @@ if __name__ == '__main__':
             import socket
             cluster = HTCondorCluster(
                 cores=1,
-                memory='2GB', # hardcoded
+                memory='4GB', # hardcoded
                 disk='1GB',
                 death_timeout = '60',
                 nanny = False,
@@ -293,9 +300,37 @@ if __name__ == '__main__':
                     'error': 'dask_job_output.err',
                     'should_transfer_files': 'Yes',
                     'when_to_transfer_output': 'ON_EXIT',
+                    '+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
                     '+JobFlavour': '"workday"',
                     },
                 extra = ['--worker-port {}'.format(n_port)],
+                env_extra = env_extra,
+            )
+        elif 'mit' in args.executor:
+            #n_port = 8786
+            #if not check_port(8786):
+            #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
+            import socket
+            cluster = HTCondorCluster(
+                cores=1,
+                memory='4GB', # hardcoded
+                disk='1GB',
+                death_timeout = '60',
+                nanny = False,
+                scheduler_options={
+                    #'port': n_port,
+                    'dashboard_address': 8000,
+                    'host': socket.gethostname()
+                    },
+                job_extra={
+                    'log': 'dask_job_output.log',
+                    'output': 'dask_job_output.out',
+                    'error': 'dask_job_output.err',
+                    'should_transfer_files': 'Yes',
+                    'when_to_transfer_output': 'ON_EXIT',
+                    '+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
+                    },
+                #extra = ['--worker-port {}'.format(n_port)],
                 env_extra = env_extra,
             )
         elif 'slurm' in args.executor:
@@ -322,7 +357,7 @@ if __name__ == '__main__':
             shutil.make_archive("workflows", "zip", base_dir="workflows")
             client.upload_file("workflows.zip")
         else:
-            cluster.adapt(minimum=args.scaleout)
+            cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
             client = Client(cluster)
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
@@ -335,6 +370,7 @@ if __name__ == '__main__':
                                                   'client': client,
                                                   'skipbadfiles': args.skipbadfiles,
                                                   'schema': processor.NanoAODSchema,
+                                                  #'xrootdtimeout': 10,
                                                   'retries': 3,
                                               },
                                               chunksize=args.chunk,

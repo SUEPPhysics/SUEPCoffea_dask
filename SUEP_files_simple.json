@@ -1,0 +1,65 @@
+{
+    "QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00A8C63C-9D21-5F4F-A40A-09DF7802DDED.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/0274F375-00AA-3D49-A46A-0A076DB933EE.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/03E89A4C-2FBD-F64B-9357-A37EA8B59481.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/04565074-32DE-5743-9358-D30762CC6848.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FFE5DF41-7F79-6A43-8384-B808623CB69E.root"
+    ],
+    "QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00ECF093-8140-AC45-A82E-FED3647E5C41.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/012D9FDE-E270-7C46-9EE6-E3E27E64D8FC.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/01501E32-4705-5A41-8DE5-9DA3B9A5936A.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/01924531-A2E9-3441-8DDD-A3C44BB0BD02.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FFE348CD-96E8-3946-83EA-8F9BC21545EB.root"
+    ],
+    "QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00460D07-2D99-BE48-9AA4-54372A741957.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00EDAD90-7994-4149-A7AD-9B299EA20ED2.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/02756805-BFF6-AE49-A11F-50C841ECD8EA.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/02FEFBA9-F4C2-D243-96AE-043CA8F4424C.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FECAAFAF-32B5-994C-B500-FAC36BBB8F60.root"
+    ],
+    "QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00BA2AEB-D414-E24E-833B-98A908F0C4F2.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00DA0418-2BDB-5D41-AABA-3638D0177A63.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/02371367-1DB7-2347-99F1-96C117EF80A8.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/034193E7-45B7-0948-9596-D11D9882DB76.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FD61EF05-AEC1-F44B-97AD-C3C07C22AFC6.root"
+    ],
+    "QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/0011A7F1-CB77-FB47-B5F6-CF335242616E.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00E5029F-6431-9E49-9E65-915BBD49CDC8.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00E686C8-563A-2F48-9A4C-4DB5C7596998.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/0173EBE8-BFF4-754F-95E7-657B6F8E82DE.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FFFD4DF5-1D87-B748-B67D-CE8898EA1452.root"
+    ],
+    "QCD_HT300to500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT300to500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00249AB1-6728-394B-BA8F-1F45B2C5C83C.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT300to500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00632C8E-B9E8-CF4F-8CF7-69DAC5D03738.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT300to500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/007AFA4B-128D-384C-A8B3-9310403C0870.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT300to500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00A64B99-019D-E046-80DA-95EFCA478825.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT300to500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FF87D998-B1F8-5340-B0B9-E2EACC5C53AC.root"
+    ],
+    "QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00796EFF-41EE-4F46-BD23-CB9CF07A10A5.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00A0D843-8B63-E144-815E-AC391C913C00.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00A525C9-11E6-1542-A9C5-62B5CBC41E1D.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/00AFF44B-AF5A-EE44-93CE-2C4946EDD314.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FFCEA0A7-BC1E-2245-87C2-68714EB9A203.root"
+    ],
+    "QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/005A72FE-6808-B746-9E24-3AE81D5B05A9.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/0076960C-4520-164E-8A73-734B737AEE2D.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/010EA453-B776-0F40-B4A6-D5071454DBC2.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/01898EE0-F030-3D41-B831-9BC9B7949410.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/FFF72A31-29E4-A04F-9034-33EA85922BB1.root"
+    ],
+    "SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM": [
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM/SUEP-m400-darkPhoHad-1.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM/SUEP-m400-darkPhoHad-10.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM/SUEP-m400-darkPhoHad-100.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM/SUEP-m400-darkPhoHad-11.root",
+        "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A00/SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM/SUEP-m400-darkPhoHad-99.root"
+    ]
+}
