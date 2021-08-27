@@ -117,6 +117,6 @@ After setting up and checking out this repository (either via the online termina
 python runner.py --wf SUEP --executor dask/mit --isMC=1 --era=2018
 ```
 uses 'dashboard_address': 8000
-ssh -L 8000:localhos:8000 <uname>@t3home000.mit.edu
+ssh -L 8000:localhost:8000 <uname>@t3home000.mit.edu
   
 http://localhost:8000/status
