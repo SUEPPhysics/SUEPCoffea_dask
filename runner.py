@@ -104,7 +104,7 @@ if __name__ == '__main__':
         sample_dict[key] = sample_dict[key][:args.limit]
     if args.executor == 'dask/casa':
         for key in sample_dict.keys():
-            sample_dict[key] = [path.replace('xrootd-cms.infn.it/', 'xcache') for path in sample_dict[key]]
+            sample_dict[key] = [path.replace('xrootd.cmsaf.mit.edu', 'xcache') for path in sample_dict[key]]
 
     # For debugging
     if args.only is not None:
