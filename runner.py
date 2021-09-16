@@ -43,7 +43,7 @@ def get_main_parser():
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
-    parser.add_argument('--samples', '--json', dest='samplejson', default='SUEP_files_simple.json',
+    parser.add_argument('--samples', '--json', dest='samplejson', default='filelist/SUEP_files_simpler.json',
                         help='JSON file containing dataset and file locations (default: %(default)s)'
                         )
 
@@ -82,7 +82,7 @@ def get_main_parser():
     parser.add_argument('--skipbadfiles', action='store_true', help='Skip bad files.')
     parser.add_argument('--only', type=str, default=None, help='Only process specific dataset or file')
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
-    parser.add_argument('--chunk', type=int, default=20000, metavar='N', help='Number of events per process chunk')
+    parser.add_argument('--chunk', type=int, default=15000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
     parser.add_argument('--isMC', type=int, default=1, help="Specify if the file is MC or data")
     parser.add_argument('--era', type=str, default="2018", help="Specify the year")
@@ -104,6 +104,7 @@ if __name__ == '__main__':
         sample_dict[key] = sample_dict[key][:args.limit]
     if args.executor == 'dask/casa':
         for key in sample_dict.keys():
+            print(key)
             sample_dict[key] = [path.replace('xrootd.cmsaf.mit.edu', 'xcache') for path in sample_dict[key]]
 
     # For debugging
@@ -175,7 +176,7 @@ if __name__ == '__main__':
 
         env_extra = [
             'export XRD_RUNFORKHANDLER=1',
-            'export XRD_STREAMTIMEOUT=10'
+            'export XRD_STREAMTIMEOUT=10',
             f'export X509_USER_PROXY={_x509_path}',
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
@@ -296,9 +297,9 @@ if __name__ == '__main__':
                     'host': socket.gethostname()
                     },
                 job_extra={
-                    'log': 'dask_job_output.log',
-                    'output': 'dask_job_output.out',
-                    'error': 'dask_job_output.err',
+                    'log': 'dask_out/dask_job_output.log',
+                    'output': 'dask_out/dask_job_output.out',
+                    'error': 'dask_out/dask_job_output.err',
                     'should_transfer_files': 'Yes',
                     'when_to_transfer_output': 'ON_EXIT',
                     '+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
@@ -324,9 +325,9 @@ if __name__ == '__main__':
                     'host': socket.gethostname()
                     },
                 job_extra={
-                    'log': 'dask_job_output.log',
-                    'output': 'dask_job_output.out',
-                    'error': 'dask_job_output.err',
+                    'log': 'dask_out/dask_job_output.log',
+                    'output': 'dask_out/dask_job_output.out',
+                    'error': 'dask_out/dask_job_output.err',
                     'should_transfer_files': 'Yes',
                     'when_to_transfer_output': 'ON_EXIT',
                     '+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
@@ -362,7 +363,7 @@ if __name__ == '__main__':
             client = Client(cluster)
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
-        with performance_report(filename="dask-report.html"):
+        with performance_report(filename="dask_out/dask-report.html"):
             output = processor.run_uproot_job(sample_dict,
                                               treename='Events',
                                               processor_instance=processor_instance,
@@ -371,7 +372,7 @@ if __name__ == '__main__':
                                                   'client': client,
                                                   'skipbadfiles': args.skipbadfiles,
                                                   'schema': processor.NanoAODSchema,
-                                                  #'xrootdtimeout': 10,
+                                                  'xrootdtimeout': 10,
                                                   'retries': 3,
                                               },
                                               chunksize=args.chunk,
