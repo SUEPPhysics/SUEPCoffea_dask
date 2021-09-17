@@ -1,16 +1,15 @@
 """
 GenSumWeight.py
-Workspace producers using coffea. Need the GenSumWeight to do normalization properly
+Producer using coffea. Need the GenSumWeight to do normalization properly. Xsec as input from JSON files
+Chad Freer, 2021
 """
 
 from coffea import hist, processor
 from coffea.processor import ProcessorABC, LazyDataFrame, dict_accumulator
-from uproot3 import recreate
 import numpy as np
 
 class XsecSumWeight(ProcessorABC):
     """
-    A coffea Processor which produces a workspace.
     This is just for grabbing the NanoAOD genEventSum weight for normalization.
     """
 
@@ -48,8 +47,9 @@ class XsecSumWeight(ProcessorABC):
             genEventSumw=0.5,
             weight=genweight
         )
-
-        return output
+ 
+        return genweight
+        #return output
 
     def postprocess(self, accumulator):
         return accumulator

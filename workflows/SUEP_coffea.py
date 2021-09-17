@@ -1,21 +1,36 @@
+"""
+SUEP_coffea.py
+Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
+https://github.com/scikit-hep/fastjet
+Chad Freer, 2021
+"""
+
+import os
+import pathlib
+import shutil
+import warnings
 import awkward as ak
+import pandas
 import numpy as np
 import fastjet
 import math
 from coffea import hist, processor
 import vector
+from typing import List, Optional
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
-    def __init__(self, isMC, era=2017, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
+    def __init__(self, isMC: int, era: int, xsec: float, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, output_location: Optional[str]) -> None:
         self._flag = flag
+        self.output_location = output_location
         self.do_syst = do_syst
+        self.xsec = xsec
         self.era = era
         self.isMC = isMC
         self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
-        self.outfile = haddFileName
+        self.prefixes = {"SUEP": "SUEP"}
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({
@@ -108,6 +123,74 @@ class SUEP_cluster(processor.ProcessorABC):
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
+
+    def ak_to_pandas(self, jet_collection: ak.Array) -> pandas.DataFrame:
+        output = pandas.DataFrame()
+        for field in ak.fields(jet_collection):
+            prefix = self.prefixes.get(field, "")
+            if len(prefix) > 0:
+                for subfield in ak.fields(jet_collection[field]):
+                    output[f"{prefix}_{subfield}"] = ak.to_numpy(
+                        jet_collection[field][subfield]
+                    )
+            else:
+                output[field] = ak.to_numpy(jet_collection[field])
+        return output
+
+    def dump_pandas(self, pddf: pandas.DataFrame, fname: str, location: str, subdirs: Optional[List[str]] = None,) -> None:
+        subdirs = subdirs or []
+        xrd_prefix = "root://"
+        pfx_len = len(xrd_prefix)
+        xrootd = False
+        if xrd_prefix in location:
+            try:
+                import XRootD
+                import XRootD.client
+
+                xrootd = True
+            except ImportError:
+                raise ImportError(
+                    "Install XRootD python bindings with: conda install -c conda-forge xroot"
+                )
+        local_file = (
+            os.path.abspath(os.path.join(".", fname))
+            if xrootd
+            else os.path.join(".", fname)
+        )
+        merged_subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
+        destination = (
+            location + merged_subdirs + f"/{fname}"
+            if xrootd
+            else os.path.join(location, os.path.join(merged_subdirs, fname))
+        )
+        pddf.to_parquet(local_file)
+        if xrootd:
+            copyproc = XRootD.client.CopyProcess()
+            copyproc.add_job(local_file, destination)
+            copyproc.prepare()
+            copyproc.run()
+            client = XRootD.client.FileSystem(
+                location[: location[pfx_len:].find("/") + pfx_len]
+            )
+            status = client.locate(
+                destination[destination[pfx_len:].find("/") + pfx_len + 1 :],
+                XRootD.client.flags.OpenFlags.READ,
+            )
+            assert status[0].ok
+            del client
+            del copyproc
+        else:
+            dirname = os.path.dirname(destination)
+            if not os.path.exists(dirname):
+                pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
+            if not os.path.samefile(local_file, destination):
+                shutil.copy(local_file, destination)
+            else:
+                fname = "condor_" + fname
+                destination = os.path.join(location, os.path.join(merged_subdirs, fname))
+                shutil.copy(local_file, destination)
+            assert os.path.isfile(destination)
+        pathlib.Path(local_file).unlink()
 
 
     def process(self, events):
@@ -241,6 +324,20 @@ class SUEP_cluster(processor.ProcessorABC):
         D_expected = B_hist
         output["D_exp"].fill(D_exp = D_expected)
         output["D_exp"].scale(CoverA)
+
+        out_ak = thicc_jets[:,0]
+        out_ak["SUEP_mult_spher"] =  1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
+        if self.output_location is not None:
+            df = self.ak_to_pandas(out_ak)
+            fname = (
+                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+                + ".parquet"
+            )
+            subdirs = []
+            #if "dataset" in events.metadata:
+            #    subdirs.append(events.metadata["dataset"])
+            self.dump_pandas(df, fname, self.output_location, subdirs)
+
 
         return output
 

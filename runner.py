@@ -43,7 +43,7 @@ def get_main_parser():
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
-    parser.add_argument('--samples', '--json', dest='samplejson', default='filelist/SUEP_files_simpler.json',
+    parser.add_argument('--samples', '--json', dest='samplejson', default='filelist/SUEP_files_simple.json',
                         help='JSON file containing dataset and file locations (default: %(default)s)'
                         )
 
@@ -372,7 +372,7 @@ if __name__ == '__main__':
                                                   'client': client,
                                                   'skipbadfiles': args.skipbadfiles,
                                                   'schema': processor.NanoAODSchema,
-                                                  'xrootdtimeout': 10,
+                                                  #'xrootdtimeout': 10,
                                                   'retries': 3,
                                               },
                                               chunksize=args.chunk,
