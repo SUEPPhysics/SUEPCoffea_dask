@@ -17,6 +17,9 @@ import math
 from coffea import hist, processor
 import vector
 from typing import List, Optional
+import pyarrow
+import pyarrow.parquet as pq
+import json
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -137,7 +140,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 output[field] = ak.to_numpy(jet_collection[field])
         return output
 
-    def dump_pandas(self, pddf: pandas.DataFrame, fname: str, location: str, subdirs: Optional[List[str]] = None,) -> None:
+    def dump_table(self, table: pyarrow.lib.Table, fname: str, location: str, subdirs: Optional[List[str]] = None,) -> None:
         subdirs = subdirs or []
         xrd_prefix = "root://"
         pfx_len = len(xrd_prefix)
@@ -163,7 +166,7 @@ class SUEP_cluster(processor.ProcessorABC):
             if xrootd
             else os.path.join(location, os.path.join(merged_subdirs, fname))
         )
-        pddf.to_parquet(local_file)
+        pq.write_table(table, fname, compression='GZIP')
         if xrootd:
             copyproc = XRootD.client.CopyProcess()
             copyproc.add_job(local_file, destination)
@@ -191,7 +194,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 shutil.copy(local_file, destination)
             assert os.path.isfile(destination)
         pathlib.Path(local_file).unlink()
-
 
     def process(self, events):
         output = self.accumulator.identity()
@@ -228,11 +230,17 @@ class SUEP_cluster(processor.ProcessorABC):
         chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
         thicc_jets = thicc_jets[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
         chonkiest_cands = chonkiest_cands[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
-        output["SUEP_mult_nconst"].fill(SUEP_mult_nconst = ak.max(ak.num(ak_inclusive_cluster, axis=2),axis=1))
-        output["SUEP_mult_pt"].fill(SUEP_mult_pt = thicc_jets[:,0].pt)
-        output["SUEP_mult_eta"].fill(SUEP_mult_eta = thicc_jets[:,0].eta)
-        output["SUEP_mult_phi"].fill(SUEP_mult_phi = thicc_jets[:,0].phi)
-        output["SUEP_mult_mass"].fill(SUEP_mult_mass = thicc_jets[:,0].mass)
+        out_mult = thicc_jets[:,0]
+        out_mult["SUEP_mult_nconst"] = ak.max(ak.num(ak_inclusive_cluster, axis=2),axis=1)
+        out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
+        out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
+        out_mult["SUEP_mult_phi"] = thicc_jets[:,0].phi
+        out_mult["SUEP_mult_mass"] = thicc_jets[:,0].mass
+        output["SUEP_mult_nconst"].fill(SUEP_mult_nconst = out_mult["SUEP_mult_nconst"])
+        output["SUEP_mult_pt"].fill(SUEP_mult_pt = out_mult["SUEP_mult_pt"])
+        output["SUEP_mult_eta"].fill(SUEP_mult_eta = out_mult["SUEP_mult_eta"])
+        output["SUEP_mult_phi"].fill(SUEP_mult_phi = out_mult["SUEP_mult_phi"])
+        output["SUEP_mult_mass"].fill(SUEP_mult_mass = out_mult["SUEP_mult_mass"])
 
         #SUEP_mult boosting and sphericity
         boost_mult = ak.zip({
@@ -242,11 +250,15 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": thicc_jets[:,0].mass
         }, with_name="Momentum4D")
         chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
-        mult_eigs = self.sphericity(chonkiest_cands,2.0)        
-        output["SUEP_mult_spher"].fill(SUEP_mult_spher = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0]))
-        output["SUEP_mult_aplan"].fill(SUEP_mult_aplan = 1.5 * mult_eigs[:,0])
-        output["SUEP_mult_FW2M"].fill(SUEP_mult_FW2M = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0]))
-        output["SUEP_mult_D"].fill(SUEP_mult_D = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0])       
+        mult_eigs = self.sphericity(chonkiest_cands,2.0)  
+        out_mult["SUEP_mult_spher"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
+        out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
+        out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
+        out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0] 
+        output["SUEP_mult_spher"].fill(SUEP_mult_spher = out_mult["SUEP_mult_spher"])
+        output["SUEP_mult_aplan"].fill(SUEP_mult_aplan = out_mult["SUEP_mult_aplan"])
+        output["SUEP_mult_FW2M"].fill(SUEP_mult_FW2M = out_mult["SUEP_mult_FW2M"])
+        output["SUEP_mult_D"].fill(SUEP_mult_D = out_mult["SUEP_mult_D"])       
 
         #SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
@@ -292,11 +304,18 @@ class SUEP_cluster(processor.ProcessorABC):
         Christos_cands = Christos_cands[abs(Christos_cands.deltaphi(ISR_cand)) > 1.6]
         Christos_cands = Christos_cands[ak.num(Christos_cands)>1]#remove the events left with one track
         ch_eigs = self.sphericity(Christos_cands,2.0)
-        output["SUEP_ch_nconst"].fill(SUEP_ch_nconst = ak.num(Christos_cands))
-        output["SUEP_ch_spher"].fill(SUEP_ch_spher = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0]))
-        output["SUEP_ch_aplan"].fill(SUEP_ch_aplan = 1.5 * ch_eigs[:,0])
-        output["SUEP_ch_FW2M"].fill(SUEP_ch_FW2M = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0]))
-        output["SUEP_ch_D"].fill(SUEP_ch_D = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0])
+        out_ch = Christos_cands[:,0]
+        out_ch["xsec"] = [self.xsec] * len(Christos_cands[:,0])
+        out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
+        out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
+        out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
+        out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
+        out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+        output["SUEP_ch_nconst"].fill(SUEP_ch_nconst = out_ch["SUEP_ch_nconst"])
+        output["SUEP_ch_spher"].fill(SUEP_ch_spher = out_ch["SUEP_ch_spher"])
+        output["SUEP_ch_aplan"].fill(SUEP_ch_aplan = out_ch["SUEP_ch_aplan"])
+        output["SUEP_ch_FW2M"].fill(SUEP_ch_FW2M = out_ch["SUEP_ch_FW2M"])
+        output["SUEP_ch_D"].fill(SUEP_ch_D = out_ch["SUEP_ch_D"])
 
         #ABCD method plots
         SUEP_ch_spher = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
@@ -325,18 +344,31 @@ class SUEP_cluster(processor.ProcessorABC):
         output["D_exp"].fill(D_exp = D_expected)
         output["D_exp"].scale(CoverA)
 
-        out_ak = thicc_jets[:,0]
-        out_ak["SUEP_mult_spher"] =  1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
         if self.output_location is not None:
-            df = self.ak_to_pandas(out_ak)
-            fname = (
-                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-                + ".parquet"
-            )
-            subdirs = []
-            #if "dataset" in events.metadata:
-            #    subdirs.append(events.metadata["dataset"])
-            self.dump_pandas(df, fname, self.output_location, subdirs)
+
+            for out, label in [[out_mult, "mult"], [out_ch, "ch"]]:
+                df = self.ak_to_pandas(out)
+                fname = (
+                    events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+                    + "_" + label + ".parquet"
+                )
+                subdirs = []
+                #if "dataset" in events.metadata:
+                #    subdirs.append(events.metadata["dataset"])
+
+                # pyarrow to save metadata associated with events
+                table = pyarrow.Table.from_pandas(df)
+                custom_meta_content = {'xsec':self.xsec}
+                custom_meta_json = json.dumps(custom_meta_content)
+                existing_meta = table.schema.metadata
+                custom_meta_key = 'SUEP.iot'
+                combined_meta = {
+                    custom_meta_key.encode() : custom_meta_json.encode(),
+                    **existing_meta
+                }
+                table = table.replace_schema_metadata(combined_meta)
+
+                self.dump_table(table, fname, self.output_location, subdirs)
 
 
         return output
