@@ -199,6 +199,10 @@ class SUEP_cluster(processor.ProcessorABC):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
 
+        # ht > 500
+        events_ht = ak.sum(events.Jet_pt, axis=-1)
+        events = events[(events_ht > 500)]
+
         #Prepare the clean track collection
         Cands = ak.zip({
             "pt": events.PFCands_trkPt,
