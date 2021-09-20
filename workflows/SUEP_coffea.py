@@ -17,6 +17,9 @@ import math
 from coffea import hist, processor
 import vector
 from typing import List, Optional
+import pyarrow
+import pyarrow.parquet as pq
+import json
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -137,7 +140,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 output[field] = ak.to_numpy(jet_collection[field])
         return output
 
-    def dump_pandas(self, pddf: pandas.DataFrame, fname: str, location: str, subdirs: Optional[List[str]] = None,) -> None:
+    def dump_table(self, table: pyarrow.lib.Table, fname: str, location: str, subdirs: Optional[List[str]] = None,) -> None:
         subdirs = subdirs or []
         xrd_prefix = "root://"
         pfx_len = len(xrd_prefix)
@@ -163,7 +166,7 @@ class SUEP_cluster(processor.ProcessorABC):
             if xrootd
             else os.path.join(location, os.path.join(merged_subdirs, fname))
         )
-        pddf.to_parquet(local_file)
+        pq.write_table(table, fname, compression='GZIP')
         if xrootd:
             copyproc = XRootD.client.CopyProcess()
             copyproc.add_job(local_file, destination)
@@ -191,7 +194,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 shutil.copy(local_file, destination)
             assert os.path.isfile(destination)
         pathlib.Path(local_file).unlink()
-
 
     def process(self, events):
         output = self.accumulator.identity()
@@ -229,7 +231,6 @@ class SUEP_cluster(processor.ProcessorABC):
         thicc_jets = thicc_jets[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
         chonkiest_cands = chonkiest_cands[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
         out_mult = thicc_jets[:,0]
-        out_mult["xsec"] = [self.xsec] * len(thicc_jets[:,0])
         out_mult["SUEP_mult_nconst"] = ak.max(ak.num(ak_inclusive_cluster, axis=2),axis=1)
         out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
         out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
@@ -354,7 +355,20 @@ class SUEP_cluster(processor.ProcessorABC):
                 subdirs = []
                 #if "dataset" in events.metadata:
                 #    subdirs.append(events.metadata["dataset"])
-                self.dump_pandas(df, fname, self.output_location, subdirs)
+
+                # pyarrow to save metadata associated with events
+                table = pyarrow.Table.from_pandas(df)
+                custom_meta_content = {'xsec':self.xsec}
+                custom_meta_json = json.dumps(custom_meta_content)
+                existing_meta = table.schema.metadata
+                custom_meta_key = 'SUEP.iot'
+                combined_meta = {
+                    custom_meta_key.encode() : custom_meta_json.encode(),
+                    **existing_meta
+                }
+                table = table.replace_schema_metadata(combined_meta)
+
+                self.dump_table(table, fname, self.output_location, subdirs)
 
 
         return output
