@@ -2,11 +2,12 @@ import pandas as pd
 import numpy as np
 import pyarrow
 import pyarrow.parquet as pq
-from coffea import hist, processor
+import hist
+from hist import Hist
 import os, sys
 import json
 import awkward as ak
-import uproot3
+import uproot
 import vector
 vector.register_awkward()
 
@@ -23,16 +24,11 @@ nbins = 100
 
 # output histos
 output = {
-	"A": hist.Hist(
-	    "Events", hist.Bin("A", "A", nbins, 0, 1)),
-	"B": hist.Hist(
-	    "Events", hist.Bin("B", "B", nbins, 0, 1)),
-	"C": hist.Hist(
-	    "Events", hist.Bin("C", "C", nbins, 0, 1)),
-	"D_exp": hist.Hist(
-	    "Events", hist.Bin("D_exp", "D_exp", nbins, 0, 1)),
-	"D_obs": hist.Hist(
-	    "Events", hist.Bin("D_obs", "D_obs", nbins, 0, 1)),
+	"A": Hist.new.Reg(nbins, 0, 1, name="A").Weight(),
+	"B": Hist.new.Reg(nbins, 0, 1, name="B").Weight(),
+	"C": Hist.new.Reg(nbins, 0, 1, name="C").Weight(),
+	"D_exp": Hist.new.Reg(nbins, 0, 1, name="D_exp").Weight(),
+	"D_obs": Hist.new.Reg(nbins, 0, 1, name="D_obs").Weight(),
 }
 
 def load_parquet(infile = '', custom_meta_key = 'SUEP.iot'):
@@ -43,40 +39,40 @@ def load_parquet(infile = '', custom_meta_key = 'SUEP.iot'):
 
 	return df, restored_meta
 
+# fill ABCD hists with dfs
+sizeA, sizeC = 0,0
 for ifile, infile in enumerate(files):
-
-	# load in dataframe, metadata, and scale by xsec
 	df, restored_meta = load_parquet(infile, custom_meta_key)
-	df = df * restored_meta['xsec']
-	if ifile == 0: full_df = df
-	else: full_df = pd.concat([full_df, df])
 
-# divide the dfs by region and select the variable we want to plot
-A = full_df[var1].loc[(full_df[var1] < var1_val) & (full_df[var2] < var2_val)].to_numpy()
-B = full_df[var1].loc[(full_df[var1] >= var1_val) & (full_df[var2] < var2_val)].to_numpy()
-C = full_df[var1].loc[(full_df[var1] < var1_val) & (full_df[var2] >= var2_val)].to_numpy()
-D_obs = full_df[var1].loc[(full_df[var1] >= var1_val) & (full_df[var2] >= var2_val)].to_numpy()
+	# divide the dfs by region and select the variable we want to plot
+	A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
+	B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
+	C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
+	D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
 
-# fill the histograms
-output["A"].fill(A = A)
-output["B"].fill(B = B)
-output["C"].fill(C = C)
-output["D_obs"].fill(D_obs = D_obs)
+	sizeC += ak.size(C) * restored_meta["xsec"]
+	sizeA += ak.size(A) * restored_meta["xsec"]
+
+	# fill the histograms
+	output["A"].fill(A, weight = restored_meta["xsec"])
+	output["B"].fill(B, weight = restored_meta["xsec"])
+	output["C"].fill(C, weight = restored_meta["xsec"])
+	output["D_obs"].fill(D_obs, weight = restored_meta["xsec"])
 
 # ABCD method to obtain D expected
-if ak.size(A)>0.0:
-    CoverA =  ak.size(C) /  ak.size(A)
+if sizeA>0.0:
+    CoverA =  sizeC / sizeA
 else:
     CoverA = 0.0
     print("A region has no occupancy")
-D_expected = B
-output["D_exp"].fill(D_exp = D_expected)
-output["D_exp"].scale(CoverA)
+output["D_exp"] = output["B"]
+output["D_exp"] *= (CoverA)
 
-fout = uproot3.recreate(dataDir+'ABCD.root')
-fout['A'] = hist.export1d(output["A"])
-fout['B'] = hist.export1d(output["B"])
-fout['C'] = hist.export1d(output["C"])
-fout['D_obs'] = hist.export1d(output["D_obs"])
-fout['D_exp'] = hist.export1d(output["D_exp"])
+# save to file
+fout = uproot.recreate(dataDir+'ABCD.root')
+fout['A'] = output["A"]
+fout['B'] = output["B"]
+fout['C'] = output["C"]
+fout['D_obs'] = output["D_obs"]
+fout['D_exp'] = output["D_exp"]
 fout.close()
