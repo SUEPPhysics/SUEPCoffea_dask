@@ -29,6 +29,10 @@ output = {
 	"C": Hist.new.Reg(nbins, 0, 1, name="C").Weight(),
 	"D_exp": Hist.new.Reg(nbins, 0, 1, name="D_exp").Weight(),
 	"D_obs": Hist.new.Reg(nbins, 0, 1, name="D_obs").Weight(),
+	"2D" : Hist(
+			hist.axis.Regular(100, 0, 1, name=var1),
+			hist.axis.Regular(100, 0, 200, name=var2),
+		)
 }
 
 def load_parquet(infile = '', custom_meta_key = 'SUEP.iot'):
@@ -58,21 +62,18 @@ for ifile, infile in enumerate(files):
 	output["B"].fill(B, weight = restored_meta["xsec"])
 	output["C"].fill(C, weight = restored_meta["xsec"])
 	output["D_obs"].fill(D_obs, weight = restored_meta["xsec"])
+	output["2D"].fill(df[var1], df[var2], weight = restored_meta["xsec"])
 
 # ABCD method to obtain D expected
 if sizeA>0.0:
-    CoverA =  sizeC / sizeA
+	CoverA =  sizeC / sizeA
 else:
-    CoverA = 0.0
-    print("A region has no occupancy")
+	CoverA = 0.0
+	print("A region has no occupancy")
 output["D_exp"] = output["B"]
 output["D_exp"] *= (CoverA)
 
 # save to file
 fout = uproot.recreate(dataDir+'ABCD.root')
-fout['A'] = output["A"]
-fout['B'] = output["B"]
-fout['C'] = output["C"]
-fout['D_obs'] = output["D_obs"]
-fout['D_exp'] = output["D_exp"]
+for key in output.keys(): fout[key] = output[key]
 fout.close()
