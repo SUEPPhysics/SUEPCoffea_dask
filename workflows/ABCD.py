@@ -11,8 +11,8 @@ vector.register_awkward()
 
 
 # parameters
-dataDir = "/home/lavezzo/SUEPCoffea_dask/"
-files = [file for file in os.listdir(dataDir) if file.endswith("ch.parquet")]
+dataDir = "/home/lavezzo/SUEP/SUEPCoffea_dask/"
+files = [file for file in os.listdir(dataDir) if file.endswith(".hdf5")]
 labels = ['ch']*len(files)
 var1 = 'SUEP_ch_spher'
 var2 = 'SUEP_ch_nconst'
@@ -34,17 +34,17 @@ output = {
 }
 
 def h5load(store, label='ch'):
-    data = store[label]
-    metadata = store.get_storer(label).attrs.metadata
-    return data, metadata
+	data = store[label]
+	metadata = store.get_storer(label).attrs.metadata
+	return data, metadata
 
 
 # fill ABCD hists with dfs
 sizeA, sizeC = 0,0
-for ifile, ilabel in enumerate(files, labels):
+for ifile, ilabel in zip(files, labels):
 
-	with pd.HDFStore(infile) as store:
-    	data, metadata = h5load(store, ilabel)
+	with pd.HDFStore(ifile) as store:
+		df, metadata = h5load(store, ilabel)
 
 	# divide the dfs by region and select the variable we want to plot
 	A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
@@ -52,15 +52,15 @@ for ifile, ilabel in enumerate(files, labels):
 	C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
 	D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
 
-	sizeC += ak.size(C) * restored_meta["xsec"]
-	sizeA += ak.size(A) * restored_meta["xsec"]
+	sizeC += ak.size(C) * metadata["xsec"]
+	sizeA += ak.size(A) * metadata["xsec"]
 
 	# fill the histograms
-	output["A"].fill(A, weight = restored_meta["xsec"])
-	output["B"].fill(B, weight = restored_meta["xsec"])
-	output["C"].fill(C, weight = restored_meta["xsec"])
-	output["D_obs"].fill(D_obs, weight = restored_meta["xsec"])
-	output["2D"].fill(df[var1], df[var2], weight = restored_meta["xsec"])
+	output["A"].fill(A, weight = metadata["xsec"])
+	output["B"].fill(B, weight = metadata["xsec"])
+	output["C"].fill(C, weight = metadata["xsec"])
+	output["D_obs"].fill(D_obs, weight = metadata["xsec"])
+	output["2D"].fill(df[var1], df[var2], weight = metadata["xsec"])
 
 # ABCD method to obtain D expected
 if sizeA>0.0:
