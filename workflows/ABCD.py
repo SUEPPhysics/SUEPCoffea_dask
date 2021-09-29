@@ -15,6 +15,7 @@ vector.register_awkward()
 # parameters
 dataDir = "/home/lavezzo/SUEPCoffea_dask/"
 files = [file for file in os.listdir(dataDir) if file.endswith("ch.parquet")]
+labels = ['ch']*len(files)
 var1 = 'SUEP_ch_spher'
 var2 = 'SUEP_ch_nconst'
 var1_val = 0.60
@@ -50,10 +51,10 @@ def h5load(store, label='ch'):
 
 # fill ABCD hists with dfs
 sizeA, sizeC = 0,0
-for ifile, infile in enumerate(files):
+for ifile, ilabel in enumerate(files, labels):
 
 	with pd.HDFStore(infile) as store:
-    	data, metadata = h5load(store, 'ch')
+    	data, metadata = h5load(store, ilabel)
 
 	# divide the dfs by region and select the variable we want to plot
 	A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
