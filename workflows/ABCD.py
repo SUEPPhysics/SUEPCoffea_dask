@@ -1,7 +1,5 @@
 import pandas as pd 
 import numpy as np
-import pyarrow
-import pyarrow.parquet as pq
 import hist
 from hist import Hist
 import os, sys
@@ -33,14 +31,6 @@ output = {
 			hist.axis.Regular(100, 0, 200, name=var2),
 		)
 }
-
-def load_parquet(infile = '', custom_meta_key = 'SUEP.iot'):
-	intable = pq.read_table(infile)
-	df = intable.to_pandas()
-	restored_meta_json = intable.schema.metadata[custom_meta_key.encode()]
-	restored_meta = json.loads(restored_meta_json)
-
-	return df, restored_meta
 
 def h5load(store, label='ch'):
     data = store[label]
