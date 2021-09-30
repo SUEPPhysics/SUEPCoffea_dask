@@ -8,18 +8,13 @@ Chad Freer, 2021
 import os
 import pathlib
 import shutil
-import warnings
 import awkward as ak
-import pandas
+import pandas as pd
 import numpy as np
 import fastjet
-import math
 from coffea import hist, processor
 import vector
 from typing import List, Optional
-import pyarrow
-import pyarrow.parquet as pq
-import json
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -99,6 +94,14 @@ class SUEP_cluster(processor.ProcessorABC):
                 "Events", hist.Bin("D_exp", "D_exp", 100, 0, 1)),
             "D_obs": hist.Hist(
                 "Events", hist.Bin("D_obs", "D_obs", 100, 0, 1)),
+
+            "SUEP_cand_deltaphi": hist.Hist(
+                "Events", hist.Bin("SUEP_cand_deltaphi", "SUEP_cand_deltaphi", 100, 0, 4)),
+            "highpt_cands_deltaphi": hist.Hist(
+                "Events", hist.Bin("highpt_cands_deltaphi", "highpt_cands_deltaphi", 100, 0, 4)),
+            "ISR_cand_deltaphi": hist.Hist(
+                "Events", hist.Bin("ISR_cand_deltaphi", "ISR_cand_deltaphi", 100, 0, 4)),
+
         })
 
     @property
@@ -127,8 +130,8 @@ class SUEP_cluster(processor.ProcessorABC):
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
 
-    def ak_to_pandas(self, jet_collection: ak.Array) -> pandas.DataFrame:
-        output = pandas.DataFrame()
+    def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
+        output = pd.DataFrame()
         for field in ak.fields(jet_collection):
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
@@ -140,7 +143,11 @@ class SUEP_cluster(processor.ProcessorABC):
                 output[field] = ak.to_numpy(jet_collection[field])
         return output
 
-    def dump_table(self, table: pyarrow.lib.Table, fname: str, location: str, subdirs: Optional[List[str]] = None,) -> None:
+    def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
+        store.put(gname, df)
+        store.get_storer(gname).attrs.metadata = kwargs
+
+    def dump_table(self, fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
         subdirs = subdirs or []
         xrd_prefix = "root://"
         pfx_len = len(xrd_prefix)
@@ -166,7 +173,6 @@ class SUEP_cluster(processor.ProcessorABC):
             if xrootd
             else os.path.join(location, os.path.join(merged_subdirs, fname))
         )
-        pq.write_table(table, fname, compression='GZIP')
         if xrootd:
             copyproc = XRootD.client.CopyProcess()
             copyproc.add_job(local_file, destination)
@@ -187,21 +193,17 @@ class SUEP_cluster(processor.ProcessorABC):
             if not os.path.exists(dirname):
                 pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
             if not os.path.samefile(local_file, destination):
-                shutil.copy(local_file, destination)
+                shutil.copy2(local_file, destination)
             else:
                 fname = "condor_" + fname
                 destination = os.path.join(location, os.path.join(merged_subdirs, fname))
-                shutil.copy(local_file, destination)
+                shutil.copy2(local_file, destination)
             assert os.path.isfile(destination)
         pathlib.Path(local_file).unlink()
 
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-
-        # ht > 500
-        events_ht = ak.sum(events.Jet_pt, axis=-1)
-        events = events[(events_ht > 500)]
 
         #Prepare the clean track collection
         Cands = ak.zip({
@@ -284,6 +286,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "pz": SUEP_pt[:,0].pz*-1,
             "mass": SUEP_pt[:,0].mass
         }, with_name="Momentum4D")
+        highpt_cands_ub = highpt_cands
         highpt_cands = highpt_cands.boost_p4(boost_pt)
         pt_eigs = self.sphericity(highpt_cands,2.0)
         output["SUEP_pt_spher"].fill(SUEP_pt_spher = 1.5 * (pt_eigs[:,1]+pt_eigs[:,0]))
@@ -293,15 +296,24 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #Christos Method for ISR removal
         SUEP_pt_constituent = SUEP_pt_constituent[ak.num(highpt_cands)>1]
-        SUEP_cand = ak.where(SUEP_pt_constituent[:,1]<SUEP_pt_constituent[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
+        SUEP_cand = ak.where(SUEP_pt_constituent[:,1]<=SUEP_pt_constituent[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
+        SUEP_cand_tracks = ak.where(SUEP_pt_constituent[:,1]<=SUEP_pt_constituent[:,0],highpt_cands_ub[:,0],highpt_cands_ub[:,1])
         ISR_cand = ak.where(SUEP_pt_constituent[:,1]>SUEP_pt_constituent[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
+        ISR_cand_tracks = ak.where(SUEP_pt_constituent[:,1]>SUEP_pt_constituent[:,0],highpt_cands_ub[:,0],highpt_cands_ub[:,1])
+
         boost_ch = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
             "pz": SUEP_cand.pz*-1,
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
+
+        output["SUEP_cand_deltaphi"].fill(SUEP_cand_deltaphi = abs(SUEP_cand.deltaphi(ISR_cand)))
+
+        SUEP_cand = SUEP_cand.boost_p4(boost_ch)
+        SUEP_cand_tracks = SUEP_cand_tracks.boost_p4(boost_ch)
         ISR_cand = ISR_cand.boost_p4(boost_ch)
+        ISR_cand_tracks = ISR_cand_tracks.boost_p4(boost_ch)
         Christos_cands = Cleaned_cands[ak.num(ak_inclusive_jets)>1]
         Christos_cands = Christos_cands[ak.num(highpt_cands)>1]#remove the jets with one track
         Christos_cands = Christos_cands.boost_p4(boost_ch)
@@ -320,6 +332,8 @@ class SUEP_cluster(processor.ProcessorABC):
         output["SUEP_ch_aplan"].fill(SUEP_ch_aplan = out_ch["SUEP_ch_aplan"])
         output["SUEP_ch_FW2M"].fill(SUEP_ch_FW2M = out_ch["SUEP_ch_FW2M"])
         output["SUEP_ch_D"].fill(SUEP_ch_D = out_ch["SUEP_ch_D"])
+        output["highpt_cands_deltaphi"].fill(highpt_cands_deltaphi = ak.mean(abs(highpt_cands.deltaphi(ISR_cand)), axis=-1))
+        output["ISR_cand_deltaphi"].fill(ISR_cand_deltaphi = abs(ISR_cand_tracks.deltaphi(ISR_cand)))
 
         #ABCD method plots
         SUEP_ch_spher = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
@@ -348,32 +362,21 @@ class SUEP_cluster(processor.ProcessorABC):
         output["D_exp"].fill(D_exp = D_expected)
         output["D_exp"].scale(CoverA)
 
+        #Prepare for writing to HDF5 file (xsec stored in metadata)
+        fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
+        subdirs = []
+        store = pd.HDFStore(fname)
         if self.output_location is not None:
-
-            for out, label in [[out_mult, "mult"], [out_ch, "ch"]]:
+            for out, gname in [[out_mult, "mult"], [out_ch, "ch"]]:
                 df = self.ak_to_pandas(out)
-                fname = (
-                    events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-                    + "_" + label + ".parquet"
-                )
-                subdirs = []
-                #if "dataset" in events.metadata:
-                #    subdirs.append(events.metadata["dataset"])
+                metadata = dict(xsec=self.xsec)
+                store_fin = self.h5store(store, df, fname, gname, **metadata)
 
-                # pyarrow to save metadata associated with events
-                table = pyarrow.Table.from_pandas(df)
-                custom_meta_content = {'xsec':self.xsec}
-                custom_meta_json = json.dumps(custom_meta_content)
-                existing_meta = table.schema.metadata
-                custom_meta_key = 'SUEP.iot'
-                combined_meta = {
-                    custom_meta_key.encode() : custom_meta_json.encode(),
-                    **existing_meta
-                }
-                table = table.replace_schema_metadata(combined_meta)
-
-                self.dump_table(table, fname, self.output_location, subdirs)
-
+            #self.dump_table(fname, self.output_location, subdirs)
+            store.close()
+            self.dump_table(fname, self.output_location, subdirs)
+        else:
+            store.close()
 
         return output
 
