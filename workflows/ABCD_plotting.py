@@ -10,7 +10,7 @@ import vector
 vector.register_awkward()
 
 
-# input files parameters
+# parameters for input files
 dataDir = "/home/lavezzo/SUEP/SUEPCoffea_dask/"
 files = [file for file in os.listdir(dataDir) if file.endswith("42211.hdf5")]
 label = 'pt'
