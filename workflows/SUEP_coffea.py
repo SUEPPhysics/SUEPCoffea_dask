@@ -32,69 +32,14 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({
+
+            ### FIXME: how to deal with these?
             "uncleaned_tracks": hist.Hist("Events",
                 hist.Bin("Uncleaned_Ntracks", "Uncleaned NTracks", 10000, 0, 10000)),
             "nCleaned_Cands": hist.Hist("Events",
                 hist.Bin("nCleaned_Cands", "NTracks", 200, 0, 200)),
             "ngood_fastjets" : hist.Hist("Events",
                 hist.Bin("ngood_fastjets", "# Fastjets", 15, 0, 15)),
-            "SUEP_mult_nconst" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_nconst", "# Tracks", 250, 0, 250)),
-            "SUEP_mult_pt" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_pt", "pT", 100, 0, 2000)),
-            "SUEP_mult_eta" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_eta", "eta", 100, -5, 5)),
-            "SUEP_mult_phi" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_phi", "phi", 100, 0, 6.5)),
-            "SUEP_mult_mass" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_mass", "mass", 150, 0, 4000)),
-            "SUEP_mult_spher" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_spher", "Sphericity", 100, 0, 1)),
-            "SUEP_mult_aplan" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_aplan", "Aplanarity", 100, 0, 1)),
-            "SUEP_mult_FW2M" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_FW2M", "2nd Fox Wolfram Moment", 100, 0, 1)),
-            "SUEP_mult_D" : hist.Hist("Events",
-                hist.Bin("SUEP_mult_D", "D", 100, 0, 1)),
-            "SUEP_pt_nconst" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_nconst", "# Tracks", 250, 0, 250)),
-            "SUEP_pt_pt" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_pt", "pT", 100, 0, 2000)),
-            "SUEP_pt_eta" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_eta", "eta", 100, -5, 5)),
-            "SUEP_pt_phi" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_phi", "phi", 100, 0, 6.5)),
-            "SUEP_pt_mass" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_mass", "mass", 150, 0, 4000)),
-            "SUEP_pt_spher" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_spher", "Sphericity", 100, 0, 1)),  
-            "SUEP_pt_aplan" : hist.Hist("Events",
-                hist.Bin("SUEP_pt_aplan", "Aplanarity", 100, 0, 1)),  
-            "SUEP_pt_FW2M" : hist.Hist("Events", 
-                hist.Bin("SUEP_pt_FW2M", "2nd Fox Wolfram Moment", 100, 0, 1)),  
-            "SUEP_pt_D" : hist.Hist("Events", 
-                hist.Bin("SUEP_pt_D", "D", 100, 0, 1)),
-            "SUEP_ch_nconst" : hist.Hist("Events",
-                hist.Bin("SUEP_ch_nconst", "# Tracks", 250, 0, 250)),
-            "SUEP_ch_spher" : hist.Hist("Events",
-                hist.Bin("SUEP_ch_spher", "Sphericity", 100, 0, 1)),
-            "SUEP_ch_aplan" : hist.Hist("Events",
-                hist.Bin("SUEP_ch_aplan", "Aplanarity", 100, 0, 1)),
-            "SUEP_ch_FW2M" : hist.Hist("Events",
-                hist.Bin("SUEP_ch_FW2M", "2nd Fox Wolfram Moment", 100, 0, 1)),
-            "SUEP_ch_D" : hist.Hist("Events",
-                hist.Bin("SUEP_ch_D", "D", 100, 0, 1)),
-            "A": hist.Hist(
-                "Events", hist.Bin("A", "A", 100, 0, 1)),
-            "B": hist.Hist(
-                "Events", hist.Bin("B", "B", 100, 0, 1)),
-            "C": hist.Hist(
-                "Events", hist.Bin("C", "C", 100, 0, 1)),
-            "D_exp": hist.Hist(
-                "Events", hist.Bin("D_exp", "D_exp", 100, 0, 1)),
-            "D_obs": hist.Hist(
-                "Events", hist.Bin("D_obs", "D_obs", 100, 0, 1)),
-
             "SUEP_cand_deltaphi": hist.Hist(
                 "Events", hist.Bin("SUEP_cand_deltaphi", "SUEP_cand_deltaphi", 100, 0, 4)),
             "highpt_cands_deltaphi": hist.Hist(
@@ -102,12 +47,23 @@ class SUEP_cluster(processor.ProcessorABC):
             "ISR_cand_deltaphi": hist.Hist(
                 "Events", hist.Bin("ISR_cand_deltaphi", "ISR_cand_deltaphi", 100, 0, 4)),
 
+            ### FIXME delete these
+            # "A": hist.Hist(
+            #     "Events", hist.Bin("A", "A", 100, 0, 1)),
+            # "B": hist.Hist(
+            #     "Events", hist.Bin("B", "B", 100, 0, 1)),
+            # "C": hist.Hist(
+            #     "Events", hist.Bin("C", "C", 100, 0, 1)),
+            # "D_exp": hist.Hist(
+            #     "Events", hist.Bin("D_exp", "D_exp", 100, 0, 1)),
+            # "D_obs": hist.Hist(
+            #     "Events", hist.Bin("D_obs", "D_obs", 100, 0, 1)),
+
         })
 
     @property
     def accumulator(self):
         return self._accumulator
-
 
     def sphericity(self, particles, r):
         norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
@@ -242,11 +198,6 @@ class SUEP_cluster(processor.ProcessorABC):
         out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
         out_mult["SUEP_mult_phi"] = thicc_jets[:,0].phi
         out_mult["SUEP_mult_mass"] = thicc_jets[:,0].mass
-        output["SUEP_mult_nconst"].fill(SUEP_mult_nconst = out_mult["SUEP_mult_nconst"])
-        output["SUEP_mult_pt"].fill(SUEP_mult_pt = out_mult["SUEP_mult_pt"])
-        output["SUEP_mult_eta"].fill(SUEP_mult_eta = out_mult["SUEP_mult_eta"])
-        output["SUEP_mult_phi"].fill(SUEP_mult_phi = out_mult["SUEP_mult_phi"])
-        output["SUEP_mult_mass"].fill(SUEP_mult_mass = out_mult["SUEP_mult_mass"])
 
         #SUEP_mult boosting and sphericity
         boost_mult = ak.zip({
@@ -260,11 +211,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_mult["SUEP_mult_spher"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
         out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
         out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
-        out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0] 
-        output["SUEP_mult_spher"].fill(SUEP_mult_spher = out_mult["SUEP_mult_spher"])
-        output["SUEP_mult_aplan"].fill(SUEP_mult_aplan = out_mult["SUEP_mult_aplan"])
-        output["SUEP_mult_FW2M"].fill(SUEP_mult_FW2M = out_mult["SUEP_mult_FW2M"])
-        output["SUEP_mult_D"].fill(SUEP_mult_D = out_mult["SUEP_mult_D"])       
+        out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]    
 
         #SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
@@ -272,12 +219,14 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pt_constituent = chonkocity[highpt_jet]
         highpt_cands = ak_inclusive_cluster[highpt_jet][:,0]
         SUEP_pt = SUEP_pt[ak.num(highpt_cands)>1]#We dont want to look at single track jets
+        SUEP_pt_constituent = SUEP_pt_constituent[ak.num(highpt_cands)>1]
         highpt_cands = highpt_cands[ak.num(highpt_cands)>1]#We dont want to look at single track jets
-        output["SUEP_pt_nconst"].fill(SUEP_pt_nconst = SUEP_pt_constituent[:,0])
-        output["SUEP_pt_pt"].fill(SUEP_pt_pt = SUEP_pt[:,0].pt)
-        output["SUEP_pt_eta"].fill(SUEP_pt_eta = SUEP_pt[:,0].eta)
-        output["SUEP_pt_phi"].fill(SUEP_pt_phi = SUEP_pt[:,0].phi)
-        output["SUEP_pt_mass"].fill(SUEP_pt_mass = SUEP_pt[:,0].mass)
+        out_pt = SUEP_pt[:,0]
+        out_pt["SUEP_pt_nconst"] = SUEP_pt_constituent[:,0]
+        out_pt["SUEP_pt_pt"] = SUEP_pt[:,0].pt
+        out_pt["SUEP_pt_eta"] = SUEP_pt[:,0].eta
+        out_pt["SUEP_pt_phi"] = SUEP_pt[:,0].phi
+        out_pt["SUEP_pt_mass"] = SUEP_pt[:,0].mass
 
         #SUEP_pt boosting and sphericity
         boost_pt = ak.zip({
@@ -289,10 +238,10 @@ class SUEP_cluster(processor.ProcessorABC):
         highpt_cands_ub = highpt_cands
         highpt_cands = highpt_cands.boost_p4(boost_pt)
         pt_eigs = self.sphericity(highpt_cands,2.0)
-        output["SUEP_pt_spher"].fill(SUEP_pt_spher = 1.5 * (pt_eigs[:,1]+pt_eigs[:,0]))
-        output["SUEP_pt_aplan"].fill(SUEP_pt_aplan = 1.5 * pt_eigs[:,0])
-        output["SUEP_pt_FW2M"].fill(SUEP_pt_FW2M = 1.0 - 3.0 * (pt_eigs[:,2]*pt_eigs[:,1] + pt_eigs[:,2]*pt_eigs[:,0] + pt_eigs[:,1]*pt_eigs[:,0]))
-        output["SUEP_pt_D"].fill(SUEP_pt_D = 27.0 * pt_eigs[:,2]*pt_eigs[:,1]*pt_eigs[:,0])
+        out_pt["SUEP_pt_spher"] = 1.5 * (pt_eigs[:,1]+pt_eigs[:,0])
+        out_pt["SUEP_pt_aplan"] = 1.5 * pt_eigs[:,0]
+        out_pt["SUEP_pt_FW2M"] = 1.0 - 3.0 * (pt_eigs[:,2]*pt_eigs[:,1] + pt_eigs[:,2]*pt_eigs[:,0] + pt_eigs[:,1]*pt_eigs[:,0])
+        out_pt["SUEP_pt_D"] = 27.0 * pt_eigs[:,2]*pt_eigs[:,1]*pt_eigs[:,0]
 
         #Christos Method for ISR removal
         SUEP_pt_constituent = SUEP_pt_constituent[ak.num(highpt_cands)>1]
@@ -308,7 +257,9 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
 
+        ### FIXME: how to deal with these?
         output["SUEP_cand_deltaphi"].fill(SUEP_cand_deltaphi = abs(SUEP_cand.deltaphi(ISR_cand)))
+        ###
 
         SUEP_cand = SUEP_cand.boost_p4(boost_ch)
         SUEP_cand_tracks = SUEP_cand_tracks.boost_p4(boost_ch)
@@ -327,52 +278,22 @@ class SUEP_cluster(processor.ProcessorABC):
         out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
         out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
         out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
-        output["SUEP_ch_nconst"].fill(SUEP_ch_nconst = out_ch["SUEP_ch_nconst"])
-        output["SUEP_ch_spher"].fill(SUEP_ch_spher = out_ch["SUEP_ch_spher"])
-        output["SUEP_ch_aplan"].fill(SUEP_ch_aplan = out_ch["SUEP_ch_aplan"])
-        output["SUEP_ch_FW2M"].fill(SUEP_ch_FW2M = out_ch["SUEP_ch_FW2M"])
-        output["SUEP_ch_D"].fill(SUEP_ch_D = out_ch["SUEP_ch_D"])
+
+        ### FIXME: how to deal with these?
         output["highpt_cands_deltaphi"].fill(highpt_cands_deltaphi = ak.mean(abs(highpt_cands.deltaphi(ISR_cand)), axis=-1))
         output["ISR_cand_deltaphi"].fill(ISR_cand_deltaphi = abs(ISR_cand_tracks.deltaphi(ISR_cand)))
-
-        #ABCD method plots
-        SUEP_ch_spher = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
-        SUEP_ch_nconst = ak.num(Christos_cands)
-        A_reg = (SUEP_ch_spher < 0.60) & (SUEP_ch_nconst < 150)
-        B_reg = (SUEP_ch_spher >= 0.60) & (SUEP_ch_nconst < 150)
-        C_reg = (SUEP_ch_spher < 0.60) & (SUEP_ch_nconst >= 150)
-        D_reg = (SUEP_ch_spher >= 0.60) & (SUEP_ch_nconst >= 150)
-
-        A_hist = SUEP_ch_spher[A_reg]
-        B_hist = SUEP_ch_spher[B_reg]
-        C_hist = SUEP_ch_spher[C_reg]
-        D_observed = SUEP_ch_spher[D_reg]
-
-        output["A"].fill(A = A_hist)
-        output["B"].fill(B = B_hist)
-        output["C"].fill(C = C_hist)
-        output["D_obs"].fill(D_obs = D_observed)
-
-        if ak.size(A_hist)>0.0:
-            CoverA =  ak.size(C_hist) /  ak.size(A_hist)
-        else:
-            CoverA = 0.0
-            print("A region has no occupancy")
-        D_expected = B_hist
-        output["D_exp"].fill(D_exp = D_expected)
-        output["D_exp"].scale(CoverA)
+        ###
 
         #Prepare for writing to HDF5 file (xsec stored in metadata)
         fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
-            for out, gname in [[out_mult, "mult"], [out_ch, "ch"]]:
+            for out, gname in [[out_mult, "mult"], [out_ch, "ch"], [out_pt,"pt"]]:
                 df = self.ak_to_pandas(out)
                 metadata = dict(xsec=self.xsec)
                 store_fin = self.h5store(store, df, fname, gname, **metadata)
 
-            #self.dump_table(fname, self.output_location, subdirs)
             store.close()
             self.dump_table(fname, self.output_location, subdirs)
         else:
