@@ -47,18 +47,6 @@ class SUEP_cluster(processor.ProcessorABC):
             "ISR_cand_deltaphi": hist.Hist(
                 "Events", hist.Bin("ISR_cand_deltaphi", "ISR_cand_deltaphi", 100, 0, 4)),
 
-            ### FIXME delete these
-            # "A": hist.Hist(
-            #     "Events", hist.Bin("A", "A", 100, 0, 1)),
-            # "B": hist.Hist(
-            #     "Events", hist.Bin("B", "B", 100, 0, 1)),
-            # "C": hist.Hist(
-            #     "Events", hist.Bin("C", "C", 100, 0, 1)),
-            # "D_exp": hist.Hist(
-            #     "Events", hist.Bin("D_exp", "D_exp", 100, 0, 1)),
-            # "D_obs": hist.Hist(
-            #     "Events", hist.Bin("D_obs", "D_obs", 100, 0, 1)),
-
         })
 
     @property
@@ -271,8 +259,7 @@ class SUEP_cluster(processor.ProcessorABC):
         Christos_cands = Christos_cands[abs(Christos_cands.deltaphi(ISR_cand)) > 1.6]
         Christos_cands = Christos_cands[ak.num(Christos_cands)>1]#remove the events left with one track
         ch_eigs = self.sphericity(Christos_cands,2.0)
-        out_ch = Christos_cands[:,0]
-        out_ch["xsec"] = [self.xsec] * len(Christos_cands[:,0])
+        out_ch = ak.zip({"xsec":[self.xsec] * len(Christos_cands)})
         out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
         out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
         out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
