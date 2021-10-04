@@ -31,23 +31,16 @@ class SUEP_cluster(processor.ProcessorABC):
         self.prefixes = {"SUEP": "SUEP"}
 
         #Set up for the histograms
-        self._accumulator = processor.dict_accumulator({
+        self._accumulator = processor.dict_accumulator({})
 
-            ### FIXME: how to deal with these?
-            "uncleaned_tracks": hist.Hist("Events",
-                hist.Bin("Uncleaned_Ntracks", "Uncleaned NTracks", 10000, 0, 10000)),
-            "nCleaned_Cands": hist.Hist("Events",
-                hist.Bin("nCleaned_Cands", "NTracks", 200, 0, 200)),
-            "ngood_fastjets" : hist.Hist("Events",
-                hist.Bin("ngood_fastjets", "# Fastjets", 15, 0, 15)),
-            "SUEP_cand_deltaphi": hist.Hist(
-                "Events", hist.Bin("SUEP_cand_deltaphi", "SUEP_cand_deltaphi", 100, 0, 4)),
-            "highpt_cands_deltaphi": hist.Hist(
-                "Events", hist.Bin("highpt_cands_deltaphi", "highpt_cands_deltaphi", 100, 0, 4)),
-            "ISR_cand_deltaphi": hist.Hist(
-                "Events", hist.Bin("ISR_cand_deltaphi", "ISR_cand_deltaphi", 100, 0, 4)),
-
-        })
+        #     ### FIXME: add these to new plotting script
+        #     "uncleaned_tracks": hist.Hist("Events",
+        #         hist.Bin("Uncleaned_Ntracks", "Uncleaned NTracks", 10000, 0, 10000)),
+        #     "nCleaned_Cands": hist.Hist("Events",
+        #         hist.Bin("nCleaned_Cands", "NTracks", 200, 0, 200)),
+        #     "ngood_fastjets" : hist.Hist("Events",
+        #         hist.Bin("ngood_fastjets", "# Fastjets", 15, 0, 15)),
+        # })
 
     @property
     def accumulator(self):
@@ -159,15 +152,17 @@ class SUEP_cluster(processor.ProcessorABC):
         cut = (events.PFCands_fromPV > 1) & (events.PFCands_trkPt >= 1) & (events.PFCands_trkEta <= 2.5)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
-        output["uncleaned_tracks"].fill(Uncleaned_Ntracks = ak.num(Cands))
-        output["nCleaned_Cands"].fill(nCleaned_Cands = ak.num(Cleaned_cands))
 
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
         cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef) 
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt=150),"Momentum4D")
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt=150),"Momentum4D")
-        output["ngood_fastjets"].fill(ngood_fastjets = ak.num(ak_inclusive_jets))
+        out_eventsinfo = pd.DataFrame({
+            "uncleaned_tracks" : ak.num(Cands),
+            "nCleaned_Cands" : ak.num(Cleaned_cands),
+            "ngood_fastjets" : ak.num(ak_inclusive_jets),
+        })
 
         #remove events without a cluster
         ak_inclusive_cluster = ak_inclusive_cluster[ak.num(ak_inclusive_jets, axis=1)>1]
@@ -204,13 +199,15 @@ class SUEP_cluster(processor.ProcessorABC):
         #SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
-        SUEP_pt_constituent = chonkocity[highpt_jet]
+        SUEP_pt_nconst = chonkocity[highpt_jet]
+        cands_by_pt = ak_inclusive_cluster[highpt_jet]
         highpt_cands = ak_inclusive_cluster[highpt_jet][:,0]
         SUEP_pt = SUEP_pt[ak.num(highpt_cands)>1]#We dont want to look at single track jets
-        SUEP_pt_constituent = SUEP_pt_constituent[ak.num(highpt_cands)>1]
+        SUEP_pt_nconst = SUEP_pt_nconst[ak.num(highpt_cands)>1]
+        cands_by_pt = cands_by_pt[ak.num(highpt_cands)>1]
         highpt_cands = highpt_cands[ak.num(highpt_cands)>1]#We dont want to look at single track jets
         out_pt = SUEP_pt[:,0]
-        out_pt["SUEP_pt_nconst"] = SUEP_pt_constituent[:,0]
+        out_pt["SUEP_pt_nconst"] = SUEP_pt_nconst[:,0]
         out_pt["SUEP_pt_pt"] = SUEP_pt[:,0].pt
         out_pt["SUEP_pt_eta"] = SUEP_pt[:,0].eta
         out_pt["SUEP_pt_phi"] = SUEP_pt[:,0].phi
@@ -232,23 +229,34 @@ class SUEP_cluster(processor.ProcessorABC):
         out_pt["SUEP_pt_D"] = 27.0 * pt_eigs[:,2]*pt_eigs[:,1]*pt_eigs[:,0]
 
         #Christos Method for ISR removal
-        SUEP_pt_constituent = SUEP_pt_constituent[ak.num(highpt_cands)>1]
-        SUEP_cand = ak.where(SUEP_pt_constituent[:,1]<=SUEP_pt_constituent[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
-        SUEP_cand_tracks = ak.where(SUEP_pt_constituent[:,1]<=SUEP_pt_constituent[:,0],highpt_cands_ub[:,0],highpt_cands_ub[:,1])
-        ISR_cand = ak.where(SUEP_pt_constituent[:,1]>SUEP_pt_constituent[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
-        ISR_cand_tracks = ak.where(SUEP_pt_constituent[:,1]>SUEP_pt_constituent[:,0],highpt_cands_ub[:,0],highpt_cands_ub[:,1])
+        SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
+        SUEP_cand_tracks = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],cands_by_pt[:,0],cands_by_pt[:,1])
+        ISR_cand = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
+        ISR_cand_tracks = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],cands_by_pt[:,0],cands_by_pt[:,1])
 
+        # set aside these for output, before boosting them
+        out_SUEP_cand = SUEP_cand
+        out_ISR_cand = ISR_cand
+        out_SUEP_cand_tracks = pd.DataFrame({
+            'pt':SUEP_cand_tracks.pt.to_list(),
+            'phi':SUEP_cand_tracks.phi.to_list(),
+        })
+        out_ISR_cand_tracks = pd.DataFrame({
+            'pt':ISR_cand_tracks.pt.to_list(),
+            'phi':ISR_cand_tracks.phi.to_list(),
+        })
+        out_highpt_cands = pd.DataFrame({
+            'pt':highpt_cands_ub.pt.to_list(),
+            'phi':highpt_cands_ub.phi.to_list(),
+        })
+        
+            
         boost_ch = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
             "pz": SUEP_cand.pz*-1,
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
-
-        ### FIXME: how to deal with these?
-        output["SUEP_cand_deltaphi"].fill(SUEP_cand_deltaphi = abs(SUEP_cand.deltaphi(ISR_cand)))
-        ###
-
         SUEP_cand = SUEP_cand.boost_p4(boost_ch)
         SUEP_cand_tracks = SUEP_cand_tracks.boost_p4(boost_ch)
         ISR_cand = ISR_cand.boost_p4(boost_ch)
@@ -266,9 +274,9 @@ class SUEP_cluster(processor.ProcessorABC):
         out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
         out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
 
-        ### FIXME: how to deal with these?
-        output["highpt_cands_deltaphi"].fill(highpt_cands_deltaphi = ak.mean(abs(highpt_cands.deltaphi(ISR_cand)), axis=-1))
-        output["ISR_cand_deltaphi"].fill(ISR_cand_deltaphi = abs(ISR_cand_tracks.deltaphi(ISR_cand)))
+        ### FIXME: add these to new plotting script
+        #output["highpt_cands_deltaphi"].fill(highpt_cands_deltaphi = ak.mean(abs(highpt_cands.deltaphi(ISR_cand)), axis=-1))
+        #output["ISR_cand_deltaphi"].fill(ISR_cand_deltaphi = abs(ISR_cand_tracks.deltaphi(ISR_cand)))
         ###
 
         #Prepare for writing to HDF5 file (xsec stored in metadata)
@@ -276,9 +284,21 @@ class SUEP_cluster(processor.ProcessorABC):
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
-            for out, gname in [[out_mult, "mult"], [out_ch, "ch"], [out_pt,"pt"]]:
+
+            # ak to pandas to hdf5
+            for out, gname in [ [out_mult, "mult"], [out_ch, "ch"], [out_pt,"pt"],
+                                [out_SUEP_cand, "SUEP_cand"], [out_ISR_cand, "ISR_cand"]]:
                 df = self.ak_to_pandas(out)
-                metadata = dict(xsec=self.xsec)
+                metadata = dict(xsec=self.xsec,era=self.era,
+                                mc=self.isMC,sample=self.sample)
+                store_fin = self.h5store(store, df, fname, gname, **metadata)
+
+            # pandas to hdf5 directly for these ones
+            for df, gname in [ [out_SUEP_cand_tracks, "SUEP_cand_tracks"], [out_ISR_cand_tracks, "ISR_cand_tracks"],
+                                [out_highpt_cands, "highpt_cands"]]:
+
+                metadata = dict(xsec=self.xsec,era=self.era,
+                                    mc=self.isMC,sample=self.sample)
                 store_fin = self.h5store(store, df, fname, gname, **metadata)
 
             store.close()
@@ -286,6 +306,7 @@ class SUEP_cluster(processor.ProcessorABC):
         else:
             store.close()
 
+        
         return output
 
     def postprocess(self, accumulator):
