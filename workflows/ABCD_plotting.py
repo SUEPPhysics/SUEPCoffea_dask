@@ -48,9 +48,10 @@ def create_output_file(label):
 	}
 	return output
 
-def h5load(store, label):
-	data = store[label]
-	metadata = store.get_storer(label).attrs.metadata
+def h5load(ifile, label):
+	with pd.HDFStore(ifile) as store:
+		data = store[label]
+		metadata = store.get_storer(label).attrs.metadata
 	return data, metadata
 
 # fill ABCD hists with dfs
@@ -58,8 +59,7 @@ output = create_output_file(label)
 sizeA, sizeC = 0,0
 for ifile in files:
 
-	with pd.HDFStore(ifile) as store:
-		df, metadata = h5load(store, label)
+	df, metadata = h5load(ifile, label)
 
 	# divide the dfs by region and select the variable we want to plot
 	A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()

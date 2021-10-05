@@ -158,11 +158,9 @@ class SUEP_cluster(processor.ProcessorABC):
         cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef) 
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt=150),"Momentum4D")
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt=150),"Momentum4D")
-        out_eventsinfo = pd.DataFrame({
-            "uncleaned_tracks" : ak.num(Cands),
-            "nCleaned_Cands" : ak.num(Cleaned_cands),
-            "ngood_fastjets" : ak.num(ak_inclusive_jets),
-        })
+        col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
+        col2 = pd.Series(ak.num(Cleaned_cands).to_list(), name = "nCleaned_Cands")
+        col3 = pd.Series(ak.num(ak_inclusive_jets).to_list(), name = "ngood_fastjets")
 
         #remove events without a cluster
         ak_inclusive_cluster = ak_inclusive_cluster[ak.num(ak_inclusive_jets, axis=1)>1]
@@ -200,57 +198,21 @@ class SUEP_cluster(processor.ProcessorABC):
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
         SUEP_pt_nconst = chonkocity[highpt_jet]
-        cands_by_pt = ak_inclusive_cluster[highpt_jet]
-        highpt_cands = ak_inclusive_cluster[highpt_jet][:,0]
-        SUEP_pt = SUEP_pt[ak.num(highpt_cands)>1]#We dont want to look at single track jets
+        SUEP_pt_tracks = ak_inclusive_cluster[highpt_jet]
+        highpt_cands = SUEP_pt_tracks[:,0]                  #tracks for highest pt
+        SUEP_pt = SUEP_pt[ak.num(highpt_cands)>1]           #We dont want to look at single track jets
         SUEP_pt_nconst = SUEP_pt_nconst[ak.num(highpt_cands)>1]
-        cands_by_pt = cands_by_pt[ak.num(highpt_cands)>1]
-        highpt_cands = highpt_cands[ak.num(highpt_cands)>1]#We dont want to look at single track jets
-        out_pt = SUEP_pt[:,0]
-        out_pt["SUEP_pt_nconst"] = SUEP_pt_nconst[:,0]
-        out_pt["SUEP_pt_pt"] = SUEP_pt[:,0].pt
-        out_pt["SUEP_pt_eta"] = SUEP_pt[:,0].eta
-        out_pt["SUEP_pt_phi"] = SUEP_pt[:,0].phi
-        out_pt["SUEP_pt_mass"] = SUEP_pt[:,0].mass
-
-        #SUEP_pt boosting and sphericity
-        boost_pt = ak.zip({
-            "px": SUEP_pt[:,0].px*-1,
-            "py": SUEP_pt[:,0].py*-1,
-            "pz": SUEP_pt[:,0].pz*-1,
-            "mass": SUEP_pt[:,0].mass
-        }, with_name="Momentum4D")
-        highpt_cands_ub = highpt_cands
-        highpt_cands = highpt_cands.boost_p4(boost_pt)
-        pt_eigs = self.sphericity(highpt_cands,2.0)
-        out_pt["SUEP_pt_spher"] = 1.5 * (pt_eigs[:,1]+pt_eigs[:,0])
-        out_pt["SUEP_pt_aplan"] = 1.5 * pt_eigs[:,0]
-        out_pt["SUEP_pt_FW2M"] = 1.0 - 3.0 * (pt_eigs[:,2]*pt_eigs[:,1] + pt_eigs[:,2]*pt_eigs[:,0] + pt_eigs[:,1]*pt_eigs[:,0])
-        out_pt["SUEP_pt_D"] = 27.0 * pt_eigs[:,2]*pt_eigs[:,1]*pt_eigs[:,0]
-
+        SUEP_pt_tracks = SUEP_pt_tracks[ak.num(highpt_cands)>1]
+        highpt_cands = highpt_cands[ak.num(highpt_cands)>1] #We dont want to look at single track jets
+      
         #Christos Method for ISR removal
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
-        SUEP_cand_tracks = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],cands_by_pt[:,0],cands_by_pt[:,1])
+        SUEP_cand_tracks = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
         ISR_cand = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
-        ISR_cand_tracks = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],cands_by_pt[:,0],cands_by_pt[:,1])
-
-        # set aside these for output, before boosting them
-        out_SUEP_cand = SUEP_cand
-        out_ISR_cand = ISR_cand
-        out_SUEP_cand_tracks = pd.DataFrame({
-            'pt':SUEP_cand_tracks.pt.to_list(),
-            'phi':SUEP_cand_tracks.phi.to_list(),
-        })
-        out_ISR_cand_tracks = pd.DataFrame({
-            'pt':ISR_cand_tracks.pt.to_list(),
-            'phi':ISR_cand_tracks.phi.to_list(),
-        })
-        out_highpt_cands = pd.DataFrame({
-            'pt':highpt_cands_ub.pt.to_list(),
-            'phi':highpt_cands_ub.phi.to_list(),
-        })
-        
+        ISR_cand_tracks = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
             
+        dphi_SUEP_ISR = abs(SUEP_cand.deltaphi(ISR_cand))
+
         boost_ch = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
@@ -258,26 +220,30 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
         SUEP_cand = SUEP_cand.boost_p4(boost_ch)
-        SUEP_cand_tracks = SUEP_cand_tracks.boost_p4(boost_ch)
         ISR_cand = ISR_cand.boost_p4(boost_ch)
-        ISR_cand_tracks = ISR_cand_tracks.boost_p4(boost_ch)
         Christos_cands = Cleaned_cands[ak.num(ak_inclusive_jets)>1]
         Christos_cands = Christos_cands[ak.num(highpt_cands)>1]#remove the jets with one track
         Christos_cands = Christos_cands.boost_p4(boost_ch)
         Christos_cands = Christos_cands[abs(Christos_cands.deltaphi(ISR_cand)) > 1.6]
         Christos_cands = Christos_cands[ak.num(Christos_cands)>1]#remove the events left with one track
         ch_eigs = self.sphericity(Christos_cands,2.0)
-        out_ch = ak.zip({"xsec":[self.xsec] * len(Christos_cands)})
-        out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
+        out_ch = ak.zip({"SUEP_ch_nconst":ak.num(Christos_cands)})
         out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
         out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
         out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
         out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
 
-        ### FIXME: add these to new plotting script
-        #output["highpt_cands_deltaphi"].fill(highpt_cands_deltaphi = ak.mean(abs(highpt_cands.deltaphi(ISR_cand)), axis=-1))
-        #output["ISR_cand_deltaphi"].fill(ISR_cand_deltaphi = abs(ISR_cand_tracks.deltaphi(ISR_cand)))
-        ###
+        # calculate some variables to plot
+        SUEP_cand_tracks = SUEP_cand_tracks.boost_p4(boost_ch)
+        ISR_cand_tracks = ISR_cand_tracks.boost_p4(boost_ch)
+        dphi_ISRtracks_ISR = ak.flatten(abs(ISR_cand_tracks.deltaphi(ISR_cand)), axis=-1)
+        dphi_SUEPtracks_ISR = ak.flatten(abs(SUEP_cand_tracks.deltaphi(ISR_cand)), axis=-1)
+
+        # save plots to a dataframe
+        col4 = pd.Series(dphi_SUEP_ISR.to_list(), name = "dphi_SUEP_ISR")
+        col5 = pd.Series(dphi_ISRtracks_ISR.to_list(), name = "dphi_ISRtracks_ISR")
+        col6 = pd.Series(dphi_SUEPtracks_ISR.to_list(), name = "dphi_SUEPtracks_ISR")
+        out_vars = pd.concat([col1, col2, col3, col4, col5, col6], axis=1)
 
         #Prepare for writing to HDF5 file (xsec stored in metadata)
         fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
@@ -286,19 +252,16 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.output_location is not None:
 
             # ak to pandas to hdf5
-            for out, gname in [ [out_mult, "mult"], [out_ch, "ch"], [out_pt,"pt"],
-                                [out_SUEP_cand, "SUEP_cand"], [out_ISR_cand, "ISR_cand"]]:
+            for out, gname in [[out_mult, "mult"], [out_ch, "ch"]]:
                 df = self.ak_to_pandas(out)
                 metadata = dict(xsec=self.xsec,era=self.era,
                                 mc=self.isMC,sample=self.sample)
                 store_fin = self.h5store(store, df, fname, gname, **metadata)
 
-            # pandas to hdf5 directly for these ones
-            for df, gname in [ [out_SUEP_cand_tracks, "SUEP_cand_tracks"], [out_ISR_cand_tracks, "ISR_cand_tracks"],
-                                [out_highpt_cands, "highpt_cands"]]:
+            for df, gname in [[out_vars, "out_vars"]]:
 
                 metadata = dict(xsec=self.xsec,era=self.era,
-                                    mc=self.isMC,sample=self.sample)
+                                mc=self.isMC,sample=self.sample)
                 store_fin = self.h5store(store, df, fname, gname, **metadata)
 
             store.close()
