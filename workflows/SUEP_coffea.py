@@ -33,15 +33,6 @@ class SUEP_cluster(processor.ProcessorABC):
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
 
-        #     ### FIXME: add these to new plotting script
-        #     "uncleaned_tracks": hist.Hist("Events",
-        #         hist.Bin("Uncleaned_Ntracks", "Uncleaned NTracks", 10000, 0, 10000)),
-        #     "nCleaned_Cands": hist.Hist("Events",
-        #         hist.Bin("nCleaned_Cands", "NTracks", 200, 0, 200)),
-        #     "ngood_fastjets" : hist.Hist("Events",
-        #         hist.Bin("ngood_fastjets", "# Fastjets", 15, 0, 15)),
-        # })
-
     @property
     def accumulator(self):
         return self._accumulator
