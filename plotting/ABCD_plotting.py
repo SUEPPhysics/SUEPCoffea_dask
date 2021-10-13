@@ -11,13 +11,13 @@ vector.register_awkward()
 
 
 # parameters for input files
-dataDir = "/home/lavezzo/SUEP/SUEPCoffea_dask/"
+dataDir = "/home/lavezzo/SUEPCoffea_dask/"
 files = [file for file in os.listdir(dataDir) if file.endswith("42211.hdf5")]
-label = 'pt'
+label = 'mult'
 
 # parameters for ABCD plots
-var1 = 'SUEP_pt_spher'
-var2 = 'SUEP_pt_nconst'
+var1 = 'SUEP_mult_spher'
+var2 = 'SUEP_mult_nconst'
 var1_val = 0.60
 var2_val = 150
 nbins = 100							
@@ -32,19 +32,25 @@ def create_output_file(label):
 		"C": Hist.new.Reg(nbins, 0, 1, name="C").Weight(),
 		"D_exp": Hist.new.Reg(nbins, 0, 1, name="D_exp").Weight(),
 		"D_obs": Hist.new.Reg(nbins, 0, 1, name="D_obs").Weight(),
-		"2D" : Hist(
-				hist.axis.Regular(100, 0, 1, name=var1),
-				hist.axis.Regular(100, 0, 200, name=var2),
-			),
-		"nconst" : Hist(hist.axis.Regular(250, 0, 250, name="nconst", label="# Tracks")),
-		"pt" : Hist(hist.axis.Regular(100, 0, 2000, name="pt", label="pT")),
-		"eta" : Hist(hist.axis.Regular(100, -5, 5, name="eta", label="eta")),
-		"phi" : Hist(hist.axis.Regular(100, 0, 6.5, name="phi", label="phi")),
-		"mass" : Hist(hist.axis.Regular(150, 0, 4000, name="mass", label="mass")),
-		"spher" : Hist(hist.axis.Regular(100, 0, 1, name="spher", label="sphericity")),
-		"aplan" : Hist(hist.axis.Regular(100, 0, 1, name="aplan", label="Aplanarity")),
-		"FW2M" : Hist(hist.axis.Regular(100, 0, 1, name="FW2M", label="2nd Fox Wolfram Moment")),
-		"D" : Hist(hist.axis.Regular(100, 0, 1, name="D", label="D")),
+		"ABCDvars_2D" : Hist.new.Reg(100, 0, 1, name=var1).Reg(100, 0, 200, name=var2).Weight(),
+		"nconst" : Hist.new.Reg(800, 0, 800, name="nconst", label="# Tracks").Weight(),
+		"pt" : Hist.new.Reg(100, 0, 2000, name="pt", label="pT").Weight(),
+		"pt_avg" : Hist.new.Reg(100, 0, 100, name="pt_avg", label="Components pT avg").Weight(),
+		"pt_avg_b" : Hist.new.Reg(100, 0, 100, name="pt_avg_b", label="Components pT avg (boosted frame)").Weight(),
+		"eta" : Hist.new.Reg(100, -5, 5, name="eta", label="eta").Weight(),
+		"phi" : Hist.new.Reg(100, 0, 6.5, name="phi", label="phi").Weight(),
+		"mass" : Hist.new.Reg(150, 0, 4000, name="mass", label="mass").Weight(),
+		"spher" : Hist.new.Reg(100, 0, 1, name="spher", label="sphericity").Weight(),
+		"aplan" : Hist.new.Reg(100, 0, 1, name="aplan", label="Aplanarity").Weight(),
+		"FW2M" : Hist.new.Reg(100, 0, 1, name="FW2M", label="2nd Fox Wolfram Moment").Weight(),
+		"D" : Hist.new.Reg(100, 0, 1, name="D", label="D").Weight(),
+		"girth_pt": Hist.new.Reg(30, 0, 3, name="grith_pt").Weight(),
+
+		# Christos only
+		"dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
+		"dphi_SUEPtracks_ISR": Hist.new.Reg(100, 0, 4, name="dphi_SUEPtracks_ISR").Weight(),
+		"dphi_ISRtracks_ISR":Hist.new.Reg(100, 0, 4, name="dphi_ISRtracks_ISR").Weight(),
+		"dphi_SUEP_ISR":Hist.new.Reg(100, 0, 4, name="dphi_SUEP_ISR").Weight(),
 	}
 	return output
 
@@ -75,12 +81,11 @@ for ifile in files:
 	output["B"].fill(B, weight = metadata["xsec"])
 	output["C"].fill(C, weight = metadata["xsec"])
 	output["D_obs"].fill(D_obs, weight = metadata["xsec"])
-	output["2D"].fill(df[var1], df[var2], weight = metadata["xsec"])
+	output["ABCDvars_2D"].fill(df[var1], df[var2], weight = metadata["xsec"])
 
 	# fill the other histos
-	plot_labels = ["nconst", "pt", "eta", "phi",
-			"mass", "spher", "aplan", "FW2M", "D"]
-	for plot in plot_labels: output[plot].fill(df["SUEP_"+label+"_"+plot], weight = metadata["xsec"])
+	plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
+	for plot in plot_labels: output[plot[plot.find(label) + len(label) + 1:]].fill(df[plot], weight = metadata["xsec"])
 
 # ABCD method to obtain D expected
 if sizeA>0.0:
