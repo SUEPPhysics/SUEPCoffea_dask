@@ -5,7 +5,7 @@ import pwd
 import subprocess
 import shutil
 import time
-from termcolor import colored
+#from termcolor import colored
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -18,19 +18,23 @@ export HOME=.
 
 echo "hostname:"
 hostname
-echo "XXXXX"
 
 echo $_CONDOR_SCRATCH_DIR 
 cd   $_CONDOR_SCRATCH_DIR 
 
+python3 --version
+export PYTHONPATH
+
+python3 --version
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "python condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
+echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 
 ls
 
 echo "----- transferring output to scratch :"
-mv tree_$1_WS.root {final_outdir}
+mv tree_$1_coffea.root {final_outdir}
+mv *.parquet {final_outdir}
 echo "----- directory after running :"
 echo " ------ THE END (everyone dies !) ----- "
 """
@@ -41,14 +45,16 @@ universe              = vanilla
 request_disk          = 1024
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid)
-transfer_input_files  = {transfer_file}
+transfer_input_files  = {transfer_file}, $Fp(/home/freerc/.local/lib/python3.8/site-packages/)
 output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 transfer_output_files = ""
 #requirements          = ((Arch == "X86_64") && ((GLIDEIN_Site =!= "MIT_CampusFactory") || (GLIDEIN_Site == "MIT_CampusFactory" && BOSCOCluster == "ce03.cmsaf.mit.edu" && BOSCOGroup == "bosco_cms" && HAS_CVMFS_cms_cern_ch)))
-+DESIRED_Sites        = "T3_US_MIT"
+Environment           = "PYTHONPATH=/home/freerc/.local/lib/python3.8/site-packages/:/usr/lib64/python3.8/site-packages"
+DIRNAME               = "/home/freerc/.local/lib/python3.8/site-packages/"
+PYTHONPATH            = $ENV(/home/freerc/.local/lib/python3.8/site-packages/:/usr/lib64/python3.8/site-packages)
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 +JobFlavour           = "{queue}"
 
@@ -73,8 +79,6 @@ def main():
     proxy_base = 'x509up_u{}'.format(os.getuid())
     home_base  = os.environ['HOME']
     proxy_copy = os.path.join(home_base,proxy_base)
-    cmssw_base = os.environ['CMSSW_BASE']
-    CMSSW = 'CMSSW_10_6_4'
     outdir = '/data/t3home000/freerc/SUEP/{tag}/{sample}/'
 
     regenerate_proxy = False
@@ -134,7 +138,6 @@ def main():
                 script = script_TEMPLATE.format(
                     home_base=home_base,
                     proxy=proxy_copy,
-                    CMSSW=CMSSW,
                     ismc=options.isMC,
                     era=options.era,
                     final_outdir=fin_outdir,          
@@ -147,15 +150,9 @@ def main():
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
                         "../condor_SUEP_WS.py",
-                        "../python/SUEP_coffea.py",
-                        "../python/SumWeights.py",
-                        #"../keep_and_drop.txt",
-                        #"../keep_and_drop_post.txt",
-                        #"../Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt",
-                        #"../Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt",
-                        #"../Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
+                        "../workflows/SUEP_coffea.py",
+                        "../workflows/SumWeights.py",
                         "../xsections_2018.yaml"
-                        #"../haddnano.py"
                     ]),
                     jobdir=jobs_dir,
                     queue=options.queue

@@ -58,6 +58,13 @@ class SUEP_cluster(processor.ProcessorABC):
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
 
+    def rho(self, number, jet, tracks, deltaR, dr=0.05):
+        r_start = number*dr
+        r_end = (number+1)*dr
+        ring = (deltaR > r_start) & (deltaR < r_end)
+        rho_values = ak.sum(tracks[ring].pt, axis=1)/(dr*jet.pt)
+        return rho_values
+
     def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
         output = pd.DataFrame()
         for field in ak.fields(jet_collection):
@@ -146,7 +153,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
-        cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef) 
+        cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef)
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt=150),"Momentum4D")
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt=150),"Momentum4D")
         col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
@@ -158,10 +165,10 @@ class SUEP_cluster(processor.ProcessorABC):
         #remove events without a cluster
         ak_inclusive_cluster = ak_inclusive_cluster[ak.num(ak_inclusive_jets, axis=1)>1]
         ak_inclusive_jets = ak_inclusive_jets[ak.num(ak_inclusive_jets, axis=1)>1]
-        
+
         #SUEP_mult
         chonkocity = ak.num(ak_inclusive_cluster, axis=2)
-        chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1] 
+        chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
         thicc_jets = ak_inclusive_jets[chonkiest_jet]
         chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
         thicc_jets = thicc_jets[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
@@ -179,7 +186,7 @@ class SUEP_cluster(processor.ProcessorABC):
         dR = np.sqrt(dEta*dEta + dPhi*dPhi)
         out_mult["SUEP_mult_girth_pt"] = ak.sum(dR*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
 
-        #SUEP_mult boosting and sphericity
+        #SUEP_mult boosting, sphericity and rho
         boost_mult = ak.zip({
             "px": thicc_jets[:,0].px*-1,
             "py": thicc_jets[:,0].py*-1,
@@ -192,7 +199,11 @@ class SUEP_cluster(processor.ProcessorABC):
         out_mult["SUEP_mult_spher"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
         out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
         out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
-        out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]    
+        out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
+        deltaR = chonkiest_cands.delta_r(thicc_jets[:,0])
+        out_mult["rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
+        out_mult["rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
+
 
         #SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
@@ -204,13 +215,13 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pt_nconst = SUEP_pt_nconst[ak.num(highpt_cands)>1]
         SUEP_pt_tracks = SUEP_pt_tracks[ak.num(highpt_cands)>1]
         highpt_cands = highpt_cands[ak.num(highpt_cands)>1] #We dont want to look at single track jets
-      
+
         #Christos Method for ISR removal
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
         SUEP_cand_tracks = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
         ISR_cand = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
         ISR_cand_tracks = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
-       
+        dphi_SUEP_ISR = abs(SUEP_cand.deltaphi(ISR_cand))
         boost_ch = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
@@ -278,7 +289,7 @@ class SUEP_cluster(processor.ProcessorABC):
         else:
             store.close()
 
-        
+
         return output
 
     def postprocess(self, accumulator):
