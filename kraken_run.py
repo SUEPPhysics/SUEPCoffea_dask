@@ -22,10 +22,6 @@ hostname
 echo $_CONDOR_SCRATCH_DIR 
 cd   $_CONDOR_SCRATCH_DIR 
 
-python3 --version
-export PYTHONPATH
-
-python3 --version
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
@@ -33,8 +29,7 @@ python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={datas
 ls
 
 echo "----- transferring output to scratch :"
-mv tree_$1_coffea.root {final_outdir}
-mv *.parquet {final_outdir}
+mv *.hdf5 {final_outdir}
 echo "----- directory after running :"
 echo " ------ THE END (everyone dies !) ----- "
 """
@@ -45,16 +40,13 @@ universe              = vanilla
 request_disk          = 1024
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid)
-transfer_input_files  = {transfer_file}, $Fp(/home/freerc/.local/lib/python3.8/site-packages/)
+transfer_input_files  = {transfer_file}
 output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 transfer_output_files = ""
 #requirements          = ((Arch == "X86_64") && ((GLIDEIN_Site =!= "MIT_CampusFactory") || (GLIDEIN_Site == "MIT_CampusFactory" && BOSCOCluster == "ce03.cmsaf.mit.edu" && BOSCOGroup == "bosco_cms" && HAS_CVMFS_cms_cern_ch)))
-Environment           = "PYTHONPATH=/home/freerc/.local/lib/python3.8/site-packages/:/usr/lib64/python3.8/site-packages"
-DIRNAME               = "/home/freerc/.local/lib/python3.8/site-packages/"
-PYTHONPATH            = $ENV(/home/freerc/.local/lib/python3.8/site-packages/:/usr/lib64/python3.8/site-packages)
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 +JobFlavour           = "{queue}"
 
@@ -152,7 +144,7 @@ def main():
                         "../condor_SUEP_WS.py",
                         "../workflows/SUEP_coffea.py",
                         "../workflows/SumWeights.py",
-                        "../xsections_2018.yaml"
+                        "../xsections_2018.json"
                     ]),
                     jobdir=jobs_dir,
                     queue=options.queue

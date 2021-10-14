@@ -200,7 +200,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
         out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
         out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
-        deltaR = chonkiest_cands.delta_r(thicc_jets[:,0])
+        deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
         out_mult["rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
         out_mult["rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
 

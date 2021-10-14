@@ -1,11 +1,11 @@
 import os
-import yaml
+import json
 import argparse
-import uproot3 as uproot
+#import uproot3 as uproot
 
 #Import coffea specific features
 from coffea.processor import run_uproot_job, futures_executor
-from coffea.hist import Hist, Bin, export1d
+#from coffea.hist import Hist, Bin, export1d
 
 #SUEP Repo Specific
 from workflows.SUEP_coffea import *
@@ -25,8 +25,8 @@ options = parser.parse_args()
 #Set up cross section for MC normalizations
 if options.isMC:
    xsection = 1.0
-   with open(os.path.dirname(__file__) +'xsections_{}.yaml'.format(options.era)) as file:
-       MC_xsecs = yaml.full_load(file)
+   with open(os.path.dirname(__file__) +'xsections_{}.json'.format(options.era)) as file:
+       MC_xsecs = json.load(file)
    try:
        xsection *= MC_xsecs[options.dataset]["xsec"]
        xsection *= MC_xsecs[options.dataset]["kr"]
@@ -56,7 +56,7 @@ out_dir = os.getcwd()
 modules_era = []
 modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), do_syst=1, xsec = xsec,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, output_location=out_dir))
 
-f = uproot.recreate("tree_%s_coffea.root" % str(options.jobNum))
+#f = uproot.recreate("tree_%s_coffea.root" % str(options.jobNum))
 for instance in modules_era:
     output = run_uproot_job(
         {instance.sample: [options.infile]},
@@ -66,5 +66,5 @@ for instance in modules_era:
         executor_args={'workers': 10},
         chunksize=500000
     )
-    for h, hist in output.items():
-        f[h] = export1d(hist)
+    #for h, hist in output.items():
+    #    f[h] = export1d(hist)
