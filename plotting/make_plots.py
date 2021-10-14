@@ -5,6 +5,7 @@ from hist import Hist
 import os, sys
 import json
 import awkward as ak
+import pickle
 import uproot
 import vector
 vector.register_awkward()
@@ -19,7 +20,7 @@ label = 'mult'
 var1 = 'SUEP_mult_spher'
 var2 = 'SUEP_mult_nconst'
 var1_val = 0.60
-var2_val = 150
+var2_val = 20
 nbins = 100							
 
 
@@ -72,20 +73,22 @@ for ifile in files:
 	B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
 	C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
 	D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
-
+	
 	sizeC += ak.size(C) * metadata["xsec"]
 	sizeA += ak.size(A) * metadata["xsec"]
-
+		
 	# fill the ABCD histograms
 	output["A"].fill(A, weight = metadata["xsec"])
 	output["B"].fill(B, weight = metadata["xsec"])
+	output["D_exp"].fill(B, weight = metadata["xsec"])
 	output["C"].fill(C, weight = metadata["xsec"])
 	output["D_obs"].fill(D_obs, weight = metadata["xsec"])
 	output["ABCDvars_2D"].fill(df[var1], df[var2], weight = metadata["xsec"])
-
+	
 	# fill the other histos
 	plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
-	for plot in plot_labels: output[plot[plot.find(label) + len(label) + 1:]].fill(df[plot], weight = metadata["xsec"])
+	for plot in plot_labels: 
+		output[plot[plot.find(label) + len(label) + 1:]].fill(df[plot], weight = metadata["xsec"])
 
 # ABCD method to obtain D expected
 if sizeA>0.0:
@@ -93,10 +96,13 @@ if sizeA>0.0:
 else:
 	CoverA = 0.0
 	print("A region has no occupancy")
-output["D_exp"] = output["B"]
-output["D_exp"] *= (CoverA)
+output["D_exp"] = output["D_exp"]*(CoverA)
 
-# save to file
+# FIXME: save to root file, remove it?
 fout = uproot.recreate(dataDir+label+'_ABCD_plot.root')
 for key in output.keys(): fout[key] = output[key]
 fout.close()
+
+# save plots to pickle
+with open(dataDir+'/plotting/'+label+'_ABCD_plot.pkl', "wb") as f:
+    pickle.dump(output, f)
