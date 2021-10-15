@@ -142,12 +142,12 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #Prepare the clean track collection
         Cands = ak.zip({
-            "pt": events.PFCands_trkPt,
-            "eta": events.PFCands_trkEta,
-            "phi": events.PFCands_trkPhi,
-            "mass": events.PFCands_mass
+            "pt": events.PFCands.trkPt,
+            "eta": events.PFCands.trkEta,
+            "phi": events.PFCands.trkPhi,
+            "mass": events.PFCands.mass
         }, with_name="Momentum4D")
-        cut = (events.PFCands_fromPV > 1) & (events.PFCands_trkPt >= 1) & (events.PFCands_trkEta <= 2.5)
+        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (events.PFCands.trkEta <= 2.5)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
 
@@ -266,7 +266,8 @@ class SUEP_cluster(processor.ProcessorABC):
         out_ch["SUEP_pt_girth_pt"] = ak.sum(dR*Christos_cands.pt/SUEP_cand.pt, axis=-1)
 
         #Prepare for writing to HDF5 file (xsec stored in metadata)
-        fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
+        #fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
+        fname = "out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
