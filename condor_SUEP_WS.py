@@ -5,11 +5,10 @@ import argparse
 
 #Import coffea specific features
 from coffea.processor import run_uproot_job, futures_executor
-#from coffea.hist import Hist, Bin, export1d
 
 #SUEP Repo Specific
-from workflows.SUEP_coffea import *
-from workflows.SumWeights import *
+from SUEP_coffea import *
+from SumWeights import *
 
 #Begin argparse
 parser = argparse.ArgumentParser("")
@@ -46,7 +45,10 @@ if options.isMC:
             treename='Runs',
             processor_instance=instance,
             executor=futures_executor,
-            executor_args={'workers': 10},
+            executor_args={'workers': 10,
+                           'schema': processor.NanoAODSchema,
+                           'xrootdtimeout': 10,
+            },
             chunksize=500000000
         )
         xsec = output
@@ -56,15 +58,15 @@ out_dir = os.getcwd()
 modules_era = []
 modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), do_syst=1, xsec = xsec,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, output_location=out_dir))
 
-#f = uproot.recreate("tree_%s_coffea.root" % str(options.jobNum))
 for instance in modules_era:
     output = run_uproot_job(
         {instance.sample: [options.infile]},
         treename='Events',
         processor_instance=instance,
         executor=futures_executor,
-        executor_args={'workers': 10},
+        executor_args={'workers': 10,
+                       'schema': processor.NanoAODSchema,
+                       'xrootdtimeout': 10,
+        },
         chunksize=500000
     )
-    #for h, hist in output.items():
-    #    f[h] = export1d(hist)
