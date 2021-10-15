@@ -142,12 +142,12 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #Prepare the clean track collection
         Cands = ak.zip({
-            "pt": events.PFCands_trkPt,
-            "eta": events.PFCands_trkEta,
-            "phi": events.PFCands_trkPhi,
-            "mass": events.PFCands_mass
+            "pt": events.PFCands.trkPt,
+            "eta": events.PFCands.trkEta,
+            "phi": events.PFCands.trkPhi,
+            "mass": events.PFCands.mass
         }, with_name="Momentum4D")
-        cut = (events.PFCands_fromPV > 1) & (events.PFCands_trkPt >= 1) & (events.PFCands_trkEta <= 2.5)
+        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (events.PFCands.trkEta <= 2.5)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
 
@@ -200,7 +200,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
         out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
         out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
-        deltaR = chonkiest_cands.delta_r(thicc_jets[:,0])
+        deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
         out_mult["rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
         out_mult["rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
 
@@ -266,7 +266,8 @@ class SUEP_cluster(processor.ProcessorABC):
         out_ch["SUEP_pt_girth_pt"] = ak.sum(dR*Christos_cands.pt/SUEP_cand.pt, axis=-1)
 
         #Prepare for writing to HDF5 file (xsec stored in metadata)
-        fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
+        #fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
+        fname = "out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
