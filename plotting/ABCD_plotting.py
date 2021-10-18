@@ -1,102 +1,118 @@
 import pandas as pd 
-import numpy as np
-import hist
 from hist import Hist
-import os, sys
-import json
+import argparse
+import os
 import awkward as ak
 import uproot
-import vector
-vector.register_awkward()
+import getpass
+from tqdm import tqdm
+
+parser = argparse.ArgumentParser(description='Famous Submitter')
+parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
+parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
+parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="if is MC")
+options = parser.parse_args()
 
 
 # parameters for input files
-dataDir = "/home/lavezzo/SUEPCoffea_dask/"
-files = [file for file in os.listdir(dataDir) if file.endswith("42211.hdf5")]
-label = 'mult'
+username = getpass.getuser()
+dataDir = "/work/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+files = [file for file in os.listdir(dataDir)]
+labels = ['mult','ch']
 
-# parameters for ABCD plots
-var1 = 'SUEP_mult_spher'
-var2 = 'SUEP_mult_nconst'
-var1_val = 0.60
-var2_val = 150
-nbins = 100							
-
-
-###FIXME: add file label to histos titles/dict?
 # output histos
 def create_output_file(label):
-	output = {
-		"A": Hist.new.Reg(nbins, 0, 1, name="A").Weight(),
-		"B": Hist.new.Reg(nbins, 0, 1, name="B").Weight(),
-		"C": Hist.new.Reg(nbins, 0, 1, name="C").Weight(),
-		"D_exp": Hist.new.Reg(nbins, 0, 1, name="D_exp").Weight(),
-		"D_obs": Hist.new.Reg(nbins, 0, 1, name="D_obs").Weight(),
-		"ABCDvars_2D" : Hist.new.Reg(100, 0, 1, name=var1).Reg(100, 0, 200, name=var2).Weight(),
-		"nconst" : Hist.new.Reg(800, 0, 800, name="nconst", label="# Tracks").Weight(),
-		"pt" : Hist.new.Reg(100, 0, 2000, name="pt", label="pT").Weight(),
-		"pt_avg" : Hist.new.Reg(100, 0, 100, name="pt_avg", label="Components pT avg").Weight(),
-		"pt_avg_b" : Hist.new.Reg(100, 0, 100, name="pt_avg_b", label="Components pT avg (boosted frame)").Weight(),
-		"eta" : Hist.new.Reg(100, -5, 5, name="eta", label="eta").Weight(),
-		"phi" : Hist.new.Reg(100, 0, 6.5, name="phi", label="phi").Weight(),
-		"mass" : Hist.new.Reg(150, 0, 4000, name="mass", label="mass").Weight(),
-		"spher" : Hist.new.Reg(100, 0, 1, name="spher", label="sphericity").Weight(),
-		"aplan" : Hist.new.Reg(100, 0, 1, name="aplan", label="Aplanarity").Weight(),
-		"FW2M" : Hist.new.Reg(100, 0, 1, name="FW2M", label="2nd Fox Wolfram Moment").Weight(),
-		"D" : Hist.new.Reg(100, 0, 1, name="D", label="D").Weight(),
-		"girth_pt": Hist.new.Reg(30, 0, 3, name="grith_pt").Weight(),
-
-		# Christos only
-		"dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
-		"dphi_SUEPtracks_ISR": Hist.new.Reg(100, 0, 4, name="dphi_SUEPtracks_ISR").Weight(),
-		"dphi_ISRtracks_ISR":Hist.new.Reg(100, 0, 4, name="dphi_ISRtracks_ISR").Weight(),
-		"dphi_SUEP_ISR":Hist.new.Reg(100, 0, 4, name="dphi_SUEP_ISR").Weight(),
-	}
-	return output
+    output = {
+            "A_"+label: Hist.new.Reg(nbins, 0, 1, name="A_"+label).Weight(),
+            "B_"+label: Hist.new.Reg(nbins, 0, 1, name="B_"+label).Weight(),
+            "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
+            "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
+            "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
+            "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name=var1+label).Reg(100, 0, 200, name=var2).Weight(),
+            "nconst_"+label : Hist.new.Reg(800, 0, 800, name="nconst_"+label, label="# Tracks").Weight(),
+            "pt_"+label : Hist.new.Reg(100, 0, 2000, name="pt", label="pT_"+label).Weight(),
+            "pt_avg_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label="Components pT avg").Weight(),
+            "pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label="Components pT avg (boosted frame)").Weight(),
+            "eta_"+label : Hist.new.Reg(100, -5, 5, name="eta_"+label, label="eta").Weight(),
+            "phi_"+label : Hist.new.Reg(100, 0, 6.5, name="phi_"+label, label="phi").Weight(),
+            "mass_"+label : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="mass").Weight(),
+            "spher_"+label : Hist.new.Reg(100, 0, 1, name="spher_"+label, label="sphericity").Weight(),
+            "aplan_"+label : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
+            "FW2M_"+label : Hist.new.Reg(100, 0, 1, name="FW2M_"+label, label="2nd Fox Wolfram Moment").Weight(),
+            "D_"+label : Hist.new.Reg(100, 0, 1, name="D_"+label, label="D").Weight(),
+            "girth_pt_"+label: Hist.new.Reg(30, 0, 3, name="grith_pt_"+label).Weight(),
+    }
+    if label == 'ch':# Christos only
+        output2 = {
+            "dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
+            "dphi_SUEPtracks_ISR": Hist.new.Reg(100, 0, 4, name="dphi_SUEPtracks_ISR").Weight(),
+            "dphi_ISRtracks_ISR":Hist.new.Reg(100, 0, 4, name="dphi_ISRtracks_ISR").Weight(),
+            "dphi_SUEP_ISR":Hist.new.Reg(100, 0, 4, name="dphi_SUEP_ISR").Weight(),
+        }
+        output.update(output2)
+    return output
 
 def h5load(ifile, label):
 	with pd.HDFStore(ifile) as store:
-		data = store[label]
-		metadata = store.get_storer(label).attrs.metadata
-	return data, metadata
+                data = store[label]
+                if options.isMC:
+                    metadata = store.get_storer(label).attrs.metadata
+                    return data, metadata
+                else:
+                    return data
 
 # fill ABCD hists with dfs
-output = create_output_file(label)
-sizeA, sizeC = 0,0
-for ifile in files:
+frames = {"mult":[],"ch":[]}
+xsec = -1.0
+for ifile in tqdm(files):
+        ifile = dataDir+"/"+ifile
+        for label in labels:
+            df, metadata = h5load(ifile, label)
+            if xsec == -1.0 and options.isMC:
+                xsec = metadata["xsec"]
+            frames[label].append(df)
 
-	df, metadata = h5load(ifile, label)
+for label in labels:
+    # parameters for ABCD plots
+    var1 = 'SUEP_'+label+'_spher'
+    var2 = 'SUEP_'+label+'_nconst'
+    var1_val = 0.60
+    var2_val = 150
+    nbins = 100
+    output = create_output_file(label)
+    sizeA, sizeC = 0,0
 
-	# divide the dfs by region and select the variable we want to plot
-	A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
-	B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
-	C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
-	D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
-
-	sizeC += ak.size(C) * metadata["xsec"]
-	sizeA += ak.size(A) * metadata["xsec"]
-
-	# fill the ABCD histograms
-	output["A"].fill(A, weight = metadata["xsec"])
-	output["B"].fill(B, weight = metadata["xsec"])
-	output["C"].fill(C, weight = metadata["xsec"])
-	output["D_obs"].fill(D_obs, weight = metadata["xsec"])
-	output["ABCDvars_2D"].fill(df[var1], df[var2], weight = metadata["xsec"])
-
-	# fill the other histos
-	plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
-	for plot in plot_labels: output[plot[plot.find(label) + len(label) + 1:]].fill(df[plot], weight = metadata["xsec"])
-
-# ABCD method to obtain D expected
-if sizeA>0.0:
-	CoverA =  sizeC / sizeA
-else:
-	CoverA = 0.0
-	print("A region has no occupancy")
-output["D_exp"] = output["B"]
-output["D_exp"] *= (CoverA)
+    df = pd.concat(frames[label])
+    # divide the dfs by region and select the variable we want to plot
+    A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
+    B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
+    C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
+    D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
+    
+    sizeC += ak.size(C) * xsec
+    sizeA += ak.size(A) * xsec
+    
+    # fill the ABCD histograms
+    output["A_"+label].fill(A, weight = xsec)
+    output["B_"+label].fill(B, weight = xsec)
+    output["C_"+label].fill(C, weight = xsec)
+    output["D_obs_"+label].fill(D_obs, weight = xsec)
+    output["ABCDvars_2D_"+label].fill(df[var1], df[var2], weight = xsec)
+    
+    # fill the other histos
+    plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
+    for plot in plot_labels: output[plot[plot.find(label) + len(label) + 1:]].fill(df[plot], weight = xsec)
+    
+    # ABCD method to obtain D expected
+    if sizeA>0.0:
+    	CoverA =  sizeC / sizeA
+    else:
+    	CoverA = 0.0
+    	print("A region has no occupancy")
+    output["D_exp_"+label] = output["B_"+label]
+    output["D_exp_"+label] *= (CoverA)
 
 # save to file
-fout = uproot.recreate(dataDir+label+'_ABCD_plot.root')
+fout = uproot.recreate(options.dataset+'ABCD_plot.root')
 for key in output.keys(): fout[key] = output[key]
 fout.close()
