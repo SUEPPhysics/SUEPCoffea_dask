@@ -94,12 +94,12 @@ for label in labels:
     sizeA += ak.size(A) * xsec
     
     # fill the ABCD histograms
-    output["A"].fill(A, weight = metadata["xsec"])
-    output["B"].fill(B, weight = metadata["xsec"])
-    output["D_exp"].fill(B, weight = metadata["xsec"])
-    output["C"].fill(C, weight = metadata["xsec"])
-    output["D_obs"].fill(D_obs, weight = metadata["xsec"])
-    output["ABCDvars_2D"].fill(df[var1], df[var2], weight = metadata["xsec"])
+    output["A"].fill(A, weight = xsec)
+    output["B"].fill(B, weight = xsec)
+    output["D_exp"].fill(B, weight = xsec)
+    output["C"].fill(C, weight = xsec)
+    output["D_obs"].fill(D_obs, weight = xsec)
+    output["ABCDvars_2D"].fill(df[var1], df[var2], weight = xsec)
     
     # fill the other histos
     plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
