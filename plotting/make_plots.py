@@ -14,17 +14,17 @@ vector.register_awkward()
 # parameters for input files
 dataDir = "/home/lavezzo/SUEPCoffea_dask/"
 files = [file for file in os.listdir(dataDir) if file.endswith("42211.hdf5")]
-label = 'mult'
+files = ['/mnt/hadoop/scratch/lavezzo/SUEP/SUEP/QCD_HT100to200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1+MINIAODSIM/395.hdf5']
+label = 'ch'
 
 # parameters for ABCD plots
-var1 = 'SUEP_mult_spher'
-var2 = 'SUEP_mult_nconst'
+var1 = 'SUEP_'+label+'_spher'
+var2 = 'SUEP_'+label+'_nconst'
 var1_val = 0.60
 var2_val = 20
 nbins = 100							
 
 
-###FIXME: add file label to histos titles/dict?
 # output histos
 def create_output_file(label):
 	output = {
@@ -45,7 +45,7 @@ def create_output_file(label):
 		"aplan" : Hist.new.Reg(100, 0, 1, name="aplan", label="Aplanarity").Weight(),
 		"FW2M" : Hist.new.Reg(100, 0, 1, name="FW2M", label="2nd Fox Wolfram Moment").Weight(),
 		"D" : Hist.new.Reg(100, 0, 1, name="D", label="D").Weight(),
-		"girth_pt": Hist.new.Reg(30, 0, 3, name="grith_pt").Weight(),
+		"girth_pt": Hist.new.Reg(30, 0, 3, name="girth_pt").Weight(),
 
 		# Christos only
 		"dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
@@ -67,7 +67,7 @@ sizeA, sizeC = 0,0
 for ifile in files:
 
 	df, metadata = h5load(ifile, label)
-
+    
 	# divide the dfs by region and select the variable we want to plot
 	A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
 	B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
