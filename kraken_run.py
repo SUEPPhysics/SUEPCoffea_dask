@@ -4,8 +4,7 @@ import logging
 import pwd
 import subprocess
 import shutil
-import time
-#from termcolor import colored
+import getpass
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -24,7 +23,9 @@ cd   $_CONDOR_SCRATCH_DIR
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
+cp $2 temp.root
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
+rm temp.root
 
 ls
 
@@ -72,7 +73,8 @@ def main():
     proxy_base = 'x509up_u{}'.format(os.getuid())
     home_base  = os.environ['HOME']
     proxy_copy = os.path.join(home_base,proxy_base)
-    outdir = '/mnt/T3_US_MIT/hadoop/scratch/freerc/SUEP/{tag}/{sample}/' 
+    username = getpass.getuser()
+    outdir = '/work/'+username+'/SUEP/{tag}/{sample}/' 
 
     regenerate_proxy = False
     if not os.path.isfile(proxy_copy):
