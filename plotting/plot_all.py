@@ -38,8 +38,8 @@ datas = [
 
 for dataset in datasets:
      print("Plotting {} now".format(dataset))
-     os.system('python3 ABCD_plotting.py --isMC=1 --tag={} --dataset={}'.format(options.tag, dataset))
+     os.system('python3 make_plots.py --isMC=1 --tag={} --dataset={}'.format(options.tag, dataset))
 
 for data in datas:
      print("Plotting {} now".format(data))
-     os.system('python3 ABCD_plotting.py --isMC=0 --tag={} --dataset={}'.format(options.tag, dataset))    
+     os.system('python3 make_plots.py --isMC=0 --tag={} --dataset={}'.format(options.tag, dataset))    
