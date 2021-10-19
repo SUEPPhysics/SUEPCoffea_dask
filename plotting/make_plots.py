@@ -30,25 +30,25 @@ def create_output_file(label):
             "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
             "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
             "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name=var1+label).Reg(100, 0, 200, name=var2).Weight(),
-            "nconst_"+label : Hist.new.Reg(800, 0, 800, name="nconst_"+label, label="# Tracks").Weight(),
-            "pt_"+label : Hist.new.Reg(100, 0, 2000, name="pt", label="pT_"+label).Weight(),
-            "pt_avg_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label="Components pT avg").Weight(),
-            "pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label="Components pT avg (boosted frame)").Weight(),
-            "eta_"+label : Hist.new.Reg(100, -5, 5, name="eta_"+label, label="eta").Weight(),
-            "phi_"+label : Hist.new.Reg(100, 0, 6.5, name="phi_"+label, label="phi").Weight(),
-            "mass_"+label : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="mass").Weight(),
-            "spher_"+label : Hist.new.Reg(100, 0, 1, name="spher_"+label, label="sphericity").Weight(),
-            "aplan_"+label : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
-            "FW2M_"+label : Hist.new.Reg(100, 0, 1, name="FW2M_"+label, label="2nd Fox Wolfram Moment").Weight(),
-            "D_"+label : Hist.new.Reg(100, 0, 1, name="D_"+label, label="D").Weight(),
-            "girth_pt_"+label: Hist.new.Reg(30, 0, 3, name="grith_pt_"+label).Weight(),
+            "SUEP_"+label+"_nconst" : Hist.new.Reg(800, 0, 800, name="nconst_"+label, label="# Tracks").Weight(),
+            "SUEP_"+label+"_pt" : Hist.new.Reg(100, 0, 2000, name="pt", label="pT_"+label).Weight(),
+            "SUEP_"+label+"_pt_avg" : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label="Components pT avg").Weight(),
+            "SUEP_"+label+"_pt_avg_b" : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label="Components pT avg (boosted frame)").Weight(),
+            "SUEP_"+label+"_eta" : Hist.new.Reg(100, -5, 5, name="eta_"+label, label="eta").Weight(),
+            "SUEP_"+label+"_phi" : Hist.new.Reg(100, 0, 6.5, name="phi_"+label, label="phi").Weight(),
+            "SUEP_"+label+"_mass" : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="mass").Weight(),
+            "SUEP_"+label+"_spher" : Hist.new.Reg(100, 0, 1, name="spher_"+label, label="sphericity").Weight(),
+            "SUEP_"+label+"_aplan" : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
+            "SUEP_"+label+"_FW2M" : Hist.new.Reg(100, 0, 1, name="FW2M_"+label, label="2nd Fox Wolfram Moment").Weight(),
+            "SUEP_"+label+"_D" : Hist.new.Reg(100, 0, 1, name="D_"+label, label="D").Weight(),
+            "SUEP_"+label+"_girth_pt": Hist.new.Reg(30, 0, 3, name="grith_pt_"+label).Weight(),
     }
     if label == 'ch':# Christos only
         output2 = {
-            "dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
-            "dphi_SUEPtracks_ISR": Hist.new.Reg(100, 0, 4, name="dphi_SUEPtracks_ISR").Weight(),
-            "dphi_ISRtracks_ISR":Hist.new.Reg(100, 0, 4, name="dphi_ISRtracks_ISR").Weight(),
-            "dphi_SUEP_ISR":Hist.new.Reg(100, 0, 4, name="dphi_SUEP_ISR").Weight(),
+            "SUEP_"+label+"_dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
+            "SUEP_"+label+"_dphi_SUEPtracks_ISR": Hist.new.Reg(100, 0, 4, name="dphi_SUEPtracks_ISR").Weight(),
+            "SUEP_"+label+"_dphi_ISRtracks_ISR":Hist.new.Reg(100, 0, 4, name="dphi_ISRtracks_ISR").Weight(),
+            "SUEP_"+label+"_dphi_SUEP_ISR":Hist.new.Reg(100, 0, 4, name="dphi_SUEP_ISR").Weight(),
         }
         output.update(output2)
     return output
@@ -73,6 +73,8 @@ for ifile in tqdm(files):
                 xsec = metadata["xsec"]
             frames[label].append(df)
 
+fout = uproot.recreate(options.dataset+'_ABCD_plot.root')
+fpickle =  open(options.dataset+'_ABCD_plot.pkl', "wb")
 for label in labels:
     # parameters for ABCD plots
     var1 = 'SUEP_'+label+'_spher'
@@ -92,32 +94,28 @@ for label in labels:
     
     sizeC += ak.size(C) * xsec
     sizeA += ak.size(A) * xsec
-    
+
     # fill the ABCD histograms
-    output["A"].fill(A, weight = xsec)
-    output["B"].fill(B, weight = xsec)
-    output["D_exp"].fill(B, weight = xsec)
-    output["C"].fill(C, weight = xsec)
-    output["D_obs"].fill(D_obs, weight = xsec)
-    output["ABCDvars_2D"].fill(df[var1], df[var2], weight = xsec)
+    output["A_"+label].fill(A, weight = xsec)
+    output["B_"+label].fill(B, weight = xsec)
+    output["D_exp_"+label].fill(B, weight = xsec)
+    output["C_"+label].fill(C, weight = xsec)
+    output["D_obs_"+label].fill(D_obs, weight = xsec)
+    output["ABCDvars_2D_"+label].fill(df[var1], df[var2], weight = xsec)    
     
     # fill the other histos
-    plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
-    for plot in plot_labels: output[plot[plot.find(label) + len(label) + 1:]].fill(df[plot], weight = xsec)
-    
+    plot_labels = [key for key in df.keys() if key in list(output.keys())]
+    for plot in plot_labels: output[plot].fill(df[plot], weight = xsec)    
+
     # ABCD method to obtain D expected
     if sizeA>0.0:
     	CoverA =  sizeC / sizeA
     else:
     	CoverA = 0.0
     	print("A region has no occupancy")
-    output["D_exp"] = output["D_exp"]*(CoverA)
+    output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
 
-# save to file
-fout = uproot.recreate(options.dataset+'ABCD_plot.root')
-for key in output.keys(): fout[key] = output[key]
+    #Save to root and to pickle
+    for key in output.keys(): fout[key] = output[key]
+    pickle.dump(output, fpickle)
 fout.close()
-
-# save plots to pickle
-with open(dataDir+'/plotting/'+label+'_ABCD_plot.pkl', "wb") as f:
-    pickle.dump(output, f)
