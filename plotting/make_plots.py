@@ -5,6 +5,7 @@ import os
 import awkward as ak
 import uproot
 import getpass
+import pickle
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
@@ -93,11 +94,12 @@ for label in labels:
     sizeA += ak.size(A) * xsec
     
     # fill the ABCD histograms
-    output["A_"+label].fill(A, weight = xsec)
-    output["B_"+label].fill(B, weight = xsec)
-    output["C_"+label].fill(C, weight = xsec)
-    output["D_obs_"+label].fill(D_obs, weight = xsec)
-    output["ABCDvars_2D_"+label].fill(df[var1], df[var2], weight = xsec)
+    output["A"].fill(A, weight = xsec)
+    output["B"].fill(B, weight = xsec)
+    output["D_exp"].fill(B, weight = xsec)
+    output["C"].fill(C, weight = xsec)
+    output["D_obs"].fill(D_obs, weight = xsec)
+    output["ABCDvars_2D"].fill(df[var1], df[var2], weight = xsec)
     
     # fill the other histos
     plot_labels = [key for key in df.keys() if key[key.find(label) + len(label) + 1:] in list(output.keys())]
@@ -109,10 +111,13 @@ for label in labels:
     else:
     	CoverA = 0.0
     	print("A region has no occupancy")
-    output["D_exp_"+label] = output["B_"+label]
-    output["D_exp_"+label] *= (CoverA)
+    output["D_exp"] = output["D_exp"]*(CoverA)
 
 # save to file
 fout = uproot.recreate(options.dataset+'ABCD_plot.root')
 for key in output.keys(): fout[key] = output[key]
 fout.close()
+
+# save plots to pickle
+with open(dataDir+'/plotting/'+label+'_ABCD_plot.pkl', "wb") as f:
+    pickle.dump(output, f)
