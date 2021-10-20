@@ -17,7 +17,7 @@ options = parser.parse_args()
 
 # parameters for input files
 username = getpass.getuser()
-dataDir = "/work/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
 files = [file for file in os.listdir(dataDir)]
 labels = ['mult','ch']
 
@@ -31,17 +31,17 @@ def create_output_file(label):
             "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
             "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name=var1+label).Reg(100, 0, 200, name=var2).Weight(),
             "SUEP_"+label+"_nconst" : Hist.new.Reg(800, 0, 800, name="nconst_"+label, label="# Tracks").Weight(),
-            "SUEP_"+label+"_pt" : Hist.new.Reg(100, 0, 2000, name="pt", label="pT_"+label).Weight(),
-            "SUEP_"+label+"_pt_avg" : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label="Components pT avg").Weight(),
-            "SUEP_"+label+"_pt_avg_b" : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label="Components pT avg (boosted frame)").Weight(),
-            "SUEP_"+label+"_eta" : Hist.new.Reg(100, -5, 5, name="eta_"+label, label="eta").Weight(),
-            "SUEP_"+label+"_phi" : Hist.new.Reg(100, 0, 6.5, name="phi_"+label, label="phi").Weight(),
-            "SUEP_"+label+"_mass" : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="mass").Weight(),
-            "SUEP_"+label+"_spher" : Hist.new.Reg(100, 0, 1, name="spher_"+label, label="sphericity").Weight(),
+            "SUEP_"+label+"_pt" : Hist.new.Reg(100, 0, 2000, name="pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_"+label+"_pt_avg" : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label=r"Components $p_T$ Avg.").Weight(),
+            "SUEP_"+label+"_pt_avg_b" : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label=r"Components $p_T$ avg (boosted frame)").Weight(),
+            "SUEP_"+label+"_eta" : Hist.new.Reg(100, -5, 5, name="eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_"+label+"_phi" : Hist.new.Reg(100, 0, 6.5, name="phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_"+label+"_mass" : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="Mass").Weight(),
+            "SUEP_"+label+"_spher" : Hist.new.Reg(100, 0, 1, name="spher_"+label, label="Sphericity").Weight(),
             "SUEP_"+label+"_aplan" : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
             "SUEP_"+label+"_FW2M" : Hist.new.Reg(100, 0, 1, name="FW2M_"+label, label="2nd Fox Wolfram Moment").Weight(),
             "SUEP_"+label+"_D" : Hist.new.Reg(100, 0, 1, name="D_"+label, label="D").Weight(),
-            "SUEP_"+label+"_girth_pt": Hist.new.Reg(30, 0, 3, name="grith_pt_"+label).Weight(),
+            "SUEP_"+label+"_girth_pt": Hist.new.Reg(30, 0, 3, name="girth_pt_"+label, label=r"Girth $p_T$").Weight(),
     }
     if label == 'ch':# Christos only
         output2 = {
@@ -80,7 +80,7 @@ for label in labels:
     var1 = 'SUEP_'+label+'_spher'
     var2 = 'SUEP_'+label+'_nconst'
     var1_val = 0.60
-    var2_val = 150
+    var2_val = 75
     nbins = 100
     output = create_output_file(label)
     sizeA, sizeC = 0,0
