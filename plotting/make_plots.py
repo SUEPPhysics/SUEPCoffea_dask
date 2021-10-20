@@ -17,7 +17,7 @@ options = parser.parse_args()
 
 # parameters for input files
 username = getpass.getuser()
-dataDir = "/work/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
 files = [file for file in os.listdir(dataDir)]
 labels = ['mult','ch']
 
