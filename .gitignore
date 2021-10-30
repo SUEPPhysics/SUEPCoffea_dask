@@ -4,3 +4,8 @@ workflows/__pycache__/
 dask-report.html
 dask-worker-space/
 *.root
+*.log
+*.err
+*.out
+*.pkl
+*.hdf5
