@@ -45,6 +45,7 @@ conda install -c conda-forge dask-jobqueue
 conda install -c anaconda bokeh 
 conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
+conda install pytables
 pip install --pre fastjet
 pip install vector
 ```

@@ -154,37 +154,61 @@ class SUEP_cluster(processor.ProcessorABC):
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
         cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef)
+
+        Jets = ak.zip({
+                "pt": events.Jet.pt,
+                "eta": events.Jet.eta,
+                "phi": events.Jet.phi,
+                "mass": events.Jet.mass,
+                "jetId": events.Jet.jetId
+            })
+        jetCut = (Jets.jetId) & (Jets.pt > 30) & (abs(Jets.eta)<4.7)
+        ak4jets = Jets[jetCut]
+        col4 = pd.Series(ak.sum(ak4jets.pt,axis=-1).to_list(), name = "ht")
+        htCut = (col4 > 1200)
+
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt=150),"Momentum4D")
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt=150),"Momentum4D")
         col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
         col2 = pd.Series(ak.num(Cleaned_cands).to_list(), name = "nCleaned_Cands")
         col3 = pd.Series(ak.num(ak_inclusive_jets).to_list(), name = "ngood_fastjets")
-        # save plots to a dataframe
-        out_vars = pd.concat([col1, col2, col3], axis=1)
 
-        #remove events without a cluster
-        ak_inclusive_cluster = ak_inclusive_cluster[ak.num(ak_inclusive_jets, axis=1)>1]
-        ak_inclusive_jets = ak_inclusive_jets[ak.num(ak_inclusive_jets, axis=1)>1]
+        # save plots to a dataframe
+        out_vars = pd.concat([col1, col2, col3, col4], axis=1)
+
+        #remove events without a cluster and that fail htCut
+        ak_inclusive_cluster = ak_inclusive_cluster[htCut]
+        ak_inclusive_jets = ak_inclusive_jets[htCut]
+        Cleaned_cands = Cleaned_cands[htCut]
+        clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
+        ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
+        ak_inclusive_jets = ak_inclusive_jets[clusterCut]
+        Cleaned_cands = Cleaned_cands[clusterCut]
 
         #SUEP_mult
         chonkocity = ak.num(ak_inclusive_cluster, axis=2)
         chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
+        print(ak.num(ak_inclusive_jets[0]))
+        print(chonkiest_jet[0])
         thicc_jets = ak_inclusive_jets[chonkiest_jet]
         chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
-        thicc_jets = thicc_jets[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
-        chonkiest_cands = chonkiest_cands[ak.num(chonkiest_cands)>1]#We dont want to look at single track jets
+        singletrackCut = (ak.num(chonkiest_cands)>1)
+        thicc_jets = thicc_jets[singletrackCut]#cut events with single track highest mult jets
+        chonkiest_cands = chonkiest_cands[singletrackCut]#cut events with single track highest mult jets
+        Cleaned_cands_mult = Cleaned_cands[singletrackCut]
         out_mult = thicc_jets[:,0]
-        out_mult["SUEP_mult_nconst"] = ak.max(ak.num(ak_inclusive_cluster, axis=2),axis=1)
+        out_mult["SUEP_mult_ntracks"] = ak.num(Cleaned_cands_mult, axis=1)
+        out_mult["SUEP_mult_nconst"] = ak.num(chonkiest_cands, axis=1)
         out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
         out_mult["SUEP_mult_pt_avg"] = ak.mean(chonkiest_cands.pt, axis=-1)
         out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
         out_mult["SUEP_mult_phi"] = thicc_jets[:,0].phi
         out_mult["SUEP_mult_mass"] = thicc_jets[:,0].mass
-        dEta = chonkiest_cands.eta - thicc_jets[:,0].eta
-        dPhi = chonkiest_cands.phi - thicc_jets[:,0].phi
-        dPhi = ak.where(dPhi > np.pi, dPhi - 2.*np.pi, dPhi)
-        dR = np.sqrt(dEta*dEta + dPhi*dPhi)
-        out_mult["SUEP_mult_girth_pt"] = ak.sum(dR*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
+        deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
+        out_mult["SUEP_mult_girth"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
+        out_mult["SUEP_mult_girth2"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt, axis=-1)/ak.sum(chonkiest_cands.pt,axis=-1)
+        out_mult["SUEP_mult_rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
+        out_mult["SUEP_mult_rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
 
         #SUEP_mult boosting, sphericity and rho
         boost_mult = ak.zip({
@@ -200,9 +224,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
         out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
         out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
-        deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
-        out_mult["rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
-        out_mult["rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
+        
 
 
         #SUEP_pt
@@ -211,10 +233,12 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pt_nconst = chonkocity[highpt_jet]
         SUEP_pt_tracks = ak_inclusive_cluster[highpt_jet]
         highpt_cands = SUEP_pt_tracks[:,0]                  #tracks for highest pt
-        SUEP_pt = SUEP_pt[ak.num(highpt_cands)>1]           #We dont want to look at single track jets
-        SUEP_pt_nconst = SUEP_pt_nconst[ak.num(highpt_cands)>1]
-        SUEP_pt_tracks = SUEP_pt_tracks[ak.num(highpt_cands)>1]
-        highpt_cands = highpt_cands[ak.num(highpt_cands)>1] #We dont want to look at single track jets
+        singletrackCut = (ak.num(highpt_cands)>1)
+        SUEP_pt = SUEP_pt[singletrackCut]           #We dont want to look at single track jets
+        SUEP_pt_nconst = SUEP_pt_nconst[singletrackCut]
+        SUEP_pt_tracks = SUEP_pt_tracks[singletrackCut]
+        highpt_cands = highpt_cands[singletrackCut] #We dont want to look at single track jets
+        Cleaned_cands_ch = Cleaned_cands[singletrackCut]
 
         #Christos Method for ISR removal
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
@@ -229,17 +253,17 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
         ISR_cand_b = ISR_cand.boost_p4(boost_ch)
-        Christos_cands = Cleaned_cands[ak.num(ak_inclusive_jets)>1]
-        Christos_cands = Christos_cands[ak.num(highpt_cands)>1]#remove the jets with one track
-        Christos_cands = Christos_cands.boost_p4(boost_ch)
-        Christos_cands = Christos_cands[abs(Christos_cands.deltaphi(ISR_cand_b)) > 1.6]
-        Christos_cands = Christos_cands[ak.num(Christos_cands)>1]#remove the events left with one track
-        SUEP_cand = SUEP_cand[ak.num(Christos_cands)>1]
-        ISR_cand = ISR_cand[ak.num(Christos_cands)>1]
-        ISR_cand_b = ISR_cand_b[ak.num(Christos_cands)>1]
-        SUEP_cand_tracks = SUEP_cand_tracks[ak.num(Christos_cands)>1]
-        ISR_cand_tracks = ISR_cand_tracks[ak.num(Christos_cands)>1]
-        boost_ch = boost_ch[ak.num(Christos_cands)>1]
+        Cleaned_cands_ch = Cleaned_cands_ch.boost_p4(boost_ch)
+        Christos_cands = Cleaned_cands_ch[abs(Cleaned_cands_ch.deltaphi(ISR_cand_b)) > 1.6]
+        onechtrackCut = (ak.num(Christos_cands)>1)
+        Christos_cands = Christos_cands[onechtrackCut]#remove the events left with one track
+        Cleaned_cands_ch = Cleaned_cands_ch[onechtrackCut]
+        SUEP_cand = SUEP_cand[onechtrackCut]
+        ISR_cand = ISR_cand[onechtrackCut]
+        ISR_cand_b = ISR_cand_b[onechtrackCut]
+        SUEP_cand_tracks = SUEP_cand_tracks[onechtrackCut]
+        ISR_cand_tracks = ISR_cand_tracks[onechtrackCut]
+        boost_ch = boost_ch[onechtrackCut]
 
         out_ch = SUEP_cand
         out_ch["SUEP_ch_pt"] = SUEP_cand.pt
@@ -249,7 +273,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_ch["SUEP_ch_dphi_SUEP_ISR"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
         ch_eigs = self.sphericity(Christos_cands,2.0)
         out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
-        out_ch["SUEP_ch_pt_avg"] = ak.mean(Christos_cands.boost_p4(SUEP_cand).pt, axis=-1)    # unboost for this
+        out_ch["SUEP_ch_ntracks"] = ak.num(Cleaned_cands_ch)
         out_ch["SUEP_ch_pt_avg_b"] = ak.mean(Christos_cands.pt, axis=-1)
         out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
         out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
@@ -259,11 +283,14 @@ class SUEP_cluster(processor.ProcessorABC):
         out_ch["SUEP_ch_dphi_ISRtracks_ISR"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
         out_ch["SUEP_ch_dphi_SUEPtracks_ISR"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
 
-        dEta = Christos_cands.eta - SUEP_cand.eta
-        dPhi = Christos_cands.phi - SUEP_cand.phi
-        dPhi = ak.where(dPhi > np.pi, dPhi - 2.*np.pi, dPhi)
-        dR = np.sqrt(dEta*dEta + dPhi*dPhi)
-        out_ch["SUEP_pt_girth_pt"] = ak.sum(dR*Christos_cands.pt/SUEP_cand.pt, axis=-1)
+        # unboost for these
+        Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
+        deltaR = Christos_cands_ub.deltaR(SUEP_cand)
+        out_ch["SUEP_ch_pt_avg"] = ak.mean(Christos_cands_ub.pt, axis=-1)
+        out_ch["SUEP_ch_girth"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
+        out_ch["SUEP_ch_girth2"] = ak.sum((deltaR/(1.5))*Christos_cands_ub.pt, axis=-1)/ak.sum(Christos_cands_ub.pt,axis=-1)        
+        out_ch["SUEP_ch_rho0"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
+        out_ch["SUEP_ch_rho1"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
 
         #Prepare for writing to HDF5 file (xsec stored in metadata)
         #fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")

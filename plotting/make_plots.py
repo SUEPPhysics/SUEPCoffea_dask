@@ -1,4 +1,5 @@
 import pandas as pd 
+import numpy as np
 from hist import Hist
 import argparse
 import os
@@ -24,13 +25,8 @@ labels = ['mult','ch']
 # output histos
 def create_output_file(label):
     output = {
-            "A_"+label: Hist.new.Reg(nbins, 0, 1, name="A_"+label).Weight(),
-            "B_"+label: Hist.new.Reg(nbins, 0, 1, name="B_"+label).Weight(),
-            "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
-            "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
-            "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
-            "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name=var1+label).Reg(100, 0, 200, name=var2).Weight(),
-            "SUEP_"+label+"_nconst" : Hist.new.Reg(800, 0, 800, name="nconst_"+label, label="# Tracks").Weight(),
+            # variables from the dataframe
+            "SUEP_"+label+"_nconst" : Hist.new.Reg(499, 0, 500, name="nconst_"+label, label="# Tracks").Weight(),
             "SUEP_"+label+"_pt" : Hist.new.Reg(100, 0, 2000, name="pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_"+label+"_pt_avg" : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label=r"Components $p_T$ Avg.").Weight(),
             "SUEP_"+label+"_pt_avg_b" : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label=r"Components $p_T$ avg (boosted frame)").Weight(),
@@ -41,7 +37,20 @@ def create_output_file(label):
             "SUEP_"+label+"_aplan" : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
             "SUEP_"+label+"_FW2M" : Hist.new.Reg(100, 0, 1, name="FW2M_"+label, label="2nd Fox Wolfram Moment").Weight(),
             "SUEP_"+label+"_D" : Hist.new.Reg(100, 0, 1, name="D_"+label, label="D").Weight(),
-            "SUEP_"+label+"_girth_pt": Hist.new.Reg(30, 0, 3, name="girth_pt_"+label, label=r"Girth $p_T$").Weight(),
+            "SUEP_"+label+"_girth_pt": Hist.new.Reg(50, 0, 1.0, name="girth_pt_"+label, label=r"Girth $p_T$").Weight(),
+            "SUEP_"+label+"_rho0" : Hist.new.Reg(100, 0, 20, name="rho0_"+label, label=r"$\rho_0$").Weight(),
+            "SUEP_"+label+"_rho1" : Hist.new.Reg(100, 0, 20, name="rho1_"+label, label=r"$\rho_1$").Weight(),
+
+            # new hists
+            "A_"+label: Hist.new.Reg(nbins, 0, 1, name="A_"+label).Weight(),
+            "B_"+label: Hist.new.Reg(nbins, 0, 1, name="B_"+label).Weight(),
+            "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
+            "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
+            "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
+            "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name=var1+label).Reg(99, 0, 200, name=var2).Weight(),
+            "2D_girth_nconst_"+label : Hist.new.Reg(50, 0, 1.0, name="girth_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
+            "2D_rho0_nconst_"+label : Hist.new.Reg(100, 0, 20, name="rho0_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
+            "2D_rho1_nconst_"+label : Hist.new.Reg(100, 0, 20, name="rho1_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
     }
     if label == 'ch':# Christos only
         output2 = {
@@ -69,6 +78,21 @@ for ifile in tqdm(files):
         ifile = dataDir+"/"+ifile
         for label in labels:
             df, metadata = h5load(ifile, label)
+
+            # debugging
+            # if label == 'ch':
+            #     hist, bin_edges = np.histogram(df["SUEP_ch_girth_pt"], bins=np.linspace(0,1,100))
+            #     max_bin = bin_edges[np.argmax(hist)]
+            #     if max_bin > 0.09 and max_bin < 0.12: 
+            #         print(max_bin, ifile)
+            #     else: continue
+            #         # import matplotlib.pyplot as plt
+            #         # plt.hist(df["SUEP_ch_girth_pt"], bins=100)
+            #         # plt.savefig(str(round(np.random.random(),2))+'test.png')
+            #         # plt.hist(df["SUEP_ch_pt"], bins=100)
+            #         # plt.savefig(str(round(np.random.random(),2))+'test2.png')
+
+
             if xsec == -1.0 and options.isMC:
                 xsec = metadata["xsec"]
             frames[label].append(df)
@@ -79,17 +103,17 @@ for label in labels:
     # parameters for ABCD plots
     var1 = 'SUEP_'+label+'_spher'
     var2 = 'SUEP_'+label+'_nconst'
-    var1_val = 0.60
-    var2_val = 75
+    var1_val = 0.50
+    var2_val = 25
     nbins = 100
     output = create_output_file(label)
     sizeA, sizeC = 0,0
 
     df = pd.concat(frames[label])
     # divide the dfs by region and select the variable we want to plot
-    A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
+    A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val) & (df[var1] > 0.25)].to_numpy()
     B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
-    C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
+    C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val) & (df[var1] > 0.25)].to_numpy()
     D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
     
     sizeC += ak.size(C) * xsec
@@ -101,11 +125,35 @@ for label in labels:
     output["D_exp_"+label].fill(B, weight = xsec)
     output["C_"+label].fill(C, weight = xsec)
     output["D_obs_"+label].fill(D_obs, weight = xsec)
-    output["ABCDvars_2D_"+label].fill(df[var1], df[var2], weight = xsec)    
-    
-    # fill the other histos
+    output["ABCDvars_2D_"+label].fill(df[var1], df[var2], weight = xsec)  
+  
+    # fill the distributions as they are
     plot_labels = [key for key in df.keys() if key in list(output.keys())]
-    for plot in plot_labels: output[plot].fill(df[plot], weight = xsec)    
+    for plot in plot_labels: output[plot].fill(df[plot], weight = xsec)  
+
+    # fill some new distributions  
+    output["2D_girth_nconst_"+label].fill(df["SUEP_"+label+"_girth_pt"], df["SUEP_"+label+"_nconst"], weight=xsec)
+    output["2D_rho0_nconst_"+label].fill(df["SUEP_"+label+"_rho0"], df["SUEP_"+label+"_nconst"], weight=xsec)
+    output["2D_rho1_nconst_"+label].fill(df["SUEP_"+label+"_rho1"], df["SUEP_"+label+"_nconst"], weight=xsec)
+
+    # debug
+    #dfpeak = df.loc[(df['SUEP_ch_girth_pt']>0.09) & (df['SUEP_ch_girth_pt']<=0.12)]
+    #dfoffpeak=  df.loc[(df['SUEP_ch_girth_pt']>0.12) & (df['SUEP_ch_girth_pt']<0.22)]
+    #print(dfpeak)
+    #print(dfpeak['SUEP_ch_girth_pt'])
+
+    # print(dfoffpeak)
+    # print(dfoffpeak['SUEP_ch_nconst'])
+
+    # import matplotlib.pyplot as plt 
+    # import matplotlib
+    # fig, ax = plt.subplots(figsize=(8,7))
+    # values, x = output["SUEP_ch_girth_pt"].to_numpy()
+    # ax.step(x[:-1],values, label=label)
+    # w, x, y =  output["2D_girth_nconst_"+label].to_numpy()
+    # mesh = ax.pcolormesh(x, y, w.T, cmap="RdYlBu", norm=matplotlib.colors.LogNorm())
+    # fig.colorbar(mesh)
+    #fig.savefig("test.png")
 
     # ABCD method to obtain D expected
     if sizeA>0.0:
