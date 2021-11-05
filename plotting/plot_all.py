@@ -11,8 +11,7 @@ parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="Pr
 dhelp = """
 Whic dataset(s) to plot. Currently supported:
 MC (all QCD, SUEP),
-MC_QCD (each QCD HT bin separately),
-datas (JetHT)
+MC_QCD (each QCD HT bin separately)
 """
 parser.add_argument("-d"   , "--dataset"   , type=str, default="MC"  , help=dhelp, required=False)
 options = parser.parse_args()
