@@ -7,8 +7,8 @@ import argparse
 from coffea.processor import run_uproot_job, futures_executor
 
 #SUEP Repo Specific
-from workflows.SUEP_coffea import *
-from workflows.SumWeights import *
+from SUEP_coffea import *
+from SumWeights import *
 
 #Begin argparse
 parser = argparse.ArgumentParser("")
