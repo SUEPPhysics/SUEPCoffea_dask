@@ -1,7 +1,6 @@
 import os
 import json
 import argparse
-#import uproot3 as uproot
 
 #Import coffea specific features
 from coffea.processor import run_uproot_job, futures_executor
@@ -24,7 +23,7 @@ options = parser.parse_args()
 #Set up cross section for MC normalizations
 xsection = 1.0
 if options.isMC:
-   with open(os.path.dirname(__file__) +'xsections_{}.json'.format(options.era)) as file:
+   with open(os.path.dirname(__file__) +'data/xsections_{}.json'.format(options.era)) as file:
        MC_xsecs = json.load(file)
    try:
        xsection *= MC_xsecs[options.dataset]["xsec"]
