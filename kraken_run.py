@@ -10,7 +10,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 script_TEMPLATE = """#!/bin/bash
 
+
 export X509_USER_PROXY={proxy}
+export PATH=$USER_PATH
+
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
@@ -18,16 +21,12 @@ export HOME=.
 echo "hostname:"
 hostname
 
-echo $_CONDOR_SCRATCH_DIR 
-cd   $_CONDOR_SCRATCH_DIR 
-
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-cp $2 temp.root
+echo "xrdcp $2 temp.root"
+xrdcp $2 temp.root
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
 rm temp.root
-
-ls
 
 echo "----- transferring output to scratch :"
 echo " ------ THE END (everyone dies !) ----- "
@@ -47,9 +46,9 @@ log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
 transfer_output_remaps = "condor_out.hdf5 = {final_outdir}/$(ProcId).hdf5"
+#requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")
 requirements          = (BOSCOCluster == "t3serv008.mit.edu"  )
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
-+SINGULARITY_BIND_EXPR = "/mnt"
 +JobFlavour           = "{queue}"
 
 queue jobid from {jobdir}/inputfiles.dat
@@ -74,7 +73,7 @@ def main():
     home_base  = os.environ['HOME']
     proxy_copy = os.path.join(home_base,proxy_base)
     username = getpass.getuser()
-    outdir = '/work/'+username+'/SUEP/{tag}/{sample}/' 
+    outdir = '/work/submit/'+username+'/SUEP/{tag}/{sample}/' 
 
     regenerate_proxy = False
     if not os.path.isfile(proxy_copy):
@@ -120,24 +119,24 @@ def main():
             
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-                input_list = "/home/freerc/temp_RawFiles/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/submit/freerc/temp_RawFiles/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
                      for i in Raw_list:
-                         i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
-                         infiles.write(i+"\n")
-                         #infiles.write(i.split(" ")[0]+"\n")
+                         #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
+                         #infiles.write(i+"\n")
+                         infiles.write(i.split(" ")[0]+"\n")
                      infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             os.system("mkdir -p {}".format(fin_outdir))
   
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 script = script_TEMPLATE.format(
-                    home_base=home_base,
-                    proxy=proxy_copy,
+                    #home_base=home_base,
+                    proxy=proxy_base,
                     ismc=options.isMC,
                     era=options.era,
-                    final_outdir=fin_outdir,          
+                    #final_outdir=fin_outdir,          
                     dataset=sample_name
                 )
                 scriptfile.write(script)
@@ -149,10 +148,12 @@ def main():
                         "../condor_SUEP_WS.py",
                         "../workflows/SUEP_coffea.py",
                         "../workflows/SumWeights.py",
-                        "../xsections_2018.json"
+                        "../xsections_2018.json",
+                        proxy_copy
                     ]),
                     jobdir=jobs_dir,
                     final_outdir = fin_outdir,
+                    proxy=proxy_base,
                     queue=options.queue
                 )
                 condorfile.write(condor)
