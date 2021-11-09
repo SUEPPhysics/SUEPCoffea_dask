@@ -146,9 +146,10 @@ def main():
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
                         "../condor_SUEP_WS.py",
-                        "../workflows/SUEP_coffea.py",
-                        "../workflows/SumWeights.py",
-                        "../xsections_2018.json",
+                        "../workflows",
+                        #"../workflows/SUEP_coffea.py",
+                        #"../workflows/SumWeights.py",
+                        "../data",
                         proxy_copy
                     ]),
                     jobdir=jobs_dir,
