@@ -45,14 +45,16 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
+requirements          = (BOSCOCluster == "ce03.cmsaf.mit.edu")
 transfer_output_remaps = "condor_out.hdf5 = {final_outdir}/$(ProcId).hdf5"
-#requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")
-requirements          = (BOSCOCluster == "t3serv008.mit.edu"  )
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
 +JobFlavour           = "{queue}"
 
 queue jobid from {jobdir}/inputfiles.dat
 """
+
+# requirements          = (BOSCOCluster == "t3serv008.mit.edu" || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu") )
+
 
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
@@ -119,7 +121,7 @@ def main():
             
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-                input_list = "/home/submit/freerc/temp_RawFiles/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/submit/" + username + "/temp_RawFiles/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
                      for i in Raw_list:
