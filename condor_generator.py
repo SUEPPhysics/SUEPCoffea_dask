@@ -55,7 +55,7 @@ out_dir = os.getcwd()
 modules_era = []
 
 #Run the generator code. Note the xsection as input. For Data the xsection = 1.0 from above
-modules_era.append(generator(isMC=options.isMC, era=int(options.era), do_syst=1, xsec = xsection,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, output_location=out_dir))
+modules_era.append(HDF5generator(isMC=options.isMC, era=int(options.era), do_syst=1, xsec = xsection,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, output_location=out_dir))
     
 
 for instance in modules_era:
