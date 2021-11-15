@@ -9,7 +9,7 @@ import getpass
 logging.basicConfig(level=logging.DEBUG)
 
 script_TEMPLATE = """#!/bin/bash
-
+source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 export X509_USER_PROXY={proxy}
 export PATH=$USER_PATH
@@ -37,7 +37,7 @@ condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 1024
 executable            = {jobdir}/script.sh
-arguments             = $(ProcId) $(jobid)
+arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
 transfer_input_files  = {transfer_file}
 output                = $(ClusterId).$(ProcId).out
@@ -45,13 +45,15 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
-transfer_output_remaps = "condor_out.hdf5 = {final_outdir}/$(ProcId).hdf5"
-#requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")
-requirements          = (BOSCOCluster == "t3serv008.mit.edu"  )
+transfer_output_remaps = "condor_out.hdf5 = {final_outdir}/$(fileid).hdf5"
+on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
+max_retries           = 3
+requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
+#requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
 +JobFlavour           = "{queue}"
 
-queue jobid from {jobdir}/inputfiles.dat
+queue jobid, fileid from {jobdir}/inputfiles.dat
 """
 
 def main():
@@ -119,13 +121,16 @@ def main():
             
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-                input_list = "/home/submit/freerc/temp_RawFiles/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
                      for i in Raw_list:
                          #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
                          #infiles.write(i+"\n")
-                         infiles.write(i.split(" ")[0]+"\n")
+                         full_file = i.split(" ")[0]
+                         just_file = full_file.split("/")[-1]
+                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
+                         #infiles.write(i.split(" ")[0]+"\n")
                      infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             os.system("mkdir -p {}".format(fin_outdir))
