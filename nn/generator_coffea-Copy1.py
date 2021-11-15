@@ -5,13 +5,12 @@ import awkward as ak
 import pandas as pd
 import numpy as np
 import fastjet
-import h5py
 from coffea import hist, processor
 import vector
 from typing import List, Optional
 vector.register_awkward()
 
-class HDF5generator(processor.ProcessorABC):
+class generator(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, xsec: float, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, output_location: Optional[str]) -> None:
         self._flag = flag
         self.output_location = output_location
@@ -57,14 +56,9 @@ class HDF5generator(processor.ProcessorABC):
                 output[field] = collection[field].to_list()
         return output
 
-    def h5storePandas(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
+    def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
         store.put(gname, df)
         store.get_storer(gname).attrs.metadata = kwargs
-        
-    def h5storeListOfLists(self, store: h5py.File, data: list, gname: str) -> None:
-        dt = h5py.special_dtype(vlen=np.dtype('float64'))
-        _ = store.create_dataset(name=gname,shape=(len(data),), dtype=dt)
-        store[gname][:] = data
 
     def dump_table(self, fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
         subdirs = subdirs or []
@@ -131,7 +125,7 @@ class HDF5generator(processor.ProcessorABC):
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")
-        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (events.PFCands.trkEta <= 2.5) & (events.PFCands.trkEta >= -2.5)
+        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (events.PFCands.trkEta <= 2.5)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
 
@@ -164,44 +158,34 @@ class HDF5generator(processor.ProcessorABC):
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         Cleaned_cands = Cleaned_cands[clusterCut]
-        
-        # remove events with jet outside of acceptance window
-        etaCut = (ak_inclusive_jets.eta <= 2.5) & (ak_inclusive_jets.eta >= -2.5)
-        ak_inclusive_jets = ak_inclusive_jets[etaCut]
-        Cleaned_cands = Cleaned_cands[etaCut]
 
         # prepare outputs
         out_cands = Cleaned_cands
-        out_cands_pt = out_cands.pt
-        out_cands_phi = out_cands.phi
-        out_cands_eta = out_cands.eta
-                
-        ### FIXME: clearly this needs to be changed for singal
-        ### it's also not very fast
-        isSUEP = 0
-        out_labels = []
-        for phis,etas,pts in zip(ak_inclusive_jets.phi.to_list(),
-                                ak_inclusive_jets.eta.to_list(), 
-                                ak_inclusive_jets.pt.to_list()):
-            event = []
-            for p,e,t in zip(phis, etas, pts):
-                event.append(isSUEP)
-                event.append(p)
-                event.append(e)
-                event.append(t)
-                
-            out_labels.append(event)
-            
-        # store in hdf5 file
-        store = h5py.File("out.hdf5","w")
-        self.h5storeListOfLists(store, out_cands_phi.to_list(), 'phi')
-        self.h5storeListOfLists(store, out_cands_eta.to_list(), 'eta')
-        self.h5storeListOfLists(store, out_cands_pt.to_list(), 'pt')
-        self.h5storeListOfLists(store, out_labels, 'labels')
-        metadata = dict(xsec=self.xsec,era=self.era,
-                            mc=self.isMC,sample=self.sample)
-        store.attrs.metadata = metadata
-        store.close()
+        out_labels = ak.zip({
+                "pt": ak_inclusive_jets.pt,
+                "eta": ak_inclusive_jets.eta,
+                "phi": ak_inclusive_jets.phi
+        })
+
+        #Prepare for writing to HDF5 file (xsec stored in metadata)
+        #fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
+        fname = "out.hdf5"
+        subdirs = []
+        store = pd.HDFStore(fname)
+        if self.output_location is not None:
+
+            # ak to pandas to hdf5
+            for out, gname in [[out_cands, "cands"], [out_labels, "labels"]]:
+                df = self.ak_to_pandas_lists(out, ['eta', 'phi', 'pt'])
+                metadata = dict(xsec=self.xsec,era=self.era,
+                                mc=self.isMC,sample=self.sample)
+                store_fin = self.h5store(store, df, fname, gname, **metadata)
+
+            store.close()
+            self.dump_table(fname, self.output_location, subdirs)
+        else:
+            store.close()
+
 
         return output
 

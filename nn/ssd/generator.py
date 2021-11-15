@@ -1,6 +1,7 @@
 import h5py
 import torch
 import torch.cuda as tcuda
+import numpy as np
 
 from ssd import qutils
 
@@ -30,24 +31,24 @@ class CalorimeterJetDataset(torch.utils.data.Dataset):
         self.raw = raw
         self.return_baseline = return_baseline
         self.return_pt = return_pt
-
+        
     def __getitem__(self, index):
 
         if not hasattr(self, 'hdf5_dataset'):
             self.open_hdf5()
 
-        idx_PFCands_Eta = tcuda.LongTensor([self.PFCands_Eta[index]],
+        idx_PFCands_Eta = tcuda.FloatTensor(np.array([self.cands_eta[index]]),
                                            device=self.rank)
-        idx_PFCands_Phi = tcuda.LongTensor([self.PFCands_Phi[index]],
+        idx_PFCands_Phi = tcuda.FloatTensor(np.array([self.cands_phi[index]]),
                                            device=self.rank)
-        val_PFCands_PT = tcuda.FloatTensor(self.ePFCands_PT[index],
+        val_PFCands_PT = tcuda.FloatTensor(np.array([self.cands_pt[index]]),
                                            device=self.rank)
 
         images, scaler = self.process_images(idx_PFCands_Eta,
                                                   idx_PFCands_Phi,
                                                   val_PFCands_PT)
         # Set labels
-        labels = tcuda.FloatTensor(self.labels[index], device=self.rank)
+        labels = tcuda.FloatTensor(np.array([self.labels[index]]), device=self.rank)
         labels = self.process_labels(labels, scaler)
 
         if self.flip_prob:
@@ -79,6 +80,7 @@ class CalorimeterJetDataset(torch.utils.data.Dataset):
 
         return self.dataset_size
 
+    ### FIXME: this is broken for labels
     def flip_image(self, image, labels, vertical=True):
         if vertical:
             axis = 1
@@ -99,31 +101,61 @@ class CalorimeterJetDataset(torch.utils.data.Dataset):
     def open_hdf5(self):
         self.hdf5_dataset = h5py.File(self.source, 'r')
 
-        self.eFTrack_Eta = self.hdf5_dataset['EFlowTrack_Eta']
-        self.eFTrack_Phi = self.hdf5_dataset['EFlowTrack_Phi']
-        self.eFTrack_PT = self.hdf5_dataset['EFlowTrack_PT']
-
-        self.eFPhoton_Eta = self.hdf5_dataset['EFlowPhoton_Eta']
-        self.eFPhoton_Phi = self.hdf5_dataset['EFlowPhoton_Phi']
-        self.eFPhoton_ET = self.hdf5_dataset['EFlowPhoton_ET']
-
-        self.eFNHadron_Eta = self.hdf5_dataset['EFlowNeutralHadron_Eta']
-        self.eFNHadron_Phi = self.hdf5_dataset['EFlowNeutralHadron_Phi']
-        self.eFNHadron_ET = self.hdf5_dataset['EFlowNeutralHadron_ET']
-
+        self.cands_phi = self.hdf5_dataset['phi']
+        self.cands_eta = self.hdf5_dataset['eta']
+        self.cands_pt = self.hdf5_dataset['pt']
         self.labels = self.hdf5_dataset['labels']
-        self.base = self.hdf5_dataset['baseline']
+        
+        ### FIXME: what is this
+        ### guess: baseline predictions (i.e. for us the ISR removal method predictions)
+        # self.base = self.hdf5_dataset['baseline']
 
         self.dataset_size = len(self.labels)
-
-    def process_images(self,
-                       idx_Phi, idx_Eta, idx_Pt):
-
-        i = torch.cat((idx_Eta, idx_Phi), 0)
-        v = torch.cat((idx_Pt))
+        
+    def pixelize(self, idx_Eta, idx_Phi):
+        """"
+        This method is used to convert eta and phi values to a pixelation
+        of dimensions (n_eta, n_phi): these dimensions are obtained from the
+        ssd-config.yml file.
+        We assume eta in [-2.5,2.5], phi in [-pi, pi]
+        """
+        
+        n_eta = self.height
+        n_phi = self.width
+        min_eta = -2.51
+        max_eta = 2.51
+        min_phi = -np.pi
+        max_phi = np.pi
+        
+        idx_Eta_discrete = (n_eta/(max_eta - min_eta)) * (idx_Eta - min_eta)
+        idx_Phi_discrete = (n_phi/(max_phi - min_phi)) * (idx_Phi - min_phi)
+        
+        idx_Eta_discrete = idx_Eta_discrete.floor().int()
+        idx_Phi_discrete = idx_Phi_discrete.floor().int()
+        
+        ##### debug
+        if torch.max(idx_Eta_discrete) >= 100:
+            print("MAX ETA", torch.max(idx_Eta))
+            sys.exit()
+        if torch.max(idx_Phi_discrete) >= 100:
+            print("MAX PHI", torch.max(idx_Phi))
+            sys.exit()
+        
+        return idx_Eta_discrete, idx_Phi_discrete
+        
+    def process_images(self, idx_Eta, idx_Phi, idx_Pt):
+        
+        idx_Eta, idx_Phi = self.pixelize(idx_Eta, idx_Phi)
+        
+        v0 = 0*torch.ones(idx_Eta.size(1),
+                          dtype=torch.long).cuda(self.rank)
+        idx_channels = v0.unsqueeze(0)
+        i = torch.cat((idx_channels, idx_Eta, idx_Phi), 0)
+        v = idx_Pt
 
         scaler = torch.max(v)
-        pixels = torch.sparse.FloatTensor(i, v, torch.Size([self.channels,
+        
+        pixels = torch.sparse.FloatTensor(i, v[0,:], torch.Size([self.channels,
                                                             self.width,
                                                             self.height]))
         pixels = pixels.to_dense()
@@ -153,17 +185,31 @@ class CalorimeterJetDataset(torch.utils.data.Dataset):
         return base
 
     def process_labels(self, labels_raw, scaler):
-        labels_reshaped = labels_raw.reshape(-1, 4)
-        labels = torch.empty_like(labels_reshaped)
-
+                        
+        # returns [[isSUEP, phi,eta,pt], [isSUEP2, phi2,eta2,pt2], ...]
+        labels_reshaped = labels_raw.reshape(-1,4)
+        labels_classes = labels_reshaped[:,0].unsqueeze(1)
+        
+        eta, phi = self.pixelize(labels_reshaped[:,2],labels_reshaped[:,1])
+        labels_reshaped[:,1] = phi
+        labels_reshaped[:,2] = eta
+                
+        # (Number of jets, 4)
+        labels = torch.empty((labels_reshaped.size(0), 4), dtype=labels_reshaped.dtype, device=labels_reshaped.device)
+        
+        ### FIXME: no idea why we need to divide by dimensions????
         # Set fractional coordinates
-        labels[:, 0] = (labels_reshaped[:, 1] - self.size) / float(self.width)
-        labels[:, 1] = (labels_reshaped[:, 2] - self.size) / float(self.height)
-        labels[:, 2] = (labels_reshaped[:, 1] + self.size) / float(self.width)
-        labels[:, 3] = (labels_reshaped[:, 2] + self.size) / float(self.height)
+        # labels[:, 0] = (labels_reshaped[:, 0] - self.size) / float(self.width)
+        # labels[:, 1] = (labels_reshaped[:, 1] - self.size) / float(self.height)
+        # labels[:, 2] = (labels_reshaped[:, 0] + self.size) / float(self.width)
+        # labels[:, 3] = (labels_reshaped[:, 1] + self.size) / float(self.height)
+        labels[:, 0] = (labels_reshaped[:, 1] - self.size) 
+        labels[:, 1] = (labels_reshaped[:, 2] - self.size)
+        labels[:, 2] = (labels_reshaped[:, 1] + self.size) 
+        labels[:, 3] = (labels_reshaped[:, 2] + self.size)
 
         # Set class label
-        labels = torch.cat((labels, labels_reshaped[:, 0].unsqueeze(1) + 1), 1)
+        labels = torch.cat((labels, labels_classes), 1)
 
         if self.return_pt:
             pts = labels_reshaped[:, 3].unsqueeze(1)
