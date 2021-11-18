@@ -56,6 +56,9 @@ requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsa
 queue jobid, fileid from {jobdir}/inputfiles.dat
 """
 
+# requirements          = (BOSCOCluster == "t3serv008.mit.edu" || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu") )
+
+
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)

@@ -147,7 +147,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")
-        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (events.PFCands.trkEta <= 2.5)
+        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (abs(events.PFCands.trkEta) <= 2.5)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
 
