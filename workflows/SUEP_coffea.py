@@ -140,7 +140,7 @@ class SUEP_cluster(processor.ProcessorABC):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
 
-        #Prepare the clean track collection
+        #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
@@ -151,9 +151,34 @@ class SUEP_cluster(processor.ProcessorABC):
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
 
+        #Prepare the IsoTrack collection with SUEP selections
+        IsoTracks = ak.zip({
+            "pt": events.isolatedTracks.pt,
+            "eta": events.isolatedTracks.eta,
+            "phi": events.isolatedTracks.phi,
+            "mass": 0.0
+        }, with_name="Momentum4D")
+        cut = (events.isolatedTracks.fromPV > 1) & (events.isolatedTracks.pt >= 0.7) & (abs(events.isolatedTracks.eta) <= 2.5) & (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0)) & (abs(events.isolatedTracks.dz) < 10) & (events.isolatedTracks.dzErr < 0.05)
+        Tracks_cands = IsoTracks[cut]
+        Tracks_cands = ak.packed(Tracks_cands)
+
+        #Prepare the Lost Track collection
+        LostTracks = ak.zip({
+            "pt": events.lostTracks.pt,
+            "eta": events.lostTracks.eta,
+            "phi": events.lostTracks.phi,
+            "mass": 0.0
+        }, with_name="Momentum4D")
+        cut = (events.lostTracks.fromPV > 1) & (events.lostTracks.pt >= 0.7) & (abs(events.lostTracks.eta) <= 2.5) & (abs(events.lostTracks.dz) < 10) & (events.lostTracks.dzErr < 0.05)
+        Lost_Tracks_cands = LostTracks[cut]
+        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
+
+        Total_Tracks = ak.concatenate([Tracks_cands, Lost_Tracks_cands], axis=1)
+
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
         cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef)
+        #cluster = fastjet.ClusterSequence(Total_Tracks, jetdef)
 
         Jets = ak.zip({
                 "pt": events.Jet.pt,
