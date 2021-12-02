@@ -179,46 +179,6 @@ class SUEP_cluster(processor.ProcessorABC):
         Tracks_cands = IsoTracks[cut]
         Tracks_cands = ak.packed(Tracks_cands)
         
-        
-        ### debugging
-#         cut1 = (events.isolatedTracks.fromPV > 1)
-#         cut2 = (events.isolatedTracks.pt >= 0.7)
-#         cut3 = (abs(events.isolatedTracks.eta) <= 2.5)
-#         cut4 = (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0))
-#         cut5 = (abs(events.isolatedTracks.dz) < 10) & (events.isolatedTracks.dzErr < 0.05)
-        
-#         print(len(IsoTracks))
-        
-#         a1 = IsoTracks[cut1]
-#         indices = (ak.num(a1, axis=1) > 0)
-#         a1 = a1[indices]
-#         print(len(a1))
-        
-#         indices2 = (ak.num(IsoTracks, axis=1) > 0)
-#         print("check", len(IsoTracks[indices2]))
-#         a2 = IsoTracks[cut2]
-#         indices = (ak.num(a2, axis=1) > 0)
-#         a2 = a2[indices]
-#         print(len(a2))
-        
-#         a3 = IsoTracks[cut3]
-#         indices = (ak.num(a3, axis=1) > 0)
-#         a3 = a3[indices]
-#         print(len(a3))
-        
-#         a4 = IsoTracks[cut4]
-#         indices = (ak.num(a4, axis=1) > 0)
-#         a4 = a4[indices]
-#         print(len(a4))
-        
-#         a5 = IsoTracks[cut5]
-#         indices = (ak.num(a5, axis=1) > 0)
-#         a5 = a5[indices]
-#         print(len(a5))
-        
-#         import sys
-#         sys.exit()
-        
         #Prepare the Lost Track collection
         LostTracks = ak.zip({
             "pt": events.lostTracks.pt,
@@ -232,41 +192,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         Total_Tracks = ak.concatenate([Tracks_cands, Lost_Tracks_cands], axis=1)
      
-        ### debug
-#         cut1 = (events.lostTracks.fromPV > 1)
-#         cut2 = (events.lostTracks.pt >= 0.7)
-#         cut3 = (abs(events.lostTracks.eta) <= 2.5)
-#         cut4 = (abs(events.lostTracks.dz) < 10)
-#         cut5 = (events.lostTracks.dzErr < 0.05)
-        
-#         print(len(LostTracks))
-        
-#         a1 = LostTracks[cut1]
-#         indices = (ak.num(a1, axis=1) > 0)
-#         a1 = a1[indices]
-#         print(len(a1))
-        
-#         print('check', len(LostTracks[ak.num(LostTracks, axis=1) > 0]))
-#         a2 = LostTracks[cut2]
-#         indices = (ak.num(a2, axis=1) > 0)
-#         a2 = a2[indices]
-#         print(len(a2))
-        
-#         a3 = LostTracks[cut3]
-#         indices = (ak.num(a3, axis=1) > 0)
-#         a3 = a3[indices]
-#         print(len(a3))
-        
-#         a4 = LostTracks[cut4]
-#         indices = (ak.num(a4, axis=1) > 0)
-#         a4 = a4[indices]
-#         print(len(a4))
-        
-#         a5 = LostTracks[cut5]
-#         indices = (ak.num(a5, axis=1) > 0)
-#         a5 = a5[indices]
-#         print(len(a5))
-
         ### FIXME: will want to use different collections in different parts?
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
