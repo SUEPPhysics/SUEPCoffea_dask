@@ -81,6 +81,23 @@ class SUEP_cluster(processor.ProcessorABC):
     def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
         store.put(gname, df)
         store.get_storer(gname).attrs.metadata = kwargs
+        
+    def save_dfs(self, dfs, df_names):
+        fname = "out.hdf5"
+        subdirs = []
+        store = pd.HDFStore(fname)
+        if self.output_location is not None:
+            # pandas to hdf5
+            for out, gname in zip(dfs, df_names):
+                metadata = dict(xsec=self.xsec,era=self.era,
+                                mc=self.isMC,sample=self.sample)
+                store_fin = self.h5store(store, out, fname, gname, **metadata)
+
+            store.close()
+            self.dump_table(fname, self.output_location, subdirs)
+        else:
+            print("self.output_location is None")
+            store.close()
 
     def dump_table(self, fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
         subdirs = subdirs or []
@@ -139,18 +156,18 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-
+        
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
-        }, with_name="Momentum4D")
+        }, with_name="Momentum4D")        
         cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (abs(events.PFCands.trkEta) <= 2.5)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
-
+        
         #Prepare the IsoTrack collection with SUEP selections
         IsoTracks = ak.zip({
             "pt": events.isolatedTracks.pt,
@@ -161,7 +178,47 @@ class SUEP_cluster(processor.ProcessorABC):
         cut = (events.isolatedTracks.fromPV > 1) & (events.isolatedTracks.pt >= 0.7) & (abs(events.isolatedTracks.eta) <= 2.5) & (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0)) & (abs(events.isolatedTracks.dz) < 10) & (events.isolatedTracks.dzErr < 0.05)
         Tracks_cands = IsoTracks[cut]
         Tracks_cands = ak.packed(Tracks_cands)
-
+        
+        
+        ### debugging
+#         cut1 = (events.isolatedTracks.fromPV > 1)
+#         cut2 = (events.isolatedTracks.pt >= 0.7)
+#         cut3 = (abs(events.isolatedTracks.eta) <= 2.5)
+#         cut4 = (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0))
+#         cut5 = (abs(events.isolatedTracks.dz) < 10) & (events.isolatedTracks.dzErr < 0.05)
+        
+#         print(len(IsoTracks))
+        
+#         a1 = IsoTracks[cut1]
+#         indices = (ak.num(a1, axis=1) > 0)
+#         a1 = a1[indices]
+#         print(len(a1))
+        
+#         indices2 = (ak.num(IsoTracks, axis=1) > 0)
+#         print("check", len(IsoTracks[indices2]))
+#         a2 = IsoTracks[cut2]
+#         indices = (ak.num(a2, axis=1) > 0)
+#         a2 = a2[indices]
+#         print(len(a2))
+        
+#         a3 = IsoTracks[cut3]
+#         indices = (ak.num(a3, axis=1) > 0)
+#         a3 = a3[indices]
+#         print(len(a3))
+        
+#         a4 = IsoTracks[cut4]
+#         indices = (ak.num(a4, axis=1) > 0)
+#         a4 = a4[indices]
+#         print(len(a4))
+        
+#         a5 = IsoTracks[cut5]
+#         indices = (ak.num(a5, axis=1) > 0)
+#         a5 = a5[indices]
+#         print(len(a5))
+        
+#         import sys
+#         sys.exit()
+        
         #Prepare the Lost Track collection
         LostTracks = ak.zip({
             "pt": events.lostTracks.pt,
@@ -174,83 +231,146 @@ class SUEP_cluster(processor.ProcessorABC):
         Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
 
         Total_Tracks = ak.concatenate([Tracks_cands, Lost_Tracks_cands], axis=1)
+     
+        ### debug
+#         cut1 = (events.lostTracks.fromPV > 1)
+#         cut2 = (events.lostTracks.pt >= 0.7)
+#         cut3 = (abs(events.lostTracks.eta) <= 2.5)
+#         cut4 = (abs(events.lostTracks.dz) < 10)
+#         cut5 = (events.lostTracks.dzErr < 0.05)
+        
+#         print(len(LostTracks))
+        
+#         a1 = LostTracks[cut1]
+#         indices = (ak.num(a1, axis=1) > 0)
+#         a1 = a1[indices]
+#         print(len(a1))
+        
+#         print('check', len(LostTracks[ak.num(LostTracks, axis=1) > 0]))
+#         a2 = LostTracks[cut2]
+#         indices = (ak.num(a2, axis=1) > 0)
+#         a2 = a2[indices]
+#         print(len(a2))
+        
+#         a3 = LostTracks[cut3]
+#         indices = (ak.num(a3, axis=1) > 0)
+#         a3 = a3[indices]
+#         print(len(a3))
+        
+#         a4 = LostTracks[cut4]
+#         indices = (ak.num(a4, axis=1) > 0)
+#         a4 = a4[indices]
+#         print(len(a4))
+        
+#         a5 = LostTracks[cut5]
+#         indices = (ak.num(a5, axis=1) > 0)
+#         a5 = a5[indices]
+#         print(len(a5))
+
+        ### FIXME: will want to use different collections in different parts?
+        # select which tracks to use in the script
+        # dimensions of tracks = events x tracks in event x 4 momenta
+        tracks = Tracks_cands
+        
+        # remove events without any tracks < 150 pt
+        nonEmptyCut = (ak.num(tracks, axis=1) > 0)
+        tracks = tracks[nonEmptyCut]
+        min_pt = 150
+        minPtCut = (np.max(tracks.pt, axis=-1) >= min_pt)
+        tracks = tracks[minPtCut]
 
         #The jet clustering part
-        jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
-        cluster = fastjet.ClusterSequence(Cleaned_cands, jetdef)
-        #cluster = fastjet.ClusterSequence(Total_Tracks, jetdef)
-
+        jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
+        cluster = fastjet.ClusterSequence(tracks, jetdef)
+  
+        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= min_pt),"Momentum4D")     
+        ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= min_pt),"Momentum4D")
+                
+        # cut based on ak4 jets to replicate the trigger
         Jets = ak.zip({
-                "pt": events.Jet.pt,
-                "eta": events.Jet.eta,
-                "phi": events.Jet.phi,
-                "mass": events.Jet.mass,
-                "jetId": events.Jet.jetId
-            })
+            "pt": events.Jet.pt,
+            "eta": events.Jet.eta,
+            "phi": events.Jet.phi,
+            "mass": events.Jet.mass,
+            "jetId": events.Jet.jetId
+        })
+        Jets = Jets[nonEmptyCut]
+        Jets = Jets[minPtCut]
         jetCut = (Jets.jetId) & (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
-
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt=150),"Momentum4D")
-        ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt=150),"Momentum4D")
         
         # save variables to a dataframe
         col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
-        col2 = pd.Series(ak.num(Cleaned_cands).to_list(), name = "nCleaned_Cands")
+        col2 = pd.Series(ak.num(tracks).to_list(), name = "ntracks")
         col3 = pd.Series(ak.num(ak_inclusive_jets).to_list(), name = "ngood_fastjets")
         col4 = pd.Series(ak.sum(ak4jets.pt,axis=-1).to_list(), name = "ht")
         out_vars = pd.concat([col1, col2, col3, col4], axis=1)
-
+        
         # remove events that fail the HT cut
         htCut = (col4 > 1200)
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]
-        Cleaned_cands = Cleaned_cands[htCut]
-
+        tracks = tracks[htCut]
+    
         # remove events without a cluster
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
-        Cleaned_cands = Cleaned_cands[clusterCut]
-
-        #SUEP_mult
+        tracks = tracks[clusterCut]
+ 
+        # output an empty file if not events pass selections, avoids errors later on
+        if len(tracks) == 0:
+            print("No events pass the selections. Saving empty outputs.")
+            out_ch, out_mult = pd.DataFrame(), pd.DataFrame()
+            self.save_dfs([out_ch, out_mult],["ch","mult"])
+            return output
+        
+        ### SUEP_mult
         chonkocity = ak.num(ak_inclusive_cluster, axis=2)
         chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
         thicc_jets = ak_inclusive_jets[chonkiest_jet]
         chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
         singletrackCut = (ak.num(chonkiest_cands)>1)
-        thicc_jets = thicc_jets[singletrackCut]#cut events with single track highest mult jets
-        chonkiest_cands = chonkiest_cands[singletrackCut]#cut events with single track highest mult jets
-        Cleaned_cands_mult = Cleaned_cands[singletrackCut]
-        out_mult = thicc_jets[:,0]
-        out_mult["SUEP_mult_ntracks"] = ak.num(Cleaned_cands_mult, axis=1)
-        out_mult["SUEP_mult_nconst"] = ak.num(chonkiest_cands, axis=1)
-        out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
-        out_mult["SUEP_mult_pt_avg"] = ak.mean(chonkiest_cands.pt, axis=-1)
-        out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
-        out_mult["SUEP_mult_phi"] = thicc_jets[:,0].phi
-        out_mult["SUEP_mult_mass"] = thicc_jets[:,0].mass
-        deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
-        out_mult["SUEP_mult_girth"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
-        out_mult["SUEP_mult_rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
-        out_mult["SUEP_mult_rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
+        
+        # account for no events passing our selections
+        if not any(singletrackCut): 
+            out_mult = pd.DataFrame()
+        else:            
+            #cut events with single track highest mult jets
+            thicc_jets = thicc_jets[singletrackCut]
+            chonkiest_cands = chonkiest_cands[singletrackCut]
+            tracks_mult = tracks[singletrackCut]
+        
+            out_mult = thicc_jets[:,0]
+            out_mult["SUEP_mult_ntracks"] = ak.num(tracks_mult, axis=1)
+            out_mult["SUEP_mult_nconst"] = ak.num(chonkiest_cands, axis=1)
+            out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
+            out_mult["SUEP_mult_pt_avg"] = ak.mean(chonkiest_cands.pt, axis=-1)
+            out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
+            out_mult["SUEP_mult_phi"] = thicc_jets[:,0].phi
+            out_mult["SUEP_mult_mass"] = thicc_jets[:,0].mass
+            deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
+            out_mult["SUEP_mult_girth"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
+            out_mult["SUEP_mult_rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
+            out_mult["SUEP_mult_rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
 
-        #SUEP_mult boosting, sphericity and rho
-        boost_mult = ak.zip({
-            "px": thicc_jets[:,0].px*-1,
-            "py": thicc_jets[:,0].py*-1,
-            "pz": thicc_jets[:,0].pz*-1,
-            "mass": thicc_jets[:,0].mass
-        }, with_name="Momentum4D")
-        chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
-        mult_eigs = self.sphericity(chonkiest_cands,2.0)  
-        out_mult["SUEP_mult_pt_avg_b"] = ak.mean(chonkiest_cands.pt, axis=-1)
-        out_mult["SUEP_mult_spher"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
-        out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
-        out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
-        out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
+            #SUEP_mult boosting, sphericity and rho
+            boost_mult = ak.zip({
+                "px": thicc_jets[:,0].px*-1,
+                "py": thicc_jets[:,0].py*-1,
+                "pz": thicc_jets[:,0].pz*-1,
+                "mass": thicc_jets[:,0].mass
+            }, with_name="Momentum4D")
+            chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
+            mult_eigs = self.sphericity(chonkiest_cands,2.0)  
+            out_mult["SUEP_mult_pt_avg_b"] = ak.mean(chonkiest_cands.pt, axis=-1)
+            out_mult["SUEP_mult_spher"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
+            out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
+            out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
+            out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
 
 
-        #SUEP_pt
+        ### SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
         SUEP_pt_nconst = chonkocity[highpt_jet]
@@ -261,7 +381,7 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pt_nconst = SUEP_pt_nconst[singletrackCut]
         SUEP_pt_tracks = SUEP_pt_tracks[singletrackCut]
         highpt_cands = highpt_cands[singletrackCut] 
-        Cleaned_cands_ch = Cleaned_cands[singletrackCut]
+        tracks_ch = tracks[singletrackCut]
 
         # ISR removal method
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
@@ -276,69 +396,57 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
         ISR_cand_b = ISR_cand.boost_p4(boost_ch)
-        Cleaned_cands_ch = Cleaned_cands_ch.boost_p4(boost_ch)
-        Christos_cands = Cleaned_cands_ch[abs(Cleaned_cands_ch.deltaphi(ISR_cand_b)) > 1.6]
+        tracks_ch = tracks_ch.boost_p4(boost_ch)
+        Christos_cands = tracks_ch[abs(tracks_ch.deltaphi(ISR_cand_b)) > 1.6]
         onechtrackCut = (ak.num(Christos_cands)>1)
-        Christos_cands = Christos_cands[onechtrackCut]#remove the events left with one track
-        Cleaned_cands_ch = Cleaned_cands_ch[onechtrackCut]
-        SUEP_cand = SUEP_cand[onechtrackCut]
-        ISR_cand = ISR_cand[onechtrackCut]
-        ISR_cand_b = ISR_cand_b[onechtrackCut]
-        SUEP_cand_tracks = SUEP_cand_tracks[onechtrackCut]
-        ISR_cand_tracks = ISR_cand_tracks[onechtrackCut]
-        boost_ch = boost_ch[onechtrackCut]
-
-        out_ch = SUEP_cand
-        out_ch["SUEP_ch_pt"] = SUEP_cand.pt
-        out_ch["SUEP_ch_eta"] = SUEP_cand.eta
-        out_ch["SUEP_ch_phi"] = SUEP_cand.phi
-        out_ch["SUEP_ch_mass"] = SUEP_cand.mass
-        out_ch["SUEP_ch_dphi_SUEP_ISR"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
-        ch_eigs = self.sphericity(Christos_cands,2.0)
-        out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
-        out_ch["SUEP_ch_ntracks"] = ak.num(Cleaned_cands_ch)
-        out_ch["SUEP_ch_pt_avg_b"] = ak.mean(Christos_cands.pt, axis=-1)
-        out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
-        out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
-        out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
-        out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
-        out_ch["SUEP_ch_dphi_chcands_ISR"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
-        out_ch["SUEP_ch_dphi_ISRtracks_ISR"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
-        out_ch["SUEP_ch_dphi_SUEPtracks_ISR"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
-
-        # unboost for these
-        Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
-        deltaR = Christos_cands_ub.deltaR(SUEP_cand)
-        out_ch["SUEP_ch_pt_avg"] = ak.mean(Christos_cands_ub.pt, axis=-1)
-        out_ch["SUEP_ch_girth"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
-        out_ch["SUEP_ch_rho0"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
-        out_ch["SUEP_ch_rho1"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
-
-        #Prepare for writing to HDF5 file (xsec stored in metadata)
-        #fname = (events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".hdf5")
-        fname = "out.hdf5"
-        subdirs = []
-        store = pd.HDFStore(fname)
-        if self.output_location is not None:
-
-            # ak to pandas to hdf5
-            for out, gname in [[out_mult, "mult"], [out_ch, "ch"]]:
-                df = self.ak_to_pandas(out)
-                metadata = dict(xsec=self.xsec,era=self.era,
-                                mc=self.isMC,sample=self.sample)
-                store_fin = self.h5store(store, df, fname, gname, **metadata)
-
-            for df, gname in [[out_vars, "out_vars"]]:
-
-                metadata = dict(xsec=self.xsec,era=self.era,
-                                mc=self.isMC,sample=self.sample)
-                store_fin = self.h5store(store, df, fname, gname, **metadata)
-
-            store.close()
-            self.dump_table(fname, self.output_location, subdirs)
+        
+        # account for no events passing our selections
+        if not any(onechtrackCut):
+            out_ch = pd.DataFrame()
         else:
-            store.close()
+            Christos_cands = Christos_cands[onechtrackCut]#remove the events left with one track
+            tracks_ch = tracks_ch[onechtrackCut]
+            SUEP_cand = SUEP_cand[onechtrackCut]
+            ISR_cand = ISR_cand[onechtrackCut]
+            ISR_cand_b = ISR_cand_b[onechtrackCut]
+            SUEP_cand_tracks = SUEP_cand_tracks[onechtrackCut]
+            ISR_cand_tracks = ISR_cand_tracks[onechtrackCut]
+            boost_ch = boost_ch[onechtrackCut]
 
+            out_ch = SUEP_cand
+            out_ch["SUEP_ch_pt"] = SUEP_cand.pt
+            out_ch["SUEP_ch_eta"] = SUEP_cand.eta
+            out_ch["SUEP_ch_phi"] = SUEP_cand.phi
+            out_ch["SUEP_ch_mass"] = SUEP_cand.mass
+            out_ch["SUEP_ch_dphi_SUEP_ISR"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
+            ch_eigs = self.sphericity(Christos_cands,2.0)
+            out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
+            out_ch["SUEP_ch_ntracks"] = ak.num(tracks_ch)
+            out_ch["SUEP_ch_pt_avg_b"] = ak.mean(Christos_cands.pt, axis=-1)
+            out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
+            out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
+            out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
+            out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+            out_ch["SUEP_ch_dphi_chcands_ISR"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
+            out_ch["SUEP_ch_dphi_ISRtracks_ISR"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
+            out_ch["SUEP_ch_dphi_SUEPtracks_ISR"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
+
+            # unboost for these
+            Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
+            deltaR = Christos_cands_ub.deltaR(SUEP_cand)
+            out_ch["SUEP_ch_pt_avg"] = ak.mean(Christos_cands_ub.pt, axis=-1)
+            out_ch["SUEP_ch_girth"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
+            out_ch["SUEP_ch_rho0"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
+            out_ch["SUEP_ch_rho1"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
+
+            
+        ### save outputs
+        # ak to pandas, if needed
+        if not isinstance(out_mult, pd.DataFrame): out_mult = self.ak_to_pandas(out_mult)
+        if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
+        
+        # padndas to hdf5 file
+        self.save_dfs([out_ch, out_mult],["ch","mult"])
 
         return output
 
