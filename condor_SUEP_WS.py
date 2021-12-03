@@ -33,23 +33,23 @@ if options.isMC:
        print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
 
 #Take care of the normalization factor. Returns a float that is the xsec/gensumweight. Branching fractions and kfactors are included(see above).
-modules_gensum = []
-if options.isMC:
-    modules_gensum.append(XsecSumWeight(isMC=options.isMC, xsec = xsection,  era=int(options.era), do_syst=1, syst_var='', sample=options.dataset))
-
-    for instance in modules_gensum:
-        output = run_uproot_job(
-            {instance.sample: [options.infile]},
-            treename='Runs',
-            processor_instance=instance,
-            executor=futures_executor,
-            executor_args={'workers': 10,
-                           'schema': processor.NanoAODSchema,
-                           'xrootdtimeout': 10,
-            },
-            chunksize=500000000
-        )
-        xsection = output
+#modules_gensum = []
+#if options.isMC:
+#    modules_gensum.append(XsecSumWeight(isMC=options.isMC, xsec = xsection,  era=int(options.era), do_syst=1, syst_var='', sample=options.dataset))
+#
+#    for instance in modules_gensum:
+#        output = run_uproot_job(
+#            {instance.sample: [options.infile]},
+#            treename='Runs',
+#            processor_instance=instance,
+#            executor=futures_executor,
+#            executor_args={'workers': 10,
+#                           'schema': processor.NanoAODSchema,
+#                           'xrootdtimeout': 10,
+#            },
+##            chunksize=500000000
+#        )
+#        xsection2 = output
 
 out_dir = os.getcwd()
 modules_era = []
