@@ -157,6 +157,9 @@ class SUEP_cluster(processor.ProcessorABC):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
         
+        genSumWeight = ak.sum(events.genWeight)
+        self.xsec = self.xsec / genSumWeight
+
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,

@@ -47,7 +47,8 @@ class XsecSumWeight(ProcessorABC):
             genEventSumw=0.5,
             weight=genweight
         )
- 
+        print(weight_array)
+        print(genweight)
         return genweight
         #return output
 
