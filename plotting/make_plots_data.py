@@ -1,4 +1,5 @@
-import os, sys
+import os, sys, subprocess
+import time
 import pandas as pd 
 import numpy as np
 from hist import Hist
@@ -17,25 +18,18 @@ parser.add_argument("-u"   , "--unblind"  , dest='blind',  action='store_false',
 parser.set_defaults(blind=True)
 options = parser.parse_args()
 
-
-# datasets to run over
-datasets = [
-           "JetHT+Run2018A-17Sep2018-v1+MINIAOD",
-           "JetHT+Run2018B-17Sep2018-v1+MINIAOD",
-           "JetHT+Run2018C-17Sep2018-v1+MINIAOD",
-           "JetHT+Run2018D-PromptReco-v1+MINIAOD",
-           "JetHT+Run2018D-PromptReco-v2+MINIAOD"
-         ]
-
 # parameters for ABCD method
 var1_label = 'spher'
 var2_label = 'nconst'
 var1_val = 0.50
 var2_val = 25
 nbins = 100
-labels = ['mult','ch']
-output_label = 'nconst25'
+labels = ['mult', 'ch']
+output_label = 'V3'
 
+# input parameters
+username = getpass.getuser()
+dataDir = "/work/submit/{}/SUEP/{}/".format(username,options.tag)
 
 # blinding warning
 if not options.blind: 
@@ -45,48 +39,53 @@ if not options.blind:
     if answer == 'I want to unblind': print("Unblinding...")
 
 # merge all QCD HT bins together, or just import all files from a directory
-username = getpass.getuser()
-dataDir = "/work/submit/{}/SUEP/{}/".format(username,options.tag)
 files = []
 for subdir in list(os.listdir(dataDir)):
     if 'JetHT' not in subdir: continue
     files += [subdir+"/"+file for file in os.listdir(dataDir + subdir)]
-
+    
 # output histos
 def create_output_file(label):
     output = {
-
             # ABCD hists
             "A_"+label: Hist.new.Reg(nbins, 0, 1, name="A_"+label).Weight(),
             "B_"+label: Hist.new.Reg(nbins, 0, 1, name="B_"+label).Weight(),
             "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
             "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
-            
         }
-
     if not options.blind: 
         output.update({"D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight()})
 
     return output
 
-def h5load(ifile, label):
-	with pd.HDFStore(ifile) as store:
-                data = store[label]
-                return data
+# load hdf5 with pandas
+def h5load(fname, label):
+    try:
+        with pd.HDFStore(fname) as store:
+            data = store[label]
+            return data
+    except:
+            print(fname)
+            return 0
 
 # fill ABCD hists with dfs from hdf5 files
 frames = {"mult":[],"ch":[]}
+nfailed = 0
 for ifile in tqdm(files):
-        ifile = dataDir+"/"+ifile
-        for label in labels:
-            df = h5load(ifile, label)
-            frames[label].append(df)
+    ifile = dataDir+"/"+ifile
+    for label in labels:
+        df = h5load(ifile, label)
+        if type(df) == int: 
+            nfailed += 1
+            continue
+        frames[label].append(df)
+print("nfailed", nfailed)
 
 #fout = uproot.recreate(options.dataset+'_ABCD_plot.root')
-fpickle =  open("JetHT_" + output_label + '.pkl', "wb")
+fpickle =  open("outputs/JetHT_" + output_label + '.pkl', "wb")
 for label in labels:
 
-    # parameters for ABCD plots
+    # variables for ABCD plots
     var1 = 'SUEP_'+label+'_' + var1_label
     var2 = 'SUEP_'+label+'_' + var2_label
 
@@ -95,14 +94,16 @@ for label in labels:
 
     # combine the dataframes
     df = pd.concat(frames[label])
-
-    if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
+    
+    #if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
 
     # divide the dfs by region and select the variable we want to plot
     A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val) & (df[var1] > 0.25)].to_numpy()
     B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
     C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val) & (df[var1] > 0.25)].to_numpy()
-    ###### KEEP COMMENTED OUT: if not options.blind: D_obs = df[var1].loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)].to_numpy()
+    #----------------------------------
+    # DO NOT EVEN FILL ANY D observed!
+    #----------------------------------    
     
     sizeC += ak.size(C)
     sizeA += ak.size(A)
@@ -112,7 +113,8 @@ for label in labels:
     output["B_"+label].fill(B)
     output["D_exp_"+label].fill(B)
     output["C_"+label].fill(C)
-    if not options.blind: output["D_obs_"+label].fill(D_obs)
+    if not options.blind: 
+        output["D_obs_"+label].fill(D_obs)
   
     # ABCD method to obtain D expected
     if sizeA>0.0:

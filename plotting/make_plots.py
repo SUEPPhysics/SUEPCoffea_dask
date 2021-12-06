@@ -80,28 +80,45 @@ def create_output_file(label):
     return output
 
 def h5load(ifile, label):
-	with pd.HDFStore(ifile) as store:
-                data = store[label]
-                if options.isMC:
-                    metadata = store.get_storer(label).attrs.metadata
-                    return data, metadata
-                else:
-                    return data
+    with pd.HDFStore(ifile) as store:
+        try:
+            data = store[label] 
+            if options.isMC:
+                metadata = store.get_storer(label).attrs.metadata
+                return data, metadata
+            else:
+                return data
+        except ValueError: 
+            print("Empty file!", ifile)
+            return 0, 0
+        except KeyError:
+            print("No key",label,ifile)
+            return 0, 0
+        
 
 # fill ABCD hists with dfs from hdf5 files
 frames = {"mult":[],"ch":[]}
 xsec = -1.0
+nfailed = 0
 for ifile in tqdm(files):
-        ifile = dataDir+"/"+ifile
+    ifile = dataDir+"/"+ifile
+    
+    try:
         for label in labels:
             df, metadata = h5load(ifile, label)
-
+            if type(df) == int: continue
+            
             if xsec == -1.0 and options.isMC:
                 xsec = metadata["xsec"]
             frames[label].append(df)
+    except:
+        print("Corrupted file", ifile)
+        nfailed+=1
 
+print("nfailed", nfailed)
+            
 #fout = uproot.recreate(options.dataset+'_ABCD_plot.root')
-fpickle =  open(options.dataset+ "_" + output_label + '.pkl', "wb")
+fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 for label in labels:
 
     # parameters for ABCD plots
@@ -114,7 +131,7 @@ for label in labels:
     # combine the dataframes
     df = pd.concat(frames[label])
 
-    if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
+    #if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
 
     # divide the dfs by region and select the variable we want to plot
     A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val) & (df[var1] > 0.25)].to_numpy()
