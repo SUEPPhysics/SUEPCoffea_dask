@@ -215,6 +215,8 @@ class SUEP_cluster(processor.ProcessorABC):
         totPtCut = (ak.sum(tracks.pt, axis=-1) >= minPt)
         tracks = tracks[totPtCut]
         tracks = ak.packed(tracks)
+        tracks = tracks[:-1]
+        print("WARNING: Still excluding last event in tracks.")
         
         ## debug
 #         print(tracks)
@@ -260,7 +262,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
-        cluster = fastjet.ClusterSequence(tracks[:-1], jetdef)
+        cluster = fastjet.ClusterSequence(tracks, jetdef)
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D")  
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
                         
@@ -287,8 +289,6 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
-        print("TAKE ME OUT ONCE CHECKED")
-        if len(indices) == len(col4): print("ok")
         
         # remove events that fail the HT cut
         htCut = (col4 > 1200)
@@ -406,7 +406,7 @@ class SUEP_cluster(processor.ProcessorABC):
             indices_ch = indices_ch[onechtrackCut]
 
             out_ch = SUEP_cand
-            out_ch["index"] = indices
+            out_ch["index"] = indices_ch
             out_ch["SUEP_ch_pt"] = SUEP_cand.pt
             out_ch["SUEP_ch_eta"] = SUEP_cand.eta
             out_ch["SUEP_ch_phi"] = SUEP_cand.phi
