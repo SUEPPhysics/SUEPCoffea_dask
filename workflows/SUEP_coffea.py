@@ -164,7 +164,11 @@ class SUEP_cluster(processor.ProcessorABC):
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")        
-        cut = (events.PFCands.fromPV > 1) & (events.PFCands.trkPt >= 1) & (abs(events.PFCands.trkEta) <= 2.5)
+        cut = (events.PFCands.fromPV > 1) & \
+            (events.PFCands.trkPt >= 0.7) & \
+            (abs(events.PFCands.trkEta) <= 2.5) & \
+            (abs(events.PFCands.dz) < 10) & \
+            (events.PFCands.dzErr < 0.05)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
         
@@ -175,7 +179,12 @@ class SUEP_cluster(processor.ProcessorABC):
             "phi": events.isolatedTracks.phi,
             "mass": 0.0
         }, with_name="Momentum4D")
-        cut = (events.isolatedTracks.fromPV > 1) & (events.isolatedTracks.pt >= 0.7) & (abs(events.isolatedTracks.eta) <= 2.5) & (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0)) & (abs(events.isolatedTracks.dz) < 10) & (events.isolatedTracks.dzErr < 0.05)
+        cut = (events.isolatedTracks.fromPV > 1) & \
+            (events.isolatedTracks.pt >= 0.7) & \
+            (abs(events.isolatedTracks.eta) <= 2.5) & \
+            (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0)) &\
+            (abs(events.isolatedTracks.dz) < 10) &\
+            (events.isolatedTracks.dzErr < 0.05)
         Tracks_cands = IsoTracks[cut]
         Tracks_cands = ak.packed(Tracks_cands)
         
@@ -186,31 +195,75 @@ class SUEP_cluster(processor.ProcessorABC):
             "phi": events.lostTracks.phi,
             "mass": 0.0
         }, with_name="Momentum4D")
-        cut = (events.lostTracks.fromPV > 1) & (events.lostTracks.pt >= 0.7) & (abs(events.lostTracks.eta) <= 2.5) & (abs(events.lostTracks.dz) < 10) & (events.lostTracks.dzErr < 0.05)
+        cut = (events.lostTracks.fromPV > 1) & \
+            (events.lostTracks.pt >= 0.7) & \
+            (abs(events.lostTracks.eta) <= 1.0) \
+            & (abs(events.lostTracks.dz) < 10) & \
+            (events.lostTracks.dzErr < 0.05)
         Lost_Tracks_cands = LostTracks[cut]
         Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-
-        Total_Tracks = ak.concatenate([Tracks_cands, Lost_Tracks_cands], axis=1)
      
-        ### FIXME: will want to use different collections in different parts?
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
-        tracks = Tracks_cands
+        Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
+        tracks = Total_Tracks
         
-        # remove events without any tracks < 150 pt
+        # remove events with < minpt after the selections
         nonEmptyCut = (ak.num(tracks, axis=1) > 0)
         tracks = tracks[nonEmptyCut]
-        min_pt = 150
-        minPtCut = (np.max(tracks.pt, axis=-1) >= min_pt)
-        tracks = tracks[minPtCut]
-
+        minPt = 150
+        totPtCut = (ak.sum(tracks.pt, axis=-1) >= minPt)
+        tracks = tracks[totPtCut]
+        tracks = ak.packed(tracks)
+        
+        ## debug
+#         print(tracks)
+#         print(tracks[0])
+#         print(tracks[-1])
+#         print()
+        
+#         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
+                
+#         print(tracks)
+#         print(tracks[0])
+#         print(tracks[-1])
+#         print()
+        
+#         c = fastjet.ClusterSequence(tracks[:-1], jetdef)
+#         ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
+        
+        # for i, a in enumerate(ak_inclusive_jets):
+        #     if len(a) != 0:
+        #         for j in a:
+        #             print(j)
+        #         event = i
+        #         print("event", event)
+        #         break
+        # c = fastjet.ClusterSequence(tracks[event], jetdef)
+        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
+        # for j in ak_inclusive_jets:
+        #     print(j)
+        # print("1")
+        # c = fastjet.ClusterSequence(tracks[-1], jetdef)
+        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
+        # print("2")
+        # c = fastjet.ClusterSequence(tracks[:-1], jetdef)
+        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
+        # print("3")
+        # c = fastjet.ClusterSequence(tracks, jetdef)
+        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
+#         print("3")
+#         print("IT WORKED??")
+            
+#         import sys
+#         sys.exit()
+        
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
-        cluster = fastjet.ClusterSequence(tracks, jetdef)
-  
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= min_pt),"Momentum4D")     
-        ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= min_pt),"Momentum4D")
-                
+        cluster = fastjet.ClusterSequence(tracks[:], jetdef)
+        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D")  
+        ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
+                        
         # cut based on ak4 jets to replicate the trigger
         Jets = ak.zip({
             "pt": events.Jet.pt,
@@ -220,9 +273,10 @@ class SUEP_cluster(processor.ProcessorABC):
             "jetId": events.Jet.jetId
         })
         Jets = Jets[nonEmptyCut]
-        Jets = Jets[minPtCut]
+        Jets = Jets[totPtCut]
         jetCut = (Jets.jetId) & (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
+        ak4jets = ak4jets[:-1]
         
         # save variables to a dataframe
         col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
@@ -259,6 +313,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # account for no events passing our selections
         if not any(singletrackCut): 
+            print("No events in Multiplicity Method.")
             out_mult = pd.DataFrame()
         else:            
             #cut events with single track highest mult jets
@@ -327,6 +382,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # account for no events passing our selections
         if not any(onechtrackCut):
+            print("No events in ISR Removal Method.")
             out_ch = pd.DataFrame()
         else:
             Christos_cands = Christos_cands[onechtrackCut]#remove the events left with one track
