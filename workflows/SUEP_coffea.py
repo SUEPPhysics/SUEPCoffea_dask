@@ -260,7 +260,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
-        cluster = fastjet.ClusterSequence(tracks[:], jetdef)
+        cluster = fastjet.ClusterSequence(tracks[:-1], jetdef)
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D")  
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
                         
@@ -285,17 +285,24 @@ class SUEP_cluster(processor.ProcessorABC):
         col4 = pd.Series(ak.sum(ak4jets.pt,axis=-1).to_list(), name = "ht")
         out_vars = pd.concat([col1, col2, col3, col4], axis=1)
         
+        # indices of events in tracks, used to keep track which events pass the selections
+        indices = np.arange(0,len(tracks))
+        print("TAKE ME OUT ONCE CHECKED")
+        if len(indices) == len(col4): print("ok")
+        
         # remove events that fail the HT cut
         htCut = (col4 > 1200)
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]
         tracks = tracks[htCut]
+        indices = indices[htCut]
     
         # remove events without a cluster
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         tracks = tracks[clusterCut]
+        indices = indices[clusterCut]
  
         # output an empty file if not events pass selections, avoids errors later on
         if len(tracks) == 0:
@@ -320,8 +327,10 @@ class SUEP_cluster(processor.ProcessorABC):
             thicc_jets = thicc_jets[singletrackCut]
             chonkiest_cands = chonkiest_cands[singletrackCut]
             tracks_mult = tracks[singletrackCut]
+            indices_mult = indices[singletrackCut]
         
             out_mult = thicc_jets[:,0]
+            out_mult["index"] = indices_mult
             out_mult["SUEP_mult_ntracks"] = ak.num(tracks_mult, axis=1)
             out_mult["SUEP_mult_nconst"] = ak.num(chonkiest_cands, axis=1)
             out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
@@ -354,7 +363,7 @@ class SUEP_cluster(processor.ProcessorABC):
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
         SUEP_pt_nconst = chonkocity[highpt_jet]
-        SUEP_pt_tracks = ak_inclusive_cluster[highpt_jet]
+        SUEP_pt_tracks = ak_inclusive_cluster[highpt_jet]        
         highpt_cands = SUEP_pt_tracks[:,0]                  #tracks for highest pt
         singletrackCut = (ak.num(highpt_cands)>1)
         SUEP_pt = SUEP_pt[singletrackCut]           #We dont want to look at single track jets
@@ -362,6 +371,7 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pt_tracks = SUEP_pt_tracks[singletrackCut]
         highpt_cands = highpt_cands[singletrackCut] 
         tracks_ch = tracks[singletrackCut]
+        indices_ch = indices[singletrackCut]
 
         # ISR removal method
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
@@ -393,8 +403,10 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_cand_tracks = SUEP_cand_tracks[onechtrackCut]
             ISR_cand_tracks = ISR_cand_tracks[onechtrackCut]
             boost_ch = boost_ch[onechtrackCut]
+            indices_ch = indices_ch[onechtrackCut]
 
             out_ch = SUEP_cand
+            out_ch["index"] = indices
             out_ch["SUEP_ch_pt"] = SUEP_cand.pt
             out_ch["SUEP_ch_eta"] = SUEP_cand.eta
             out_ch["SUEP_ch_phi"] = SUEP_cand.phi
