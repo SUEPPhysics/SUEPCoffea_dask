@@ -211,11 +211,15 @@ class SUEP_cluster(processor.ProcessorABC):
         # remove events with < minpt after the selections
         nonEmptyCut = (ak.num(tracks, axis=1) > 0)
         tracks = tracks[nonEmptyCut]
+        Lost_Tracks_cands = Lost_Tracks_cands[nonEmptyCut]
         minPt = 150
         totPtCut = (ak.sum(tracks.pt, axis=-1) >= minPt)
         tracks = tracks[totPtCut]
+        Lost_Tracks_cands = Lost_Tracks_cands[totPtCut]
         tracks = ak.packed(tracks)
+        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
         tracks = tracks[:-1]
+        Lost_Tracks_cands = Lost_Tracks_cands[:-1]
         print("WARNING: Still excluding last event in tracks.")
         
         ## debug
@@ -285,7 +289,8 @@ class SUEP_cluster(processor.ProcessorABC):
         col2 = pd.Series(ak.num(tracks).to_list(), name = "ntracks")
         col3 = pd.Series(ak.num(ak_inclusive_jets).to_list(), name = "ngood_fastjets")
         col4 = pd.Series(ak.sum(ak4jets.pt,axis=-1).to_list(), name = "ht")
-        out_vars = pd.concat([col1, col2, col3, col4], axis=1)
+        col5 = pd.Series(ak.num(Lost_Tracks_cands).to_list(), name = "nLostTracks")
+        out_vars = pd.concat([col1, col2, col3, col4, col5], axis=1)
         
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
@@ -296,6 +301,7 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_jets = ak_inclusive_jets[htCut]
         tracks = tracks[htCut]
         indices = indices[htCut]
+        Lost_Tracks_cands = Lost_Tracks_cands[htCut]
     
         # remove events without a cluster
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
@@ -303,6 +309,7 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
+        Lost_Tracks_cands = Lost_Tracks_cands[clusterCut]
  
         # output an empty file if not events pass selections, avoids errors later on
         if len(tracks) == 0:
@@ -372,6 +379,7 @@ class SUEP_cluster(processor.ProcessorABC):
         highpt_cands = highpt_cands[singletrackCut] 
         tracks_ch = tracks[singletrackCut]
         indices_ch = indices[singletrackCut]
+        Lost_Tracks_cands = Lost_Tracks_cands[singletrackCut]
 
         # ISR removal method
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
@@ -387,7 +395,9 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         ISR_cand_b = ISR_cand.boost_p4(boost_ch)
         tracks_ch = tracks_ch.boost_p4(boost_ch)
+        Lost_Tracks_ch = Lost_Tracks_cands.boost_p4(boost_ch)
         Christos_cands = tracks_ch[abs(tracks_ch.deltaphi(ISR_cand_b)) > 1.6]
+        Lost_Christos_cands = Lost_Tracks_ch[abs(Lost_Tracks_ch.deltaphi(ISR_cand_b)) > 1.6]
         onechtrackCut = (ak.num(Christos_cands)>1)
         
         # account for no events passing our selections
@@ -404,9 +414,11 @@ class SUEP_cluster(processor.ProcessorABC):
             ISR_cand_tracks = ISR_cand_tracks[onechtrackCut]
             boost_ch = boost_ch[onechtrackCut]
             indices_ch = indices_ch[onechtrackCut]
-
+            Lost_Christos_cands = Lost_Christos_cands[onechtrackCut]
+            
             out_ch = SUEP_cand
-            out_ch["index"] = indices_ch
+            out_ch["SUEP_ch_index"] = indices_ch
+            out_ch["SUEP_ch_nLostTracks"] = ak.num(Lost_Christos_cands)
             out_ch["SUEP_ch_pt"] = SUEP_cand.pt
             out_ch["SUEP_ch_eta"] = SUEP_cand.eta
             out_ch["SUEP_ch_phi"] = SUEP_cand.phi
@@ -439,7 +451,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
         
         # padndas to hdf5 file
-        self.save_dfs([out_ch, out_mult],["ch","mult"])
+        self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
 
         return output
 
