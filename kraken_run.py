@@ -14,21 +14,26 @@ source /cvmfs/cms.cern.ch/cmsset_default.sh
 export X509_USER_PROXY={proxy}
 export PATH=$USER_PATH
 
-source /cvmfs/cms.cern.ch/cmsset_default.sh
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
+
+echo "export XRD_LOGLEVEL=Debug"
+export XRD_LOGLEVEL=Debug
 
 echo "hostname:"
 hostname
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
 echo "xrdcp $2 temp.root"
 xrdcp $2 temp.root
+echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
 rm temp.root
 
-echo "----- transferring output to scratch :"
+#echo "----- transferring output to scratch :"
+echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
+xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+
 echo " ------ THE END (everyone dies !) ----- "
 """
 
@@ -37,7 +42,7 @@ condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 1024
 executable            = {jobdir}/script.sh
-arguments             = $(ProcId) $(jobid) $(fileid)
+arguments             = $(ProcId) $(jobid) $(fileid) ${just_file}
 should_transfer_files = YES
 transfer_input_files  = {transfer_file}
 output                = $(ClusterId).$(ProcId).out
@@ -45,18 +50,17 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
-transfer_output_remaps = "condor_out.hdf5 = {final_outdir}/$(fileid).hdf5"
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
-requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
+requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
+#requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
 #requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
+#+DESIRED_Sites        = "T2_AT_Vienna,T2_BE_IIHE,T2_BE_UCL,T2_BR_SPRACE,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_MIT,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC"
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
 +JobFlavour           = "{queue}"
 
 queue jobid, fileid from {jobdir}/inputfiles.dat
 """
-
-# requirements          = (BOSCOCluster == "t3serv008.mit.edu" || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu") )
 
 
 def main():
@@ -78,7 +82,8 @@ def main():
     home_base  = os.environ['HOME']
     proxy_copy = os.path.join(home_base,proxy_base)
     username = getpass.getuser()
-    outdir = '/work/submit/'+username+'/SUEP/{tag}/{sample}/' 
+    outdir = '/mnt/T3_US_MIT/hadoop/scratch/'+ username + '/SUEP/{tag}/{sample}/'
+    outdir_condor = '/scratch/'+username+'/SUEP/{tag}/{sample}/'
 
     regenerate_proxy = False
     if not os.path.isfile(proxy_copy):
@@ -91,14 +96,14 @@ def main():
         lifetime = float(lifetime)
         lifetime = lifetime / (60*60)
         logging.info("--- proxy lifetime is {} hours".format(lifetime))
-        if lifetime < 3.0: # we want at least 3 hours
+        if lifetime < 139.00: # we want at least 3 hours
             logging.warning("--- proxy has expired !")
             regenerate_proxy = True
 
     if regenerate_proxy:
         redone_proxy = False
         while not redone_proxy:
-            status = os.system('voms-proxy-init -voms cms')
+            status = os.system('voms-proxy-init -voms cms --hours=140')
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
         shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
@@ -108,7 +113,7 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir = '_'.join(['jobs/jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             print(sample_name)
             if os.path.isdir(jobs_dir):
@@ -136,6 +141,7 @@ def main():
                          #infiles.write(i.split(" ")[0]+"\n")
                      infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
+            fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
             os.system("mkdir -p {}".format(fin_outdir))
   
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
@@ -144,7 +150,7 @@ def main():
                     proxy=proxy_base,
                     ismc=options.isMC,
                     era=options.era,
-                    #final_outdir=fin_outdir,          
+                    outdir=fin_outdir_condor,          
                     dataset=sample_name
                 )
                 scriptfile.write(script)
@@ -160,13 +166,14 @@ def main():
                         "../data",
                         proxy_copy
                     ]),
+                    just_file=just_file,
                     jobdir=jobs_dir,
-                    final_outdir = fin_outdir,
                     proxy=proxy_base,
                     queue=options.queue
                 )
                 condorfile.write(condor)
                 condorfile.close()
+                
             if options.dryrun:
                 continue
  

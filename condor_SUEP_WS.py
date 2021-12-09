@@ -47,7 +47,8 @@ if options.isMC:
                            'schema': processor.NanoAODSchema,
                            'xrootdtimeout': 10,
             },
-            chunksize=500000000
+            #chunksize=5000000000
+            chunksize=50000
         )
         xsection = output
 
@@ -67,5 +68,5 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=500000
+        chunksize=50000
     )

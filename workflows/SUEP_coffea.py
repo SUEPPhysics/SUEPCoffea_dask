@@ -207,19 +207,19 @@ class SUEP_cluster(processor.ProcessorABC):
         # dimensions of tracks = events x tracks in event x 4 momenta
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         tracks = Total_Tracks
+        #tracks = tracks[:-1]
+        #Lost_Tracks_cands = Lost_Tracks_cands[:-1]
         
         # remove events with < minpt after the selections
-        nonEmptyCut = (ak.num(tracks, axis=1) > 0)
-        tracks = tracks[nonEmptyCut]
-        Lost_Tracks_cands = Lost_Tracks_cands[nonEmptyCut]
+        # nonEmptyCut = (ak.num(tracks, axis=1) > 0)
+        # tracks = tracks[nonEmptyCut]
+        # Lost_Tracks_cands = Lost_Tracks_cands[nonEmptyCut]
         minPt = 150
-        totPtCut = (ak.sum(tracks.pt, axis=-1) >= minPt)
-        tracks = tracks[totPtCut]
-        Lost_Tracks_cands = Lost_Tracks_cands[totPtCut]
-        tracks = ak.packed(tracks)
-        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-        tracks = tracks[:-1]
-        Lost_Tracks_cands = Lost_Tracks_cands[:-1]
+        # totPtCut = (ak.sum(tracks.pt, axis=-1) >= minPt)
+        # tracks = tracks[totPtCut]
+        # Lost_Tracks_cands = Lost_Tracks_cands[totPtCut]
+        # tracks = ak.packed(tracks)
+        # Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
         print("WARNING: Still excluding last event in tracks.")
         
         ## debug
@@ -263,6 +263,10 @@ class SUEP_cluster(processor.ProcessorABC):
             
 #         import sys
 #         sys.exit()
+
+
+        tracks = tracks[:-1]
+        Lost_Tracks_cands = Lost_Tracks_cands[:-1]
         
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
@@ -278,8 +282,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Jet.mass,
             "jetId": events.Jet.jetId
         })
-        Jets = Jets[nonEmptyCut]
-        Jets = Jets[totPtCut]
+        #Jets = Jets[nonEmptyCut]
+        #Jets = Jets[totPtCut]
         jetCut = (Jets.jetId) & (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         ak4jets = ak4jets[:-1]
