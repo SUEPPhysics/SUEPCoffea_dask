@@ -24,7 +24,7 @@ nbins = 100
 labels = ['ch']
 output_label = 'V5_nconst10'
 
-# merge all QCD HT bins together, or just import all files from a directory
+# merge all QCD HT bins together, or just import all files from a specific directory
 username = getpass.getuser()
 if options.dataset == 'QCD':
     dataDir = "/work/submit/{}/SUEP/{}/".format(username,options.tag)
