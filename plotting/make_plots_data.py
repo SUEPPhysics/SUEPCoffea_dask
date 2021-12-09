@@ -24,8 +24,8 @@ var2_label = 'nconst'
 var1_val = 0.50
 var2_val = 25
 nbins = 100
-labels = ['mult', 'ch']
-output_label = 'V3'
+labels = ['ch']
+output_label = 'V5_nconst10'
 
 # input parameters
 username = getpass.getuser()
@@ -52,6 +52,14 @@ def create_output_file(label):
             "B_"+label: Hist.new.Reg(nbins, 0, 1, name="B_"+label).Weight(),
             "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
             "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
+        
+            # AB and AC combined, kinematic variables
+            "SUEP_" + label + "_AB_pt_" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AB_eta_" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_" + label + "_AB_phi_" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_" + label + "_AC_pt_" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AC_eta_" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_" + label + "_AC_phi_" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
         }
     if not options.blind: 
         output.update({"D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight()})
@@ -79,7 +87,7 @@ for ifile in tqdm(files):
             nfailed += 1
             continue
         frames[label].append(df)
-print("nfailed", nfailed)
+print("nfailed", nfailed*1.0 / len(labels))
 
 #fout = uproot.recreate(options.dataset+'_ABCD_plot.root')
 fpickle =  open("outputs/JetHT_" + output_label + '.pkl', "wb")
@@ -95,15 +103,19 @@ for label in labels:
     # combine the dataframes
     df = pd.concat(frames[label])
     
-    #if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
+    # set the D region to 0
+    df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)] = 0
+    
+    if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
+    if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
 
     # divide the dfs by region and select the variable we want to plot
-    A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val) & (df[var1] > 0.25)].to_numpy()
+    A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
     B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
-    C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val) & (df[var1] > 0.25)].to_numpy()
+    C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
     #----------------------------------
     # DO NOT EVEN FILL ANY D observed!
-    #----------------------------------    
+    #----------------------------------
     
     sizeC += ak.size(C)
     sizeA += ak.size(A)
@@ -123,6 +135,15 @@ for label in labels:
     	CoverA = 0.0
     	print("A region has no occupancy")
     output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
+    
+    # fill some new distribuions
+    output["SUEP_" + label + "_AB_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy())
+    output["SUEP_" + label + "_AB_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy())
+    output["SUEP_" + label + "_AB_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy())
+    
+    output["SUEP_" + label + "_AC_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy())
+    output["SUEP_" + label + "_AC_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy())
+    output["SUEP_" + label + "_AC_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy())
 
     #Save to root and to pickle
     #for key in output.keys(): fout[key] = output[key]
