@@ -72,12 +72,12 @@ def create_output_file(label):
             "SUEP_" + label + "_A_pt" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_B_pt" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_C_pt" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AB_pt_" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AB_eta_" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_" + label + "_AB_phi_" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
-            "SUEP_" + label + "_AC_pt_" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AC_eta_" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_" + label + "_AC_phi_" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_" + label + "_AB_pt" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AB_eta" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_" + label + "_AB_phi" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_" + label + "_AC_pt" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AC_eta" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_" + label + "_AC_phi" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
     }
     if label == 'ch':# Christos only
         output2 = {
@@ -173,15 +173,15 @@ for label in labels:
     output["2D_rho1_nconst_"+label].fill(df["SUEP_"+label+"_rho1"], df["SUEP_"+label+"_nconst"], weight= df['xsec'])
     output["2D_spher_nconst_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_nconst"], weight= df['xsec'])
     output["2D_spher_ntracks_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_ntracks"], weight= df['xsec'])
-    output["SUEP_" + label + "_AB_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
-    output["SUEP_" + label + "_AB_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
-    output["SUEP_" + label + "_AB_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
-    output["SUEP_" + label + "_AC_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
-    output["SUEP_" + label + "_AC_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
-    output["SUEP_" + label + "_AC_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
-    output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_B_pt"].fill(df_A['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_C_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
+    output["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
+    output["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
+    output["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
+    output["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
+    output["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
+    output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'], weight=df_A['xsec'])
+    output["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'], weight=df_B['xsec'])
+    output["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'], weight=df_C['xsec'])
 
     # ABCD method to obtain D expected
     if sizeA>0.0:
