@@ -65,6 +65,9 @@ def create_output_file(label):
             "SUEP_" + label + "_A_pt" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_B_pt" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_C_pt" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_"+label+"_A_nconst" : Hist.new.Reg(499, 0, 500, name="A nconst_"+label, label="# Tracks in SUEP").Weight(),
+            "SUEP_"+label+"_B_nconst" : Hist.new.Reg(499, 0, 500, name="B nconst_"+label, label="# Tracks in SUEP").Weight(),
+            "SUEP_"+label+"_C_nconst" : Hist.new.Reg(499, 0, 500, name="C nconst_"+label, label="# Tracks in SUEP").Weight(),
             "SUEP_" + label + "_AB_pt" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_AB_eta" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
             "SUEP_" + label + "_AB_phi" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
@@ -149,8 +152,11 @@ for label in labels:
     
     # fill some new distribuions
     output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_B_pt"].fill(df_A['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_C_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_A_nconst"].fill(df_A['SUEP_' + label + '_nconst'])
+    output["SUEP_" + label + "_B_nconst"].fill(df_B['SUEP_' + label + '_nconst'])
+    output["SUEP_" + label + "_C_nconst"].fill(df_C['SUEP_' + label + '_nconst'])
     output["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy())
     output["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy())
     output["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy())

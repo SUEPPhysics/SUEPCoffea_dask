@@ -31,7 +31,7 @@ data_samples = [
 results = []
 start = time.time()
 if options.combined:
-    md = 'python3 make_plots_data.py --tag={} --dataset={} -b'.format(options.tag, 'combined')
+    cmd = 'python3 make_plots_data.py --tag={} --dataset={} -b'.format(options.tag, 'combined')
     results.append(pool.apply_async(call_makeplots, (cmd,)))
 else:
     for sample in data_samples:
