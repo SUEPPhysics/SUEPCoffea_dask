@@ -15,6 +15,12 @@ parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
 parser.add_argument("-b"   , "--blind"   , dest='blind',  action='store_true', help="blind", required=False)
 parser.add_argument("-u"   , "--unblind"  , dest='blind',  action='store_false', help="unblind", required=False)
+dhelp = """
+Which dataset to run. Currently supports:
+'combined' -- every 'JetHT' label found in "/work/submit/USERNAME/SUEP/TAG/"
+'JetHT-XXX' -- grabs "/work/submit/USERNAME/SUEP/TAG/JetHT-XXX/*"
+"""
+parser.add_argument("-d"   , "--dataset"  , type=str, default="IronMan"  , help=dhelp, required=True)
 parser.set_defaults(blind=True)
 options = parser.parse_args()
 
@@ -27,10 +33,6 @@ nbins = 100
 labels = ['ch']
 output_label = 'V5_nconst10'
 
-# input parameters
-username = getpass.getuser()
-dataDir = "/work/submit/{}/SUEP/{}/".format(username,options.tag)
-
 # blinding warning
 if not options.blind: 
     print("WARNING: YOU ARE RUNNING THIS SCRIPT WITHOUT BLINDING.")
@@ -38,11 +40,17 @@ if not options.blind:
     if answer != 'I want to unblind': sys.exit("Safely exited program before unblinding the analysis. Nice!")
     if answer == 'I want to unblind': print("Unblinding...")
 
-# merge all QCD HT bins together, or just import all files from a directory
-files = []
-for subdir in list(os.listdir(dataDir)):
-    if 'JetHT' not in subdir: continue
-    files += [subdir+"/"+file for file in os.listdir(dataDir + subdir)]
+# merge all JetHT samples together, or just import all files from a specific directory
+username = getpass.getuser()
+if options.dataset == 'combined':
+    dataDir = "/work/submit/{}/SUEP/{}/".format(username,options.tag)
+    files = []
+    for subdir in list(os.listdir(dataDir)):
+        if 'JetHT' not in subdir: continue
+        files += [subdir+"/"+file for file in os.listdir(dataDir + subdir)]
+else:
+    dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+    files = [file for file in os.listdir(dataDir)]
     
 # output histos
 def create_output_file(label):
@@ -54,12 +62,15 @@ def create_output_file(label):
             "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
         
             # AB and AC combined, kinematic variables
-            "SUEP_" + label + "_AB_pt_" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AB_eta_" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_" + label + "_AB_phi_" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
-            "SUEP_" + label + "_AC_pt_" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AC_eta_" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_" + label + "_AC_phi_" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_" + label + "_A_pt" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_B_pt" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_C_pt" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AB_pt" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AB_eta" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_" + label + "_AB_phi" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_" + label + "_AC_pt" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_AC_eta" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
+            "SUEP_" + label + "_AC_phi" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
         }
     if not options.blind: 
         output.update({"D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight()})
@@ -87,10 +98,10 @@ for ifile in tqdm(files):
             nfailed += 1
             continue
         frames[label].append(df)
-print("nfailed", nfailed*1.0 / len(labels))
+print("Number of files that failed: ", nfailed*1.0 / len(labels))
 
 #fout = uproot.recreate(options.dataset+'_ABCD_plot.root')
-fpickle =  open("outputs/JetHT_" + output_label + '.pkl', "wb")
+fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 for label in labels:
 
     # variables for ABCD plots
@@ -110,23 +121,23 @@ for label in labels:
     if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
 
     # divide the dfs by region and select the variable we want to plot
-    A = df[var1].loc[(df[var1] < var1_val) & (df[var2] < var2_val)].to_numpy()
-    B = df[var1].loc[(df[var1] >= var1_val) & (df[var2] < var2_val)].to_numpy()
-    C = df[var1].loc[(df[var1] < var1_val) & (df[var2] >= var2_val)].to_numpy()
+    df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
+    df_B = df.loc[(df[var1] >= var1_val) & (df[var2] < var2_val)]
+    df_C = df.loc[(df[var1] < var1_val) & (df[var2] >= var2_val)]
     #----------------------------------
     # DO NOT EVEN FILL ANY D observed!
     #----------------------------------
     
-    sizeC += ak.size(C)
-    sizeA += ak.size(A)
-
+    sizeC += df_C.shape[0]
+    sizeA += df_A.shape[0]
+    
     # fill the ABCD histograms
-    output["A_"+label].fill(A)
-    output["B_"+label].fill(B)
-    output["D_exp_"+label].fill(B)
-    output["C_"+label].fill(C)
+    output["A_"+label].fill(df_A[var1])
+    output["B_"+label].fill(df_B[var1])
+    output["D_exp_"+label].fill(df_B[var1])
+    output["C_"+label].fill(df_C[var1])
     if not options.blind: 
-        output["D_obs_"+label].fill(D_obs)
+        output["D_obs_"+label].fill(df_D_obs[var1])
   
     # ABCD method to obtain D expected
     if sizeA>0.0:
@@ -137,13 +148,15 @@ for label in labels:
     output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
     
     # fill some new distribuions
-    output["SUEP_" + label + "_AB_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy())
-    output["SUEP_" + label + "_AB_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy())
-    output["SUEP_" + label + "_AB_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy())
-    
-    output["SUEP_" + label + "_AC_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy())
-    output["SUEP_" + label + "_AC_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy())
-    output["SUEP_" + label + "_AC_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy())
+    output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_B_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_C_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy())
+    output["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy())
+    output["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy())
+    output["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy())
+    output["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy())
+    output["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy())
 
     #Save to root and to pickle
     #for key in output.keys(): fout[key] = output[key]

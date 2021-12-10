@@ -12,7 +12,6 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
-parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="if is MC")
 options = parser.parse_args()
 
 # parameters for ABCD method
@@ -69,7 +68,10 @@ def create_output_file(label):
             "2D_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             "2D_spher_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
         
-            # AB and AC combined, kinematic variables
+            # region specific kinematic variables
+            "SUEP_" + label + "_A_pt" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_B_pt" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"$p_T$").Weight(),
+            "SUEP_" + label + "_C_pt" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_AB_pt_" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_AB_eta_" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
             "SUEP_" + label + "_AB_phi_" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
@@ -91,11 +93,8 @@ def h5load(ifile, label):
     with pd.HDFStore(ifile) as store:
         try:
             data = store[label] 
-            if options.isMC:
-                metadata = store.get_storer(label).attrs.metadata
-                return data, metadata
-            else:
-                return data
+            metadata = store.get_storer(label).attrs.metadata
+            return data, metadata
         except ValueError: 
             print("Empty file!", ifile)
             return 0, 0
@@ -114,10 +113,12 @@ for ifile in tqdm(files):
     try:
         for label in labels:
             df, metadata = h5load(ifile, label)
-            if type(df) == int: 
-                continue
-            if options.isMC:
-                df["xsec"] = metadata["xsec"]
+            if type(df) == int: continue
+            
+            # testing
+            if metadata['xsec'] > 20000: continue
+            
+            df["xsec"] = metadata["xsec"]    
             frames[label].append(df)
             
     except:
@@ -178,6 +179,9 @@ for label in labels:
     output["SUEP_" + label + "_AC_phi_"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
     output["SUEP_" + label + "_AC_eta_"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
     output["SUEP_" + label + "_AC_pt_"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
+    output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_B_pt"].fill(df_A['SUEP_' + label + '_pt'])
+    output["SUEP_" + label + "_C_pt"].fill(df_A['SUEP_' + label + '_pt'])
 
     # ABCD method to obtain D expected
     if sizeA>0.0:

@@ -36,8 +36,7 @@ SUEP = [
            "SUEP-m750-generic+RunIIAutumn18-private+MINIAODSIM"
            ]
 
-QCD = [
-    "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+QCD = [ "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
 "QCD_Pt_120to170_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",
 "QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
 "QCD_Pt_15to30_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
@@ -64,7 +63,7 @@ datasets = {
 results = []
 start = time.time()
 for sample in datasets[options.dataset]:
-     cmd = 'python3 make_plots.py --isMC=1 --tag={} --dataset={}'.format(options.tag, sample)
+     cmd = 'python3 make_plots_MC.py --tag={} --dataset={}'.format(options.tag, sample)
      results.append(pool.apply_async(call_makeplots, (cmd,)))
 
 # Close the pool and wait for each running task to complete
