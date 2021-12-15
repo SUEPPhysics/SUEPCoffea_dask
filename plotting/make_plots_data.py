@@ -31,7 +31,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100
 labels = ['ch']
-output_label = 'V5_nconst10'
+output_label = 'V5_pt300'
 
 # blinding warning
 if not options.blind: 
@@ -74,6 +74,9 @@ def create_output_file(label):
             "SUEP_" + label + "_AC_pt" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_AC_eta" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
             "SUEP_" + label + "_AC_phi" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_" + label + "_A_pt_nconst" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label).Reg(499, 0, 500, name="A nconst_"+label).Weight(),
+            "SUEP_" + label + "_B_pt_nconst" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label).Reg(499, 0, 500, name="B nconst_"+label).Weight(),
+            "SUEP_" + label + "_C_pt_nconst" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label).Reg(499, 0, 500, name="C nconst_"+label).Weight(),
         }
     if not options.blind: 
         output.update({"D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight()})
@@ -81,90 +84,96 @@ def create_output_file(label):
     return output
 
 # load hdf5 with pandas
-def h5load(fname, label):
+def h5load(ifile, label):
     try:
-        with pd.HDFStore(fname) as store:
-            data = store[label]
-            return data
+        with pd.HDFStore(ifile) as store:
+            try:
+                data = store[label] 
+                metadata = store.get_storer(label).attrs.metadata
+                return data, metadata
+            except ValueError: 
+                print("Empty file!", ifile)
+                return 0, 0
+            except KeyError:
+                print("No key",label,ifile)
+                return 0, 0
     except:
-            print(fname)
-            return 0
+        print(ifile)
+        return 0, 0 
 
 # fill ABCD hists with dfs from hdf5 files
 frames = {"mult":[],"ch":[]}
 nfailed = 0
+fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
+output = {}
+for label in labels: output.update({label: create_output_file(label)})
+
 for ifile in tqdm(files):
     ifile = dataDir+"/"+ifile
     for label in labels:
-        df = h5load(ifile, label)
+        df, metadata = h5load(ifile, label)
         if type(df) == int: 
             nfailed += 1
             continue
-        frames[label].append(df)
+        if df.shape[0] == 0: continue
+        
+        # variables for ABCD plots
+        var1 = 'SUEP_'+label+'_' + var1_label
+        var2 = 'SUEP_'+label+'_' + var2_label
+
+        sizeA, sizeC = 0,0
+        
+        # set the D region to 0
+        df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)] = 0
+
+        if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
+        if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
+        df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
+
+        # divide the dfs by region and select the variable we want to plot
+        df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
+        df_B = df.loc[(df[var1] >= var1_val) & (df[var2] < var2_val)]
+        df_C = df.loc[(df[var1] < var1_val) & (df[var2] >= var2_val)]
+        #----------------------------------
+        # DO NOT EVEN FILL ANY D observed!
+        #----------------------------------
+
+        sizeC += df_C.shape[0]
+        sizeA += df_A.shape[0]
+        
+        # fill the ABCD histograms
+        output[label]["A_"+label].fill(df_A[var1])
+        output[label]["B_"+label].fill(df_B[var1])
+        output[label]["D_exp_"+label].fill(df_B[var1])
+        output[label]["C_"+label].fill(df_C[var1])
+        if not options.blind: 
+            output[label]["D_obs_"+label].fill(df_D_obs[var1])
+
+        # fill some new distribuions
+        output[label]["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
+        output[label]["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'])
+        output[label]["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'])
+        output[label]["SUEP_" + label + "_A_nconst"].fill(df_A['SUEP_' + label + '_nconst'])
+        output[label]["SUEP_" + label + "_B_nconst"].fill(df_B['SUEP_' + label + '_nconst'])
+        output[label]["SUEP_" + label + "_C_nconst"].fill(df_C['SUEP_' + label + '_nconst'])
+        output[label]["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)])
+        output[label]["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)])
+        output[label]["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)])
+        output[label]["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)])
+        output[label]["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)])
+        output[label]["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)])
+        output[label]["SUEP_" + label + "_A_pt_nconst"].fill(df_A['SUEP_' + label + '_pt'], df_A['SUEP_' + label + '_nconst'])
+        output[label]["SUEP_" + label + "_B_pt_nconst"].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'])
+        output[label]["SUEP_" + label + "_C_pt_nconst"].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'])
+
+    
+# ABCD method to obtain D expected
+if sizeA>0.0:
+    CoverA =  sizeC / sizeA
+else:
+    CoverA = 0.0
+    print("A region has no occupancy")
+output[label]["D_exp_"+label] = output[label]["D_exp_"+label]*(CoverA)
+
+for label in labels: pickle.dump(output[label], fpickle)
 print("Number of files that failed: ", nfailed*1.0 / len(labels))
-
-#fout = uproot.recreate(options.dataset+'_ABCD_plot.root')
-fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
-for label in labels:
-
-    # variables for ABCD plots
-    var1 = 'SUEP_'+label+'_' + var1_label
-    var2 = 'SUEP_'+label+'_' + var2_label
-
-    output = create_output_file(label)
-    sizeA, sizeC = 0,0
-
-    # combine the dataframes
-    df = pd.concat(frames[label])
-    
-    # set the D region to 0
-    df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)] = 0
-    
-    if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
-    if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
-
-    # divide the dfs by region and select the variable we want to plot
-    df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
-    df_B = df.loc[(df[var1] >= var1_val) & (df[var2] < var2_val)]
-    df_C = df.loc[(df[var1] < var1_val) & (df[var2] >= var2_val)]
-    #----------------------------------
-    # DO NOT EVEN FILL ANY D observed!
-    #----------------------------------
-    
-    sizeC += df_C.shape[0]
-    sizeA += df_A.shape[0]
-    
-    # fill the ABCD histograms
-    output["A_"+label].fill(df_A[var1])
-    output["B_"+label].fill(df_B[var1])
-    output["D_exp_"+label].fill(df_B[var1])
-    output["C_"+label].fill(df_C[var1])
-    if not options.blind: 
-        output["D_obs_"+label].fill(df_D_obs[var1])
-  
-    # ABCD method to obtain D expected
-    if sizeA>0.0:
-    	CoverA =  sizeC / sizeA
-    else:
-    	CoverA = 0.0
-    	print("A region has no occupancy")
-    output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
-    
-    # fill some new distribuions
-    output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'])
-    output["SUEP_" + label + "_A_nconst"].fill(df_A['SUEP_' + label + '_nconst'])
-    output["SUEP_" + label + "_B_nconst"].fill(df_B['SUEP_' + label + '_nconst'])
-    output["SUEP_" + label + "_C_nconst"].fill(df_C['SUEP_' + label + '_nconst'])
-    output["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy())
-    output["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy())
-    output["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy())
-    output["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy())
-    output["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy())
-    output["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy())
-
-    #Save to root and to pickle
-    #for key in output.keys(): fout[key] = output[key]
-    pickle.dump(output, fpickle)
-#fout.close()
