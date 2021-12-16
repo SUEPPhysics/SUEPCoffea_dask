@@ -18,11 +18,11 @@ from typing import List, Optional
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
-    def __init__(self, isMC: int, era: int, xsec: float, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, output_location: Optional[str]) -> None:
+    def __init__(self, isMC: int, era: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, output_location: Optional[str]) -> None:
         self._flag = flag
         self.output_location = output_location
         self.do_syst = do_syst
-        self.xsec = xsec
+        self.gensumweight = 1.0
         self.era = era
         self.isMC = isMC
         self.sample = sample
@@ -89,7 +89,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.output_location is not None:
             # pandas to hdf5
             for out, gname in zip(dfs, df_names):
-                metadata = dict(xsec=self.xsec,era=self.era,
+                metadata = dict(gensumweight=self.gensumweight,era=self.era,
                                 mc=self.isMC,sample=self.sample)
                 store_fin = self.h5store(store, out, fname, gname, **metadata)
 
@@ -157,8 +157,8 @@ class SUEP_cluster(processor.ProcessorABC):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
         
-        genSumWeight = ak.sum(events.genWeight)
-        self.xsec = self.xsec / genSumWeight
+        self.gensumweight = ak.sum(events.genWeight)
+        #self.xsec = self.xsec / genSumWeight
 
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
