@@ -11,7 +11,8 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
-parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
+parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
+parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
 options = parser.parse_args()
 
 # parameters for ABCD method
@@ -21,22 +22,33 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100
 labels = ['ch']
-output_label = 'V5_pt300'
+output_label = 'V5'
 
-# merge all QCD HT bins together, or just import all files from a specific directory
+# cross section
+xsection = 1.0
+with open('../data/xsections_{}.json'.format(options.era)) as file:
+    MC_xsecs = json.load(file)
+    try:
+        xsection *= MC_xsecs[options.dataset]["xsec"]
+        xsection *= MC_xsecs[options.dataset]["kr"]
+        xsection *= MC_xsecs[options.dataset]["br"]
+    except:
+        print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
+
 username = getpass.getuser()
-if options.dataset == 'QCD':
-    dataDir = "/work/submit/{}/SUEP/{}/".format(username,options.tag)
+# run over some defined inputs
+if options.dataset == 'test':
+    dataDir = "outputs/"
     files = []
-    for subdir in list(os.listdir(dataDir)):
-        if 'QCD' not in subdir: continue
-        files += [subdir+"/"+file for file in os.listdir(dataDir + subdir)]
+    for i in range(2):
+        files.append('condor_' + str(i+1) + '.hdf5')
+# import all files from a specific directory in SUEP/tag/dataset
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
     files = [file for file in os.listdir(dataDir)]
 
 # output histos
-def create_output_file(label):
+def create_output_file(l):
     output = {
             # variables from the dataframe
             "SUEP_"+label+"_nconst" : Hist.new.Reg(499, 0, 500, name="nconst_"+label, label="# Tracks in SUEP").Weight(),
@@ -67,23 +79,24 @@ def create_output_file(label):
             "2D_rho1_nconst_"+label : Hist.new.Reg(100, 0, 20, name="rho1_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
             "2D_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             "2D_spher_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
+            "ht_" + label : Hist.new.Reg(1000, 0, 30000, name="ht_"+label, label='HT ' + label).Weight(),
         
             # region specific kinematic variables
-            "SUEP_" + label + "_A_pt" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"$A p_T$").Weight(),
-            "SUEP_" + label + "_B_pt" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"$B p_T$").Weight(),
-            "SUEP_" + label + "_C_pt" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"$C p_T$").Weight(),
-            "SUEP_"+label+"_A_nconst" : Hist.new.Reg(499, 0, 500, name="A nconst_"+label, label="A # Tracks in SUEP").Weight(),
-            "SUEP_"+label+"_B_nconst" : Hist.new.Reg(499, 0, 500, name="B nconst_"+label, label="B # Tracks in SUEP").Weight(),
-            "SUEP_"+label+"_C_nconst" : Hist.new.Reg(499, 0, 500, name="C nconst_"+label, label="C # Tracks in SUEP").Weight(),
-            "SUEP_" + label + "_A_pt_nconst" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label).Reg(499, 0, 500, name="A nconst_"+label).Weight(),
-            "SUEP_" + label + "_B_pt_nconst" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label).Reg(499, 0, 500, name="B nconst_"+label).Weight(),
-            "SUEP_" + label + "_C_pt_nconst" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label).Reg(499, 0, 500, name="C nconst_"+label).Weight(),
-            "SUEP_" + label + "_AB_pt" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AB_eta" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_" + label + "_AB_phi" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
-            "SUEP_" + label + "_AC_pt" : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
-            "SUEP_" + label + "_AC_eta" : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_" + label + "_AC_phi" : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
+            "A_pt_"+label : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"A $p_T$").Weight(),
+            "B_pt_"+label : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"B $p_T$").Weight(),
+            "C_pt_"+label : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"C $p_T$").Weight(),
+            "A_nconst_"+label : Hist.new.Reg(499, 0, 500, name="A nconst_"+label, label="A # Tracks in SUEP").Weight(),
+            "B_nconst_"+label : Hist.new.Reg(499, 0, 500, name="B nconst_"+label, label="B # Tracks in SUEP").Weight(),
+            "C_nconst_"+label : Hist.new.Reg(499, 0, 500, name="C nconst_"+label, label="C # Tracks in SUEP").Weight(),
+            "A_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name="A pt_"+label).Reg(499, 0, 500, name="A nconst_"+label).Weight(),
+            "B_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name="B pt_"+label).Reg(499, 0, 500, name="B nconst_"+label).Weight(),
+            "C_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name="C pt_"+label).Reg(499, 0, 500, name="C nconst_"+label).Weight(),
+            "AB_pt_"+label : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
+            "AB_eta_"+label : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
+            "AB_phi_"+label : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
+            "AC_pt_"+label : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
+            "AC_eta_"+label : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
+            "AC_phi_"+label : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
     }
     if label == 'ch':# Christos only
         output2 = {
@@ -110,30 +123,34 @@ def h5load(ifile, label):
                 print("No key",label,ifile)
                 return 0, 0
     except:
-        print(ifile)
+        print("Some error occurred", ifile)
         return 0, 0
         
 # fill ABCD hists with dfs from hdf5 files
 frames = {"mult":[],"ch":[]}
 nfailed = 0
+weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {}
-for label in labels: output.update({label: create_output_file(label)})
+for label in labels: output.update(create_output_file(label))
 for ifile in tqdm(files):
     ifile = dataDir+"/"+ifile
     
-    # check if file is corrupted
+    df_vars, metadata = h5load(ifile, 'vars')
+    
+    # check if file is corrupted, or empty
+    if type(df_vars) == int: 
+        nfailed += 1
+        continue
+    if df_vars.shape[0] == 0: continue
+    
+    weight += metadata['gensumweight']
+    
+    # store hts for the all event to be indexed
+    hts = df_vars['ht']
+    
     for label in labels:
-        df, metadata = h5load(ifile, label)
-        if type(df) == int: 
-            nfailed += 1
-            continue
-        if df.shape[0] == 0: continue
-        
-        # testing
-        if metadata['xsec'] > 20000: continue
-
-        df["xsec"] = metadata["xsec"]    
+        df, metadata = h5load(ifile, label) 
 
         # parameters for ABCD plots
         var1 = 'SUEP_'+label+'_' + var1_label
@@ -141,10 +158,10 @@ for ifile in tqdm(files):
 
         sizeA, sizeC = 0,0
                 
+        # selections
         if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
         if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
-        
-        df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
+        #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
 
         # divide the dfs by region
         df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
@@ -152,53 +169,60 @@ for ifile in tqdm(files):
         df_C = df.loc[(df[var1] < var1_val) & (df[var2] >= var2_val)]
         df_D_obs = df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)]
 
-        #sizeC += ak.size(C) * xsec
-        #sizeA += ak.size(A) * xsec
-        sizeC += np.sum(df_C['xsec'].to_numpy())
-        sizeA += np.sum(df_A['xsec'].to_numpy())
+        sizeC += df_C.shape[0]
+        sizeA += df_A.shape[0]
 
         # fill the ABCD histograms
-        output[label]["A_"+label].fill(df_A[var1], weight =  df_A['xsec'])
-        output[label]["B_"+label].fill(df_B[var1], weight =  df_B['xsec'])
-        output[label]["D_exp_"+label].fill(df_B[var1], weight =  df_B['xsec'])
-        output[label]["C_"+label].fill(df_C[var1], weight =  df_C['xsec'])
-        output[label]["D_obs_"+label].fill(df_D_obs[var1], weight =  df_D_obs['xsec'])
-        output[label]["ABCDvars_2D_"+label].fill(df[var1], df[var2], weight =  df['xsec'])  
+        output["A_"+label].fill(df_A[var1])
+        output["B_"+label].fill(df_B[var1])
+        output["D_exp_"+label].fill(df_B[var1])
+        output["C_"+label].fill(df_C[var1])
+        output["D_obs_"+label].fill(df_D_obs[var1])
+        output["ABCDvars_2D_"+label].fill(df[var1], df[var2])  
 
         # fill the distributions as they are saved in the dataframes
-        plot_labels = [key for key in df.keys() if key in list(output[label].keys())]
-        for plot in plot_labels: output[label][plot].fill(df[plot], weight =  df['xsec'])  
+        plot_labels = [key for key in df.keys() if key in list(output.keys())]
+        for plot in plot_labels: output[plot].fill(df[plot])  
 
         # fill some new distributions  
-        output[label]["2D_girth_nconst_"+label].fill(df["SUEP_"+label+"_girth"], df["SUEP_"+label+"_nconst"], weight= df['xsec'])
-        output[label]["2D_rho0_nconst_"+label].fill(df["SUEP_"+label+"_rho0"], df["SUEP_"+label+"_nconst"], weight= df['xsec'])
-        output[label]["2D_rho1_nconst_"+label].fill(df["SUEP_"+label+"_rho1"], df["SUEP_"+label+"_nconst"], weight= df['xsec'])
-        output[label]["2D_spher_nconst_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_nconst"], weight= df['xsec'])
-        output[label]["2D_spher_ntracks_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_ntracks"], weight= df['xsec'])
-        output[label]["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
-        output[label]["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
-        output[label]["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)].to_numpy(), weight =  df['xsec'].loc[(df[var2] < var2_val)])
-        output[label]["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
-        output[label]["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
-        output[label]["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)].to_numpy(), weight =  df['xsec'].loc[(df[var1] < var1_val)])
-        output[label]["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'], weight=df_A['xsec'])
-        output[label]["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'], weight=df_B['xsec'])
-        output[label]["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'], weight=df_C['xsec'])
-        output[label]["SUEP_" + label + "_A_nconst"].fill(df_A['SUEP_' + label + '_nconst'], weight=df_A['xsec'])
-        output[label]["SUEP_" + label + "_B_nconst"].fill(df_B['SUEP_' + label + '_nconst'], weight=df_B['xsec'])
-        output[label]["SUEP_" + label + "_C_nconst"].fill(df_C['SUEP_' + label + '_nconst'], weight=df_C['xsec'])
-        output[label]["SUEP_" + label + "_A_pt_nconst"].fill(df_A['SUEP_' + label + '_pt'], df_A['SUEP_' + label + '_nconst'], weight=df_A['xsec'])
-        output[label]["SUEP_" + label + "_B_pt_nconst"].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'], weight=df_B['xsec'])
-        output[label]["SUEP_" + label + "_C_pt_nconst"].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'], weight=df_C['xsec'])
-
-# ABCD method to obtain D expected
-if sizeA>0.0:
-    CoverA =  sizeC / sizeA
-else:
-    CoverA = 0.0
-    print("A region has no occupancy")
-output[label]["D_exp_"+label] = output[label]["D_exp_"+label]*(CoverA)
+        output["2D_girth_nconst_"+label].fill(df["SUEP_"+label+"_girth"], df["SUEP_"+label+"_nconst"])
+        output["2D_rho0_nconst_"+label].fill(df["SUEP_"+label+"_rho0"], df["SUEP_"+label+"_nconst"])
+        output["2D_rho1_nconst_"+label].fill(df["SUEP_"+label+"_rho1"], df["SUEP_"+label+"_nconst"])
+        output["2D_spher_nconst_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_nconst"])
+        output["2D_spher_ntracks_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_ntracks"])
+        output["AB_phi_"+label].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)])
+        output["AB_eta_"+label].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)])
+        output["AB_pt_"+label].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)])
+        output["AC_phi_"+label].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)])
+        output["AC_eta_"+label].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)])
+        output["AC_pt_"+label].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)])
+        output["A_pt_"+label].fill(df_A['SUEP_' + label + '_pt'])
+        output["B_pt_"+label].fill(df_B['SUEP_' + label + '_pt'])
+        output["C_pt_"+label].fill(df_C['SUEP_' + label + '_pt'])
+        output["A_nconst_"+label].fill(df_A['SUEP_' + label + '_nconst'])
+        output["B_nconst_"+label].fill(df_B['SUEP_' + label + '_nconst'])
+        output["C_nconst_"+label].fill(df_C['SUEP_' + label + '_nconst'])
+        output["A_pt_nconst_"+label].fill(df_A['SUEP_' + label + '_pt'], df_A['SUEP_' + label + '_nconst'])
+        output["B_pt_nconst_"+label].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'])
+        output["C_pt_nconst_"+label].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'])
+        output["ht_" + label].fill(hts[df['SUEP_' + label + '_index']])
         
-#Save to root to pickle
-for label in labels: pickle.dump(output[label], fpickle)
-print("nfailed", nfailed)
+        
+# ABCD method to obtain D expected
+for label in labels:
+    if sizeA>0.0:
+        CoverA =  sizeC / sizeA
+    else:
+        CoverA = 0.0
+        print("A region has no occupancy")
+    output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
+    
+# apply normalization
+if weight > 0.0:
+    for plot in list(output.keys()): output[plot] = output[plot]*xsection/weight
+else:
+    print("Weight is 0")
+        
+#Save to pickle
+pickle.dump(output, fpickle)
+print("Number of files that failed to be read:", nfailed)
