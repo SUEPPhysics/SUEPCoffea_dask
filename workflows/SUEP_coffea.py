@@ -92,7 +92,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 metadata = dict(era=self.era,
                                 mc=self.isMC,sample=self.sample)
                 if self.isMC:
-                    metadata.update({gensumweight:self.gensumweight})
+                    metadata.update({'gensumweight':self.gensumweight})
                     
                 store_fin = self.h5store(store, out, fname, gname, **metadata)
 
@@ -242,11 +242,11 @@ class SUEP_cluster(processor.ProcessorABC):
         indices = indices[clusterCut]
         Lost_Tracks_cands = Lost_Tracks_cands[clusterCut]
  
-        # output an empty file if not events pass selections, avoids errors later on
+        # output an empty file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass the selections. Saving empty outputs.")
             out_ch, out_mult = pd.DataFrame(), pd.DataFrame()
-            self.save_dfs([out_ch, out_mult],["ch","mult"])
+            self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
             return output
         
         ### SUEP_mult
