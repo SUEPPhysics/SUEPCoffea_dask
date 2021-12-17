@@ -31,7 +31,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100
 labels = ['ch']
-output_label = 'V5_pt300'
+output_label = 'V6'
 
 # blinding warning
 if not options.blind: 
@@ -61,13 +61,16 @@ def create_output_file(label):
             "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
             "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
         
-            # AB and AC combined, kinematic variables
+            # region specific plots
             "SUEP_" + label + "_A_pt" : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_B_pt" : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_C_pt" : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_"+label+"_A_nconst" : Hist.new.Reg(499, 0, 500, name="A nconst_"+label, label="# Tracks in SUEP").Weight(),
             "SUEP_"+label+"_B_nconst" : Hist.new.Reg(499, 0, 500, name="B nconst_"+label, label="# Tracks in SUEP").Weight(),
             "SUEP_"+label+"_C_nconst" : Hist.new.Reg(499, 0, 500, name="C nconst_"+label, label="# Tracks in SUEP").Weight(),
+            "A_ht_" + label : Hist.new.Reg(1000, 0, 30000, name="A_ht_"+label, label='A HT ' + label).Weight(),
+            "B_ht_" + label : Hist.new.Reg(1000, 0, 30000, name="B_ht_"+label, label='B HT ' + label).Weight(),
+            "C_ht_" + label : Hist.new.Reg(1000, 0, 30000, name="C_ht_"+label, label='C HT ' + label).Weight(),
             "SUEP_" + label + "_AB_pt" : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_" + label + "_AB_eta" : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
             "SUEP_" + label + "_AB_phi" : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
@@ -85,6 +88,12 @@ def create_output_file(label):
 
 # load hdf5 with pandas
 def h5load(ifile, label):
+    
+    # with pd.HDFStore(ifile) as store:
+    #     data = store[label] 
+    #     metadata = store.get_storer(label).attrs.metadata
+    #     return data, metadata
+            
     try:
         with pd.HDFStore(ifile) as store:
             try:
@@ -106,16 +115,25 @@ frames = {"mult":[],"ch":[]}
 nfailed = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {}
-for label in labels: output.update({label: create_output_file(label)})
+for label in labels: output.update(create_output_file(label))
 
 for ifile in tqdm(files):
     ifile = dataDir+"/"+ifile
+        
     for label in labels:
-        df, metadata = h5load(ifile, label)
-        if type(df) == int: 
+        
+        df_vars, metadata = h5load(ifile, 'vars')
+        
+        # check if file is corrupted, or empty
+        if type(df_vars) == int: 
             nfailed += 1
             continue
-        if df.shape[0] == 0: continue
+        if df_vars.shape[0] == 0: continue
+        
+        df, metadata = h5load(ifile, label)
+        
+        # store hts for the all event to be indexed
+        hts = df_vars['ht']
         
         # variables for ABCD plots
         var1 = 'SUEP_'+label+'_' + var1_label
@@ -128,7 +146,7 @@ for ifile in tqdm(files):
 
         if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
         if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
-        df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
+        #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
 
         # divide the dfs by region and select the variable we want to plot
         df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
@@ -142,38 +160,41 @@ for ifile in tqdm(files):
         sizeA += df_A.shape[0]
         
         # fill the ABCD histograms
-        output[label]["A_"+label].fill(df_A[var1])
-        output[label]["B_"+label].fill(df_B[var1])
-        output[label]["D_exp_"+label].fill(df_B[var1])
-        output[label]["C_"+label].fill(df_C[var1])
+        output["A_"+label].fill(df_A[var1])
+        output["B_"+label].fill(df_B[var1])
+        output["D_exp_"+label].fill(df_B[var1])
+        output["C_"+label].fill(df_C[var1])
         if not options.blind: 
-            output[label]["D_obs_"+label].fill(df_D_obs[var1])
+            output["D_obs_"+label].fill(df_D_obs[var1])
 
         # fill some new distribuions
-        output[label]["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
-        output[label]["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'])
-        output[label]["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'])
-        output[label]["SUEP_" + label + "_A_nconst"].fill(df_A['SUEP_' + label + '_nconst'])
-        output[label]["SUEP_" + label + "_B_nconst"].fill(df_B['SUEP_' + label + '_nconst'])
-        output[label]["SUEP_" + label + "_C_nconst"].fill(df_C['SUEP_' + label + '_nconst'])
-        output[label]["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)])
-        output[label]["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)])
-        output[label]["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)])
-        output[label]["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)])
-        output[label]["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)])
-        output[label]["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)])
-        output[label]["SUEP_" + label + "_A_pt_nconst"].fill(df_A['SUEP_' + label + '_pt'], df_A['SUEP_' + label + '_nconst'])
-        output[label]["SUEP_" + label + "_B_pt_nconst"].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'])
-        output[label]["SUEP_" + label + "_C_pt_nconst"].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'])
-
+        output["SUEP_" + label + "_A_pt"].fill(df_A['SUEP_' + label + '_pt'])
+        output["SUEP_" + label + "_B_pt"].fill(df_B['SUEP_' + label + '_pt'])
+        output["SUEP_" + label + "_C_pt"].fill(df_C['SUEP_' + label + '_pt'])
+        output["SUEP_" + label + "_A_nconst"].fill(df_A['SUEP_' + label + '_nconst'])
+        output["SUEP_" + label + "_B_nconst"].fill(df_B['SUEP_' + label + '_nconst'])
+        output["SUEP_" + label + "_C_nconst"].fill(df_C['SUEP_' + label + '_nconst'])
+        output["SUEP_" + label + "_AB_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)])
+        output["SUEP_" + label + "_AB_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)])
+        output["SUEP_" + label + "_AB_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)])
+        output["SUEP_" + label + "_AC_phi"].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)])
+        output["SUEP_" + label + "_AC_eta"].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)])
+        output["SUEP_" + label + "_AC_pt"].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)])
+        output["SUEP_" + label + "_A_pt_nconst"].fill(df_A['SUEP_' + label + '_pt'], df_A['SUEP_' + label + '_nconst'])
+        output["SUEP_" + label + "_B_pt_nconst"].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'])
+        output["SUEP_" + label + "_C_pt_nconst"].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'])
+        output["A_ht_" + label].fill(hts[df_A['SUEP_' + label + '_index']])
+        output["B_ht_" + label].fill(hts[df_B['SUEP_' + label + '_index']])
+        output["C_ht_" + label].fill(hts[df_C['SUEP_' + label + '_index']])
     
 # ABCD method to obtain D expected
-if sizeA>0.0:
-    CoverA =  sizeC / sizeA
-else:
-    CoverA = 0.0
-    print("A region has no occupancy")
-output[label]["D_exp_"+label] = output[label]["D_exp_"+label]*(CoverA)
+for label in labels:
+    if sizeA>0.0:
+        CoverA =  sizeC / sizeA
+    else:
+        CoverA = 0.0
+        print("A region has no occupancy")
+    output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
 
-for label in labels: pickle.dump(output[label], fpickle)
+pickle.dump(output, fpickle)
 print("Number of files that failed: ", nfailed*1.0 / len(labels))
