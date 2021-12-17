@@ -92,7 +92,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 metadata = dict(era=self.era,
                                 mc=self.isMC,sample=self.sample)
                 if self.isMC:
-                    metadata.update({gensumweight=self.gensumweight})
+                    metadata.update({gensumweight:self.gensumweight})
                     
                 store_fin = self.h5store(store, out, fname, gname, **metadata)
 
