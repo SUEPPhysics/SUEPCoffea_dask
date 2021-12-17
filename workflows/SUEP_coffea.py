@@ -158,7 +158,6 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata['dataset']
         
         self.gensumweight = ak.sum(events.genWeight)
-        #self.xsec = self.xsec / genSumWeight
 
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
@@ -174,22 +173,6 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.PFCands.dzErr < 0.05)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
-        
-        #Prepare the IsoTrack collection with SUEP selections
-        IsoTracks = ak.zip({
-            "pt": events.isolatedTracks.pt,
-            "eta": events.isolatedTracks.eta,
-            "phi": events.isolatedTracks.phi,
-            "mass": 0.0
-        }, with_name="Momentum4D")
-        cut = (events.isolatedTracks.fromPV > 1) & \
-            (events.isolatedTracks.pt >= 0.7) & \
-            (abs(events.isolatedTracks.eta) <= 2.5) & \
-            (((abs(events.isolatedTracks.eta) >= 1.0) & (events.isolatedTracks.isPFcand)) | (abs(events.isolatedTracks.eta) <= 1.0)) &\
-            (abs(events.isolatedTracks.dz) < 10) &\
-            (events.isolatedTracks.dzErr < 0.05)
-        Tracks_cands = IsoTracks[cut]
-        Tracks_cands = ak.packed(Tracks_cands)
         
         #Prepare the Lost Track collection
         LostTracks = ak.zip({
@@ -210,66 +193,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # dimensions of tracks = events x tracks in event x 4 momenta
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         tracks = Total_Tracks
-        #tracks = tracks[:-1]
-        #Lost_Tracks_cands = Lost_Tracks_cands[:-1]
-        
-        # remove events with < minpt after the selections
-        # nonEmptyCut = (ak.num(tracks, axis=1) > 0)
-        # tracks = tracks[nonEmptyCut]
-        # Lost_Tracks_cands = Lost_Tracks_cands[nonEmptyCut]
         minPt = 150
-        # totPtCut = (ak.sum(tracks.pt, axis=-1) >= minPt)
-        # tracks = tracks[totPtCut]
-        # Lost_Tracks_cands = Lost_Tracks_cands[totPtCut]
-        # tracks = ak.packed(tracks)
-        # Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-        print("WARNING: Still excluding last event in tracks.")
-        
-        ## debug
-#         print(tracks)
-#         print(tracks[0])
-#         print(tracks[-1])
-#         print()
-        
-#         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)
-                
-#         print(tracks)
-#         print(tracks[0])
-#         print(tracks[-1])
-#         print()
-        
-#         c = fastjet.ClusterSequence(tracks[:-1], jetdef)
-#         ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
-        
-        # for i, a in enumerate(ak_inclusive_jets):
-        #     if len(a) != 0:
-        #         for j in a:
-        #             print(j)
-        #         event = i
-        #         print("event", event)
-        #         break
-        # c = fastjet.ClusterSequence(tracks[event], jetdef)
-        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
-        # for j in ak_inclusive_jets:
-        #     print(j)
-        # print("1")
-        # c = fastjet.ClusterSequence(tracks[-1], jetdef)
-        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
-        # print("2")
-        # c = fastjet.ClusterSequence(tracks[:-1], jetdef)
-        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
-        # print("3")
-        # c = fastjet.ClusterSequence(tracks, jetdef)
-        # ak_inclusive_jets = ak.with_name(c.inclusive_jets(min_pt=minPt),"Momentum4D") 
-#         print("3")
-#         print("IT WORKED??")
-            
-#         import sys
-#         sys.exit()
-
-
-        tracks = tracks[:-1]
-        Lost_Tracks_cands = Lost_Tracks_cands[:-1]
         
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
@@ -285,11 +209,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Jet.mass,
             "jetId": events.Jet.jetId
         })
-        #Jets = Jets[nonEmptyCut]
-        #Jets = Jets[totPtCut]
         jetCut = (Jets.jetId) & (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
-        ak4jets = ak4jets[:-1]
         
         # save variables to a dataframe
         col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
