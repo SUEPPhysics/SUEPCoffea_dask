@@ -89,11 +89,13 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.output_location is not None:
             # pandas to hdf5
             for out, gname in zip(dfs, df_names):
-                metadata = dict(era=self.era,
-                                mc=self.isMC,sample=self.sample)
                 if self.isMC:
-                    metadata.update({'gensumweight':self.gensumweight})
-                    
+
+                    metadata = dict(gensumweight=self.gensumweight,era=self.era, mc=self.isMC,sample=self.sample)
+                    #metadata.update({gensumweight:self.gensumweight})
+                else:
+                    metadata = dict(era=self.era, mc=self.isMC,sample=self.sample)    
+
                 store_fin = self.h5store(store, out, fname, gname, **metadata)
 
             store.close()
@@ -159,7 +161,6 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        
         if self.isMC: self.gensumweight = ak.sum(events.genWeight)
 
         #Prepare the clean PFCand matched to tracks collection

@@ -7,12 +7,16 @@ import awkward as ak
 import uproot
 import getpass
 import pickle
+import json
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
 parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
+parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
+parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
+parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
 options = parser.parse_args()
 
 # parameters for ABCD method
@@ -22,7 +26,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100
 labels = ['ch']
-output_label = 'V5'
+output_label = 'V6'
 
 # cross section
 xsection = 1.0
@@ -35,17 +39,10 @@ with open('../data/xsections_{}.json'.format(options.era)) as file:
     except:
         print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
 
+#Get the list of files
 username = getpass.getuser()
-# run over some defined inputs
-if options.dataset == 'test':
-    dataDir = "outputs/"
-    files = []
-    for i in range(2):
-        files.append('condor_' + str(i+1) + '.hdf5')
-# import all files from a specific directory in SUEP/tag/dataset
-else:
-    dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
-    files = [file for file in os.listdir(dataDir)]
+dataDir = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+files = [file for file in os.listdir(dataDir)]
 
 # output histos
 def create_output_file(l):
@@ -106,6 +103,11 @@ def create_output_file(l):
             "SUEP_"+label+"_dphi_SUEP_ISR":Hist.new.Reg(100, 0, 4, name="dphi_SUEP_ISR").Weight(),
         }
         output.update(output2)
+    if options.isMC and options.doSyst:# Systematic plots
+        output3 = {
+            #"SUEP_"+label+"_variable_"+sys:Hist.new.Reg(100, 0, 4, name="variable").Weight(),
+        }
+        output.update(output3)
     return output
 
 # load hdf5 with pandas
@@ -135,23 +137,26 @@ output = {}
 for label in labels: output.update(create_output_file(label))
 for ifile in tqdm(files):
     ifile = dataDir+"/"+ifile
-    
-    df_vars, metadata = h5load(ifile, 'vars')
-    
+
+    if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
+    xrd_file = "root://t3serv017.mit.edu:/" + ifile.split('hadoop')[1]
+    os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
+
+    df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')    
+
     # check if file is corrupted, or empty
     if type(df_vars) == int: 
         nfailed += 1
         continue
     if df_vars.shape[0] == 0: continue
     
-    weight += metadata['gensumweight']
+    if options.isMC: weight += metadata['gensumweight']
     
     # store hts for the all event to be indexed
     hts = df_vars['ht']
     
     for label in labels:
-        df, metadata = h5load(ifile, label) 
-
+        df, metadata = h5load(options.dataset+'.hdf5', label) 
         # parameters for ABCD plots
         var1 = 'SUEP_'+label+'_' + var1_label
         var2 = 'SUEP_'+label+'_' + var2_label
@@ -162,13 +167,16 @@ for ifile in tqdm(files):
         if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
         if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
         #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
+        if options.blind and not options.isMC:
+             df = df.loc[((df[var1] < var1_val) & (df[var2] < var2_val)) | ((df[var1] >= var1_val) & (df[var2] < var2_val)) | ((df[var1] < var1_val) & (df[var2] >= var2_val))]
+        df = df.loc[df['SUEP_ch_pt'] >= 300]
 
         # divide the dfs by region
         df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
         df_B = df.loc[(df[var1] >= var1_val) & (df[var2] < var2_val)]
         df_C = df.loc[(df[var1] < var1_val) & (df[var2] >= var2_val)]
         df_D_obs = df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)]
-
+        
         sizeC += df_C.shape[0]
         sizeA += df_A.shape[0]
 
@@ -206,7 +214,7 @@ for ifile in tqdm(files):
         output["B_pt_nconst_"+label].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'])
         output["C_pt_nconst_"+label].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'])
         output["ht_" + label].fill(hts[df['SUEP_' + label + '_index']])
-        
+    os.system('rm ' + options.dataset+'.hdf5')    
         
 # ABCD method to obtain D expected
 for label in labels:
@@ -218,7 +226,7 @@ for label in labels:
     output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
     
 # apply normalization
-if weight > 0.0:
+if weight > 0.0 and options.isMC:
     for plot in list(output.keys()): output[plot] = output[plot]*xsection/weight
 else:
     print("Weight is 0")
