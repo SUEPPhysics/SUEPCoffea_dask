@@ -14,3 +14,15 @@
 /store/user/paus/nanosu/A01//QCD_Pt_600to800_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM
 /store/user/paus/nanosu/A01//QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM
 /store/user/paus/nanosu/A01//QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m1000-darkPhoHad+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m1000-darkPho+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m1000-generic+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m125-darkPhoHad+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m125-darkPho+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m125-generic+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m400-darkPho+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m400-generic+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m750-darkPhoHad+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m750-darkPho+RunIIAutumn18-private+MINIAODSIM
+/store/user/paus/nanosu/A01//SUEP-m750-generic+RunIIAutumn18-private+MINIAODSIM

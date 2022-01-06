@@ -66,7 +66,7 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = 'jobs/' + '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir =  '_'.join(['jobs', options.tag, sample_name])
             
             #We write the original list. inputfiles.dat will now contain missing files. Compare with original list
             if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
