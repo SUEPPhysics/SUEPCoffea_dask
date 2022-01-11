@@ -12,6 +12,9 @@ from coffea.nanoevents import NanoEventsFactory
 from coffea.util import load, save
 from coffea import processor
 
+#Change to local python
+sys.executable = "python"
+
 def validate(file):
     try:
         fin = uproot.open(file)
@@ -43,7 +46,7 @@ def get_main_parser():
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
-    parser.add_argument('--samples', '--json', dest='samplejson', default='filelist/SUEP_files_simple.json',
+    parser.add_argument('--samples', '--json', dest='samplejson', default='filelist/SUEP_2018_MC.json',
                         help='JSON file containing dataset and file locations (default: %(default)s)'
                         )
 
@@ -151,8 +154,11 @@ if __name__ == '__main__':
 
     # load workflow
     if args.workflow == "SUEP":
-        from workflows.SUEP_coffea import SUEP_cluster
-        processor_instance = SUEP_cluster(isMC=args.isMC, era=int(args.era), do_syst=1, syst_var='', sample=args.dataset)
+        from SUEP_coffea import *
+        xsec = 1.0
+        out_dir = os.getcwd()
+        #out_dir = '/data/t3home000/freerc/SUEP/'
+        processor_instance = SUEP_cluster(isMC=args.isMC, era=int(args.era), do_syst=1, xsec = xsec,  syst_var='', sample=args.dataset, weight_syst='', flag=False,  output_location=out_dir)
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor
     #     processor_instance = NanoProcessor()
@@ -174,14 +180,34 @@ if __name__ == '__main__':
             _x509_path = os.environ['HOME'] + f'/.{_x509_localpath.split("/")[-1]}'
             os.system(f'cp {_x509_localpath} {_x509_path}')
 
+        #For Condor
         env_extra = [
             'export XRD_RUNFORKHANDLER=1',
             'export XRD_STREAMTIMEOUT=10',
-            f'export X509_USER_PROXY={_x509_path}',
-            f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
+            #f'export X509_USER_PROXY={_x509_path}',
+            f'export X509_USER_PROXY=x509up_u206148',
+            f'export X509_CERT_DIR=/etc/grid-security/certificates',
+            #f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
         ]
         condor_extra = [
+            #f'source {os.environ["HOME"]}/.bashrc',
+        ]
+
+        #For Slurm
+        slurm_env_extra = [
+            'export XRD_RUNFORKHANDLER=1',
+            'export XRD_STREAMTIMEOUT=10',
+            f'export X509_USER_PROXY=/home/submit/freerc/x509up_u206148'
+            #f'export X509_USER_PROXY={_x509_path}',
+            #f'export X509_USER_PROXY=x509up_u206148',
+            #f'export X509_CERT_DIR=/etc/grid-security/certificates',
+            f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
+            #f"export PYTHONPATH=/home/submit/freerc/.local/lib/python3.9/site-packages/:/home/submit/freerc/miniconda3/envs/slurm_dask/lib/python3.9/site-packages/:$PYTHONPATH:{os.getcwd()}",
+            f'source {os.environ["HOME"]}/.bashrc',
+            f'conda activate dask',
+        ]
+        slurm_extra = [
             f'source {os.environ["HOME"]}/.bashrc',
         ]
 
@@ -302,48 +328,72 @@ if __name__ == '__main__':
                     'error': 'dask_out/dask_job_output.err',
                     'should_transfer_files': 'Yes',
                     'when_to_transfer_output': 'ON_EXIT',
-                    '+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
-                    '+JobFlavour': '"workday"',
+                    'Requirements': '(TARGET.Machine =!= "t3btch042.mit.edu")',
+                    #'+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
+                    #'+JobFlavour': '"workday"',
                     },
                 extra = ['--worker-port {}'.format(n_port)],
                 env_extra = env_extra,
             )
         elif 'mit' in args.executor:
-            #n_port = 8786
-            #if not check_port(8786):
-            #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
+            #n_port = 6820
+            #if not check_port(6820):
+            #    raise RuntimeError("Port '6820' is occupied on this node. Try another one.")
             import socket
             cluster = HTCondorCluster(
                 cores=1,
                 memory='4GB', # hardcoded
-                disk='1GB',
-                death_timeout = '60',
+                disk='2GB',
+                death_timeout = '600',
                 nanny = False,
                 scheduler_options={
                     #'port': n_port,
                     'dashboard_address': 8000,
                     'host': socket.gethostname()
+                    #'host': 'tcp://18.12.2.5'
                     },
                 job_extra={
                     'log': 'dask_out/dask_job_output.log',
                     'output': 'dask_out/dask_job_output.out',
                     'error': 'dask_out/dask_job_output.err',
                     'should_transfer_files': 'Yes',
+                    'transfer_input_files': '/home/freerc/x509up_u206148',
                     'when_to_transfer_output': 'ON_EXIT',
+                    'Requirements': '(TARGET.Machine =!= "t3btch042.mit.edu")',
                     '+SingularityImage': '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
                     },
                 #extra = ['--worker-port {}'.format(n_port)],
                 env_extra = env_extra,
             )
         elif 'slurm' in args.executor:
+            n_port = 6820
+            if not check_port(6820):
+                raise RuntimeError("Port '6820' is occupied on this node. Try another one.")
+            extra_args=[
+               #"--federation=submit_fed",
+               "--output=dask_out/dask_job_output_%j.out",
+               "--error=dask_out/dask_job_output_%j.err",
+               "--partition=submit00",
+               "--clusters=submit00",
+               #"--clusters=submit00,submit01,submit04,submit05,submit06,submit07,submit08"
+            ]   
+
+            import socket
             cluster = SLURMCluster(
                 queue='all',
+                project="SUEP_Slurm",
                 cores=args.workers,
                 processes=args.workers,
-                memory="200 GB",
-                retries=10,
+                memory="20 GB",
+                #retries=10,
                 walltime='00:30:00',
-                env_extra=env_extra,
+                scheduler_options={
+                    'port': n_port,
+                    'dashboard_address': 8000,
+                    'host': socket.gethostname()
+                },
+                job_extra=extra_args,
+                env_extra=slurm_env_extra,
             )
         elif 'condor' in args.executor:
             cluster = HTCondorCluster(
@@ -361,6 +411,7 @@ if __name__ == '__main__':
         else:
             cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
             client = Client(cluster)
+            print(client)
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
         with performance_report(filename="dask_out/dask-report.html"):
