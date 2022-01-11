@@ -67,7 +67,7 @@ def get_main_parser():
                              '- `dask/lxplus` - custom lxplus/condor setup (due to port restrictions)'
                              '- `dask/mit` - custom mit/condor setup'
                         )
-    parser.add_argument('-j', '--workers', type=int, default=12,
+    parser.add_argument('-j', '--workers', type=int, default=1,
                         help='Number of workers (cores/threads) to use for multi-worker executors '
                              '(e.g. futures or condor) (default: %(default)s)')
     parser.add_argument('-s', '--scaleout', type=int, default=1,
@@ -350,7 +350,6 @@ if __name__ == '__main__':
                     #'port': n_port,
                     'dashboard_address': 8000,
                     'host': socket.gethostname()
-                    #'host': 'tcp://18.12.2.5'
                     },
                 job_extra={
                     'log': 'dask_out/dask_job_output.log',
@@ -367,14 +366,15 @@ if __name__ == '__main__':
             )
         elif 'slurm' in args.executor:
             n_port = 6820
+            w_port = 9765
             if not check_port(6820):
                 raise RuntimeError("Port '6820' is occupied on this node. Try another one.")
             extra_args=[
                #"--federation=submit_fed",
                "--output=dask_out/dask_job_output_%j.out",
                "--error=dask_out/dask_job_output_%j.err",
-               "--partition=submit00",
-               "--clusters=submit00",
+               "--partition=submit04",
+               "--clusters=submit04",
                #"--clusters=submit00,submit01,submit04,submit05,submit06,submit07,submit08"
             ]   
 
@@ -386,12 +386,17 @@ if __name__ == '__main__':
                 processes=args.workers,
                 memory="20 GB",
                 #retries=10,
-                walltime='00:30:00',
+                walltime='00:03:00',
                 scheduler_options={
                     'port': n_port,
+                    #'worker-port': w_port,
                     'dashboard_address': 8000,
                     'host': socket.gethostname()
                 },
+                extra = [
+                     '--worker-port {}'.format(w_port)
+                #     '--protocol tcp'
+                ],
                 job_extra=extra_args,
                 env_extra=slurm_env_extra,
             )
