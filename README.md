@@ -148,8 +148,19 @@ export SINGULARITY_BIND="/mnt"
 The kraken_run.py file which will submit Condor jobs for all the files in specified datasets. This submission currenty uses xrdfs to find the files stored on Kraken. An example submission can be seen below:
 
 ```
-python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --input=filelist/list_2018_MC.txt 
+python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --input=filelist/list_2018_MC_A01.txt 
 ```
 The submission will name a directory in the output directory after the tage name you input. If the tag already exists use the ```--force``` option if you are trying to resubmit/overwrite.
 
 Note that this submission will look for the dataset xsec in xsections_<era>.yaml.
+  
+To monitor and resubmit jobs we can use the monitor.py file. 
+  
+```
+python monitor.py --tag=<tag name> --input=filelist/list_2018_MC_A01.txt
+```
+To resubmit you must specify to resubmit like below:
+
+```
+python monitor.py --tag=<tag name> --input=filelist/list_2018_MC_A01.txt -r=1 
+```
