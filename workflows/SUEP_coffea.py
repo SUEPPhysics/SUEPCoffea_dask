@@ -222,13 +222,16 @@ class SUEP_cluster(processor.ProcessorABC):
         col3 = pd.Series(ak.num(ak_inclusive_jets).to_list(), name = "ngood_fastjets")
         col4 = pd.Series(ak.sum(ak4jets.pt,axis=-1).to_list(), name = "ht")
         col5 = pd.Series(ak.num(Lost_Tracks_cands).to_list(), name = "nLostTracks")
-        out_vars = pd.concat([col1, col2, col3, col4, col5], axis=1)
+        col6 = pd.Series(events.HLT.PFJet500.to_list(), name="HLT_PFJet500")
+        col7 = pd.Series(events.HLT.PFHT1050.to_list(), name="HLT_PFHT1050")
+        out_vars = pd.concat([col1, col2, col3, col4, col5, col6, col7], axis=1)
         
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
         
         # remove events that fail the HT cut
-        htCut = (col4 > 1200)
+        trigger = ((col6 == 1) | (col7 == 1))
+        htCut = (col4 > 1200 & trigger)
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]
         tracks = tracks[htCut]
