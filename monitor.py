@@ -159,10 +159,10 @@ def main():
             nfile = len(complete_list)
             
             #Print out the results
-            percent = nfile / njobs
+            percent = nfile / njobs  * 100
             logging.info(
                 colored("\t\t --> completed", "green") if njobs==nfile else colored(
-                    "\t\t --> ({}/{}) finished. {:.2f}% complete".format(nfile,njobs,percent), 'red'
+                    "\t\t --> ({}/{}) finished. {:.1f}% complete".format(nfile,njobs,percent), 'red'
                 )
             )
 
