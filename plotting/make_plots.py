@@ -234,3 +234,7 @@ else:
 #Save to pickle
 pickle.dump(output, fpickle)
 print("Number of files that failed to be read:", nfailed)
+
+with uproot.recreate("outputs/" + options.dataset+ "_" + output_label + '.root') as froot:
+     for h, hist in output.items():
+         froot[h] = hist
