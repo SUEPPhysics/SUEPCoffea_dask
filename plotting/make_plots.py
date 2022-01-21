@@ -154,6 +154,8 @@ for ifile in tqdm(files):
     
     # store hts for the all event to be indexed
     hts = df_vars['ht']
+    nJets = df_vars['ngood_fastjets']
+    nLostTracks = df_vars['nLostTracks']
     
     for label in labels:
         df, metadata = h5load(options.dataset+'.hdf5', label) 
@@ -186,9 +188,9 @@ for ifile in tqdm(files):
         output["D_exp_"+label].fill(df_B[var1])
         output["C_"+label].fill(df_C[var1])
         output["D_obs_"+label].fill(df_D_obs[var1])
-        output["ABCDvars_2D_"+label].fill(df[var1], df[var2])  
-
-        # fill the distributions as they are saved in the dataframes
+        output["ABCDvars_2D_"+label].fill(df[var1], df[var2])
+        
+         # fill the distributions as they are saved in the dataframes
         plot_labels = [key for key in df.keys() if key in list(output.keys())]
         for plot in plot_labels: output[plot].fill(df[plot])  
 
@@ -198,22 +200,21 @@ for ifile in tqdm(files):
         output["2D_rho1_nconst_"+label].fill(df["SUEP_"+label+"_rho1"], df["SUEP_"+label+"_nconst"])
         output["2D_spher_nconst_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_nconst"])
         output["2D_spher_ntracks_"+label].fill(df["SUEP_"+label+"_spher"], df["SUEP_"+label+"_ntracks"])
-        output["AB_phi_"+label].fill(df['SUEP_' + label + '_phi'].loc[(df[var2] < var2_val)])
-        output["AB_eta_"+label].fill(df['SUEP_' + label + '_eta'].loc[(df[var2] < var2_val)])
-        output["AB_pt_"+label].fill(df['SUEP_' + label + '_pt'].loc[(df[var2] < var2_val)])
-        output["AC_phi_"+label].fill(df['SUEP_' + label + '_phi'].loc[(df[var1] < var1_val)])
-        output["AC_eta_"+label].fill(df['SUEP_' + label + '_eta'].loc[(df[var1] < var1_val)])
-        output["AC_pt_"+label].fill(df['SUEP_' + label + '_pt'].loc[(df[var1] < var1_val)])
-        output["A_pt_"+label].fill(df_A['SUEP_' + label + '_pt'])
-        output["B_pt_"+label].fill(df_B['SUEP_' + label + '_pt'])
-        output["C_pt_"+label].fill(df_C['SUEP_' + label + '_pt'])
-        output["A_nconst_"+label].fill(df_A['SUEP_' + label + '_nconst'])
-        output["B_nconst_"+label].fill(df_B['SUEP_' + label + '_nconst'])
-        output["C_nconst_"+label].fill(df_C['SUEP_' + label + '_nconst'])
-        output["A_pt_nconst_"+label].fill(df_A['SUEP_' + label + '_pt'], df_A['SUEP_' + label + '_nconst'])
-        output["B_pt_nconst_"+label].fill(df_B['SUEP_' + label + '_pt'], df_B['SUEP_' + label + '_nconst'])
-        output["C_pt_nconst_"+label].fill(df_C['SUEP_' + label + '_pt'], df_C['SUEP_' + label + '_nconst'])
         output["ht_" + label].fill(hts[df['SUEP_' + label + '_index']])
+        output["nJets_" + label].fill(nJets[df['SUEP_' + label + '_index']])
+        output["nLostTracks_" + label].fill(nLostTracks[df['SUEP_' + label + '_index']])
+        output["2D_nJets_SUEPpT_" + label].fill(nJets[df['SUEP_' + label + '_index']], df['SUEP_' + label + '_pt'])
+        
+        # per region
+        for r, df_r in zip(["A", "B", "C"], [df_A, df_B, df_C]):
+        
+            output[r + "_pt_"+label].fill(df_r['SUEP_' + label + '_pt'])
+            output[r + "_eta_"+label].fill(df_r['SUEP_' + label + '_eta'])
+            output[r + "_phi_"+label].fill(df_r['SUEP_' + label + '_phi'])
+            output[r + "_spher_"+label].fill(df_r['SUEP_' + label + '_spher'])
+            output[r + "_nconst_"+label].fill(df_r['SUEP_' + label + '_nconst'])
+            output[r + "_ntracks_"+label].fill(df_r['SUEP_' + label + '_ntracks'])
+            output["2D_" r + "_pt_nconst_"+label].fill(df_r['SUEP_' + label + '_pt'], df_r['SUEP_' + label + '_nconst'])
     os.system('rm ' + options.dataset+'.hdf5')    
         
 # ABCD method to obtain D expected
