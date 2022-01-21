@@ -26,7 +26,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100
 labels = ['ch']
-output_label = 'V6'
+output_label = 'noPtCut'
 
 # cross section
 xsection = 1.0
@@ -76,24 +76,21 @@ def create_output_file(l):
             "2D_rho1_nconst_"+label : Hist.new.Reg(100, 0, 20, name="rho1_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
             "2D_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             "2D_spher_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
-            "ht_" + label : Hist.new.Reg(1000, 0, 30000, name="ht_"+label, label='HT ' + label).Weight(),
+            "ht_" + label : Hist.new.Reg(1000, 0, 30000, name="ht_"+label, label='HT').Weight(),
+            "nJets_" + label : Hist.new.Reg(200, 0, 200, name="nJets_"+label, label='# Jets in Event').Weight(),
+            "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name=r + " nLostTracks_"+label, label=r + " # Lost Tracks in Event ").Weight(),
+            "2D_nJets_SUEPpT_"+label : Hist.new.Reg(200, 0, 200, name="nJets_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),        
         
-            # region specific kinematic variables
-            "A_pt_"+label : Hist.new.Reg(100, 0, 2000, name="A pt_"+label, label=r"A $p_T$").Weight(),
-            "B_pt_"+label : Hist.new.Reg(100, 0, 2000, name="B pt_"+label, label=r"B $p_T$").Weight(),
-            "C_pt_"+label : Hist.new.Reg(100, 0, 2000, name="C pt_"+label, label=r"C $p_T$").Weight(),
-            "A_nconst_"+label : Hist.new.Reg(499, 0, 500, name="A nconst_"+label, label="A # Tracks in SUEP").Weight(),
-            "B_nconst_"+label : Hist.new.Reg(499, 0, 500, name="B nconst_"+label, label="B # Tracks in SUEP").Weight(),
-            "C_nconst_"+label : Hist.new.Reg(499, 0, 500, name="C nconst_"+label, label="C # Tracks in SUEP").Weight(),
-            "A_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name="A pt_"+label).Reg(499, 0, 500, name="A nconst_"+label).Weight(),
-            "B_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name="B pt_"+label).Reg(499, 0, 500, name="B nconst_"+label).Weight(),
-            "C_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name="C pt_"+label).Reg(499, 0, 500, name="C nconst_"+label).Weight(),
-            "AB_pt_"+label : Hist.new.Reg(100, 0, 2000, name="AB pt_"+label, label=r"$p_T$").Weight(),
-            "AB_eta_"+label : Hist.new.Reg(100, -5, 5, name="AB eta_"+label, label=r"$\eta$").Weight(),
-            "AB_phi_"+label : Hist.new.Reg(100, 0, 6.5, name="AB phi_"+label, label=r"$\phi$").Weight(),
-            "AC_pt_"+label : Hist.new.Reg(100, 0, 2000, name="AC pt_"+label, label=r"$p_T$").Weight(),
-            "AC_eta_"+label : Hist.new.Reg(100, -5, 5, name="AC eta_"+label, label=r"$\eta$").Weight(),
-            "AC_phi_"+label : Hist.new.Reg(100, 0, 6.5, name="AC phi_"+label, label=r"$\phi$").Weight(),
+            # per region
+            for r in ["A", "B", "C"]:
+                r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r + "pt_"+label, label=r + r" $p_T$").Weight(),
+                r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r + " nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
+                "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+" pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
+                r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+" eta_"+label, label=r + r"$\eta$").Weight()
+                r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + " phi_"+label, label=r + r"$\phi$").Weight(),
+                r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"spher_"+label, label=r+"Sphericity").Weight(),
+                r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label=r+"# Tracks in event").Weight(),
+        
     }
     if label == 'ch':# Christos only
         output2 = {
@@ -171,7 +168,6 @@ for ifile in tqdm(files):
         #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
         if options.blind and not options.isMC:
              df = df.loc[((df[var1] < var1_val) & (df[var2] < var2_val)) | ((df[var1] >= var1_val) & (df[var2] < var2_val)) | ((df[var1] < var1_val) & (df[var2] >= var2_val))]
-        df = df.loc[df['SUEP_ch_pt'] >= 300]
 
         # divide the dfs by region
         df_A = df.loc[(df[var1] < var1_val) & (df[var2] < var2_val)]
