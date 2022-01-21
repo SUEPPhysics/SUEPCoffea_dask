@@ -17,15 +17,24 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
+parser.add_argument('--local', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
+
+# other parameters for script
+username = getpass.getuser()
+if not options.local:
+    dataDir = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+else:
+    dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
+files = [file for file in os.listdir(dataDir)]
 
 # parameters for ABCD method
 var1_label = 'spher'
 var2_label = 'nconst'
 var1_val = 0.50
 var2_val = 25
-nbins = 100
-labels = ['ch']
+nbins = 100                # applies to var1_label
+labels = ['ch']            # which selection to make plots for
 output_label = 'noPtCut'
 
 # cross section
@@ -38,11 +47,6 @@ with open('../data/xsections_{}.json'.format(options.era)) as file:
         xsection *= MC_xsecs[options.dataset]["br"]
     except:
         print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
-
-#Get the list of files
-username = getpass.getuser()
-dataDir = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
-files = [file for file in os.listdir(dataDir)]
 
 # output histos
 def create_output_file(l):
@@ -126,20 +130,25 @@ def h5load(ifile, label):
         return 0, 0
         
 # fill ABCD hists with dfs from hdf5 files
-frames = {"mult":[],"ch":[]}
 nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
-output = {}
-for label in labels: output.update(create_output_file(label))
+output, sizeA, sizeC = {}
+for label in labels: 
+    output.update(create_output_file(label))
+    sizeA.update({label:0})
+    sizeC.update({label:0})
+    
 for ifile in tqdm(files):
     ifile = dataDir+"/"+ifile
 
-    if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
-    xrd_file = "root://t3serv017.mit.edu:/" + ifile.split('hadoop')[1]
-    os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
-
-    df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')    
+    if not options.local:
+        if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
+        xrd_file = "root://t3serv017.mit.edu:/" + ifile.split('hadoop')[1]
+        os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
+        df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')   
+    else:
+        df_vars, metadata = h5load(ifile, 'vars')   
 
     # check if file is corrupted, or empty
     if type(df_vars) == int: 
@@ -147,25 +156,28 @@ for ifile in tqdm(files):
         continue
     if df_vars.shape[0] == 0: continue
     
-    if options.isMC: weight += metadata['gensumweight']
+    # update the gensumweight
+    if options.isMC: weight[label] += metadata['gensumweight']
     
-    # store hts for the all event to be indexed
+    # store event-wide info to be indexed within each selection
     hts = df_vars['ht']
     nJets = df_vars['ngood_fastjets']
     nLostTracks = df_vars['nLostTracks']
     
     for label in labels:
-        df, metadata = h5load(options.dataset+'.hdf5', label) 
+        if not options.local: df, metadata = h5load(options.dataset+'.hdf5', label) 
+        else: df_vars, metadata = h5load(ifile, label)   
+        
         # parameters for ABCD plots
         var1 = 'SUEP_'+label+'_' + var1_label
         var2 = 'SUEP_'+label+'_' + var2_label
-
-        sizeA, sizeC = 0,0
                 
         # selections
         if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
         if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
         #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
+        
+        # blind
         if options.blind and not options.isMC:
              df = df.loc[((df[var1] < var1_val) & (df[var2] < var2_val)) | ((df[var1] >= var1_val) & (df[var2] < var2_val)) | ((df[var1] < var1_val) & (df[var2] >= var2_val))]
 
@@ -175,8 +187,8 @@ for ifile in tqdm(files):
         df_C = df.loc[(df[var1] < var1_val) & (df[var2] >= var2_val)]
         df_D_obs = df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)]
         
-        sizeC += df_C.shape[0]
-        sizeA += df_A.shape[0]
+        sizeC[label] += df_C.shape[0]
+        sizeA[label] += df_A.shape[0]
 
         # fill the ABCD histograms
         output["A_"+label].fill(df_A[var1])
@@ -186,7 +198,7 @@ for ifile in tqdm(files):
         output["D_obs_"+label].fill(df_D_obs[var1])
         output["ABCDvars_2D_"+label].fill(df[var1], df[var2])
         
-         # fill the distributions as they are saved in the dataframes
+        # fill the distributions as they are saved in the dataframes
         plot_labels = [key for key in df.keys() if key in list(output.keys())]
         for plot in plot_labels: output[plot].fill(df[plot])  
 
@@ -211,15 +223,16 @@ for ifile in tqdm(files):
             output[r + "_nconst_"+label].fill(df_r['SUEP_' + label + '_nconst'])
             output[r + "_ntracks_"+label].fill(df_r['SUEP_' + label + '_ntracks'])
             output["2D_" r + "_pt_nconst_"+label].fill(df_r['SUEP_' + label + '_pt'], df_r['SUEP_' + label + '_nconst'])
-    os.system('rm ' + options.dataset+'.hdf5')    
+    
+    if not options.local: os.system('rm ' + options.dataset+'.hdf5')    
         
-# ABCD method to obtain D expected
+# ABCD method to obtain D expected for each selection
 for label in labels:
     if sizeA>0.0:
-        CoverA =  sizeC / sizeA
+        CoverA =  sizeC[label] / sizeA[label]
     else:
         CoverA = 0.0
-        print("A region has no occupancy")
+        print("A region has no occupancy for selection", label)
     output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
     
 # apply normalization
@@ -232,6 +245,7 @@ else:
 pickle.dump(output, fpickle)
 print("Number of files that failed to be read:", nfailed)
 
+# save to root
 with uproot.recreate("outputs/" + options.dataset+ "_" + output_label + '.root') as froot:
-     for h, hist in output.items():
-         froot[h] = hist
+    for h, hist in output.items():
+        froot[h] = hist
