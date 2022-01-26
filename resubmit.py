@@ -1,13 +1,21 @@
 import sys, os, subprocess
+import argparse
 import logging
 import time
 
 logging.basicConfig(level=logging.DEBUG)
 
-nResubmits = 1
-nHours = 1
-tag = 'noJetId'
-filelist = 'filelist/list_test.txt'
+parser = argparse.ArgumentParser(description='Famous Submitter')
+parser.add_argument("-r"   , "--resubmits" , type=int, default=1     , help="Number of resubmissions.", required=True)
+parser.add_argument("-n"   , "--hours"     , type=int, default=2  , help="Number of hours per resubmission.", required=True)
+parser.add_argument("-t"   , "--tag"       , type=str, help="Dataset tag.")
+parser.add_argument("-i"   , "--input"     , type=str, help="Input filelist.")
+
+options = parser.parse_args()
+nResubmits = options.resubmits
+nHours = options.hours
+tag = options.tag
+filelist = options.input
 
 # Making sure that the proxy is good
 proxy_base = 'x509up_u{}'.format(os.getuid())
@@ -40,7 +48,7 @@ if regenerate_proxy:
 
 sleepTime = 60*60*nHours
 for i in range(nResubmits):
-    logging.info("Resubmission"+str(i))
+    logging.info("Resubmission "+str(i))
     logging.info("Removing all jobs...")
     os.system('condor_rm {}'.format(os.environ['USER']))
     logging.info("Executing monitor.py...")
