@@ -6,7 +6,7 @@ import time
 logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
-parser.add_argument("-r"   , "--resubmits" , type=int, default=1     , help="Number of resubmissions.", required=True)
+parser.add_argument("-r"   , "--resubmits" , type=int, default=5     , help="Number of resubmissions.", required=True)
 parser.add_argument("-n"   , "--hours"     , type=int, default=2  , help="Number of hours per resubmission.", required=True)
 parser.add_argument("-t"   , "--tag"       , type=str, help="Dataset tag.")
 parser.add_argument("-i"   , "--input"     , type=str, help="Input filelist.")
@@ -52,7 +52,7 @@ for i in range(nResubmits):
     logging.info("Removing all jobs...")
     os.system('condor_rm {}'.format(os.environ['USER']))
     logging.info("Executing monitor.py...")
-    os.system("/home/submit/lavezzo/miniconda3/condabin/conda run -n SUEP python monitor.py --tag={} --input={} -r=1".format(tag, filelist))
+    os.system("python monitor.py --tag={} --input={} -r=1".format(tag, filelist))
     # don't wait if it's the last submission
     if i == nResubmits - 1: break
     logging.info("Sleeping for",nHours,"hours...")
