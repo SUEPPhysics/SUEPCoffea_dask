@@ -213,7 +213,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Jet.mass,
             "jetId": events.Jet.jetId
         })
-        jetCut = (Jets.jetId) & (Jets.pt > 30) & (abs(Jets.eta)<4.7)
+        jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         
         # save variables to a dataframe
@@ -228,16 +228,16 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
-        
+         
         # remove events that fail the HT cut
         trigger = ((col6 == 1) | (col7 == 1))
-        htCut = (col4 > 1200 & trigger)
+        htCut = ((col4 > 1200) & (trigger))    
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]
         tracks = tracks[htCut]
         indices = indices[htCut]
         Lost_Tracks_cands = Lost_Tracks_cands[htCut]
-    
+           
         # remove events without a cluster
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
@@ -272,18 +272,18 @@ class SUEP_cluster(processor.ProcessorABC):
             indices_mult = indices[singletrackCut]
         
             out_mult = thicc_jets[:,0]
-            out_mult["index"] = indices_mult
-            out_mult["SUEP_mult_ntracks"] = ak.num(tracks_mult, axis=1)
-            out_mult["SUEP_mult_nconst"] = ak.num(chonkiest_cands, axis=1)
-            out_mult["SUEP_mult_pt"] = thicc_jets[:,0].pt
-            out_mult["SUEP_mult_pt_avg"] = ak.mean(chonkiest_cands.pt, axis=-1)
-            out_mult["SUEP_mult_eta"] = thicc_jets[:,0].eta
-            out_mult["SUEP_mult_phi"] = thicc_jets[:,0].phi
-            out_mult["SUEP_mult_mass"] = thicc_jets[:,0].mass
+            out_mult["event_index_mult"] = indices_mult
+            out_mult["SUEP_ntracks_mult"] = ak.num(tracks_mult, axis=1)
+            out_mult["SUEP_nconst_mult"] = ak.num(chonkiest_cands, axis=1)
+            out_mult["SUEP_pt_mult"] = thicc_jets[:,0].pt
+            out_mult["SUEP_pt_avg_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
+            out_mult["SUEP_eta_mult"] = thicc_jets[:,0].eta
+            out_mult["SUEP_phi_mult"] = thicc_jets[:,0].phi
+            out_mult["SUEP_mass_mult"] = thicc_jets[:,0].mass
             deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
-            out_mult["SUEP_mult_girth"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
-            out_mult["SUEP_mult_rho0"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
-            out_mult["SUEP_mult_rho1"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
+            out_mult["SUEP_girth_mult"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
+            out_mult["SUEP_rho0_mult"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
+            out_mult["SUEP_rho1_mult"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
 
             #SUEP_mult boosting, sphericity and rho
             boost_mult = ak.zip({
@@ -294,11 +294,11 @@ class SUEP_cluster(processor.ProcessorABC):
             }, with_name="Momentum4D")
             chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
             mult_eigs = self.sphericity(chonkiest_cands,2.0)  
-            out_mult["SUEP_mult_pt_avg_b"] = ak.mean(chonkiest_cands.pt, axis=-1)
-            out_mult["SUEP_mult_spher"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
-            out_mult["SUEP_mult_aplan"] =  1.5 * mult_eigs[:,0]
-            out_mult["SUEP_mult_FW2M"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
-            out_mult["SUEP_mult_D"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
+            out_mult["SUEP_pt_avg_b_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
+            out_mult["SUEP_spher_mult"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
+            out_mult["SUEP_aplan_mult"] =  1.5 * mult_eigs[:,0]
+            out_mult["SUEP_FW2M_mult"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
+            out_mult["SUEP_D_mult"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
 
 
         ### SUEP_pt
@@ -352,32 +352,32 @@ class SUEP_cluster(processor.ProcessorABC):
             Lost_Christos_cands = Lost_Christos_cands[onechtrackCut]
             
             out_ch = SUEP_cand
-            out_ch["SUEP_ch_index"] = indices_ch
-            out_ch["SUEP_ch_nLostTracks"] = ak.num(Lost_Christos_cands)
-            out_ch["SUEP_ch_pt"] = SUEP_cand.pt
-            out_ch["SUEP_ch_eta"] = SUEP_cand.eta
-            out_ch["SUEP_ch_phi"] = SUEP_cand.phi
-            out_ch["SUEP_ch_mass"] = SUEP_cand.mass
-            out_ch["SUEP_ch_dphi_SUEP_ISR"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
+            out_ch["event_index_ch"] = indices_ch
+            out_ch["SUEP_nLostTracks_ch"] = ak.num(Lost_Christos_cands)
+            out_ch["SUEP_pt_ch"] = SUEP_cand.pt
+            out_ch["SUEP_eta_ch"] = SUEP_cand.eta
+            out_ch["SUEP_phi_ch"] = SUEP_cand.phi
+            out_ch["SUEP_mass_ch"] = SUEP_cand.mass
+            out_ch["SUEP_dphi_SUEP_ISR_ch"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
             ch_eigs = self.sphericity(Christos_cands,2.0)
-            out_ch["SUEP_ch_nconst"] = ak.num(Christos_cands)
-            out_ch["SUEP_ch_ntracks"] = ak.num(tracks_ch)
-            out_ch["SUEP_ch_pt_avg_b"] = ak.mean(Christos_cands.pt, axis=-1)
-            out_ch["SUEP_ch_spher"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
-            out_ch["SUEP_ch_aplan"] = 1.5 * ch_eigs[:,0]
-            out_ch["SUEP_ch_FW2M"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
-            out_ch["SUEP_ch_D"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
-            out_ch["SUEP_ch_dphi_chcands_ISR"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
-            out_ch["SUEP_ch_dphi_ISRtracks_ISR"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
-            out_ch["SUEP_ch_dphi_SUEPtracks_ISR"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
+            out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
+            out_ch["SUEP_ntracks_ch"] = ak.num(tracks_ch)
+            out_ch["SUEP_pt_avg_b_ch"] = ak.mean(Christos_cands.pt, axis=-1)
+            out_ch["SUEP_spher_ch"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
+            out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
+            out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
+            out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+            out_ch["SUEP_dphi_chcands_ISR_ch"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
+            out_ch["SUEP_dphi_ISRtracks_ISR_ch"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
+            out_ch["SUEP_dphi_SUEPtracks_ISR_ch"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
 
             # unboost for these
             Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
             deltaR = Christos_cands_ub.deltaR(SUEP_cand)
-            out_ch["SUEP_ch_pt_avg"] = ak.mean(Christos_cands_ub.pt, axis=-1)
-            out_ch["SUEP_ch_girth"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
-            out_ch["SUEP_ch_rho0"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
-            out_ch["SUEP_ch_rho1"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
+            out_ch["SUEP_pt_avg_ch"] = ak.mean(Christos_cands_ub.pt, axis=-1)
+            out_ch["SUEP_girth_ch"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
+            out_ch["SUEP_rho0_ch"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
+            out_ch["SUEP_rho1_ch"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
 
             
         ### save outputs
@@ -385,7 +385,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out_mult, pd.DataFrame): out_mult = self.ak_to_pandas(out_mult)
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
         
-        # padndas to hdf5 file
+        # pandas to hdf5 file
         self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
 
         return output

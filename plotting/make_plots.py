@@ -81,21 +81,22 @@ def create_output_file(l):
             "2D_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             "2D_spher_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
             "ht_" + label : Hist.new.Reg(1000, 0, 30000, name="ht_"+label, label='HT').Weight(),
-            "nJets_" + label : Hist.new.Reg(200, 0, 200, name="nJets_"+label, label='# Jets in Event').Weight(),
-            "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name=r + " nLostTracks_"+label, label=r + " # Lost Tracks in Event ").Weight(),
-            "2D_nJets_SUEPpT_"+label : Hist.new.Reg(200, 0, 200, name="nJets_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),        
-        
-            # per region
-            for r in ["A", "B", "C"]:
-                r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r + "pt_"+label, label=r + r" $p_T$").Weight(),
-                r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r + " nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
-                "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+" pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
-                r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+" eta_"+label, label=r + r"$\eta$").Weight()
-                r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + " phi_"+label, label=r + r"$\phi$").Weight(),
-                r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"spher_"+label, label=r+"Sphericity").Weight(),
-                r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label=r+"# Tracks in event").Weight(),
-        
+            "nJets_" + label : Hist.new.Reg(199, 0, 200, name="nJets_"+label, label='# Jets in Event').Weight(),
+            "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
+            "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
     }
+    
+    # per region
+    for r in ["A", "B", "C"]:
+        output.update({
+            r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r + "pt_"+label, label=r + r" $p_T$").Weight(),
+            r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r + " nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
+            "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+" pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
+            r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+" eta_"+label, label=r + r"$\eta$").Weight(),
+            r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + " phi_"+label, label=r + r"$\phi$").Weight(),
+            r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"spher_"+label, label=r+"Sphericity").Weight(),
+            r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label=r+"# Tracks in event").Weight()
+        })
     if label == 'ch':# Christos only
         output2 = {
             "SUEP_"+label+"_dphi_chcands_ISR":Hist.new.Reg(100, 0, 4, name="dphi_chcands_ISR").Weight(),
@@ -133,7 +134,7 @@ def h5load(ifile, label):
 nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
-output, sizeA, sizeC = {}
+output, sizeA, sizeC = {}, {}, {}
 for label in labels: 
     output.update(create_output_file(label))
     sizeA.update({label:0})
@@ -157,7 +158,7 @@ for ifile in tqdm(files):
     if df_vars.shape[0] == 0: continue
     
     # update the gensumweight
-    if options.isMC: weight[label] += metadata['gensumweight']
+    if options.isMC: weight += metadata['gensumweight']
     
     # store event-wide info to be indexed within each selection
     hts = df_vars['ht']
@@ -166,12 +167,13 @@ for ifile in tqdm(files):
     
     for label in labels:
         if not options.local: df, metadata = h5load(options.dataset+'.hdf5', label) 
-        else: df_vars, metadata = h5load(ifile, label)   
+        else: df, metadata = h5load(ifile, label)
+        if df.shape[0] == 0: continue
         
         # parameters for ABCD plots
         var1 = 'SUEP_'+label+'_' + var1_label
         var2 = 'SUEP_'+label+'_' + var2_label
-                
+        
         # selections
         if var2_label == 'nconst': df = df.loc[df['SUEP_'+label+'_nconst'] >= 10]
         if var1_label == 'spher': df = df.loc[df['SUEP_'+label+'_spher'] >= 0.25]
@@ -189,7 +191,7 @@ for ifile in tqdm(files):
         
         sizeC[label] += df_C.shape[0]
         sizeA[label] += df_A.shape[0]
-
+        
         # fill the ABCD histograms
         output["A_"+label].fill(df_A[var1])
         output["B_"+label].fill(df_B[var1])
@@ -222,13 +224,13 @@ for ifile in tqdm(files):
             output[r + "_spher_"+label].fill(df_r['SUEP_' + label + '_spher'])
             output[r + "_nconst_"+label].fill(df_r['SUEP_' + label + '_nconst'])
             output[r + "_ntracks_"+label].fill(df_r['SUEP_' + label + '_ntracks'])
-            output["2D_" r + "_pt_nconst_"+label].fill(df_r['SUEP_' + label + '_pt'], df_r['SUEP_' + label + '_nconst'])
+            output["2D_" + r + "_pt_nconst_"+label].fill(df_r['SUEP_' + label + '_pt'], df_r['SUEP_' + label + '_nconst'])
     
     if not options.local: os.system('rm ' + options.dataset+'.hdf5')    
         
 # ABCD method to obtain D expected for each selection
 for label in labels:
-    if sizeA>0.0:
+    if sizeA[label]>0.0:
         CoverA =  sizeC[label] / sizeA[label]
     else:
         CoverA = 0.0
