@@ -52,7 +52,7 @@ for i in range(nResubmits):
     logging.info("Removing all jobs...")
     os.system('condor_rm {}'.format(os.environ['USER']))
     logging.info("Executing monitor.py...")
-    os.system("python monitor.py --tag={} --input={} -r=1".format(tag, filelist))
+    os.system("python3 monitor.py --tag={} --input={} -r=1".format(tag, filelist))
     # don't wait if it's the last submission
     if i == nResubmits - 1: break
     logging.info("Sleeping for",nHours,"hours...")

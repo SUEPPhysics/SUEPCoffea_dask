@@ -385,7 +385,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out_mult, pd.DataFrame): out_mult = self.ak_to_pandas(out_mult)
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
         
-        # padndas to hdf5 file
+        # pandas to hdf5 file
         self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
 
         return output
