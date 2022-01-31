@@ -90,12 +90,11 @@ class SUEP_cluster(processor.ProcessorABC):
             # pandas to hdf5
             for out, gname in zip(dfs, df_names):
                 if self.isMC:
-
                     metadata = dict(gensumweight=self.gensumweight,era=self.era, mc=self.isMC,sample=self.sample)
                     #metadata.update({gensumweight:self.gensumweight})
                 else:
                     metadata = dict(era=self.era, mc=self.isMC,sample=self.sample)    
-
+                    
                 store_fin = self.h5store(store, out, fname, gname, **metadata)
 
             store.close()
@@ -224,14 +223,16 @@ class SUEP_cluster(processor.ProcessorABC):
         col5 = pd.Series(ak.num(Lost_Tracks_cands).to_list(), name = "nLostTracks")
         col6 = pd.Series(events.HLT.PFJet500.to_list(), name="HLT_PFJet500")
         col7 = pd.Series(events.HLT.PFHT1050.to_list(), name="HLT_PFHT1050")
-        out_vars = pd.concat([col1, col2, col3, col4, col5, col6, col7], axis=1)
+        col8 = pd.Series(ak.num(ak4jets).to_list(), name = "ngood_ak4jets")
+        out_vars = pd.concat([col1, col2, col3, col4, col5, col6, col7, col8], axis=1)
         
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
          
         # remove events that fail the HT cut
-        trigger = ((col6 == 1) | (col7 == 1))
-        htCut = ((col4 > 1200) & (trigger))    
+        #trigger = ((out_vars['HLT_PFJet500'] == 1) | (out_vars['HLT_PFHT1050'] == 1))
+        trigger = ((out_vars['HLT_PFHT1050'] == 1))
+        htCut = ((out_vars['ht'] > 1200) & (trigger))    
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]
         tracks = tracks[htCut]
@@ -249,56 +250,56 @@ class SUEP_cluster(processor.ProcessorABC):
         # output an empty file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass the selections. Saving empty outputs.")
-            out_ch, out_mult = pd.DataFrame(), pd.DataFrame()
-            self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
+            out_ch = pd.DataFrame(['empty'], columns=['empty'])
+            self.save_dfs([out_ch, out_vars],["ch","vars"])
             return output
         
         ### SUEP_mult
         chonkocity = ak.num(ak_inclusive_cluster, axis=2)
-        chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
-        thicc_jets = ak_inclusive_jets[chonkiest_jet]
-        chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
-        singletrackCut = (ak.num(chonkiest_cands)>1)
+        #chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
+        #thicc_jets = ak_inclusive_jets[chonkiest_jet]
+        #chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
+        #singletrackCut = (ak.num(chonkiest_cands)>1)
         
         # account for no events passing our selections
-        if not any(singletrackCut): 
-            print("No events in Multiplicity Method.")
-            out_mult = pd.DataFrame()
-        else:            
-            #cut events with single track highest mult jets
-            thicc_jets = thicc_jets[singletrackCut]
-            chonkiest_cands = chonkiest_cands[singletrackCut]
-            tracks_mult = tracks[singletrackCut]
-            indices_mult = indices[singletrackCut]
+#         if not any(singletrackCut): 
+#             print("No events in Multiplicity Method.")
+#             out_mult = pd.DataFrame()
+#         else:            
+#             #cut events with single track highest mult jets
+#             thicc_jets = thicc_jets[singletrackCut]
+#             chonkiest_cands = chonkiest_cands[singletrackCut]
+#             tracks_mult = tracks[singletrackCut]
+#             indices_mult = indices[singletrackCut]
         
-            out_mult = thicc_jets[:,0]
-            out_mult["event_index_mult"] = indices_mult
-            out_mult["SUEP_ntracks_mult"] = ak.num(tracks_mult, axis=1)
-            out_mult["SUEP_nconst_mult"] = ak.num(chonkiest_cands, axis=1)
-            out_mult["SUEP_pt_mult"] = thicc_jets[:,0].pt
-            out_mult["SUEP_pt_avg_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
-            out_mult["SUEP_eta_mult"] = thicc_jets[:,0].eta
-            out_mult["SUEP_phi_mult"] = thicc_jets[:,0].phi
-            out_mult["SUEP_mass_mult"] = thicc_jets[:,0].mass
-            deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
-            out_mult["SUEP_girth_mult"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
-            out_mult["SUEP_rho0_mult"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
-            out_mult["SUEP_rho1_mult"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
+#             out_mult = thicc_jets[:,0]
+#             out_mult["event_index_mult"] = indices_mult
+#             out_mult["SUEP_ntracks_mult"] = ak.num(tracks_mult, axis=1)
+#             out_mult["SUEP_nconst_mult"] = ak.num(chonkiest_cands, axis=1)
+#             out_mult["SUEP_pt_mult"] = thicc_jets[:,0].pt
+#             out_mult["SUEP_pt_avg_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
+#             out_mult["SUEP_eta_mult"] = thicc_jets[:,0].eta
+#             out_mult["SUEP_phi_mult"] = thicc_jets[:,0].phi
+#             out_mult["SUEP_mass_mult"] = thicc_jets[:,0].mass
+#             deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
+#             out_mult["SUEP_girth_mult"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
+#             out_mult["SUEP_rho0_mult"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
+#             out_mult["SUEP_rho1_mult"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
 
-            #SUEP_mult boosting, sphericity and rho
-            boost_mult = ak.zip({
-                "px": thicc_jets[:,0].px*-1,
-                "py": thicc_jets[:,0].py*-1,
-                "pz": thicc_jets[:,0].pz*-1,
-                "mass": thicc_jets[:,0].mass
-            }, with_name="Momentum4D")
-            chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
-            mult_eigs = self.sphericity(chonkiest_cands,2.0)  
-            out_mult["SUEP_pt_avg_b_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
-            out_mult["SUEP_spher_mult"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
-            out_mult["SUEP_aplan_mult"] =  1.5 * mult_eigs[:,0]
-            out_mult["SUEP_FW2M_mult"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
-            out_mult["SUEP_D_mult"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
+#             #SUEP_mult boosting, sphericity and rho
+#             boost_mult = ak.zip({
+#                 "px": thicc_jets[:,0].px*-1,
+#                 "py": thicc_jets[:,0].py*-1,
+#                 "pz": thicc_jets[:,0].pz*-1,
+#                 "mass": thicc_jets[:,0].mass
+#             }, with_name="Momentum4D")
+#             chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
+#             mult_eigs = self.sphericity(chonkiest_cands,2.0)  
+#             out_mult["SUEP_pt_avg_b_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
+#             out_mult["SUEP_spher_mult"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
+#             out_mult["SUEP_aplan_mult"] =  1.5 * mult_eigs[:,0]
+#             out_mult["SUEP_FW2M_mult"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
+#             out_mult["SUEP_D_mult"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
 
 
         ### SUEP_pt
@@ -382,11 +383,12 @@ class SUEP_cluster(processor.ProcessorABC):
             
         ### save outputs
         # ak to pandas, if needed
-        if not isinstance(out_mult, pd.DataFrame): out_mult = self.ak_to_pandas(out_mult)
+        #if not isinstance(out_mult, pd.DataFrame): out_mult = self.ak_to_pandas(out_mult)
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
         
         # pandas to hdf5 file
-        self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
+        #self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
+        self.save_dfs([out_ch, out_vars],["ch","vars"])
 
         return output
 
