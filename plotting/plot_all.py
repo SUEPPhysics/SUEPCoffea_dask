@@ -65,7 +65,17 @@ data = [
 results = []
 start = time.time()
 
-if options.isMC:
+if options.isMC == 2:
+    for sample in QCD:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
+    for sample in SUEP:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,))) 
+    for sample in data:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=0'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
+elif options.isMC:
     for sample in QCD:
         cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
         results.append(pool.apply_async(call_makeplots, (cmd,)))

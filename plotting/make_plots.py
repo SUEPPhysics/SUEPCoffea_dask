@@ -1,8 +1,8 @@
-    import pandas as pd 
+import pandas as pd 
 import numpy as np
 from hist import Hist
 import argparse
-import os
+import os, sys, subprocess
 import awkward as ak
 import uproot
 import getpass
@@ -35,7 +35,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100                # applies to var1_label
 labels = ['ch']            # which selection to make plots for
-output_label = 'noPtCut'
+output_label = 'noJetIdWrongWeight'
 
 # cross section
 xsection = 1.0
@@ -58,7 +58,7 @@ def create_output_file(l):
             "SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label=r"Components $p_T$ Avg.").Weight(),
             "SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label=r"Components $p_T$ avg (boosted frame)").Weight(),
             "SUEP_eta_"+label : Hist.new.Reg(100, -5, 5, name="eta_"+label, label=r"$\eta$").Weight(),
-            "SUEP_phi_"+label : Hist.new.Reg(100, 0, 6.5, name="phi_"+label, label=r"$\phi$").Weight(),
+            "SUEP_phi_"+label : Hist.new.Reg(100, -6.5, 6.5, name="phi_"+label, label=r"$\phi$").Weight(),
             "SUEP_mass_"+label : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="Mass").Weight(),
             "SUEP_spher_"+label : Hist.new.Reg(100, 0, 1, name="spher_"+label, label="Sphericity").Weight(),
             "SUEP_aplan_"+label : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
@@ -80,7 +80,7 @@ def create_output_file(l):
             "2D_rho1_nconst_"+label : Hist.new.Reg(100, 0, 20, name="rho1_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
             "2D_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             "2D_spher_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
-            "ht_" + label : Hist.new.Reg(1000, 0, 30000, name="ht_"+label, label='HT').Weight(),
+            "ht_" + label : Hist.new.Reg(1000, 0, 10000, name="ht_"+label, label='HT').Weight(),
             "nJets_" + label : Hist.new.Reg(199, 0, 200, name="nJets_"+label, label='# Jets in Event').Weight(),
             "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
@@ -89,13 +89,16 @@ def create_output_file(l):
     # per region
     for r in ["A", "B", "C"]:
         output.update({
-            r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r + "pt_"+label, label=r + r" $p_T$").Weight(),
-            r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r + " nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
-            "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+" pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
-            r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+" eta_"+label, label=r + r"$\eta$").Weight(),
-            r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + " phi_"+label, label=r + r"$\phi$").Weight(),
-            r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"spher_"+label, label=r+"Sphericity").Weight(),
-            r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label=r+"# Tracks in event").Weight()
+            r+"_ht_" + label : Hist.new.Reg(1000, 0, 10000, name=r+"_ht_"+label, label=r+' HT').Weight(),
+            r+"_nJets_" + label : Hist.new.Reg(199, 0, 200, name=r+"_nJets_"+label, label=r+' # Jets in Event').Weight(),
+            r+"_nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nLostTracks_"+label, label=r+" # Lost Tracks in Event ").Weight(),
+            r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label, label=r + r" $p_T$").Weight(),
+            r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
+            "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
+            r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+"_eta_"+label, label=r + r"$\eta$").Weight(),
+            r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + "_phi_"+label, label=r + r"$\phi$").Weight(),
+            r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"_spher_"+label, label=r+"Sphericity").Weight(),
+            r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_ntracks_"+label, label=r+"# Tracks in event").Weight()
         })
     if label == 'ch':# Christos only
         output2 = {
@@ -115,19 +118,47 @@ def create_output_file(l):
 # load hdf5 with pandas
 def h5load(ifile, label):
     try:
-        with pd.HDFStore(ifile) as store:
+        with pd.HDFStore(ifile, 'r') as store:
             try:
                 data = store[label] 
                 metadata = store.get_storer(label).attrs.metadata
                 return data, metadata
-            except ValueError: 
-                print("Empty file!", ifile)
-                return 0, 0
+        
             except KeyError:
                 print("No key",label,ifile)
+                
+                if options.local:
+                    fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                                    options.tag, 
+                                                                                    options.dataset, 
+                                                                                    ifile.split('/')[-1])
+                    if os.path.isfile(fname): subprocess.run(['rm', fname])
+                    subprocess.run(['rm',ifile])
+                else:
+                    fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                                    options.tag, 
+                                                                                    options.dataset, 
+                                                                                    ifile)
+                    if os.path.isfile(fname): subprocess.run(['rm', fname])
+        
                 return 0, 0
     except:
         print("Some error occurred", ifile)
+        
+        if options.local:
+            fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                            options.tag, 
+                                                                            ifile.split('/')[-2], 
+                                                                            ifile.split('/')[-1])
+            if os.path.isfile(fname): subprocess.run(['rm', fname])
+            subprocess.run(['rm',ifile])
+        else:
+            fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                            options.tag, 
+                                                                            options.dataset, 
+                                                                            ifile)
+            if os.path.isfile(fname): subprocess.run(['rm', fname])
+  
         return 0, 0
         
 # fill ABCD hists with dfs from hdf5 files
@@ -141,7 +172,7 @@ for label in labels:
     sizeC.update({label:0})
     
 for ifile in tqdm(files):
-    ifile = dataDir+"/"+ifile
+    ifile = dataDir+ifile
 
     if not options.local:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
@@ -150,16 +181,18 @@ for ifile in tqdm(files):
         df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
         df_vars, metadata = h5load(ifile, 'vars')   
-
-    # check if file is corrupted, or empty
+        
+    # check if file is corrupted
     if type(df_vars) == int: 
         nfailed += 1
         continue
-    if df_vars.shape[0] == 0: continue
-    
+        
     # update the gensumweight
     if options.isMC: weight += metadata['gensumweight']
     
+    # check if file is empty
+    if df_vars.shape[0] == 0: continue    
+
     # store event-wide info to be indexed within each selection
     hts = df_vars['ht']
     nJets = df_vars['ngood_fastjets']
@@ -168,6 +201,7 @@ for ifile in tqdm(files):
     for label in labels:
         if not options.local: df, metadata = h5load(options.dataset+'.hdf5', label) 
         else: df, metadata = h5load(ifile, label)
+        if 'empty' in list(df.keys()): continue
         if df.shape[0] == 0: continue
         
         # parameters for ABCD plots
@@ -218,6 +252,9 @@ for ifile in tqdm(files):
         # per region
         for r, df_r in zip(["A", "B", "C"], [df_A, df_B, df_C]):
         
+            output[r + "_ht_" + label].fill(hts[df_r['event_index_'+label]])
+            output[r + "_nJets_" + label].fill(nJets[df_r['event_index_'+label]])
+            output[r + "_nLostTracks_" + label].fill(nLostTracks[df_r['event_index_'+label]])
             output[r + "_pt_"+label].fill(df_r['SUEP_pt_'+label])
             output[r + "_eta_"+label].fill(df_r['SUEP_eta_'+label])
             output[r + "_phi_"+label].fill(df_r['SUEP_phi_'+label])
