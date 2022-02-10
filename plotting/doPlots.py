@@ -4,16 +4,17 @@ import os
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(False)
-output = "/eos/user/c/cericeci/www/SUEP/DY_ZH/"
-DY = [pd.HDFStore("../outputs/DY_simple/"+f, 'r') for f in os.listdir("../outputs/DY_simple/")]
-ZH = [pd.HDFStore("../outputs/ZH_simple/"+f, 'r') for f in os.listdir("../outputs/ZH_simple/")]
+output = "/eos/user/j/jkil/SUEP/output_graphs"
+DY = [pd.HDFStore("../outputDY/"+f, 'r') for f in os.listdir("../outputDY/")]
+ZH = [pd.HDFStore("../outputZH/"+f, 'r') for f in os.listdir("../outputZH/")]
 
 channel   = "vars"
 normalize = False
 
 plots = {
   "Leading Lepton p_{T}": ["leadlep_pt", 50, 0, 200, "p_{T}^{l1} [GeV]"], 
-
+  "Leading Lepton eta":["leadlep_eta", 50, -2.5, 2.5, "eta"],
+  "Leading Lepton phi":["leadlep_phi",50,0,6.28,"phi"]
 }
 
 for p in plots:

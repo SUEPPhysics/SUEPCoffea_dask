@@ -342,11 +342,14 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Define outputs for plotting
         if debug: print("Saving reco variables")
+	# The variables that I can get are listed above in "SelectByLeptons" function
         out["leadlep_pt"]    = leptons.pt[:,0]
         out["subleadlep_pt"] = leptons.pt[:,1]
         out["leadlep_eta"]   = leptons.eta[:,0]
         out["subleadlep_eta"]= leptons.eta[:,1]
-        out["ntracks"]       = ak.num(tracks, axis=1)
+        out["leadlep_phi"] = leptons.phi[:,0]
+        out["subleadlep_phi"] = leptons.phi[:,1]
+
 
         if doGen:
           if debug: print("Saving gen variables")
