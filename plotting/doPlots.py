@@ -8,7 +8,8 @@ output = "/eos/user/c/cericeci/www/SUEP/DY_ZH/"
 DY = [pd.HDFStore("../outputs/DY_simple/"+f, 'r') for f in os.listdir("../outputs/DY_simple/")]
 ZH = [pd.HDFStore("../outputs/ZH_simple/"+f, 'r') for f in os.listdir("../outputs/ZH_simple/")]
 
-channel = "vars"
+channel   = "vars"
+normalize = False
 
 plots = {
   "Leading Lepton p_{T}": ["leadlep_pt", 50, 0, 200, "p_{T}^{l1} [GeV]"], 
@@ -19,13 +20,23 @@ for p in plots:
   h1 = ROOT.TH1F(plots[p][0], plots[p][0], plots[p][1], plots[p][2], plots[p][3])
   h2 = h1.Clone(h1.GetName()+ "_2")
 
+  sumwB = 0
   for d in DY:
-    for val in d[channel][plots[p][0]]:
-      h1.Fill(val)
+    #print d.get_storer("vars").attrs.metadata
+    sumwB += d.get_storer("vars").attrs.metadata["gensumweight"]
+    weightsDY = d[channel]["genweight"]
+    for idx, val in enumerate(d[channel][plots[p][0]]):
+      if idx%1000 == 0: print idx
+      h1.Fill(val,weightsDY[idx])
 
+  sumwS = 0
   for d in ZH:
-    for val in d[channel][plots[p][0]]:
-      h2.Fill(val)
+    if idx%1000 == 0: print idx
+    #print d.get_storer("vars").attrs.metadata
+    sumwS += d.get_storer("vars").attrs.metadata["gensumweight"]
+    weightsZS = d[channel]["genweight"]
+    for idx, val in enumerate(d[channel][plots[p][0]]):
+      h2.Fill(val, weightsZS[idx])
 
   theColors = {"1":ROOT.kBlue, "2":ROOT.kRed}
   c = ROOT.TCanvas("c","c", 800,600)
@@ -45,14 +56,26 @@ for p in plots:
   p1.cd()
 
   h1.SetTitle("")
-  h1.GetYaxis().SetTitle("Normalized events")
-  h1.GetYaxis().SetTitleSize(0.05)
-  h1.Scale(1./h1.Integral())
-  h2.Scale(1./h2.Integral())
+  if normalize:
+    h1.GetYaxis().SetTitle("Normalized events")
+    h1.Scale(1./h1.Integral())
+    h2.Scale(1./h2.Integral())
+    h1.SetMaximum(1.1)
+    h1.SetMinimum(0.001)
+
+  else: # Scale to 137 fb^{-1}, a lot of hard coding we need to fix
+    xsecDY   = 7181000*0.0336*2
+    xsecSUEP = 870 * 0.0336 * 2 # ZH*Br(Z->ll)*2 accounting for el/mu
+    lumi     = 137.0
+    h1.Scale(lumi*xsecDY/sumwB)
+    h2.Scale(lumi*xsecSUEP/sumwS)
+    maxY = max(h1.GetMaximum(), h2.GetMaximum())
+    minY = max(min(h2.GetMinimum(), h2.GetMinimum()),1)
+    h1.SetMaximum(maxY)
+    h1.SetMinimum(minY)
+
   h1.SetLineColor(theColors["1"])
   h2.SetLineColor(theColors["2"])
-  h1.SetMaximum(1.1)
-  h1.SetMinimum(0.001)
   h1.Draw()
   h2.Draw("same")
   tl = ROOT.TLegend(0.6,0.7,0.9,0.9)

@@ -68,6 +68,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
         output = pd.DataFrame()
         for field in ak.fields(jet_collection):
+            print(field)
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
                 for subfield in ak.fields(jet_collection[field]):
@@ -91,7 +92,7 @@ class SUEP_cluster(processor.ProcessorABC):
             for out, gname in zip(dfs, df_names):
                 if self.isMC:
                     metadata = dict(gensumweight=self.gensumweight,era=self.era, mc=self.isMC,sample=self.sample)
-                    #metadata.update({gensumweight:self.gensumweight})
+                    #metadata.update({"gensumweight":self.gensumweight})
                 else:
                     metadata = dict(era=self.era, mc=self.isMC,sample=self.sample)    
                     
@@ -261,6 +262,17 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
         return events, leptons, tracks, [coll for coll in extraColls]
 
+    def selectByGEN(self, events):
+        GenParts = ak.zip({
+            "pt": events.GenPart.pt,
+            "eta": events.GenPart.eta,
+            "phi": events.GenPart.phi,
+            "mass": events.GenPart.mass
+        }, with_name="Momentum4D")
+        cutgenZ    = (events.GenPart.pdgId == 23) & (events.GenPart.status == 62)
+        cutgenH    = (events.GenPart.pdgId == 25) & (events.GenPart.status == 62)
+        cutgenSUEP = (events.GenPart.pdgId == 999999) & (events.GenPart.status == 2)
+        return events, GenParts[cutgenZ], GenParts[cutgenH], GenParts[cutgenSUEP]
 
     def shouldContinueAfterCut(self, events, out = pd.DataFrame(['empty'], columns=['empty'])):
         if len(events) == 0:
@@ -270,13 +282,23 @@ class SUEP_cluster(processor.ProcessorABC):
             return True
 
     def process(self, events):
-        debug = True # If we want some prints in the middle
+        debug    = True  # If we want some prints in the middle
+        doTracks = True # Just to speed things up
+        doGen    = False # In case we want info on the gen level 
         # Main processor code
+        # Define outputs
         output  = self.accumulator.identity()
         out     = {}
+        outgen  = {}
+
+        # Data dependant stuff
         dataset = events.metadata['dataset']
-        if self.isMC: self.gensumweight = ak.sum(events.genWeight)
-       
+        if self.isMC:      self.gensumweight = ak.sum(events.genWeight)
+        if not(self.isMC): doGen = False
+
+        # ------------------------------------------------------------------------------------
+        # ------------------------------- OBJECT LOADING -------------------------------------
+        # ------------------------------------------------------------------------------------
         # First, the trigger selection, as it takes out significant load for other steps
         if debug: print("Applying lepton requirements.... %i events in"%len(events))
         events, electrons, muons = self.selectByLeptons(events)[:3]
@@ -302,21 +324,49 @@ class SUEP_cluster(processor.ProcessorABC):
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
+        
+        if doTracks:
+          # Right now no track cuts, only selecting tracks
+          events, leptons, tracks     = self.selectByTracks(events, leptons) [:3]
+          if not(self.shouldContinueAfterCut(events)): return output
+          if debug: print("%i events pass track cuts. Doing more stuff..."%len(events))
 
-        # Right now no track cuts, only selecting tracks
-        events, leptons, tracks  = self.selectByTracks(events, leptons) [:3]
-        if not(self.shouldContinueAfterCut(events)): return output
-        if debug: print("%i events pass track cuts. Doing more stuff..."%len(events))
+        if doGen:
+          events, genZ, genH, genSUEP = self.selectByGEN(events)[:4]
+          if not(self.shouldContinueAfterCut(events)): return output
+          if debug: print("%i events pass gen cuts. Doing more stuff..."%len(events))
 
+        # ------------------------------------------------------------------------------
+        # ------------------------------- PLOTTING -------------------------------------
+        # ------------------------------------------------------------------------------
 
         # Define outputs for plotting
+        if debug: print("Saving reco variables")
         out["leadlep_pt"]    = leptons.pt[:,0]
         out["subleadlep_pt"] = leptons.pt[:,1]
         out["leadlep_eta"]   = leptons.eta[:,0]
         out["subleadlep_eta"]= leptons.eta[:,1]
+        out["ntracks"]       = ak.num(tracks, axis=1)
+
+        if doGen:
+          if debug: print("Saving gen variables")
+          out["genZpt"]  = genZ.pt[:,0]
+          out["genZeta"] = genZ.eta[:,0]
+          out["genZphi"] = genZ.phi[:,0]
+
+          out["genHpt"]  = genH.pt[:,0]
+          out["genHeta"] = genH.eta[:,0]
+          out["genHphi"] = genH.phi[:,0]
+
+
+        if self.isMC:
+          # We need this to be able to normalize the samples 
+          out["genweight"]= events.genWeight[:]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
+        if debug: print("Conversion to pandas...")
         if not isinstance(out, pd.DataFrame): out = self.ak_to_pandas(out)
+        if debug: print("DFS saving....")
         self.save_dfs([out],["vars"])
 
         return output
