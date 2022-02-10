@@ -310,10 +310,13 @@ class SUEP_cluster(processor.ProcessorABC):
 
 
         # Define outputs for plotting
+	# The variables that I can get are listed above in "SelectByLeptons" function
         out["leadlep_pt"]    = leptons.pt[:,0]
         out["subleadlep_pt"] = leptons.pt[:,1]
         out["leadlep_eta"]   = leptons.eta[:,0]
         out["subleadlep_eta"]= leptons.eta[:,1]
+        out["leadlep_phi"] = leptons.phi[:,0]
+        out["subleadlep_phi"] = leptons.phi[:,1]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if not isinstance(out, pd.DataFrame): out = self.ak_to_pandas(out)
