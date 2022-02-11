@@ -35,7 +35,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100                # applies to var1_label
 labels = ['ch']            # which selection to make plots for
-output_label = 'noJetIdWrongWeight'
+output_label = 'noJetTrigger'
 
 # cross section
 xsection = 1.0
@@ -95,6 +95,8 @@ def create_output_file(l):
             r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label, label=r + r" $p_T$").Weight(),
             r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
             "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
+            "2D_"+r+"_nconst_ntracks_"+label : Hist.new.Reg(200, 0, 500, name="nconst_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
+            "2D_"+r+"_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+"_eta_"+label, label=r + r"$\eta$").Weight(),
             r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + "_phi_"+label, label=r + r"$\phi$").Weight(),
             r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"_spher_"+label, label=r+"Sphericity").Weight(),
@@ -262,6 +264,8 @@ for ifile in tqdm(files):
             output[r + "_nconst_"+label].fill(df_r['SUEP_nconst_'+label])
             output[r + "_ntracks_"+label].fill(df_r['SUEP_ntracks_'+label])
             output["2D_" + r + "_pt_nconst_"+label].fill(df_r['SUEP_pt_'+label], df_r['SUEP_nconst_'+label])
+            output["2D_" + r + "_nconst_ntracks_"+label].fill(df_r["SUEP_nconst_"+label], df_r["SUEP_ntracks_"+label])
+            output["2D_" + r + "_spher_ntracks_"+label].fill(df_r["SUEP_spher_"+label], df_r["SUEP_ntracks_"+label])
     
     if not options.local: os.system('rm ' + options.dataset+'.hdf5')    
         

@@ -170,10 +170,10 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")        
         cut = (events.PFCands.fromPV > 1) & \
-            (events.PFCands.trkPt >= 0.7) & \
-            (abs(events.PFCands.trkEta) <= 2.5) & \
-            (abs(events.PFCands.dz) < 10) & \
-            (events.PFCands.dzErr < 0.05)
+                (events.PFCands.trkPt >= 0.7) & \
+                (abs(events.PFCands.trkEta) <= 2.5) & \
+                (abs(events.PFCands.dz) < 10) & \
+                (events.PFCands.dzErr < 0.05)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
         
@@ -215,17 +215,45 @@ class SUEP_cluster(processor.ProcessorABC):
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         
-        # save variables to a dataframe
-        col1 = pd.Series(ak.num(Cands).to_list(), name = "uncleaned_tracks")
-        col2 = pd.Series(ak.num(tracks).to_list(), name = "ntracks")
-        col3 = pd.Series(ak.num(ak_inclusive_jets).to_list(), name = "ngood_fastjets")
-        col4 = pd.Series(ak.sum(ak4jets.pt,axis=-1).to_list(), name = "ht")
-        col5 = pd.Series(ak.num(Lost_Tracks_cands).to_list(), name = "nLostTracks")
-        col6 = pd.Series(events.HLT.PFJet500.to_list(), name="HLT_PFJet500")
-        col7 = pd.Series(events.HLT.PFHT1050.to_list(), name="HLT_PFHT1050")
-        col8 = pd.Series(ak.num(ak4jets).to_list(), name = "ngood_ak4jets")
-        out_vars = pd.concat([col1, col2, col3, col4, col5, col6, col7, col8], axis=1)
+        # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
+        # jetId==2 means: pass tight ID, fail tightLepVeto
+        # jetId==6 means: pass tight and tightLepVeto ID. 
+        tightJetId = (ak4jets.jetId > 2)
+        tight_ak4jets = ak4jets[tightJetId]
+        looseJetId = (ak4jets.jetId >= 2)
+        loose_ak4jets = ak4jets[looseJetId]
         
+        # save per event variables to a dataframe
+        out_vars = pd.DataFrame()
+        out_vars["uncleaned_tracks"] = ak.num(Cands).to_list()
+        out_vars["ntracks"] = ak.num(tracks).to_list()
+        out_vars["ngood_fastjets"] = ak.num(ak_inclusive_jets).to_list()
+        out_vars["ht"] = ak.sum(ak4jets.pt,axis=-1).to_list()
+        out_vars["nLostTracks"] = ak.num(Lost_Tracks_cands).to_list()
+        out_vars["HLT_PFJet500"] = events.HLT.PFJet500.to_list()
+        out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050.to_list()
+        out_vars["eta_ak4jets1"] = ak4jets.eta[:,0]
+        out_vars["eta_ak4jets2"] = ak4jets.eta[:,1]
+        out_vars["phi_ak4jets1"] = ak4jets.phi[:,0]
+        out_vars["phi_ak4jets2"] = ak4jets.phi[:,1]
+        # loose_check = (ak.num(loose_ak4jets) >= 2)
+        # out_vars["eta_loose_ak4jets1"] = [x[0] if i else -100 for i, x in zip(loose_check, loose_ak4jets.eta)]
+        # out_vars["eta_loose_ak4jets2"] = [x[1] if i else -100 for i, x in zip(loose_check, loose_ak4jets.eta)]
+        # out_vars["phi_loose_ak4jets1"] = [x[0] if i else -100 for i, x in zip(loose_check, loose_ak4jets.phi)]
+        # out_vars["phi_loose_ak4jets2"] = [x[1] if i else -100 for i, x in zip(loose_check, loose_ak4jets.phi)]
+        # tight_check = (ak.num(tight_ak4jets) >= 2)
+        # out_vars["eta_tight_ak4jets1"] = [x[0] if i else -100 for i, x in zip(tight_check, tight_ak4jets.eta)]
+        # out_vars["eta_tight_ak4jets2"] = [x[1] if i else -100 for i, x in zip(tight_check, tight_ak4jets.eta)]
+        # out_vars["phi_tight_ak4jets1"] = [x[0] if i else -100 for i, x in zip(tight_check, tight_ak4jets.phi)]
+        # out_vars["phi_tight_ak4jets2"] = [x[1] if i else -100 for i, x in zip(tight_check, tight_ak4jets.phi)]
+        out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
+        out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
+        out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
+        out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
+        out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
+        out_vars["PV_npvs"] = events.PV.npvs
+        out_vars["PV_npvsGood"] = events.PV.npvsGood
+    
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
          
@@ -363,14 +391,14 @@ class SUEP_cluster(processor.ProcessorABC):
             ch_eigs = self.sphericity(Christos_cands,2.0)
             out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
             out_ch["SUEP_ntracks_ch"] = ak.num(tracks_ch)
-            out_ch["SUEP_pt_avg_b_ch"] = ak.mean(Christos_cands.pt, axis=-1)
+            #out_ch["SUEP_pt_avg_b_ch"] = ak.mean(Christos_cands.pt, axis=-1)
             out_ch["SUEP_spher_ch"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
-            out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
-            out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
-            out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
-            out_ch["SUEP_dphi_chcands_ISR_ch"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
-            out_ch["SUEP_dphi_ISRtracks_ISR_ch"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
-            out_ch["SUEP_dphi_SUEPtracks_ISR_ch"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
+            #out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
+            #out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
+            #out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+            #out_ch["SUEP_dphi_chcands_ISR_ch"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
+            #out_ch["SUEP_dphi_ISRtracks_ISR_ch"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
+            #out_ch["SUEP_dphi_SUEPtracks_ISR_ch"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
 
             # unboost for these
             Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
