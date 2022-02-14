@@ -17,12 +17,13 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--local', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
+parser.add_argument('--xrootd', type=int, default=1, help="Local data or xrdcp from hadoop (xrootd=True)")
 options = parser.parse_args()
 
 # other parameters for script
+redirector = "root://t3serv017.mit.edu:/"
 username = getpass.getuser()
-if not options.local:
+if options.xrootd:
     dataDir = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
@@ -128,39 +129,9 @@ def h5load(ifile, label):
         
             except KeyError:
                 print("No key",label,ifile)
-                
-                if options.local:
-                    fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
-                                                                                    options.tag, 
-                                                                                    options.dataset, 
-                                                                                    ifile.split('/')[-1])
-                    if os.path.isfile(fname): subprocess.run(['rm', fname])
-                    subprocess.run(['rm',ifile])
-                else:
-                    fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
-                                                                                    options.tag, 
-                                                                                    options.dataset, 
-                                                                                    ifile)
-                    if os.path.isfile(fname): subprocess.run(['rm', fname])
-        
                 return 0, 0
     except:
         print("Some error occurred", ifile)
-        
-        if options.local:
-            fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
-                                                                            options.tag, 
-                                                                            ifile.split('/')[-2], 
-                                                                            ifile.split('/')[-1])
-            if os.path.isfile(fname): subprocess.run(['rm', fname])
-            subprocess.run(['rm',ifile])
-        else:
-            fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
-                                                                            options.tag, 
-                                                                            options.dataset, 
-                                                                            ifile)
-            if os.path.isfile(fname): subprocess.run(['rm', fname])
-  
         return 0, 0
         
 # fill ABCD hists with dfs from hdf5 files
@@ -176,9 +147,9 @@ for label in labels:
 for ifile in tqdm(files):
     ifile = dataDir+ifile
 
-    if not options.local:
+    if not options.xrootd:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
-        xrd_file = "root://t3serv017.mit.edu:/" + ifile.split('hadoop')[1]
+        xrd_file = redirector + ifile.split('hadoop')[1]
         os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
         df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
@@ -188,7 +159,7 @@ for ifile in tqdm(files):
     if type(df_vars) == int: 
         nfailed += 1
         continue
-        
+            
     # update the gensumweight
     if options.isMC: weight += metadata['gensumweight']
     
@@ -201,7 +172,7 @@ for ifile in tqdm(files):
     nLostTracks = df_vars['nLostTracks']
     
     for label in labels:
-        if not options.local: df, metadata = h5load(options.dataset+'.hdf5', label) 
+        if options.xrootd: df, metadata = h5load(options.dataset+'.hdf5', label) 
         else: df, metadata = h5load(ifile, label)
         if 'empty' in list(df.keys()): continue
         if df.shape[0] == 0: continue
@@ -267,7 +238,7 @@ for ifile in tqdm(files):
             output["2D_" + r + "_nconst_ntracks_"+label].fill(df_r["SUEP_nconst_"+label], df_r["SUEP_ntracks_"+label])
             output["2D_" + r + "_spher_ntracks_"+label].fill(df_r["SUEP_spher_"+label], df_r["SUEP_ntracks_"+label])
     
-    if not options.local: os.system('rm ' + options.dataset+'.hdf5')    
+    if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
         
 # ABCD method to obtain D expected for each selection
 for label in labels:
