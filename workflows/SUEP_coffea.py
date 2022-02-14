@@ -232,20 +232,12 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["nLostTracks"] = ak.num(Lost_Tracks_cands).to_list()
         out_vars["HLT_PFJet500"] = events.HLT.PFJet500.to_list()
         out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050.to_list()
-        out_vars["eta_ak4jets1"] = ak4jets.eta[:,0]
-        out_vars["eta_ak4jets2"] = ak4jets.eta[:,1]
-        out_vars["phi_ak4jets1"] = ak4jets.phi[:,0]
-        out_vars["phi_ak4jets2"] = ak4jets.phi[:,1]
-        # loose_check = (ak.num(loose_ak4jets) >= 2)
-        # out_vars["eta_loose_ak4jets1"] = [x[0] if i else -100 for i, x in zip(loose_check, loose_ak4jets.eta)]
-        # out_vars["eta_loose_ak4jets2"] = [x[1] if i else -100 for i, x in zip(loose_check, loose_ak4jets.eta)]
-        # out_vars["phi_loose_ak4jets1"] = [x[0] if i else -100 for i, x in zip(loose_check, loose_ak4jets.phi)]
-        # out_vars["phi_loose_ak4jets2"] = [x[1] if i else -100 for i, x in zip(loose_check, loose_ak4jets.phi)]
-        # tight_check = (ak.num(tight_ak4jets) >= 2)
-        # out_vars["eta_tight_ak4jets1"] = [x[0] if i else -100 for i, x in zip(tight_check, tight_ak4jets.eta)]
-        # out_vars["eta_tight_ak4jets2"] = [x[1] if i else -100 for i, x in zip(tight_check, tight_ak4jets.eta)]
-        # out_vars["phi_tight_ak4jets1"] = [x[0] if i else -100 for i, x in zip(tight_check, tight_ak4jets.phi)]
-        # out_vars["phi_tight_ak4jets2"] = [x[1] if i else -100 for i, x in zip(tight_check, tight_ak4jets.phi)]
+        oneAk4jet = (ak.num(ak4jets) >= 1)
+        out_vars["eta_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.eta)]
+        out_vars["phi_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.phi)]
+        twoAk4jets = (ak.num(ak4jets) >= 2)
+        out_vars["eta_ak4jets2"] = [x[1] if i else -100 for i, x in zip(twoAk4jets, ak4jets.eta)]
+        out_vars["phi_ak4jets2"] = [x[1] if i else -100 for i, x in zip(twoAk4jets, ak4jets.phi)]
         out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
         out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
         out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()

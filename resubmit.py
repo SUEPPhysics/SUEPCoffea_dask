@@ -59,11 +59,12 @@ for i in range(nResubmits):
     t_start = time.time()
     
     # delete files that are corrupted
-    subDirs = os.listdir(dataDir)
-    for subDir in subDirs:
-        for file in os.listdir(dataDir + subDir):
-            size = os.path.getsize(dataDir + subDir + "/" + file)
-            if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
+    if os.path.isdir(moveDir):
+        subDirs = os.listdir(dataDir)
+        for subDir in subDirs:
+            for file in os.listdir(dataDir + subDir):
+                size = os.path.getsize(dataDir + subDir + "/" + file)
+                if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
         
     if not options.dryrun:
         
@@ -73,6 +74,10 @@ for i in range(nResubmits):
         os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_MC_A01.txt', options.movesample))
     
     if options.move:
+        
+        if not os.path.isdir(moveDir): os.system("mkdir " + moveDir)
+          
+        subDirs = os.listdir(dataDir)
         
         for subDir in subDirs:
             
@@ -103,8 +108,10 @@ for i in range(nResubmits):
         
     # additional buffer time can be added, such that all the jobs can run
     sleepTime = 60*60*nHours
-    logging.info("Submitting and moving files took " + str(round(t_start-t_end)) + " seconds")
+    mod = t_end-t_start
+    logging.info("Submitting and moving files took " + str(round(mod)) + " seconds")
+    if sleepTime - mod <= 0: continue
     if nHours > 0:
-        logging.info("Sleeping for "+str(round(sleepTime))+" seconds")
-        logging.info("("+str(round(nHours, 2))+" hours)...")
-    time.sleep(sleepTime)
+        logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
+        logging.info("("+str(round(nHours - mod*1.0/3600, 2))+" hours)...")
+    time.sleep(sleepTime - mod)
