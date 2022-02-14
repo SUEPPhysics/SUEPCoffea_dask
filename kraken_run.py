@@ -210,7 +210,7 @@ def main():
             
             # FIXME: not a permanent solution
             # currently waits 15 mins after 1000 files
-            time.sleep(nFiles * 15.0*60.0/1000.0)
+            #time.sleep(nFiles * 15.0*60.0/1000.0)
 
 if __name__ == "__main__":
     main()
