@@ -91,6 +91,14 @@ def main():
             logging.info(
                 "-- {:62s}".format((sample_name[:60] + '..') if len(sample_name)>60 else sample_name)
             )
+            
+            #Print out the results
+            percent = nfile / njobs  * 100
+            logging.info(
+                colored("\t\t --> completed", "green") if njobs==nfile else colored(
+                    "\t\t --> ({}/{}) finished. {:.1f}% complete".format(nfile,njobs,percent), 'red'
+                )
+            )
 
             #If files are missing we resubmit with the same condor.sub 
             if options.resubmit:
@@ -123,6 +131,11 @@ def main():
                 
                 if not os.path.isdir(move_dir.format(sample_name)): os.system("mkdir " + move_dir.format(sample_name)) 
             
+                # delete files that are corrupted (i.e., empty)
+                for file in os.listdir(move_dir.format(sample_name)):
+                    size = os.path.getsize(move_dir.format(sample_name) + "/" + file)
+                    if size == 0: subprocess.run(['rm',move_dir.format(sample_name) + "/" + file])
+                    
                 # get list of files already in /work
                 movedFiles = os.listdir(move_dir.format(sample_name))
 
@@ -136,18 +149,18 @@ def main():
                 logging.info("Moving " + str(len(filesToMove)) + " files to " + move_dir.format(sample_name))
                 for file in filesToMove:
                     subprocess.run(['xrdcp', 
-                               "root://t3serv017.mit.edu/" + dataDir.split('hadoop')[-1] + "/" + file,
+                               "root://t3serv017.mit.edu/" + out_dir.split('hadoop')[-1].format(sample_name) + "/" + file,
                                move_dir.format(sample_name) + "/"])
                 
             # give time to xrootd on T2 to process the jobs
             # for now, this is fixed such that it waits 15mins for 1000 files
-            if options.resubmit:
-                sleepTime = len(jobs_resubmit) * 15.0*60.0/1000.0
-                t_end = time.time()
-                mod = (t_end - t_start) 
-                logging.info("Deleting, resubmitting, and moving files took " + str(round(mod)) + " seconds")
-                logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
-                time.sleep(sleepTime - mod)
+            # if options.resubmit:
+            #     sleepTime = len(jobs_resubmit) * 15.0*60.0/1000.0
+            #     t_end = time.time()
+            #     mod = (t_end - t_start) 
+            #     logging.info("Deleting, resubmitting, and moving files took " + str(round(mod)) + " seconds")
+            #     logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
+            #     time.sleep(sleepTime - mod)
                 
 
 if __name__ == "__main__":
