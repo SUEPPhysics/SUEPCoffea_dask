@@ -8,6 +8,7 @@ import time
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="Production tag", required=True)
+parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
 parser.add_argument('--local', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
@@ -64,15 +65,27 @@ data = [
 results = []
 start = time.time()
 
-for sample in QCD:
-    cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
-    results.append(pool.apply_async(call_makeplots, (cmd,)))
-for sample in SUEP:
-    cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
-for sample in data:
-    cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=0'.format(options.tag, sample, options.local)
-    results.append(pool.apply_async(call_makeplots, (cmd,)))
+if options.isMC == 2:
+    for sample in QCD:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
+    for sample in SUEP:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,))) 
+    for sample in data:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=0'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
+elif options.isMC:
+    for sample in QCD:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
+    for sample in SUEP:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=1'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
+else:
+    for sample in data:
+        cmd = 'python3 make_plots.py --tag={} --dataset={} --local={} --isMC=0'.format(options.tag, sample, options.local)
+        results.append(pool.apply_async(call_makeplots, (cmd,)))
 
 # Close the pool and wait for each running task to complete
 pool.close()

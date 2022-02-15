@@ -17,13 +17,12 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--xrootd', type=int, default=1, help="Local data or xrdcp from hadoop (xrootd=True)")
+parser.add_argument('--local', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
 # other parameters for script
-redirector = "root://t3serv017.mit.edu:/"
 username = getpass.getuser()
-if options.xrootd:
+if not options.local:
     dataDir = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
@@ -36,7 +35,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100                # applies to var1_label
 labels = ['ch']            # which selection to make plots for
-output_label = 'noJetTrigger'
+output_label = 'noJetIdWrongWeight'
 
 # cross section
 xsection = 1.0
@@ -96,8 +95,6 @@ def create_output_file(l):
             r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label, label=r + r" $p_T$").Weight(),
             r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
             "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
-            "2D_"+r+"_nconst_ntracks_"+label : Hist.new.Reg(200, 0, 500, name="nconst_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
-            "2D_"+r+"_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+"_eta_"+label, label=r + r"$\eta$").Weight(),
             r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + "_phi_"+label, label=r + r"$\phi$").Weight(),
             r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"_spher_"+label, label=r+"Sphericity").Weight(),
@@ -129,9 +126,39 @@ def h5load(ifile, label):
         
             except KeyError:
                 print("No key",label,ifile)
+                
+                if options.local:
+                    fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                                    options.tag, 
+                                                                                    options.dataset, 
+                                                                                    ifile.split('/')[-1])
+                    if os.path.isfile(fname): subprocess.run(['rm', fname])
+                    subprocess.run(['rm',ifile])
+                else:
+                    fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                                    options.tag, 
+                                                                                    options.dataset, 
+                                                                                    ifile)
+                    if os.path.isfile(fname): subprocess.run(['rm', fname])
+        
                 return 0, 0
     except:
         print("Some error occurred", ifile)
+        
+        if options.local:
+            fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                            options.tag, 
+                                                                            ifile.split('/')[-2], 
+                                                                            ifile.split('/')[-1])
+            if os.path.isfile(fname): subprocess.run(['rm', fname])
+            subprocess.run(['rm',ifile])
+        else:
+            fname = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/{}".format(username, 
+                                                                            options.tag, 
+                                                                            options.dataset, 
+                                                                            ifile)
+            if os.path.isfile(fname): subprocess.run(['rm', fname])
+  
         return 0, 0
         
 # fill ABCD hists with dfs from hdf5 files
@@ -147,9 +174,9 @@ for label in labels:
 for ifile in tqdm(files):
     ifile = dataDir+ifile
 
-    if not options.xrootd:
+    if not options.local:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
-        xrd_file = redirector + ifile.split('hadoop')[1]
+        xrd_file = "root://t3serv017.mit.edu:/" + ifile.split('hadoop')[1]
         os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
         df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
@@ -159,7 +186,7 @@ for ifile in tqdm(files):
     if type(df_vars) == int: 
         nfailed += 1
         continue
-            
+        
     # update the gensumweight
     if options.isMC: weight += metadata['gensumweight']
     
@@ -172,7 +199,7 @@ for ifile in tqdm(files):
     nLostTracks = df_vars['nLostTracks']
     
     for label in labels:
-        if options.xrootd: df, metadata = h5load(options.dataset+'.hdf5', label) 
+        if not options.local: df, metadata = h5load(options.dataset+'.hdf5', label) 
         else: df, metadata = h5load(ifile, label)
         if 'empty' in list(df.keys()): continue
         if df.shape[0] == 0: continue
@@ -235,10 +262,8 @@ for ifile in tqdm(files):
             output[r + "_nconst_"+label].fill(df_r['SUEP_nconst_'+label])
             output[r + "_ntracks_"+label].fill(df_r['SUEP_ntracks_'+label])
             output["2D_" + r + "_pt_nconst_"+label].fill(df_r['SUEP_pt_'+label], df_r['SUEP_nconst_'+label])
-            output["2D_" + r + "_nconst_ntracks_"+label].fill(df_r["SUEP_nconst_"+label], df_r["SUEP_ntracks_"+label])
-            output["2D_" + r + "_spher_ntracks_"+label].fill(df_r["SUEP_spher_"+label], df_r["SUEP_ntracks_"+label])
     
-    if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
+    if not options.local: os.system('rm ' + options.dataset+'.hdf5')    
         
 # ABCD method to obtain D expected for each selection
 for label in labels:

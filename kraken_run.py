@@ -1,5 +1,4 @@
 import os, sys
-import time
 import argparse
 import logging
 import pwd
@@ -12,36 +11,25 @@ logging.basicConfig(level=logging.DEBUG)
 script_TEMPLATE = """#!/bin/bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
-#export PATH=$USER_PATH
-#export X509_CERT_DIR=/etc/grid-security/certificates
+export X509_USER_PROXY={proxy}
+export PATH=$USER_PATH
+
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
-
-export X509_USER_PROXY={proxy}
 
 echo "hostname:"
 hostname
 
-voms-proxy-info --all
-
 echo "----- Found Proxy in: $X509_USER_PROXY"
-
-echo "gfal-copy davs://xrootd.cmsaf.mit.edu:1094/$2 temp.root"
-#xrdcp $2 temp.root
-gfal-copy davs://xrootd.cmsaf.mit.edu:1094/$2 temp.root
-
-ls
-
+echo "xrdcp $2 temp.root"
+xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
 rm temp.root
 
 #echo "----- transferring output to scratch :"
-echo "gfal-copy condor_out.hdf5  davs://t3serv017.mit.edu:1094/{outdir}/$3.hdf5"
-gfal-copy condor_out.hdf5  davs://t3serv017.mit.edu:1094/{outdir}/$3.hdf5
-
-
+echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
+xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
 
 echo " ------ THE END (everyone dies !) ----- "
 """
@@ -61,16 +49,15 @@ initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
-#use_x509userproxy     = True
-#x509userproxy         = /home/submit/freerc/x509up_u206148
-#+AccountingGroup = "analysis.freerc"
-#requirements          = ( BOSCOCluster == "t3serv008.mit.edu" || BOSCOCluster == "ce03.cmsaf.mit.edu")
-requirements          = ( BOSCOCluster == "ce03.cmsaf.mit.edu")
-#requirements          = ( BOSCOCluster == "t3serv008.mit.edu" )
-#+DESIRED_Sites        = "T2_AT_Vienna,T2_BE_IIHE,T2_BE_UCL,T2_BR_SPRACE,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_MIT,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC"
-#+SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
-+SingularityImage     = "/cvmfs/cvmfs.cmsaf.mit.edu/submit/work/submit/freerc/cvmfs/singularity_coffea/covfefe_gfal.sif"
-
+use_x509userproxy     = True
+x509userproxy         = /home/submit/freerc/x509up_u206148
++AccountingGroup = "analysis.freerc"
+#requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
+#requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
+#requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
+requirements          = ( BOSCOCluster =!= "t3serv008.mit.edu" && BOSCOCluster =!= "ce03.cmsaf.mit.edu")
++DESIRED_Sites        = "T2_AT_Vienna,T2_BE_IIHE,T2_BE_UCL,T2_BR_SPRACE,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_MIT,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC"
++SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
 +JobFlavour           = "{queue}"
 
 queue jobid, fileid from {jobdir}/inputfiles.dat
@@ -145,18 +132,14 @@ def main():
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
-                nFiles = 0
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
                      for i in Raw_list:
                          #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
                          #infiles.write(i+"\n")
                          full_file = i.split(" ")[0]
-                         full_file = full_file.replace('root://xrootd.cmsaf.mit.edu/','')
-
                          just_file = full_file.split("/")[-1]
                          infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
                          #infiles.write(i.split(" ")[0]+"\n")
-                         nFiles+=1
                      infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
@@ -191,10 +174,9 @@ def main():
                 )
                 condorfile.write(condor)
                 condorfile.close()
-                                
+                
             if options.dryrun:
                 continue
-                
  
             htc = subprocess.Popen(
                 "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
@@ -207,10 +189,6 @@ def main():
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
-            
-            # FIXME: not a permanent solution
-            # currently waits 15 mins after 1000 files
-            #time.sleep(nFiles * 15.0*60.0/1000.0)
 
 if __name__ == "__main__":
     main()
