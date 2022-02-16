@@ -1,4 +1,5 @@
 import os, sys
+import time
 import argparse
 import glob
 import logging
@@ -21,8 +22,7 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="input"  , required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit"  , type=int, default=0          , help="")
-    parser.add_argument("-c", "--corrupted"  , type=int, default=0          , help="")
-    parser.add_argument("-m", "--move"  , type=int, default=0          , help="Move files to out_dir_c (/work/submit/) while you check if they are corrupted. Only useful if -c=1 is called.")
+    parser.add_argument("-m", "--move"  , type=int, default=0          , help="Move files to move_dir (/work/submit/) while you check if they are corrupted.")
     options = parser.parse_args()
 
     proxy_base = 'x509up_u{}'.format(os.getuid())
@@ -31,7 +31,7 @@ def main():
     proxy_copy = os.path.join(home_base,proxy_base)
     out_dir = "/mnt/T3_US_MIT/hadoop/scratch/" + username  + "/SUEP/" + options.tag + "/{}/"
     out_dir_xrd = "/scratch/" + username  + "/SUEP/" + options.tag + "/{}/"
-    out_dir_c = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
+    move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
     
     if options.move:
         if not os.path.isdir("/work/submit/" + username + "/SUEP/" + options.tag): 
@@ -65,8 +65,18 @@ def main():
         for sample in stream.read().split('\n'):
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
+            
+            t_start = time.time()
+            
             sample_name = sample.split("/")[-1]
             jobs_dir =  '_'.join(['jobs', options.tag, sample_name])
+            
+            # delete files that are corrupted (i.e., empty)
+            for file in os.listdir(out_dir.format(sample_name)):
+                size = os.path.getsize(out_dir.format(sample_name) + "/" + file)
+                if size == 0: subprocess.run(['rm',out_dir.format(sample_name) + "/" + file])
+            
+            print(jobs_dir)
             
             #We write the original list. inputfiles.dat will now contain missing files. Compare with original list
             if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
@@ -77,86 +87,12 @@ def main():
             
             njobs = len(jobs)
             complete_list = os.listdir(out_dir.format(sample_name)) 
-            #complete_list = os.listdir("/work/submit/" + username  + "/SUEP/{}/{}/".format(options.tag, sample_name)) 
             nfile = len(complete_list)
             
             #Print out the results
             logging.info(
                 "-- {:62s}".format((sample_name[:60] + '..') if len(sample_name)>60 else sample_name)
             )
-            
-            #If files are corrupted we resubmit with the same condor.sub 
-            if options.corrupted:
-                file_names = []
-                nCorrupted = 0
-                
-                if options.move:
-                    if not os.path.isdir(out_dir_c.format(sample_name)): 
-                        subprocess.run(['mkdir', out_dir_c.format(sample_name)])
-                        
-                # instead of deleting on hadoop, create a trash bin
-                if not os.path.isdir(out_dir.format(sample_name) + '/badfiles'):
-                    subprocess.run(['mkdir',out_dir.format(sample_name) + '/badfiles'])
-                
-                # check which files are corrupted
-                for item in complete_list:
-                    if 'hdf5' not in item: continue
-                    
-                    # if file exists in out_dir_c (usually /work/submit) check there
-                    if os.path.exists(out_dir_c.format(sample_name) + item):
-                                   
-                        if isFileGood(out_dir_c.format(sample_name) + item, 'vars'): continue
-                        nCorrupted+=1
-                        
-                        # delete file from out_dir_c
-                        subprocess.run(['rm', out_dir_c.format(sample_name) + item])
-                    
-                    # if not, xrdcp file to local dir, and check it
-                    else:
-                        
-                        # either copy it locally temporarily
-                        if not options.move:
-                            subprocess.run(['xrdcp',
-                                            "root://t3serv017.mit.edu/" + out_dir_xrd.format(sample_name) + item,
-                                            "."])
-                            good = isFileGood(item, 'vars')
-                            
-                            # delete file from local dir once the check is finished
-                            subprocess.run(['rm', item])
-                            
-                            if good: continue
-                            else: 
-                                nCorrupted+=1
-                            
-                        # or in out_dir_c directly
-                        else:
-                            subprocess.run(['xrdcp',
-                                            "root://t3serv017.mit.edu/" + out_dir_xrd.format(sample_name) + item,
-                                            out_dir_c.format(sample_name)])
-                            good = isFileGood(out_dir_c.format(sample_name) + item, 'vars')
-                            
-                            if good: continue
-                            else: 
-                                subprocess.run(['rm', out_dir_c.format(sample_name) + item])
-                                nCorrupted+=1
-                        
-                    # mv file on /hadoop to a temporary badfiles/ dir
-                    subprocess.run(['mv', out_dir.format(sample_name) + item, out_dir.format(sample_name) + '/badfiles'])
-                    
-                    # append file to the ones that need to be re run
-                    file_names.append(item.split('.hdf5')[0])
-                                   
-                #Print out the results
-                logging.info(
-                    colored("\t\t --> No corrupted files", "green") if nCorrupted==0 else colored(
-                        "\t\t --> ({}/{}) corrupted files".format(nCorrupted,nfile), 'red'
-                    )
-                )
-                
-                
-            # count again, after we move the corrupted files to the bin
-            complete_list = os.listdir(out_dir.format(sample_name)) 
-            nfile = len(complete_list)
             
             #Print out the results
             percent = nfile / njobs  * 100
@@ -173,7 +109,7 @@ def main():
                 for item in complete_list:
                     if 'hdf5' not in item: continue
                     file_names.append(item.split('.hdf5')[0])
-                    
+                
                 jobs_resubmit = [item for item in jobs if item.split("\t")[-1] not in file_names]
                 resubmit_file = open(jobs_dir + "/" + "inputfiles.dat","w")
                 for redo_file in jobs_resubmit:
@@ -191,6 +127,42 @@ def main():
                 out, err = htc.communicate()
                 exit_status = htc.returncode
                 logging.info("condor submission status : {}".format(exit_status))
+                
+                
+            if options.move:
+                
+                if not os.path.isdir(move_dir.format(sample_name)): os.system("mkdir " + move_dir.format(sample_name)) 
+            
+                # delete files that are corrupted (i.e., empty)
+                for file in os.listdir(move_dir.format(sample_name)):
+                    size = os.path.getsize(move_dir.format(sample_name) + "/" + file)
+                    if size == 0: subprocess.run(['rm',move_dir.format(sample_name) + "/" + file])
+                    
+                # get list of files already in /work
+                movedFiles = os.listdir(move_dir.format(sample_name))
+
+                # get list of files in T3
+                allFiles = os.listdir(out_dir.format(sample_name))
+
+                # get list of files missing from /work that are in T3
+                filesToMove = list(set(allFiles) - set(movedFiles))
+
+                # move those files
+                logging.info("Moving " + str(len(filesToMove)) + " files to " + move_dir.format(sample_name))
+                for file in filesToMove:
+                    subprocess.run(['xrdcp', 
+                               "root://t3serv017.mit.edu/" + out_dir.split('hadoop')[-1].format(sample_name) + "/" + file,
+                               move_dir.format(sample_name) + "/"])
+                
+            # give time to xrootd on T2 to process the jobs
+            # for now, this is fixed such that it waits 15mins for 1000 files
+            # if options.resubmit:
+            #     sleepTime = len(jobs_resubmit) * 15.0*60.0/1000.0
+            #     t_end = time.time()
+            #     mod = (t_end - t_start) 
+            #     logging.info("Deleting, resubmitting, and moving files took " + str(round(mod)) + " seconds")
+            #     logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
+            #     time.sleep(sleepTime - mod)
                 
 
 if __name__ == "__main__":

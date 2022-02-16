@@ -8,8 +8,9 @@ logging.basicConfig(level=logging.DEBUG)
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"       , type=str, help="Dataset tag.")
 parser.add_argument("-r"   , "--resubmits" , type=int, default=10     , help="Number of resubmissions.", required=False)
-parser.add_argument("-hours"   , "--hours"     , type=float, default=1.0  , help="Number of hours per resubmission.", required=False)
-parser.add_argument("-m"   , "--move"      , type=int, default=0, help="Move.")
+parser.add_argument("-hours"   , "--hours"     , type=float, default=1.0  , help="Number of hours per resubmission, in addition to the time between sample submissions.", required=False)
+parser.add_argument("-ms"   , "--movesample"      , type=int, default=1, help="Move each sample after submitting it (accomplishes it during the buffer time between samples set by default in monitor.py).")
+parser.add_argument("-m"   , "--move"      , type=int, default=0, help="Move all samples after all submissions (during the buffer specified by -hours).")
 parser.add_argument("-dry" , "--dryrun"    , type=int, default=0, help="running without submission")
 
 options = parser.parse_args()
@@ -49,30 +50,38 @@ if regenerate_proxy:
     shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
 
 
-sleepTime = 60*60*nHours
 for i in range(nResubmits):
     logging.info("Resubmission "+str(i))
     logging.info("Removing all jobs...")
     os.system('condor_rm {}'.format(os.environ['USER']))
     logging.info("Checking for corrupted files and removing them...")
     
+    t_start = time.time()
+    
     # delete files that are corrupted
-    subDirs = os.listdir(dataDir)
-    for subDir in subDirs:
-        for file in os.listdir(dataDir + subDir):
-            size = os.path.getsize(dataDir + subDir + "/" + file)
-            if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
+    if os.path.isdir(moveDir):
+        subDirs = os.listdir(dataDir)
+        for subDir in subDirs:
+            for file in os.listdir(dataDir + subDir):
+                size = os.path.getsize(dataDir + subDir + "/" + file)
+                if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
         
     if not options.dryrun:
+        
         logging.info("Executing monitor.py for data...")
-        os.system("python3 monitor.py --tag={} --input={} -r=1".format(tag, 'filelist/list_2018_data_A01.txt'))
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_data_A01.txt', options.movesample))
         logging.info("Executing monitor.py for MC...")
-        os.system("python3 monitor.py --tag={} --input={} -r=1".format(tag, 'filelist/list_2018_MC_A01.txt'))
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_MC_A01.txt', options.movesample))
     
     if options.move:
         
-        t_startToMove = time.time()
+        if not os.path.isdir(moveDir): os.system("mkdir " + moveDir)
+          
+        subDirs = os.listdir(dataDir)
+        
         for subDir in subDirs:
+            
+            if not os.path.isdir(moveDir + subDir): os.system("mkdir " + moveDir + subDir) 
             
             # get list of files already in /work
             movedFiles = os.listdir(moveDir + subDir)
@@ -85,25 +94,24 @@ for i in range(nResubmits):
 
             # move those files
             logging.info("Moving " + str(len(filesToMove)) + " files to " + moveDir + subDir)
-            if not os.path.isdir(moveDir + subDir): os.system("mkdir " + moveDir + subDir) 
             for file in filesToMove:
                 subprocess.run(['xrdcp', 
                            "root://t3serv017.mit.edu/" + dataDir.split('hadoop')[-1] + subDir + "/" + file,
                            moveDir + subDir + "/"])
             
-        t_endToMove = time.time()
+    t_end = time.time()
     
     # don't wait if it's the last submission
     if i == nResubmits - 1: 
         logging.info("All done")
         break
         
-    # take into account the time used to move files
-    mod = 0
-    if options.move:
-        mod = (t_endToMove - t_startToMove) 
-        logging.info("Moving files took " + str(round(mod)) + " seconds")
-        
-    logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
-    logging.info("("+str(round(nHours - mod/(60*60), 2))+" hours)...")
+    # additional buffer time can be added, such that all the jobs can run
+    sleepTime = 60*60*nHours
+    mod = t_end-t_start
+    logging.info("Submitting and moving files took " + str(round(mod)) + " seconds")
+    if sleepTime - mod <= 0: continue
+    if nHours > 0:
+        logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
+        logging.info("("+str(round(nHours - mod*1.0/3600, 2))+" hours)...")
     time.sleep(sleepTime - mod)
