@@ -16,9 +16,10 @@ parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
 parser.add_argument('--analyzer', type=str, default="GluGlu", help="")
+parser.add_argument('--outputdir', type=str, default=None, help="")
 options = parser.parse_args()
 
-out_dir = os.getcwd()
+out_dir = options.outputdir if options.outputdir else os.getcwd()
 
 ## Select analyzer
 
