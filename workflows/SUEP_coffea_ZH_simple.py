@@ -345,8 +345,6 @@ class SUEP_cluster(processor.ProcessorABC):
 	# The variables that I can get are listed above in "SelectByLeptons" function
         out["leadlep_pt"]    = leptons.pt[:,0]
         out["subleadlep_pt"] = leptons.pt[:,1]
-        out["leadlep_eta"]   = leptons.eta[:,0]
-        out["subleadlep_eta"]= leptons.eta[:,1]
         out["leadlep_phi"] = leptons.phi[:,0]
         out["subleadlep_phi"] = leptons.phi[:,1]
 	# From here I am working with Z boson reconstruction from the daugther leptons
@@ -354,8 +352,6 @@ class SUEP_cluster(processor.ProcessorABC):
         out["Z_eta"] = -np.sinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
         out["Z_phi"] = -np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
         out["Z_m"] = 2*leptons.pt[:,0]*leptons.pt[:,1](np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0]))
-	
-
 
         if doGen:
           if debug: print("Saving gen variables")
