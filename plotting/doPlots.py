@@ -4,7 +4,7 @@ import os
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(False)
-output = "/eos/user/j/jkil/SUEP/output_graphs"
+output = "/eos/user/j/jkil/www"
 DY = [pd.HDFStore("../outputDY/"+f, 'r') for f in os.listdir("../outputDY/")]
 ZH = [pd.HDFStore("../outputZH/"+f, 'r') for f in os.listdir("../outputZH/")]
 
@@ -12,9 +12,13 @@ channel   = "vars"
 normalize = False
 
 plots = {
-  "Leading Lepton p_{T}": ["leadlep_pt", 50, 0, 200, "p_{T}^{l1} [GeV]"], 
-  "Leading Lepton eta":["leadlep_eta", 50, -2.5, 2.5, "eta"],
-  "Leading Lepton phi":["leadlep_phi",50,0,6.28,"phi"]
+  #"Leading Lepton p_{T}": ["leadlep_pt", 50, 0, 200, "p_{T}^{l1} [GeV]"], 
+  #"Leading Lepton eta":["leadlep_eta", 50, -2.5, 2.5, "eta"],
+  #"Leading Lepton phi":["leadlep_phi",50,0,6.28,"phi"],
+  #"Leading Lepton mass":["leadlep_mass",50,0,0.01,"mass"]
+  "SubLead Lepton p_{T}": ["subleadlep_pt", 50, 0, 200, "p_{T}^{l2} [GeV]"],
+  "SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
+  "SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
 }
 
 for p in plots:
@@ -27,12 +31,12 @@ for p in plots:
     sumwB += d.get_storer("vars").attrs.metadata["gensumweight"]
     weightsDY = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
-      if idx%1000 == 0: print idx
+      if idx%1000 == 0: print (idx)
       h1.Fill(val,weightsDY[idx])
 
   sumwS = 0
   for d in ZH:
-    if idx%1000 == 0: print idx
+    if idx%1000 == 0: print (idx)
     #print d.get_storer("vars").attrs.metadata
     sumwS += d.get_storer("vars").attrs.metadata["gensumweight"]
     weightsZS = d[channel]["genweight"]
