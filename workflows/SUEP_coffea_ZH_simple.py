@@ -345,6 +345,8 @@ class SUEP_cluster(processor.ProcessorABC):
 	# The variables that I can get are listed above in "SelectByLeptons" function
         out["leadlep_pt"]    = leptons.pt[:,0]
         out["subleadlep_pt"] = leptons.pt[:,1]
+        out["leadlep_eta"]   = leptons.eta[:,0]
+        out["subleadlep_eta"]= leptons.eta[:,1]
         out["leadlep_phi"] = leptons.phi[:,0]
         out["subleadlep_phi"] = leptons.phi[:,1]
 	# From here I am working with Z boson reconstruction from the daugther leptons
