@@ -283,7 +283,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         debug    = True  # If we want some prints in the middle
-        doTracks = True # Just to speed things up
+        doTracks = False # Just to speed things up
         doGen    = False # In case we want info on the gen level 
         # Main processor code
         # Define outputs
