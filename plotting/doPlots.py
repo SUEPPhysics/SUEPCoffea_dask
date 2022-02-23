@@ -19,10 +19,10 @@ plots = {
   #"SubLead Lepton p_{T}": ["subleadlep_pt", 50, 0, 200, "p_{T}^{l2} [GeV]"],
   #"SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
   #"SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
-  "Z pt":["Z_pt",50,0,700,"pt_Z [GeV]"],
-  "Z eta":["Z_eta",50,0,3.5,"eta"],
-  "Z phi":["Z_phi",50,0,2,"phi"],
-  "Z m":["Z_m",50,0,150,"m_Z [GeV]"],
+  "Zpt":["Z_pt",50,0,200,"pt_{Z} [GeV]"],
+  "Zeta":["Z_eta",50,0,3.5,"\eta_{Z}"],
+  "Zphi":["Z_phi",50,-2.5,2.5,"\phi_{Z}"],
+  "Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
 }
 
 for p in plots:
