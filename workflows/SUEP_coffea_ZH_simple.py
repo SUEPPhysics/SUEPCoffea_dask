@@ -349,6 +349,12 @@ class SUEP_cluster(processor.ProcessorABC):
         out["subleadlep_eta"]= leptons.eta[:,1]
         out["leadlep_phi"] = leptons.phi[:,0]
         out["subleadlep_phi"] = leptons.phi[:,1]
+	# From here I am working with Z boson reconstruction from the daugther leptons
+	out["Z_pt"] = sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2) ## Needs verification!
+	out["Z_eta"] = 
+	out["Z_phi"] = 
+	out["Z_m"] = 
+	
 
 
         if doGen:
