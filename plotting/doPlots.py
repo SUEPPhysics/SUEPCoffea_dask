@@ -16,9 +16,13 @@ plots = {
   #"Leading Lepton eta":["leadlep_eta", 50, -2.5, 2.5, "eta"],
   #"Leading Lepton phi":["leadlep_phi",50,0,6.28,"phi"],
   #"Leading Lepton mass":["leadlep_mass",50,0,0.01,"mass"]
-  "SubLead Lepton p_{T}": ["subleadlep_pt", 50, 0, 200, "p_{T}^{l2} [GeV]"],
-  "SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
-  "SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
+  #"SubLead Lepton p_{T}": ["subleadlep_pt", 50, 0, 200, "p_{T}^{l2} [GeV]"],
+  #"SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
+  #"SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
+  "Z pt":["Z_pt",50,0,300,"pt_Z [GeV]"],
+  "Z eta":["Z_eta",50,0,3,"eta"],
+  "Z phi":["Z_phi",50,0,6.3,"phi"],
+  "Z m":["Z_m",50,0,150,"m_Z [GeV]"],
 }
 
 for p in plots:
