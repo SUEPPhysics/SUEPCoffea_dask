@@ -21,8 +21,8 @@ plots = {
   #"SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
   #"SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
   "Zpt":["Z_pt",50,0,200,"p_{t_{Z}} [GeV]"],
-  "Zeta":["Z_eta",50,-2.5,2.5,"\Eta_{Z}"],
-  "Zphi":["Z_phi",50,-np.pi,np.pi,"\Phi_{Z}"],
+  "Zeta":["Z_eta",50,-2.5,2.5,"\eta_{Z}"],
+  "Zphi":["Z_phi",50,-np.pi,np.pi,"\phi_{Z}"],
   "Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
 }
 
