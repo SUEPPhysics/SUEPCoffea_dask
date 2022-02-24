@@ -357,12 +357,12 @@ class SUEP_cluster(processor.ProcessorABC):
         out["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
-        out["leadjet_pt"] = jet.pt[:,0]
-        out["subleadjet_pt"] = jet.pt[:,1]
-        out["leadjet_eta"] = jet.eta[:,0]
-        out["subleadjet_eta"] = jet.eta[:,1]
-        out["leadjet_phi"] = jet.phi[:,0]
-        out["subleadjet_phi"] = jet.phi[:,1]
+        out["leadjet_pt"] = jets.pt[:,0]
+        out["subleadjet_pt"] = jets.pt[:,1]
+        out["leadjet_eta"] = jets.eta[:,0]
+        out["subleadjet_eta"] = jets.eta[:,1]
+        out["leadjet_phi"] = jets.phi[:,0]
+        out["subleadjet_phi"] = jets.phi[:,1]
 
         if doGen:
           if debug: print("Saving gen variables")
