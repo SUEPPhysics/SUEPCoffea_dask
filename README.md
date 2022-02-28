@@ -164,3 +164,9 @@ To resubmit you must specify to resubmit like below:
 ```
 python monitor.py --tag=<tag name> --input=filelist/list_2018_MC_A01.txt -r=1 
 ```
+To automatically resubmit your jobs multiple times, we can use the resubmit.py file.
+```
+python resubmit.py --tag=<tag name> --input=filelist/list_2018_MC_A01.txt --resubmits=10 --hours=1
+```
+This will call monitor.py 10 times, resubmitting the files each time (i.e., -r=1) and waiting 1 hour between each call. N.B.: all jobs that are still running after the number of hours specified will be removed.
+  
