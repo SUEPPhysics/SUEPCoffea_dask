@@ -36,7 +36,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100                # applies to var1_label
 labels = ['ch']            # which selection to make plots for
-output_label = 'noJetTrigger'
+output_label = 'feb28'
 
 # cross section
 xsection = 1.0
@@ -82,7 +82,7 @@ def create_output_file(l):
             "2D_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
             "2D_spher_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
             "ht_" + label : Hist.new.Reg(1000, 0, 10000, name="ht_"+label, label='HT').Weight(),
-            "nJets_" + label : Hist.new.Reg(199, 0, 200, name="nJets_"+label, label='# Jets in Event').Weight(),
+            "nJets_" + label : Hist.new.Reg(100, 0, 50, name="nJets_"+label, label='# Jets in Event').Weight(),
             "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
     }
@@ -147,7 +147,7 @@ for label in labels:
 for ifile in tqdm(files):
     ifile = dataDir+ifile
 
-    if not options.xrootd:
+    if options.xrootd:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
         xrd_file = redirector + ifile.split('hadoop')[1]
         os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))

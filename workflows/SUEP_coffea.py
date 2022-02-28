@@ -160,7 +160,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        if self.isMC: self.gensumweight = ak.sum(events.genWeight)
+        if self.isMC: self.gensumweight = ak.sum(events.genWeight)    
 
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
@@ -218,7 +218,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
         # jetId==2 means: pass tight ID, fail tightLepVeto
         # jetId==6 means: pass tight and tightLepVeto ID. 
-        tightJetId = (ak4jets.jetId > 2)
+        tightJetId = (ak4jets.jetId == 6)
         tight_ak4jets = ak4jets[tightJetId]
         looseJetId = (ak4jets.jetId >= 2)
         loose_ak4jets = ak4jets[looseJetId]
@@ -245,7 +245,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs
         out_vars["PV_npvsGood"] = events.PV.npvsGood
-    
+        
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
          
@@ -409,7 +409,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # pandas to hdf5 file
         #self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
         self.save_dfs([out_ch, out_vars],["ch","vars"])
-
+        
         return output
 
     def postprocess(self, accumulator):
