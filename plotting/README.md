@@ -11,7 +11,7 @@ To automatically run make_plots.py over all the \<dataset\>s, use `plot_all.py`:
 ```
 python plot_all.py --tag=<tag> --xrootd=0
 ```
-This will parallelize the plotting for each dataset.
+This will parallelize the plotting for each dataset, producing one pkl file for each dataset.
   
   
 ### Plotting
