@@ -1,7 +1,7 @@
 ## Plotting for SUEP Analysis
 
 ### Producing the Plots
-The plotting is to be done over the hdf5 ntuples produced by workflows/SUEPCoffea_dask.py. This is achieved using `make_plots.py`, using the options as follows,
+The plotting is to be done over the hdf5 ntuples produced by workflows/SUEP_coffea.py. This is achieved using `make_plots.py`, using the options as follows,
 ```
 python make_plots.py --dataset=<dataset> --tag=<tag> --era=2018 --isMC=0 --xrootd=0
 ```
