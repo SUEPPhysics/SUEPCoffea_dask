@@ -225,8 +225,9 @@ class SUEP_cluster(processor.ProcessorABC):
         ak4jets = Jets[jetCut]
         # No cut applied, really, but we could do it
         cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
-        ak4jets_1jet = ak4jets[cutHasOneJet]
-        return events, ak4jets_1jet , [coll for coll in extraColls]
+        onejet = ak4jets[cutHasOneJet]
+	print(cutHasOneJet)
+        return events, onejet , [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
