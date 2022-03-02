@@ -224,10 +224,8 @@ class SUEP_cluster(processor.ProcessorABC):
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         # No cut applied, really, but we could do it
-	cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
+        cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
         ak4jets_1jet = events[cutHasOneJet]
-	
-	
         return events, ak4jets[cutHasOneJet], [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
