@@ -91,7 +91,6 @@ class SUEP_cluster(processor.ProcessorABC):
             for out, gname in zip(dfs, df_names):
                 if self.isMC:
                     metadata = dict(gensumweight=self.gensumweight,era=self.era, mc=self.isMC,sample=self.sample)
-                    #metadata.update({gensumweight:self.gensumweight})
                 else:
                     metadata = dict(era=self.era, mc=self.isMC,sample=self.sample)    
                     
@@ -276,52 +275,12 @@ class SUEP_cluster(processor.ProcessorABC):
         
         ### SUEP_mult
         chonkocity = ak.num(ak_inclusive_cluster, axis=2)
+        ### section for chonkiest jet. We have removed the fills and just leave the choniness and thicc jets
         #chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
         #thicc_jets = ak_inclusive_jets[chonkiest_jet]
         #chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
         #singletrackCut = (ak.num(chonkiest_cands)>1)
         
-        # account for no events passing our selections
-#         if not any(singletrackCut): 
-#             print("No events in Multiplicity Method.")
-#             out_mult = pd.DataFrame()
-#         else:            
-#             #cut events with single track highest mult jets
-#             thicc_jets = thicc_jets[singletrackCut]
-#             chonkiest_cands = chonkiest_cands[singletrackCut]
-#             tracks_mult = tracks[singletrackCut]
-#             indices_mult = indices[singletrackCut]
-        
-#             out_mult = thicc_jets[:,0]
-#             out_mult["event_index_mult"] = indices_mult
-#             out_mult["SUEP_ntracks_mult"] = ak.num(tracks_mult, axis=1)
-#             out_mult["SUEP_nconst_mult"] = ak.num(chonkiest_cands, axis=1)
-#             out_mult["SUEP_pt_mult"] = thicc_jets[:,0].pt
-#             out_mult["SUEP_pt_avg_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
-#             out_mult["SUEP_eta_mult"] = thicc_jets[:,0].eta
-#             out_mult["SUEP_phi_mult"] = thicc_jets[:,0].phi
-#             out_mult["SUEP_mass_mult"] = thicc_jets[:,0].mass
-#             deltaR = chonkiest_cands.deltaR(thicc_jets[:,0])
-#             out_mult["SUEP_girth_mult"] = ak.sum((deltaR/(1.5))*chonkiest_cands.pt/thicc_jets[:,0].pt, axis=-1)
-#             out_mult["SUEP_rho0_mult"] = self.rho(0, thicc_jets[:,0], chonkiest_cands, deltaR)
-#             out_mult["SUEP_rho1_mult"] = self.rho(1, thicc_jets[:,0], chonkiest_cands, deltaR)
-
-#             #SUEP_mult boosting, sphericity and rho
-#             boost_mult = ak.zip({
-#                 "px": thicc_jets[:,0].px*-1,
-#                 "py": thicc_jets[:,0].py*-1,
-#                 "pz": thicc_jets[:,0].pz*-1,
-#                 "mass": thicc_jets[:,0].mass
-#             }, with_name="Momentum4D")
-#             chonkiest_cands = chonkiest_cands.boost_p4(boost_mult)
-#             mult_eigs = self.sphericity(chonkiest_cands,2.0)  
-#             out_mult["SUEP_pt_avg_b_mult"] = ak.mean(chonkiest_cands.pt, axis=-1)
-#             out_mult["SUEP_spher_mult"] = 1.5 * (mult_eigs[:,1]+mult_eigs[:,0])
-#             out_mult["SUEP_aplan_mult"] =  1.5 * mult_eigs[:,0]
-#             out_mult["SUEP_FW2M_mult"] = 1.0 - 3.0 * (mult_eigs[:,2]*mult_eigs[:,1] + mult_eigs[:,0]*mult_eigs[:,2] + mult_eigs[:,1]*mult_eigs[:,0])
-#             out_mult["SUEP_D_mult"] = 27.0 * mult_eigs[:,2]*mult_eigs[:,1]*mult_eigs[:,0]
-
-
         ### SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
@@ -383,14 +342,10 @@ class SUEP_cluster(processor.ProcessorABC):
             ch_eigs = self.sphericity(Christos_cands,2.0)
             out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
             out_ch["SUEP_ntracks_ch"] = ak.num(tracks_ch)
-            #out_ch["SUEP_pt_avg_b_ch"] = ak.mean(Christos_cands.pt, axis=-1)
             out_ch["SUEP_spher_ch"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
             #out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
             #out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
             #out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
-            #out_ch["SUEP_dphi_chcands_ISR_ch"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
-            #out_ch["SUEP_dphi_ISRtracks_ISR_ch"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
-            #out_ch["SUEP_dphi_SUEPtracks_ISR_ch"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
 
             # unboost for these
             Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
@@ -400,14 +355,11 @@ class SUEP_cluster(processor.ProcessorABC):
             out_ch["SUEP_rho0_ch"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
             out_ch["SUEP_rho1_ch"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
 
-            
         ### save outputs
         # ak to pandas, if needed
-        #if not isinstance(out_mult, pd.DataFrame): out_mult = self.ak_to_pandas(out_mult)
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
         
         # pandas to hdf5 file
-        #self.save_dfs([out_ch, out_mult, out_vars],["ch","mult","vars"])
         self.save_dfs([out_ch, out_vars],["ch","vars"])
         
         return output
