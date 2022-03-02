@@ -332,7 +332,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Right now no jet cuts, only selecting jets
         events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
         highpt_jets = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
-        ak4jets = ak4jets[highpt_jets]
+        ak4jets_1jet = ak4jets[highpt_jets]
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
