@@ -225,8 +225,8 @@ class SUEP_cluster(processor.ProcessorABC):
         ak4jets = Jets[jetCut]
         # No cut applied, really, but we could do it
         cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
-        ak4jets_1jet = events[cutHasOneJet]
-        return events, ak4jets[cutHasOneJet], [coll for coll in extraColls]
+        ak4jets_1jet = ak4jets[cutHasOneJet]
+        return events, ak4jets[cutHasOneJet], ak4jets_1jet, [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
@@ -331,6 +331,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
         # Right now no jet cuts, only selecting jets
         events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
+	# Sorting jets by pt.
         highpt_jets = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
         ak4jets_1jet = ak4jets[highpt_jets]
 
@@ -355,18 +356,18 @@ class SUEP_cluster(processor.ProcessorABC):
         # Define outputs for plotting
         if debug: print("Saving reco variables")
 	# The variables that I can get are listed above in "SelectByLeptons" function
-        out["leadlep_pt"]    = leptons.pt[:,0]
-        out["subleadlep_pt"] = leptons.pt[:,1]
-        out["leadlep_eta"]   = leptons.eta[:,0]
-        out["subleadlep_eta"]= leptons.eta[:,1]
-        out["leadlep_phi"] = leptons.phi[:,0]
-        out["subleadlep_phi"] = leptons.phi[:,1]
+        #out["leadlep_pt"]    = leptons.pt[:,0]
+        #out["subleadlep_pt"] = leptons.pt[:,1]
+        #out["leadlep_eta"]   = leptons.eta[:,0]
+        #out["subleadlep_eta"]= leptons.eta[:,1]
+        #out["leadlep_phi"] = leptons.phi[:,0]
+        #out["subleadlep_phi"] = leptons.phi[:,1]
 
 	# From here I am working with Z boson reconstruction from the daugther leptons
-        out["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
-        out["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
-        out["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
-        out["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
+        #out["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
+        #out["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
+        #out["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
+        #out["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
 	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
