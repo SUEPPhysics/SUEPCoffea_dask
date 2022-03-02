@@ -333,7 +333,7 @@ class SUEP_cluster(processor.ProcessorABC):
         events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
 	# Sorting jets by pt.
         highpt_jets = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
-        ak4jets_1jet = ak4jets[highpt_jets]
+        highpt_1jet = ak4jets[highpt_jets]
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
@@ -372,9 +372,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # From here I am working with jets
 	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
 	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        out["onejet_pt"] = ak4jets_1jet.pt[:,0]
-        out["onejet_eta"] = ak4jets_1jet.eta[:,0]
-        out["onejet_phi"] = ak4jets_1jet.phi[:,0]
+        out["onejet_pt"] = highpt_1jet.pt[:,0]
+        out["onejet_eta"] = highpt_1jet.eta[:,0]
+        out["onejet_phi"] = highpt_1jet.phi[:,0]
 	
         #out["leadjet_pt"] = ak4jets.pt[:,0]
         #out["subleadjet_pt"] = ak4jets.pt[:,1]
