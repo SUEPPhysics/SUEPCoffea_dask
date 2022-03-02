@@ -195,9 +195,15 @@ class SUEP_cluster(processor.ProcessorABC):
         cutMuons     = (events.Muon.looseId) & (events.Muon.pt >= 10) & (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1)
         cutElectrons = (events.Electron.cutBased >= 2) & (events.Electron.pt >= 15)
         ### Apply the cuts
+	# Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
         selMuons     = muons[cutMuons]
         selElectrons = electrons[cutElectrons]
         ### Now global cuts to select events. Notice this means exactly two leptons with pT >= 10, and the leading one pT >= 25
+	
+        # cutHasTwoMuons imposes three conditions:
+        #  First, number of muons (axis=1 means column. Each row is an event.) in an event is 2.
+        #  Second, pt of the muons is greater than 25.
+        #  Third, Sum of charge of muons should be 0. (because it originates from Z)
         cutHasTwoMuons = (ak.num(selMuons, axis=1)==2) & (ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selMuons.charge,axis=1) == 0)
         cutHasTwoElecs = (ak.num(selElectrons, axis=1)==2) & (ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selElectrons.charge,axis=1) == 0)
         cutTwoLeps     = ((ak.num(selElectrons, axis=1)+ak.num(selMuons, axis=1)) < 4)
@@ -218,6 +224,9 @@ class SUEP_cluster(processor.ProcessorABC):
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         # No cut applied, really, but we could do it
+	
+	
+	
         return events, ak4jets, [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
@@ -321,6 +330,7 @@ class SUEP_cluster(processor.ProcessorABC):
         events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
         highpt_jets = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
         ak4jets = ak4jets[highpt_jets]
+	print(ak4jets)
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
