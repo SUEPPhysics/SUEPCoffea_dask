@@ -224,10 +224,10 @@ class SUEP_cluster(processor.ProcessorABC):
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         # No cut applied, really, but we could do it
+        # This is a cut that selects one jet
         cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
         onejet = ak4jets[cutHasOneJet]
-	print(cutHasOneJet)
-        return events, onejet , [coll for coll in extraColls]
+        return events, onejet, [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
@@ -331,10 +331,11 @@ class SUEP_cluster(processor.ProcessorABC):
 
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
         # Right now no jet cuts, only selecting jets
-        events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
+        events, onejet, [electrons, muons] = self.selectByJets(events, [electrons, muons])
 	# Sorting jets by pt.
-        highpt_jets = ak.argsort(ak4jets_1jet.pt, axis=1, ascending=False, stable=True)
-        onejet = ak4jets[highpt_jets]
+        highpt_jets = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
+        onejet = onejet[highpt_jets]
+        print(onejet.pt)
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
@@ -373,9 +374,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # From here I am working with jets
 	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
 	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        out["onejet_pt"] = highpt_1jet.pt[:,0]
-        out["onejet_eta"] = highpt_1jet.eta[:,0]
-        out["onejet_phi"] = highpt_1jet.phi[:,0]
+        out["onejet_pt"] = onejet.pt[:,0]
+        out["onejet_eta"] = onejet.eta[:,0]
+        out["onejet_phi"] = onejet.phi[:,0]
 	
         #out["leadjet_pt"] = ak4jets.pt[:,0]
         #out["subleadjet_pt"] = ak4jets.pt[:,1]
