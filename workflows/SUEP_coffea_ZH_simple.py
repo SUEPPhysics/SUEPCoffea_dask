@@ -76,7 +76,7 @@ class SUEP_cluster(processor.ProcessorABC):
                         jet_collection[field][subfield]
                     )
             else:
-                output[0] = ak.to_numpy(jet_collection[field])
+                output[field] = ak.to_numpy(jet_collection[0])
         return output
 
     def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
