@@ -226,7 +226,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # No cut applied, really, but we could do it
         cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
         ak4jets_1jet = ak4jets[cutHasOneJet]
-        return events, ak4jets[cutHasOneJet], ak4jets_1jet, [coll for coll in extraColls]
+        return events, ak4jets[cutHasOneJet], [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
@@ -372,9 +372,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # From here I am working with jets
 	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
 	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        out["one_jet"] = ak4jets_1jet.pt[:,0]
-        out["one_jet"] = ak4jets_1jet.eta[:,0]
-        out["one_jet"] = ak4jets_1jet.phi[:,0]
+        out["onejet_pt"] = ak4jets_1jet.pt[:,0]
+        out["onejet_eta"] = ak4jets_1jet.eta[:,0]
+        out["onejet_phi"] = ak4jets_1jet.phi[:,0]
 	
         #out["leadjet_pt"] = ak4jets.pt[:,0]
         #out["subleadjet_pt"] = ak4jets.pt[:,1]
