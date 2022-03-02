@@ -198,6 +198,11 @@ class SUEP_cluster(processor.ProcessorABC):
         selMuons     = muons[cutMuons]
         selElectrons = electrons[cutElectrons]
         ### Now global cuts to select events. Notice this means exactly two leptons with pT >= 10, and the leading one pT >= 25
+	
+        # cutHasTwoMuons imposes three conditions. 
+        #  First, number of muons (axis=1 means column. Each row is an event.) in an event is 2.
+        #  Second, pt of the muons is greater than 25.
+        #  Third, Sum of charge of muons should be 0. (because it originates from Z)
         cutHasTwoMuons = (ak.num(selMuons, axis=1)==2) & (ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selMuons.charge,axis=1) == 0)
         cutHasTwoElecs = (ak.num(selElectrons, axis=1)==2) & (ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selElectrons.charge,axis=1) == 0)
         cutTwoLeps     = ((ak.num(selElectrons, axis=1)+ak.num(selMuons, axis=1)) < 4)
