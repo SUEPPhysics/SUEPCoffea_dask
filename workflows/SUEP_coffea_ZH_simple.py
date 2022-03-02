@@ -192,10 +192,10 @@ class SUEP_cluster(processor.ProcessorABC):
         ###  Some very simple selections on ID ###
         ###  Muons: loose ID + dxy dz cuts mimicking the medium prompt ID https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
         ###  Electrons: loose ID + dxy dz cuts for promptness https://twiki.cern.ch/twiki/bin/view/CMS/EgammaCutBasedIdentification
-        cutMuons     = (events.Muon.looseId) & (events.Muon.pt >= 10) & (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1)
+        cutMuons     = (events.Muon.looseId) & (events.Muon.pt >= 10) & (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1) # dxy is impact parameter in transverse plane
         cutElectrons = (events.Electron.cutBased >= 2) & (events.Electron.pt >= 15)
         ### Apply the cuts
-	# Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
+        # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
         selMuons     = muons[cutMuons]
         selElectrons = electrons[cutElectrons]
         ### Now global cuts to select events. Notice this means exactly two leptons with pT >= 10, and the leading one pT >= 25
@@ -224,14 +224,16 @@ class SUEP_cluster(processor.ProcessorABC):
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         # No cut applied, really, but we could do it
+	cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
+        ak4jets_1jet = events[cutHasOneJet]
 	
 	
-	
-        return events, ak4jets, [coll for coll in extraColls]
+        return events, ak4jets[cutHasOneJet], [coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
         # Prepare the clean PFCand matched to tracks collection
+        # PFCands (Particle-Flow Candidates) : every particle in the particle flow is saved here.
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
@@ -248,6 +250,8 @@ class SUEP_cluster(processor.ProcessorABC):
         Cleaned_cands = ak.packed(Cleaned_cands)
 
         # Prepare the Lost Track collection
+	# LostTracks : Tracks are reconstructed but not identified as one of the particles.
+	# SUEP particles usually fall into this category.
         LostTracks = ak.zip({
             "pt": events.lostTracks.pt,
             "eta": events.lostTracks.eta,
@@ -265,6 +269,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
+	# Here we are concatenating the pf tracks and lost tracks.
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         tracks = Total_Tracks
         ## Tracks that overlap with the leptons are taken out
@@ -330,7 +335,6 @@ class SUEP_cluster(processor.ProcessorABC):
         events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
         highpt_jets = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
         ak4jets = ak4jets[highpt_jets]
-        print(ak4jets)
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
@@ -367,12 +371,18 @@ class SUEP_cluster(processor.ProcessorABC):
         out["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
-        out["leadjet_pt"] = ak4jets.pt[:,0]
-        out["subleadjet_pt"] = ak4jets.pt[:,1]
-        out["leadjet_eta"] = ak4jets.eta[:,0]
-        out["subleadjet_eta"] = ak4jets.eta[:,1]
-        out["leadjet_phi"] = ak4jets.phi[:,0]
-        out["subleadjet_phi"] = ak4jets.phi[:,1]
+	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
+	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
+        out["one_jet"] = ak4jets_1jet.pt[:,0]
+        out["one_jet"] = ak4jets_1jet.eta[:,0]
+        out["one_jet"] = ak4jets_1jet.phi[:,0]
+	
+        #out["leadjet_pt"] = ak4jets.pt[:,0]
+        #out["subleadjet_pt"] = ak4jets.pt[:,1]
+        #out["leadjet_eta"] = ak4jets.eta[:,0]
+        #out["subleadjet_eta"] = ak4jets.eta[:,1]
+        #out["leadjet_phi"] = ak4jets.phi[:,0]
+        #out["subleadjet_phi"] = ak4jets.phi[:,1]
 
         if doGen:
           if debug: print("Saving gen variables")
