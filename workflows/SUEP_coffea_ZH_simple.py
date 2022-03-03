@@ -68,7 +68,6 @@ class SUEP_cluster(processor.ProcessorABC):
     def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
         output = pd.DataFrame()
         for field in ak.fields(jet_collection):
-            print(field)
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
                 for subfield in ak.fields(jet_collection[field]):
@@ -76,7 +75,8 @@ class SUEP_cluster(processor.ProcessorABC):
                         jet_collection[field][subfield]
                     )
             else:
-                output[field] = ak.to_numpy(jet_collection[field])
+                continue
+                #output[field] = ak.to_numpy(jet_collection[field])
         return output
 
     def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
@@ -270,6 +270,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # dimensions of tracks = events x tracks in event x 4 momenta
 	# Here we are concatenating the pf tracks and lost tracks.
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
+        print(Total_Tracks,"Hello this is tracks.",len(Total_Tracks))
         tracks = Total_Tracks
         ## Tracks that overlap with the leptons are taken out
         tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
@@ -296,7 +297,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         debug    = True  # If we want some prints in the middle
-        doTracks = False # Just to speed things up
+        doTracks = True # Just to speed things up
         doGen    = False # In case we want info on the gen level 
         # Main processor code
         # Define outputs
@@ -335,7 +336,6 @@ class SUEP_cluster(processor.ProcessorABC):
 	# Sorting jets by pt.
         highpt_jets = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
         onejet = onejet[highpt_jets]
-        print(onejet.pt)
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
