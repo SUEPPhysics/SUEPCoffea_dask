@@ -9,7 +9,7 @@ output = "/eos/user/j/jkil/www"
 DY = [pd.HDFStore("../outputDY/"+f, 'r') for f in os.listdir("../outputDY/")]
 ZH = [pd.HDFStore("../outputZH/"+f, 'r') for f in os.listdir("../outputZH/")]
 
-channel   = "vars"
+channel   = "jetvars"
 normalize = True
 
 plots = {
@@ -20,10 +20,13 @@ plots = {
   #"SubLead Lepton p_{T}": ["subleadlep_pt", 50, 0, 200, "p_{T}^{l2} [GeV]"],
   #"SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
   #"SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
-  "Zpt":["Z_pt",50,0,200,"p_{t_{Z}} [GeV]"],
-  "Zeta":["Z_eta",50,-2.5,2.5,"\eta_{Z}"],
-  "Zphi":["Z_phi",50,-np.pi,np.pi,"\phi_{Z}"],
-  "Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
+  #"Zpt":["Z_pt",50,0,200,"p_{t_{Z}} [GeV]"],
+  #"Zeta":["Z_eta",50,-2.5,2.5,"\eta_{Z}"],
+  #"Zphi":["Z_phi",50,-np.pi,np.pi,"\phi_{Z}"],
+  #"Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
+  "onejet p_{T}":["onejet_pt",50,0,150,"p_{T} [GeV]"],
+  "onejet eta":["onejet_eta",50,-3.14,3.14,"eta"],
+  "onejet phi":["onejet_phi",50,0,3.14,"phi"],
 }
 
 for p in plots:
@@ -33,7 +36,7 @@ for p in plots:
   sumwB = 0
   for d in DY:
     #print d.get_storer("vars").attrs.metadata
-    sumwB += d.get_storer("vars").attrs.metadata["gensumweight"]
+    sumwB += d.get_storer("jetvars").attrs.metadata["gensumweight"]
     weightsDY = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
       if idx%1000 == 0: print (idx)
@@ -43,7 +46,7 @@ for p in plots:
   for d in ZH:
     if idx%1000 == 0: print (idx)
     #print d.get_storer("vars").attrs.metadata
-    sumwS += d.get_storer("vars").attrs.metadata["gensumweight"]
+    sumwS += d.get_storer("jetvars").attrs.metadata["gensumweight"]
     weightsZS = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
       h2.Fill(val, weightsZS[idx])

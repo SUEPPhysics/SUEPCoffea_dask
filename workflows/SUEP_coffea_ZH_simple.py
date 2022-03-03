@@ -223,11 +223,23 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
-        # No cut applied, really, but we could do it
-        # This is a cut that selects one jet
+
+        # This is a cut that selects one/two/three jet(s) (It's just an array of Booleans)
         cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
+        cutHasTwoJets = (ak.num(ak4jets, axis=1)==2)
+        cutHasThreeJets = (ak.num(ak4jets, axis=1)==3)
+        
+        # The following is the collection of jets with appropriate cuts applied.
         onejet = ak4jets[cutHasOneJet]
-        return events, onejet, [coll for coll in extraColls]
+        twojets = ak4jets[cutHasTwoJets]
+        threejets = ak4jets[cutHasThreeJets]
+        
+        # The following is the collection of events with respective number of jets
+        event_onejet = events[cutHasOneJet]
+        event_twojets = events[cutHasTwoJets]
+        event_threejets = events[cutHasThreeJets]
+
+        return event_onejet, event_twojets, event_threejets, onejet, twojets, threejets,[coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
@@ -290,19 +302,20 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def shouldContinueAfterCut(self, events, out = pd.DataFrame(['empty'], columns=['empty'])):
         if len(events) == 0:
-            self.save_dfs([out],["vars"])
+            self.save_dfs([out,out],["lepvars","jetvars"])
             return False
         else:
             return True
 
     def process(self, events):
         debug    = True  # If we want some prints in the middle
-        doTracks = True # Just to speed things up
+        doTracks = False # Just to speed things up
         doGen    = False # In case we want info on the gen level 
         # Main processor code
         # Define outputs
         output  = self.accumulator.identity()
-        out     = {}
+        outlep  = {}
+        outjet  = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -332,10 +345,15 @@ class SUEP_cluster(processor.ProcessorABC):
 
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
         # Right now no jet cuts, only selecting jets
-        events, onejet, [electrons, muons] = self.selectByJets(events, [electrons, muons])
+        event_onejet, event_twojets, event_threejets, onejet, twojets, threejets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
 	# Sorting jets by pt.
-        highpt_jets = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
-        onejet = onejet[highpt_jets]
+        highpt_1jet = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
+        highpt_2jet = ak.argsort(twojets.pt, axis=1, ascending=False, stable=True)
+        highpt_3jet = ak.argsort(threejets.pt, axis=1, ascending=False, stable=True)
+        onejet = onejet[highpt_1jet]
+        twojets = twojets[highpt_2jet]
+        print(twojets,"This is printing two jets!")
+        threejets = threejets[highpt_3jet]
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
@@ -358,53 +376,48 @@ class SUEP_cluster(processor.ProcessorABC):
         # Define outputs for plotting
         if debug: print("Saving reco variables")
 	# The variables that I can get are listed above in "SelectByLeptons" function
-        #out["leadlep_pt"]    = leptons.pt[:,0]
-        #out["subleadlep_pt"] = leptons.pt[:,1]
-        #out["leadlep_eta"]   = leptons.eta[:,0]
-        #out["subleadlep_eta"]= leptons.eta[:,1]
-        #out["leadlep_phi"] = leptons.phi[:,0]
-        #out["subleadlep_phi"] = leptons.phi[:,1]
+        #outlep["leadlep_pt"]    = leptons.pt[:,0]
+        #outlep["subleadlep_pt"] = leptons.pt[:,1]
+        #outlep["leadlep_eta"]   = leptons.eta[:,0]
+        #outlep["subleadlep_eta"]= leptons.eta[:,1]
+        #outlep["leadlep_phi"] = leptons.phi[:,0]
+        #outlep["subleadlep_phi"] = leptons.phi[:,1]
 
 	# From here I am working with Z boson reconstruction from the daugther leptons
-        #out["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
-        #out["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
-        #out["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
-        #out["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
+        #outlep["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
+        #outlep["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
+        #outlep["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
+        #outlep["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
 	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
 	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        out["onejet_pt"] = onejet.pt[:,0]
-        out["onejet_eta"] = onejet.eta[:,0]
-        out["onejet_phi"] = onejet.phi[:,0]
-	
-        #out["leadjet_pt"] = ak4jets.pt[:,0]
-        #out["subleadjet_pt"] = ak4jets.pt[:,1]
-        #out["leadjet_eta"] = ak4jets.eta[:,0]
-        #out["subleadjet_eta"] = ak4jets.eta[:,1]
-        #out["leadjet_phi"] = ak4jets.phi[:,0]
-        #out["subleadjet_phi"] = ak4jets.phi[:,1]
+        outjet["onejet_pt"] = onejet.pt[:,0]
+        outjet["onejet_eta"] = onejet.eta[:,0]
+        outjet["onejet_phi"] = onejet.phi[:,0]
 
         if doGen:
           if debug: print("Saving gen variables")
-          out["genZpt"]  = genZ.pt[:,0]
-          out["genZeta"] = genZ.eta[:,0]
-          out["genZphi"] = genZ.phi[:,0]
+          outlep["genZpt"]  = genZ.pt[:,0]
+          outlep["genZeta"] = genZ.eta[:,0]
+          outlep["genZphi"] = genZ.phi[:,0]
 
-          out["genHpt"]  = genH.pt[:,0]
-          out["genHeta"] = genH.eta[:,0]
-          out["genHphi"] = genH.phi[:,0]
+          outlep["genHpt"]  = genH.pt[:,0]
+          outlep["genHeta"] = genH.eta[:,0]
+          outlep["genHphi"] = genH.phi[:,0]
 
 
         if self.isMC:
           # We need this to be able to normalize the samples 
-          out["genweight"]= events.genWeight[:]
+          outlep["genweight"]= events.genWeight[:]
+          outjet["genweight"]= events.genWeight[:]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
-        if not isinstance(out, pd.DataFrame): out = self.ak_to_pandas(out)
+        if not isinstance(outlep, pd.DataFrame): outlep = self.ak_to_pandas(outlep)
+        if not isinstance(outjet, pd.DataFrame): outjet = self.ak_to_pandas(outjet)
         if debug: print("DFS saving....")
-        self.save_dfs([out],["vars"])
+        self.save_dfs([outlep, outjet],["lepvars","jetvars"])
 
         return output
 
