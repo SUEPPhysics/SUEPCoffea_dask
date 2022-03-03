@@ -75,8 +75,7 @@ class SUEP_cluster(processor.ProcessorABC):
                         jet_collection[field][subfield]
                     )
             else:
-                continue
-                #output[field] = ak.to_numpy(jet_collection[field])
+                output[field] = ak.to_numpy(jet_collection[field])
         return output
 
     def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
@@ -392,9 +391,29 @@ class SUEP_cluster(processor.ProcessorABC):
         # From here I am working with jets
 	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
 	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        outjet["onejet_pt"] = onejet.pt[:,0]
-        outjet["onejet_eta"] = onejet.eta[:,0]
-        outjet["onejet_phi"] = onejet.phi[:,0]
+        out1jet["onejet_pt"] = onejet.pt[:,0]
+        out1jet["onejet_eta"] = onejet.eta[:,0]
+        out1jet["onejet_phi"] = onejet.phi[:,0]
+
+        out2jets["twojets1_pt"] = twojets.pt[:,0]
+        out2jets["twojets1_eta"] = twojets.eta[:,0]
+        out2jets["twojets1_phi"] = twojets.phi[:,0]
+
+        out2jets["twojets2_pt"] = twojets.pt[:,1]
+        out2jets["twojets2_eta"] = twojets.eta[:,1]
+        out2jets["twojets2_phi"] = twojets.phi[:,1]
+
+        out3jets["threejets1_pt"] = threejets.pt[:,0]
+        out3jets["threejets1_eta"] = threejets.eta[:,0]
+        out3jets["threejets1_phi"] = threejets.phi[:,0]
+
+        out3jets["threejets2_pt"] = threejets.pt[:,1]
+        out3jets["threejets2_eta"] = threejets.eta[:,1]
+        out3jets["threejets2_phi"] = threejets.phi[:,1]
+
+        out3jets["threejets3_pt"] = threejets.pt[:,2]
+        out3jets["threejets3_eta"] = threejets.eta[:,2]
+        out3jets["threejets3_phi"] = threejets.phi[:,2]
 
         if doGen:
           if debug: print("Saving gen variables")
@@ -410,14 +429,18 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.isMC:
           # We need this to be able to normalize the samples 
           outlep["genweight"]= events.genWeight[:]
-          outjet["genweight"]= events.genWeight[:]
+          out1jet["genweight"]= event_onejet.genWeight[:]
+          out2jets["genweight"]= event_twojets.genWeight[:]
+          out3jets["genweight"]= event_threejets.genWeight[:]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
         if not isinstance(outlep, pd.DataFrame): outlep = self.ak_to_pandas(outlep)
-        if not isinstance(outjet, pd.DataFrame): outjet = self.ak_to_pandas(outjet)
+        if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
+        if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
+        if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, outjet],["lepvars","jetvars"])
+        self.save_dfs([outlep, out1jet, out2jets, out3jets],["lepvars","jetvars"])
 
         return output
 
