@@ -24,9 +24,31 @@ plots = {
   #"Zeta":["Z_eta",50,-2.5,2.5,"\eta_{Z}"],
   #"Zphi":["Z_phi",50,-np.pi,np.pi,"\phi_{Z}"],
   #"Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
+
   "onejet p_{T}":["onejet_pt",50,0,150,"p_{T} [GeV]"],
   "onejet eta":["onejet_eta",50,-3.14,3.14,"eta"],
   "onejet phi":["onejet_phi",50,0,3.14,"phi"],
+
+  #"twojets1 p_{T}":["twojets1_pt",50,0,150,"p_{T} [GeV]"],
+  #"twojets1 eta":["twojets1_eta",50,-3.14,3.14,"eta"],
+  #"twojets1 phi":["twojets1_phi",50,0,3.14,"phi"],
+
+  #"twojets2 p_{T}":["twojets2_pt",50,0,150,"p_{T} [GeV]"],
+  #"twojets2 eta":["twojets2_eta",50,-3.14,3.14,"eta"],
+  #"twojets2 phi":["twojets2_phi",50,0,3.14,"phi"],
+
+  #"threejets1 p_{T}":["threejets1_pt",50,0,150,"p_{T} [GeV]"],
+  #"threejets1 eta":["threejets1_eta",50,-3.14,3.14,"eta"],
+  #"threejets1 phi":["threejets1_phi",50,0,3.14,"phi"],
+
+  #"threejets2 p_{T}":["threejets2_pt",50,0,150,"p_{T} [GeV]"],
+  #"threejets2 eta":["threejets2_eta",50,-3.14,3.14,"eta"],
+  #"threejets2 phi":["threejets2_phi",50,0,3.14,"phi"],
+
+  #"threejets3 p_{T}":["threejets3_pt",50,0,150,"p_{T} [GeV]"],
+  #"threejets3 eta":["threejets3_eta",50,-3.14,3.14,"eta"],
+  #"threejets3 phi":["threejets3_phi",50,0,3.14,"phi"],
+
 }
 
 for p in plots:

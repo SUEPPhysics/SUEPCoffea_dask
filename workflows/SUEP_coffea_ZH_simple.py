@@ -314,7 +314,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # Define outputs
         output  = self.accumulator.identity()
         outlep  = {}
-        outjet  = {}
+        out1jet  = {}
+        out2jets  = {}
+        out3jets  = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -351,7 +353,6 @@ class SUEP_cluster(processor.ProcessorABC):
         highpt_3jet = ak.argsort(threejets.pt, axis=1, ascending=False, stable=True)
         onejet = onejet[highpt_1jet]
         twojets = twojets[highpt_2jet]
-        print(twojets,"This is printing two jets!")
         threejets = threejets[highpt_3jet]
 
         if not(self.shouldContinueAfterCut(events)): return output
