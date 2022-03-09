@@ -229,10 +229,10 @@ class SUEP_cluster(processor.ProcessorABC):
         cutHasThreeJets = (ak.num(ak4jets, axis=1)==3)
         
         # The following is the collection of jets with appropriate cuts applied.
-        onejet = ak4jets[cutHasOneJet]
-        twojets = ak4jets[cutHasTwoJets]
-        threejets = ak4jets[cutHasThreeJets]
-        
+        onejet = ak4jets[cutHasOneJet] #format: [[13.8],[28.8],...[32.4]]
+        twojets = ak4jets[cutHasTwoJets] #format: [[13.8,19.0],[28.8,17.4],...[32.4,58.1]]
+        threejets = ak4jets[cutHasThreeJets] #format: [[13.8,19.0,16.4],[28.8,17.4,28.6],...[32.4,58.1,28.8]]      
+ 
         # The following is the collection of events with respective number of jets
         event_onejet = events[cutHasOneJet]
         event_twojets = events[cutHasTwoJets]
@@ -441,7 +441,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, out1jet, out2jets, out3jets],["lepvars","jetvars"])
+        self.save_dfs([outlep, out1jet, out2jets, out3jets],["lepvars","jetvars1","jetvars2","jetvars3"])
 
         return output
 
