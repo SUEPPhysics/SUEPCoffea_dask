@@ -250,6 +250,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")
+        #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
         # Track selection requirements
         cut = (events.PFCands.fromPV > 1) & \
             (events.PFCands.trkPt >= 0.7) & \
@@ -281,10 +282,11 @@ class SUEP_cluster(processor.ProcessorABC):
         # dimensions of tracks = events x tracks in event x 4 momenta
 	# Here we are concatenating the pf tracks and lost tracks.
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
-        print(Total_Tracks,"Hello this is tracks.",len(Total_Tracks))
         tracks = Total_Tracks
+        print(tracks,"Printing the first 'tracks'",len(tracks))
         ## Tracks that overlap with the leptons are taken out
         tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
+        print(tracks,"Printing the second 'tracks'",len(tracks))
         return events, leptons, tracks, [coll for coll in extraColls]
 
     def selectByGEN(self, events):
@@ -308,7 +310,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         debug    = True  # If we want some prints in the middle
-        doTracks = False # Just to speed things up
+        doTracks = True # Just to speed things up
         doGen    = False # In case we want info on the gen level 
         # Main processor code
         # Define outputs
@@ -317,6 +319,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out1jet  = {}
         out2jets  = {}
         out3jets  = {}
+        outnumtrk = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -345,7 +348,6 @@ class SUEP_cluster(processor.ProcessorABC):
         if not(self.shouldContinueAfterCut(events)): return output
 
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
-        # Right now no jet cuts, only selecting jets
         event_onejet, event_twojets, event_threejets, onejet, twojets, threejets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
 	# Sorting jets by pt.
         highpt_1jet = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
@@ -360,7 +362,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         if doTracks:
           # Right now no track cuts, only selecting tracks
-          events, leptons, tracks     = self.selectByTracks(events, leptons) [:3]
+          events, leptons, tracks = self.selectByTracks(events, leptons) [:3]
           if not(self.shouldContinueAfterCut(events)): return output
           if debug: print("%i events pass track cuts. Doing more stuff..."%len(events))
 
@@ -390,31 +392,34 @@ class SUEP_cluster(processor.ProcessorABC):
         #outlep["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
-	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
-	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        out1jet["onejet_pt"] = onejet.pt[:,0]
-        out1jet["onejet_eta"] = onejet.eta[:,0]
-        out1jet["onejet_phi"] = onejet.phi[:,0]
+	# ak4jets is an array of arrays. 
+        # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
+        #out1jet["onejet_pt"] = onejet.pt[:,0]
+        #out1jet["onejet_eta"] = onejet.eta[:,0]
+        #out1jet["onejet_phi"] = onejet.phi[:,0]
 
-        out2jets["twojets1_pt"] = twojets.pt[:,0]
-        out2jets["twojets1_eta"] = twojets.eta[:,0]
-        out2jets["twojets1_phi"] = twojets.phi[:,0]
+        #out2jets["twojets1_pt"] = twojets.pt[:,0]
+        #out2jets["twojets1_eta"] = twojets.eta[:,0]
+        #out2jets["twojets1_phi"] = twojets.phi[:,0]
 
-        out2jets["twojets2_pt"] = twojets.pt[:,1]
-        out2jets["twojets2_eta"] = twojets.eta[:,1]
-        out2jets["twojets2_phi"] = twojets.phi[:,1]
+        #out2jets["twojets2_pt"] = twojets.pt[:,1]
+        #out2jets["twojets2_eta"] = twojets.eta[:,1]
+        #out2jets["twojets2_phi"] = twojets.phi[:,1]
 
-        out3jets["threejets1_pt"] = threejets.pt[:,0]
-        out3jets["threejets1_eta"] = threejets.eta[:,0]
-        out3jets["threejets1_phi"] = threejets.phi[:,0]
+        #out3jets["threejets1_pt"] = threejets.pt[:,0]
+        #out3jets["threejets1_eta"] = threejets.eta[:,0]
+        #out3jets["threejets1_phi"] = threejets.phi[:,0]
 
-        out3jets["threejets2_pt"] = threejets.pt[:,1]
-        out3jets["threejets2_eta"] = threejets.eta[:,1]
-        out3jets["threejets2_phi"] = threejets.phi[:,1]
+        #out3jets["threejets2_pt"] = threejets.pt[:,1]
+        #out3jets["threejets2_eta"] = threejets.eta[:,1]
+        #out3jets["threejets2_phi"] = threejets.phi[:,1]
 
-        out3jets["threejets3_pt"] = threejets.pt[:,2]
-        out3jets["threejets3_eta"] = threejets.eta[:,2]
-        out3jets["threejets3_phi"] = threejets.phi[:,2]
+        #out3jets["threejets3_pt"] = threejets.pt[:,2]
+        #out3jets["threejets3_eta"] = threejets.eta[:,2]
+        #out3jets["threejets3_phi"] = threejets.phi[:,2]
+
+        #From here I am working with track multiplicity
+        #outnumtrk["outnumtrk"]
 
         if doGen:
           if debug: print("Saving gen variables")
@@ -433,6 +438,7 @@ class SUEP_cluster(processor.ProcessorABC):
           out1jet["genweight"]= event_onejet.genWeight[:]
           out2jets["genweight"]= event_twojets.genWeight[:]
           out3jets["genweight"]= event_threejets.genWeight[:]
+          outnumtrk["genweight"]= events.genWeight[:]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
@@ -440,8 +446,9 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
+        if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, out1jet, out2jets, out3jets],["lepvars","jetvars1","jetvars2","jetvars3"])
+        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"])
 
         return output
 
