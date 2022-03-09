@@ -13,6 +13,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
+parser.add_argument("-o"   , "--output"   , type=str, default="IronMan"  , help="output tag", required=False)
 parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
@@ -36,7 +37,7 @@ var1_val = 0.50
 var2_val = 25
 nbins = 100                # applies to var1_label
 labels = ['ch']            # which selection to make plots for
-output_label = 'feb28'
+output_label = options.output
 
 # cross section
 xsection = 1.0
@@ -75,6 +76,11 @@ def create_output_file(l):
             "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
             "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
             "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
+            "A_var2_"+label: Hist.new.Reg(499, 0, 500, name="A_var2_"+label).Weight(),
+            "B_var2_"+label: Hist.new.Reg(499, 0, 500, name="B_var2_"+label).Weight(),
+            "C_var2_"+label: Hist.new.Reg(499, 0, 500, name="C_var2_"+label).Weight(),
+            "D_exp_var2_"+label: Hist.new.Reg(499, 0, 500, name="D_exp_var2_"+label).Weight(),
+            "D_obs_var2_"+label: Hist.new.Reg(499, 0, 500, name="D_obs_var2_"+label).Weight(),
             "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_label +label).Reg(99, 0, 200, name=var2_label).Weight(),
             "2D_girth_nconst_"+label : Hist.new.Reg(50, 0, 1.0, name="girth_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
             "2D_rho0_nconst_"+label : Hist.new.Reg(100, 0, 20, name="rho0_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
@@ -85,6 +91,7 @@ def create_output_file(l):
             "nJets_" + label : Hist.new.Reg(100, 0, 50, name="nJets_"+label, label='# Jets in Event').Weight(),
             "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
+        "nPVs_"+label : Hist.new.Reg(199, 0, 200, name="nPVs_"+label, label="# PVs in Event ").Weight(),
     }
     
     # per region
@@ -93,6 +100,7 @@ def create_output_file(l):
             r+"_ht_" + label : Hist.new.Reg(1000, 0, 10000, name=r+"_ht_"+label, label=r+' HT').Weight(),
             r+"_nJets_" + label : Hist.new.Reg(199, 0, 200, name=r+"_nJets_"+label, label=r+' # Jets in Event').Weight(),
             r+"_nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nLostTracks_"+label, label=r+" # Lost Tracks in Event ").Weight(),
+            r+"_nPVs_"+label : Hist.new.Reg(199, 0, 200, name=r+"_nPVs_"+label, label=r+" # PVs in Event ").Weight(),
             r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label, label=r + r" $p_T$").Weight(),
             r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
             "2D_"+r+"_pt_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label).Reg(499, 0, 500, name=r+" nconst_"+label).Weight(),
@@ -138,10 +146,11 @@ def h5load(ifile, label):
 nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
-output, sizeA, sizeC = {}, {}, {}
+output, sizeA, sizeB, sizeC = {}, {}, {}, {}
 for label in labels: 
     output.update(create_output_file(label))
     sizeA.update({label:0})
+    sizeB.update({label:0})
     sizeC.update({label:0})
     
 for ifile in tqdm(files):
@@ -170,6 +179,7 @@ for ifile in tqdm(files):
     hts = df_vars['ht']
     nJets = df_vars['ngood_fastjets']
     nLostTracks = df_vars['nLostTracks']
+    nPVs = df_vars['PV_npvs']
     
     for label in labels:
         if options.xrootd: df, metadata = h5load(options.dataset+'.hdf5', label) 
@@ -197,6 +207,7 @@ for ifile in tqdm(files):
         df_D_obs = df.loc[(df[var1] >= var1_val) & (df[var2] >= var2_val)]
         
         sizeC[label] += df_C.shape[0]
+        sizeB[label] += df_B.shape[0]
         sizeA[label] += df_A.shape[0]
         
         # fill the ABCD histograms
@@ -206,6 +217,12 @@ for ifile in tqdm(files):
         output["C_"+label].fill(df_C[var1])
         output["D_obs_"+label].fill(df_D_obs[var1])
         output["ABCDvars_2D_"+label].fill(df[var1], df[var2])
+        
+        output["A_var2_"+label].fill(df_A[var2])
+        output["B_var2_"+label].fill(df_B[var2])
+        output["D_exp_var2_"+label].fill(df_C[var2])
+        output["C_var2_"+label].fill(df_C[var2])
+        output["D_obs_var2_"+label].fill(df_D_obs[var2])
         
         # fill the distributions as they are saved in the dataframes
         plot_labels = [key for key in df.keys() if key in list(output.keys())]
@@ -221,11 +238,13 @@ for ifile in tqdm(files):
         output["nJets_" + label].fill(nJets[df['event_index_'+label]])
         output["nLostTracks_" + label].fill(nLostTracks[df['event_index_'+label]])
         output["2D_nJets_SUEPpT_" + label].fill(nJets[df['event_index_'+label]], df['SUEP_pt_'+label])
+        output["nPVs_" + label].fill(nPVs[df['event_index_'+label]])
         
         # per region
         for r, df_r in zip(["A", "B", "C"], [df_A, df_B, df_C]):
         
             output[r + "_ht_" + label].fill(hts[df_r['event_index_'+label]])
+            output[r + "_nPVs_" + label].fill(nPVs[df_r['event_index_'+label]])
             output[r + "_nJets_" + label].fill(nJets[df_r['event_index_'+label]])
             output[r + "_nLostTracks_" + label].fill(nLostTracks[df_r['event_index_'+label]])
             output[r + "_pt_"+label].fill(df_r['SUEP_pt_'+label])
@@ -244,10 +263,13 @@ for ifile in tqdm(files):
 for label in labels:
     if sizeA[label]>0.0:
         CoverA =  sizeC[label] / sizeA[label]
+        CoverA_var2 =  sizeB[label] / sizeA[label]
     else:
         CoverA = 0.0
+        CoverA_var2 = 0.0
         print("A region has no occupancy for selection", label)
     output["D_exp_"+label] = output["D_exp_"+label]*(CoverA)
+    output["D_exp_var2_"+label] = output["D_exp_var2_"+label]*(CoverA_var2)
     
 # apply normalization
 if weight > 0.0 and options.isMC:
