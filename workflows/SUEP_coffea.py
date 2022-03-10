@@ -166,7 +166,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
-            "mass": events.PFCands.mass
+            "mass": 0.0
         }, with_name="Momentum4D")        
         cut = (events.PFCands.fromPV > 1) & \
                 (events.PFCands.trkPt >= 0.7) & \
@@ -334,10 +334,6 @@ class SUEP_cluster(processor.ProcessorABC):
             out_ch = SUEP_cand
             out_ch["event_index_ch"] = indices_ch
             out_ch["SUEP_nLostTracks_ch"] = ak.num(Lost_Christos_cands)
-            out_ch["SUEP_pt_ch"] = SUEP_cand.pt
-            out_ch["SUEP_eta_ch"] = SUEP_cand.eta
-            out_ch["SUEP_phi_ch"] = SUEP_cand.phi
-            out_ch["SUEP_mass_ch"] = SUEP_cand.mass
             out_ch["SUEP_dphi_SUEP_ISR_ch"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
             ch_eigs = self.sphericity(Christos_cands,2.0)
             out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
@@ -354,6 +350,29 @@ class SUEP_cluster(processor.ProcessorABC):
             out_ch["SUEP_girth_ch"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
             out_ch["SUEP_rho0_ch"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
             out_ch["SUEP_rho1_ch"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
+            
+            # reconstruct the SUEP in the unboosted frame from all the tracks
+            SUEPlist = []
+            for iEvent in range(len(Christos_cands_ub)):
+                SUEP = vector.obj(px=0,py=0,pz=0,E=0)
+                for track in Christos_cands_ub[iEvent]: SUEP = SUEP + track
+                SUEPlist.append(SUEP)
+                
+            SUEPs = ak.zip({
+                "px": [s.px for s in SUEPlist],
+                "py": [s.py for s in SUEPlist],
+                "pz": [s.pz for s in SUEPlist],
+                "E": [s.E for s in SUEPlist],
+            }, with_name="Momentum4D")
+            
+            print(SUEPs.mass)
+            print(SUEP_cand.mass)
+                            
+            out_ch["SUEP_pt_ch"] = SUEPs.pt
+            out_ch["SUEP_eta_ch"] = SUEPs.eta
+            out_ch["SUEP_phi_ch"] = SUEPs.phi
+            out_ch["SUEP_mass_ch"] = SUEPs.mass
+            
 
         ### save outputs
         # ak to pandas, if needed

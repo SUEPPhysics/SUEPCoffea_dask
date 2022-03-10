@@ -59,6 +59,7 @@ def create_output_file(l):
             "SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name="pt_"+label, label=r"$p_T$").Weight(),
             "SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_"+label, label=r"Components $p_T$ Avg.").Weight(),
             "SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name="pt_avg_b_"+label, label=r"Components $p_T$ avg (boosted frame)").Weight(),
+            "SUEP_nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="SUEP_nLostTracks_"+label, label="# Lost Tracks in SUEP").Weight(),
             "SUEP_eta_"+label : Hist.new.Reg(100, -5, 5, name="eta_"+label, label=r"$\eta$").Weight(),
             "SUEP_phi_"+label : Hist.new.Reg(100, -6.5, 6.5, name="phi_"+label, label=r"$\phi$").Weight(),
             "SUEP_mass_"+label : Hist.new.Reg(150, 0, 4000, name="mass_"+label, label="Mass").Weight(),
@@ -92,6 +93,7 @@ def create_output_file(l):
             "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
         "nPVs_"+label : Hist.new.Reg(199, 0, 200, name="nPVs_"+label, label="# PVs in Event ").Weight(),
+        "nak4jets_" + label : Hist.new.Reg(199, 0, 200, name="nak4jets_"+label, label= '# ak4jets in Event').Weight(),
     }
     
     # per region
@@ -99,7 +101,9 @@ def create_output_file(l):
         output.update({
             r+"_ht_" + label : Hist.new.Reg(1000, 0, 10000, name=r+"_ht_"+label, label=r+' HT').Weight(),
             r+"_nJets_" + label : Hist.new.Reg(199, 0, 200, name=r+"_nJets_"+label, label=r+' # Jets in Event').Weight(),
+            r+"_nak4jets_" + label : Hist.new.Reg(199, 0, 200, name=r+"_nak4jets_"+label, label=r+' # ak4jets in Event').Weight(),
             r+"_nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nLostTracks_"+label, label=r+" # Lost Tracks in Event ").Weight(),
+            r+"_SUEP_nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_SUEP_nLostTracks_"+label, label=r+" # Lost Tracks in SUEP ").Weight(),
             r+"_nPVs_"+label : Hist.new.Reg(199, 0, 200, name=r+"_nPVs_"+label, label=r+" # PVs in Event ").Weight(),
             r+"_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"_pt_"+label, label=r + r" $p_T$").Weight(),
             r+"_nconst_"+label : Hist.new.Reg(499, 0, 500, name=r+"_nconst_"+label, label=r + " # Tracks in SUEP").Weight(),
@@ -178,6 +182,7 @@ for ifile in tqdm(files):
     # store event-wide info to be indexed within each selection
     hts = df_vars['ht']
     nJets = df_vars['ngood_fastjets']
+    nak4jets = df_vars['ngood_ak4jets']
     nLostTracks = df_vars['nLostTracks']
     nPVs = df_vars['PV_npvs']
     
@@ -195,6 +200,9 @@ for ifile in tqdm(files):
         if var2_label == 'nconst': df = df.loc[df['SUEP_nconst_'+label] >= 10]
         if var1_label == 'spher': df = df.loc[df['SUEP_spher_'+label] >= 0.25]
         #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
+        pv = df_vars['PV_npvs'][df['event_index_'+label]]
+        cut = (pv < 35).to_numpy()
+        df = df[cut]
         
         # blind
         if options.blind and not options.isMC:
@@ -224,6 +232,7 @@ for ifile in tqdm(files):
         output["C_var2_"+label].fill(df_C[var2])
         output["D_obs_var2_"+label].fill(df_D_obs[var2])
         
+        
         # fill the distributions as they are saved in the dataframes
         plot_labels = [key for key in df.keys() if key in list(output.keys())]
         for plot in plot_labels: output[plot].fill(df[plot])  
@@ -239,6 +248,7 @@ for ifile in tqdm(files):
         output["nLostTracks_" + label].fill(nLostTracks[df['event_index_'+label]])
         output["2D_nJets_SUEPpT_" + label].fill(nJets[df['event_index_'+label]], df['SUEP_pt_'+label])
         output["nPVs_" + label].fill(nPVs[df['event_index_'+label]])
+        output["nak4jets_" + label].fill(nak4jets[df['event_index_'+label]])
         
         # per region
         for r, df_r in zip(["A", "B", "C"], [df_A, df_B, df_C]):
@@ -246,12 +256,14 @@ for ifile in tqdm(files):
             output[r + "_ht_" + label].fill(hts[df_r['event_index_'+label]])
             output[r + "_nPVs_" + label].fill(nPVs[df_r['event_index_'+label]])
             output[r + "_nJets_" + label].fill(nJets[df_r['event_index_'+label]])
+            output[r + "_nak4jets_" + label].fill(nak4jets[df_r['event_index_'+label]])
             output[r + "_nLostTracks_" + label].fill(nLostTracks[df_r['event_index_'+label]])
             output[r + "_pt_"+label].fill(df_r['SUEP_pt_'+label])
             output[r + "_eta_"+label].fill(df_r['SUEP_eta_'+label])
             output[r + "_phi_"+label].fill(df_r['SUEP_phi_'+label])
             output[r + "_spher_"+label].fill(df_r['SUEP_spher_'+label])
             output[r + "_nconst_"+label].fill(df_r['SUEP_nconst_'+label])
+            output[r + "_SUEP_nLostTracks_"+label].fill(df_r['SUEP_nLostTracks_'+label])
             output[r + "_ntracks_"+label].fill(df_r['SUEP_ntracks_'+label])
             output["2D_" + r + "_pt_nconst_"+label].fill(df_r['SUEP_pt_'+label], df_r['SUEP_nconst_'+label])
             output["2D_" + r + "_nconst_ntracks_"+label].fill(df_r["SUEP_nconst_"+label], df_r["SUEP_ntracks_"+label])
