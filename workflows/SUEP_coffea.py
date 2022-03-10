@@ -343,9 +343,18 @@ class SUEP_cluster(processor.ProcessorABC):
             out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
             out_ch["SUEP_ntracks_ch"] = ak.num(tracks_ch)
             out_ch["SUEP_spher_ch"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
-            #out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
-            #out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
-            #out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+            out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
+            out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
+            out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+            out_ch["SUEP_C_ch"] = 3.0 * (ch_eigs[:,0]*ch_eigs[:,1] + ch_eigs[:,0]*ch_eigs[:,2] + ch_eigs[:,1]*ch_eigs[:,2])
+
+            # sphericity tensor variables with r=1:
+            ch_eigs_1 = self.sphericity(Christos_cands,1.0)
+            out_ch["SUEP_spher_1_ch"] = 1.5 * (ch_eigs_1[:,1]+ch_eigs_1[:,0])
+            out_ch["SUEP_aplan_1_ch"] = 1.5 * ch_eigs_1[:,0]
+            out_ch["SUEP_FW2M_1_ch"] = 1.0 - 3.0 * (ch_eigs_1[:,2]*ch_eigs_1[:,1] + ch_eigs_1[:,2]*ch_eigs_1[:,0] + ch_eigs_1[:,1]*ch_eigs_1[:,0])
+            out_ch["SUEP_D_1_ch"] = 27.0 * ch_eigs_1[:,2]*ch_eigs_1[:,1]*ch_eigs_1[:,0]
+            out_ch["SUEP_C_1_ch"] = 3.0 * (ch_eigs_1[:,0]*ch_eigs_1[:,1] + ch_eigs_1[:,0]*ch_eigs_1[:,2] + ch_eigs_1[:,1]*ch_eigs_1[:,2])
 
             # unboost for these
             Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)

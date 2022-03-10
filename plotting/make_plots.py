@@ -66,9 +66,19 @@ def create_output_file(l):
             "SUEP_aplan_"+label : Hist.new.Reg(100, 0, 1, name="aplan_"+label, label="Aplanarity").Weight(),
             "SUEP_FW2M_"+label : Hist.new.Reg(100, 0, 1, name="FW2M_"+label, label="2nd Fox Wolfram Moment").Weight(),
             "SUEP_D_"+label : Hist.new.Reg(100, 0, 1, name="D_"+label, label="D").Weight(),
+            "SUEP_C_"+label : Hist.new.Reg(100, 0, 1, name="C_"+label, label="C").Weight(),
             "SUEP_girth": Hist.new.Reg(50, 0, 1.0, name="girth_"+label, label=r"Girth").Weight(),
             "SUEP_rho0_"+label : Hist.new.Reg(100, 0, 20, name="rho0_"+label, label=r"$\rho_0$").Weight(),
             "SUEP_rho1_"+label : Hist.new.Reg(100, 0, 20, name="rho1_"+label, label=r"$\rho_1$").Weight(),
+
+            # sphericity tensor variables with r=1:
+            "SUEP_spher_1_"+label : Hist.new.Reg(100, 0, 1, name="spher_1_"+label, label="Sphericity_1").Weight(),
+            "SUEP_aplan_1_"+label : Hist.new.Reg(100, 0, 1, name="aplan_1_"+label, label="Aplanarity_1").Weight(),
+            "SUEP_FW2M_1_"+label : Hist.new.Reg(100, 0, 1, name="FW2M_1_"+label, label="2nd Fox Wolfram Moment_1").Weight(),
+            "SUEP_D_1_"+label : Hist.new.Reg(100, 0, 1, name="D_1_"+label, label="D_1").Weight(),
+            "SUEP_C_1_"+label : Hist.new.Reg(100, 0, 1, name="C_1_"+label, label="C_1").Weight(),
+            "2D_spher_1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_1_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
+            "2D_spher_1_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="spher_1_"+label).Reg(99, 0, 200, name="nconst_"+label).Weight(),
 
             # new hists
             "A_"+label: Hist.new.Reg(nbins, 0, 1, name="A_"+label).Weight(),
@@ -91,7 +101,7 @@ def create_output_file(l):
             "nJets_" + label : Hist.new.Reg(100, 0, 50, name="nJets_"+label, label='# Jets in Event').Weight(),
             "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
-        "nPVs_"+label : Hist.new.Reg(199, 0, 200, name="nPVs_"+label, label="# PVs in Event ").Weight(),
+            "nPVs_"+label : Hist.new.Reg(199, 0, 200, name="nPVs_"+label, label="# PVs in Event ").Weight(),
     }
     
     # per region
@@ -109,7 +119,9 @@ def create_output_file(l):
             r+"_eta_"+label : Hist.new.Reg(100, -5, 5, name=r+"_eta_"+label, label=r + r"$\eta$").Weight(),
             r+"_phi_"+label : Hist.new.Reg(200, -6.5, 6.5, name=r + "_phi_"+label, label=r + r"$\phi$").Weight(),
             r +"_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"_spher_"+label, label=r+"Sphericity").Weight(),
-            r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_ntracks_"+label, label=r+"# Tracks in event").Weight()
+            r + "_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"_ntracks_"+label, label=r+"# Tracks in event").Weight(),
+            "2D_"+r+"_spher_1_ntracks_"+label : Hist.new.Reg(100, 0, 1, name="spher_1_"+label).Reg(200, 0, 500, name="ntracks_"+label).Weight(),
+            r +"_spher_1_"+label : Hist.new.Reg(100, 0, 1, name=r+"_spher_1_"+label, label=r+"r=1 Sphericity").Weight()
         })
     if label == 'ch':# Christos only
         output2 = {
@@ -239,6 +251,8 @@ for ifile in tqdm(files):
         output["nLostTracks_" + label].fill(nLostTracks[df['event_index_'+label]])
         output["2D_nJets_SUEPpT_" + label].fill(nJets[df['event_index_'+label]], df['SUEP_pt_'+label])
         output["nPVs_" + label].fill(nPVs[df['event_index_'+label]])
+        output["2D_spher_1_nconst_"+label].fill(df["SUEP_spher_1_"+label], df["SUEP_nconst_"+label])
+        output["2D_spher_1_ntracks_"+label].fill(df["SUEP_spher_1_"+label], df["SUEP_ntracks_"+label])
         
         # per region
         for r, df_r in zip(["A", "B", "C"], [df_A, df_B, df_C]):
@@ -256,6 +270,8 @@ for ifile in tqdm(files):
             output["2D_" + r + "_pt_nconst_"+label].fill(df_r['SUEP_pt_'+label], df_r['SUEP_nconst_'+label])
             output["2D_" + r + "_nconst_ntracks_"+label].fill(df_r["SUEP_nconst_"+label], df_r["SUEP_ntracks_"+label])
             output["2D_" + r + "_spher_ntracks_"+label].fill(df_r["SUEP_spher_"+label], df_r["SUEP_ntracks_"+label])
+            output[r + "_spher_1_"+label].fill(df_r['SUEP_spher_1_'+label])
+            output["2D_" + r + "_spher_1_ntracks_"+label].fill(df_r["SUEP_spher_1_"+label], df_r["SUEP_ntracks_"+label])
     
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
         
