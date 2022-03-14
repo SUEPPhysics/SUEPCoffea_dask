@@ -18,26 +18,37 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--xrootd', type=int, default=1, help="Local data or xrdcp from hadoop (xrootd=True)")
+parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
-# other parameters for script
-redirector = "root://t3serv017.mit.edu:/"
-username = getpass.getuser()
-if options.xrootd:
-    dataDir = "/mnt/T3_US_MIT/hadoop/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
-else:
-    dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
-files = [file for file in os.listdir(dataDir)]
 
-# parameters for ABCD method
+# parameters for script
 var1_label = 'spher'
 var2_label = 'nconst'
 var1_val = 0.50
 var2_val = 25
-nbins = 100                # applies to var1_label
-labels = ['ch']            # which selection to make plots for
+labels = ['ch']             # which selection to make plots for
 output_label = options.output
+redirector = "root://t3serv017.mit.edu/"
+
+# selections
+# syntax: one cut per variable; greater than == g, less than == l
+# e.g. spher_g0p25 == "sphericity must be greater than 0.25"
+default_ABCD = ["spher_g0p25", 
+                "nconst_g10"]
+pv_l30_study = default_ABCD + "pv_l30"
+selections = default_ABCD         # selections applied to dfs
+
+# get list of files
+username = getpass.getuser()
+if options.xrootd:
+    dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+    result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
+    result = result.decode("utf-8")
+    files = result.split("\n")
+else:
+    dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
+    files = [dataDir + f for f in os.listdir(dataDir)]
 
 # cross section
 xsection = 1.0
@@ -72,11 +83,11 @@ def create_output_file(l):
             "SUEP_rho1_"+label : Hist.new.Reg(100, 0, 20, name="rho1_"+label, label=r"$\rho_1$").Weight(),
 
             # new hists
-            "A_"+label: Hist.new.Reg(nbins, 0, 1, name="A_"+label).Weight(),
-            "B_"+label: Hist.new.Reg(nbins, 0, 1, name="B_"+label).Weight(),
-            "C_"+label: Hist.new.Reg(nbins, 0, 1, name="C_"+label).Weight(),
-            "D_exp_"+label: Hist.new.Reg(nbins, 0, 1, name="D_exp_"+label).Weight(),
-            "D_obs_"+label: Hist.new.Reg(nbins, 0, 1, name="D_obs_"+label).Weight(),
+            "A_"+label: Hist.new.Reg(100, 0, 1, name="A_"+label).Weight(),
+            "B_"+label: Hist.new.Reg(100, 0, 1, name="B_"+label).Weight(),
+            "C_"+label: Hist.new.Reg(100, 0, 1, name="C_"+label).Weight(),
+            "D_exp_"+label: Hist.new.Reg(100, 0, 1, name="D_exp_"+label).Weight(),
+            "D_obs_"+label: Hist.new.Reg(100, 0, 1, name="D_obs_"+label).Weight(),
             "A_var2_"+label: Hist.new.Reg(499, 0, 500, name="A_var2_"+label).Weight(),
             "B_var2_"+label: Hist.new.Reg(499, 0, 500, name="B_var2_"+label).Weight(),
             "C_var2_"+label: Hist.new.Reg(499, 0, 500, name="C_var2_"+label).Weight(),
@@ -92,8 +103,8 @@ def create_output_file(l):
             "nJets_" + label : Hist.new.Reg(100, 0, 50, name="nJets_"+label, label='# Jets in Event').Weight(),
             "nLostTracks_"+label : Hist.new.Reg(499, 0, 500, name="nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             "2D_nJets_SUEPpT_"+label : Hist.new.Reg(199, 0, 200, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),    
-        "nPVs_"+label : Hist.new.Reg(199, 0, 200, name="nPVs_"+label, label="# PVs in Event ").Weight(),
-        "nak4jets_" + label : Hist.new.Reg(199, 0, 200, name="nak4jets_"+label, label= '# ak4jets in Event').Weight(),
+            "nPVs_"+label : Hist.new.Reg(199, 0, 200, name="nPVs_"+label, label="# PVs in Event ").Weight(),
+            "nak4jets_" + label : Hist.new.Reg(199, 0, 200, name="nak4jets_"+label, label= '# ak4jets in Event').Weight(),
     }
     
     # per region
@@ -158,11 +169,10 @@ for label in labels:
     sizeC.update({label:0})
     
 for ifile in tqdm(files):
-    ifile = dataDir+ifile
 
     if options.xrootd:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
-        xrd_file = redirector + ifile.split('hadoop')[1]
+        xrd_file = redirector + ifile
         os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
         df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
@@ -196,13 +206,14 @@ for ifile in tqdm(files):
         var1 = 'SUEP_' + var1_label + '_' + label
         var2 = 'SUEP_' + var2_label + '_' + label
         
-        # selections
-        if var2_label == 'nconst': df = df.loc[df['SUEP_nconst_'+label] >= 10]
-        if var1_label == 'spher': df = df.loc[df['SUEP_spher_'+label] >= 0.25]
-        #df = df.loc[df['SUEP_'+label+'_pt'] >= 300]
-        pv = df_vars['PV_npvs'][df['event_index_'+label]]
-        cut = (pv < 35).to_numpy()
-        df = df[cut]
+        # apply selections
+        for sel in selections:
+            if sel == "spher_g0p25": df = df.loc[df['SUEP_spher_'+label] >= 0.25]
+            if sel == "nconst_g10": df = df.loc[df['SUEP_nconst_'+label] >= 10]
+            if sel == "pv_l30":
+                pv = df_vars['PV_npvs'][df['event_index_'+label]]
+                cut = (pv < 35).to_numpy()
+                df = df[cut]
         
         # blind
         if options.blind and not options.isMC:
@@ -226,12 +237,12 @@ for ifile in tqdm(files):
         output["D_obs_"+label].fill(df_D_obs[var1])
         output["ABCDvars_2D_"+label].fill(df[var1], df[var2])
         
+        # for both variables
         output["A_var2_"+label].fill(df_A[var2])
         output["B_var2_"+label].fill(df_B[var2])
         output["D_exp_var2_"+label].fill(df_C[var2])
         output["C_var2_"+label].fill(df_C[var2])
         output["D_obs_var2_"+label].fill(df_D_obs[var2])
-        
         
         # fill the distributions as they are saved in the dataframes
         plot_labels = [key for key in df.keys() if key in list(output.keys())]
