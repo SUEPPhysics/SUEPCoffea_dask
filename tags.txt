@@ -1,2 +1,0 @@
-noJetId: removed jetId from the ak4 selection after we noticed that it was buggy.
-noJetTrigger: removed HLT_PFJet500, removed mult (temporarily?), added ngood_ak4jets to out_vars.
