@@ -75,7 +75,6 @@ class SUEP_cluster(processor.ProcessorABC):
                         jet_collection[field][subfield]
                     )
             else:
-                print(jet_collection[field],"HeLlO WoRlD!",len(jet_collection[field]))
                 output[field] = ak.to_numpy(jet_collection[field])
         return output
 
@@ -85,6 +84,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
     def save_dfs(self, dfs, df_names):
         fname = "out.hdf5"
+        subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
             # pandas to hdf5
@@ -173,7 +173,8 @@ class SUEP_cluster(processor.ProcessorABC):
         return events, [coll[cutAnyHLT] for coll in extraColls]
 
     def selectByLeptons(self, events, extraColls = []):
-        ### Very basic lepton selection criteria, prepare lepton 4-momenta collection for plotting and so
+    ###lepton selection criteria--4momenta collection for plotting
+
         muons = ak.zip({
             "pt": events.Muon.pt,
             "eta": events.Muon.eta,
@@ -181,6 +182,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Muon.mass,
             "charge": events.Muon.pdgId/(-13),
         }, with_name="Momentum4D")
+	
         electrons = ak.zip({
             "pt": events.Electron.pt,
             "eta": events.Electron.eta,
@@ -188,17 +190,20 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Electron.mass,
             "charge": events.Electron.pdgId/(-11),
         }, with_name="Momentum4D")
+
         ###  Some very simple selections on ID ###
         ###  Muons: loose ID + dxy dz cuts mimicking the medium prompt ID https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
         ###  Electrons: loose ID + dxy dz cuts for promptness https://twiki.cern.ch/twiki/bin/view/CMS/EgammaCutBasedIdentification
-        cutMuons     = (events.Muon.looseId) & (events.Muon.pt >= 10) & (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1) # dxy is impact parameter in transverse plane
+        cutMuons     = (events.Muon.looseId) & (events.Muon.pt >= 10) & (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1)
         cutElectrons = (events.Electron.cutBased >= 2) & (events.Electron.pt >= 15)
+
         ### Apply the cuts
         # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
         selMuons     = muons[cutMuons]
         selElectrons = electrons[cutElectrons]
+
         ### Now global cuts to select events. Notice this means exactly two leptons with pT >= 10, and the leading one pT >= 25
-	
+
         # cutHasTwoMuons imposes three conditions:
         #  First, number of muons (axis=1 means column. Each row is an event.) in an event is 2.
         #  Second, pt of the muons is greater than 25.
@@ -207,7 +212,9 @@ class SUEP_cluster(processor.ProcessorABC):
         cutHasTwoElecs = (ak.num(selElectrons, axis=1)==2) & (ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selElectrons.charge,axis=1) == 0)
         cutTwoLeps     = ((ak.num(selElectrons, axis=1)+ak.num(selMuons, axis=1)) < 4)
         cutHasTwoLeps  = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
+
         ### Cut the events, also return the selected leptons for operation down the line
+
         events = events[ cutHasTwoLeps]
         return events, selElectrons[cutHasTwoLeps], selMuons[cutHasTwoLeps], [coll[cutHasTwoLeps] for coll in extraColls]
 
@@ -252,8 +259,8 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
         # Track selection requirements
-        cut = (events.PFCands.fromPV > 3) & \
-            (events.PFCands.trkPt >= 2.5) & \
+        cut = (events.PFCands.fromPV > 0) & \
+            (events.PFCands.trkPt >= 3) & \
             (abs(events.PFCands.trkEta) <= 2.5) & \
             (abs(events.PFCands.dz) < 10) & \
             (events.PFCands.dzErr < 0.05)
@@ -270,8 +277,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": 0.0
         }, with_name="Momentum4D")
         # More track selection requirement
-        cut = (events.lostTracks.fromPV > 3) & \
-            (events.lostTracks.pt >= 2.5) & \
+        cut = (events.lostTracks.fromPV > 0) & \
+            (events.lostTracks.pt >= 3) & \
             (abs(events.lostTracks.eta) <= 1.0) \
             & (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
@@ -283,9 +290,13 @@ class SUEP_cluster(processor.ProcessorABC):
 	# Here we are concatenating the pf tracks and lost tracks.
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         tracks = Total_Tracks
+        #print(len(tracks),"printing number of first tracks")
         ## Tracks that overlap with the leptons are taken out
         tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
-        return events, leptons, tracks, [coll for coll in extraColls]
+        #print(len(tracks),"printing number of second tracks")
+        Ntracks = ak.num(tracks,axis=1)
+        #print(Ntracks,"This is printing Ntracks")
+        return events, leptons, tracks, Ntracks, [coll for coll in extraColls]
 
     def selectByGEN(self, events):
         GenParts = ak.zip({
@@ -305,6 +316,22 @@ class SUEP_cluster(processor.ProcessorABC):
             return False
         else:
             return True
+
+    def process(self, events):
+        debug    = True  # If we want some prints in the middle
+        doTracks = True # Make it false, and it will speed things up
+        doGen    = False #i In case we want info on the gen level 
+        # Main processor code
+        # Define outputs
+        output  = self.accumulator.identity()
+        outlep  = {}
+        out1jet  = {}
+        out2jets  = {}
+        out3jets  = {}
+        outnumtrk = {}
+        outgen  = {}
+
+        # Data dependant stuff
         dataset = events.metadata['dataset']
         if self.isMC:      self.gensumweight = ak.sum(events.genWeight)
         if not(self.isMC): doGen = False
@@ -330,18 +357,21 @@ class SUEP_cluster(processor.ProcessorABC):
         if not(self.shouldContinueAfterCut(events)): return output
 
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
-        # Right now no jet cuts, only selecting jets
-        events, onejet, [electrons, muons] = self.selectByJets(events, [electrons, muons])
+        event_onejet, event_twojets, event_threejets, onejet, twojets, threejets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
 	# Sorting jets by pt.
-        highpt_jets = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
-        onejet = onejet[highpt_jets]
+        highpt_1jet = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
+        highpt_2jet = ak.argsort(twojets.pt, axis=1, ascending=False, stable=True)
+        highpt_3jet = ak.argsort(threejets.pt, axis=1, ascending=False, stable=True)
+        onejet = onejet[highpt_1jet]
+        twojets = twojets[highpt_2jet]
+        threejets = threejets[highpt_3jet]
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
         
         if doTracks:
           # Right now no track cuts, only selecting tracks
-          events, leptons, tracks     = self.selectByTracks(events, leptons) [:3]
+          events, leptons, tracks, Ntracks = self.selectByTracks(events, leptons) [:4]
           if not(self.shouldContinueAfterCut(events)): return output
           if debug: print("%i events pass track cuts. Doing more stuff..."%len(events))
 
@@ -357,54 +387,78 @@ class SUEP_cluster(processor.ProcessorABC):
         # Define outputs for plotting
         if debug: print("Saving reco variables")
 	# The variables that I can get are listed above in "SelectByLeptons" function
-        #out["leadlep_pt"]    = leptons.pt[:,0]
-        #out["subleadlep_pt"] = leptons.pt[:,1]
-        #out["leadlep_eta"]   = leptons.eta[:,0]
-        #out["subleadlep_eta"]= leptons.eta[:,1]
-        #out["leadlep_phi"] = leptons.phi[:,0]
-        #out["subleadlep_phi"] = leptons.phi[:,1]
+        outlep["leadlep_pt"]    = leptons.pt[:,0]
+        outlep["subleadlep_pt"] = leptons.pt[:,1]
+        outlep["leadlep_eta"]   = leptons.eta[:,0]
+        outlep["subleadlep_eta"]= leptons.eta[:,1]
+        outlep["leadlep_phi"] = leptons.phi[:,0]
+        outlep["subleadlep_phi"] = leptons.phi[:,1]
+
 
 	# From here I am working with Z boson reconstruction from the daugther leptons
-        #out["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
-        #out["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
-        #out["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
-        #out["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
+        outlep["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
+        outlep["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
+        outlep["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
+        outlep["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
-	# ak4jets is an array of arrays. Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
-	# The problem here is that I am trying to indexing 0 or 1 for arrays that might have no or 1 entry!
-        out["onejet_pt"] = onejet.pt[:,0]
-        out["onejet_eta"] = onejet.eta[:,0]
-        out["onejet_phi"] = onejet.phi[:,0]
-	
-        #out["leadjet_pt"] = ak4jets.pt[:,0]
-        #out["subleadjet_pt"] = ak4jets.pt[:,1]
-        #out["leadjet_eta"] = ak4jets.eta[:,0]
-        #out["subleadjet_eta"] = ak4jets.eta[:,1]
-        #out["leadjet_phi"] = ak4jets.phi[:,0]
-        #out["subleadjet_phi"] = ak4jets.phi[:,1]
+	# ak4jets is an array of arrays. 
+        # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
+        #out1jet["onejet_pt"] = onejet.pt[:,0]
+        #out1jet["onejet_eta"] = onejet.eta[:,0]
+        #out1jet["onejet_phi"] = onejet.phi[:,0]
+
+        #out2jets["twojets1_pt"] = twojets.pt[:,0]
+        #out2jets["twojets1_eta"] = twojets.eta[:,0]
+        #out2jets["twojets1_phi"] = twojets.phi[:,0]
+
+        #out2jets["twojets2_pt"] = twojets.pt[:,1]
+        #out2jets["twojets2_eta"] = twojets.eta[:,1]
+        #out2jets["twojets2_phi"] = twojets.phi[:,1]
+
+        #out3jets["threejets1_pt"] = threejets.pt[:,0]
+        #out3jets["threejets1_eta"] = threejets.eta[:,0]
+        #out3jets["threejets1_phi"] = threejets.phi[:,0]
+
+        #out3jets["threejets2_pt"] = threejets.pt[:,1]
+        #out3jets["threejets2_eta"] = threejets.eta[:,1]
+        #out3jets["threejets2_phi"] = threejets.phi[:,1]
+
+        #out3jets["threejets3_pt"] = threejets.pt[:,2]
+        #out3jets["threejets3_eta"] = threejets.eta[:,2]
+        #out3jets["threejets3_phi"] = threejets.phi[:,2]
+
+        #From here I am working with track multiplicity
+        outnumtrk["Ntracks"] = Ntracks 
 
         if doGen:
           if debug: print("Saving gen variables")
-          out["genZpt"]  = genZ.pt[:,0]
-          out["genZeta"] = genZ.eta[:,0]
-          out["genZphi"] = genZ.phi[:,0]
+          outlep["genZpt"]  = genZ.pt[:,0]
+          outlep["genZeta"] = genZ.eta[:,0]
+          outlep["genZphi"] = genZ.phi[:,0]
 
-          out["genHpt"]  = genH.pt[:,0]
-          out["genHeta"] = genH.eta[:,0]
-          out["genHphi"] = genH.phi[:,0]
+          outlep["genHpt"]  = genH.pt[:,0]
+          outlep["genHeta"] = genH.eta[:,0]
+          outlep["genHphi"] = genH.phi[:,0]
 
 
         if self.isMC:
           # We need this to be able to normalize the samples 
-          out["genweight"]= events.genWeight[:]
-          print(events.genWeight[:],len(events.genWeight[:]),"Hey world")
+          outlep["genweight"]= events.genWeight[:]
+          out1jet["genweight"]= event_onejet.genWeight[:]
+          out2jets["genweight"]= event_twojets.genWeight[:]
+          out3jets["genweight"]= event_threejets.genWeight[:]
+          outnumtrk["genweight"]= events.genWeight[:]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
-        if not isinstance(out, pd.DataFrame): out = self.ak_to_pandas(out)
+        if not isinstance(outlep, pd.DataFrame): outlep = self.ak_to_pandas(outlep)
+        if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
+        if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
+        if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
+        if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if debug: print("DFS saving....")
-        self.save_dfs([out],["vars"])
+        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"])
 
         return output
 
