@@ -364,9 +364,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 "pz": [s.pz for s in SUEPlist],
                 "E": [s.E for s in SUEPlist],
             }, with_name="Momentum4D")
-            
-            print(SUEPs.mass)
-            print(SUEP_cand.mass)
                             
             out_ch["SUEP_pt_ch"] = SUEPs.pt
             out_ch["SUEP_eta_ch"] = SUEPs.eta
