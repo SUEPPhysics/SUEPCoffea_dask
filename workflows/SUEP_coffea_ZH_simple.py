@@ -83,7 +83,7 @@ class SUEP_cluster(processor.ProcessorABC):
         store.get_storer(gname).attrs.metadata = kwargs
         
     def save_dfs(self, dfs, df_names):
-        fname = "out.hdf5"
+        fname = "NumTrk[0.5,3.0]out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
@@ -259,8 +259,8 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
         # Track selection requirements
-        cut = (events.PFCands.fromPV > 0) & \
-            (events.PFCands.trkPt >= 3) & \
+        cut = (events.PFCands.fromPV > 3) & \
+            (events.PFCands.trkPt >= 0.5) & \
             (abs(events.PFCands.trkEta) <= 2.5) & \
             (abs(events.PFCands.dz) < 10) & \
             (events.PFCands.dzErr < 0.05)
@@ -277,8 +277,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": 0.0
         }, with_name="Momentum4D")
         # More track selection requirement
-        cut = (events.lostTracks.fromPV > 0) & \
-            (events.lostTracks.pt >= 3) & \
+        cut = (events.lostTracks.fromPV > 3) & \
+            (events.lostTracks.pt >= 0.5) & \
             (abs(events.lostTracks.eta) <= 1.0) \
             & (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
@@ -290,12 +290,9 @@ class SUEP_cluster(processor.ProcessorABC):
 	# Here we are concatenating the pf tracks and lost tracks.
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         tracks = Total_Tracks
-        #print(len(tracks),"printing number of first tracks")
         ## Tracks that overlap with the leptons are taken out
         tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
-        #print(len(tracks),"printing number of second tracks")
         Ntracks = ak.num(tracks,axis=1)
-        #print(Ntracks,"This is printing Ntracks")
         return events, leptons, tracks, Ntracks, [coll for coll in extraColls]
 
     def selectByGEN(self, events):
