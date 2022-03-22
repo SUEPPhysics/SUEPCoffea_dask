@@ -83,7 +83,7 @@ class SUEP_cluster(processor.ProcessorABC):
         store.get_storer(gname).attrs.metadata = kwargs
         
     def save_dfs(self, dfs, df_names):
-        fname = "NumTrk[0.5,3.0]out.hdf5"
+        fname = "NumTrk[1.0,1.0]out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
@@ -259,8 +259,8 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
         # Track selection requirements
-        cut = (events.PFCands.fromPV > 3) & \
-            (events.PFCands.trkPt >= 0.5) & \
+        cut = (events.PFCands.fromPV > 2) & \
+            (events.PFCands.trkPt >= 2.5) & \
             (abs(events.PFCands.trkEta) <= 2.5) & \
             (abs(events.PFCands.dz) < 10) & \
             (events.PFCands.dzErr < 0.05)
@@ -277,8 +277,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": 0.0
         }, with_name="Momentum4D")
         # More track selection requirement
-        cut = (events.lostTracks.fromPV > 3) & \
-            (events.lostTracks.pt >= 0.5) & \
+        cut = (events.lostTracks.fromPV > 2) & \
+            (events.lostTracks.pt >= 2.5) & \
             (abs(events.lostTracks.eta) <= 1.0) \
             & (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
