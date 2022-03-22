@@ -1,20 +1,54 @@
 import pandas as pd
 import ROOT
 import os
+import numpy as np
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(False)
-output = "/eos/user/j/jkil/SUEP/output_graphs"
+output = "/eos/user/j/jkil/www"
 DY = [pd.HDFStore("../outputDY/"+f, 'r') for f in os.listdir("../outputDY/")]
 ZH = [pd.HDFStore("../outputZH/"+f, 'r') for f in os.listdir("../outputZH/")]
 
-channel   = "vars"
-normalize = False
+channel   = "jetvars3"
+normalize = True
 
 plots = {
-  "Leading Lepton p_{T}": ["leadlep_pt", 50, 0, 200, "p_{T}^{l1} [GeV]"], 
-  "Leading Lepton eta":["leadlep_eta", 50, -2.5, 2.5, "eta"],
-  "Leading Lepton phi":["leadlep_phi",50,0,6.28,"phi"]
+  #"Leading Lepton p_{T}": ["leadlep_pt", 50, 0, 200, "p_{T}^{l1} [GeV]"], 
+  #"Leading Lepton eta":["leadlep_eta", 50, -2.5, 2.5, "eta"],
+  #"Leading Lepton phi":["leadlep_phi",50,0,6.28,"phi"],
+  #"Leading Lepton mass":["leadlep_mass",50,0,0.01,"mass"]
+  #"SubLead Lepton p_{T}": ["subleadlep_pt", 50, 0, 200, "p_{T}^{l2} [GeV]"],
+  #"SubLead Lepton eta":["subleadlep_eta", 50, -2.5, 2.5, "eta"],
+  #"SubLead Lepton phi":["subleadlep_phi",50,0,6.28,"phi"],
+  #"Zpt":["Z_pt",50,0,200,"p_{t_{Z}} [GeV]"],
+  #"Zeta":["Z_eta",50,-2.5,2.5,"\eta_{Z}"],
+  #"Zphi":["Z_phi",50,-np.pi,np.pi,"\phi_{Z}"],
+  #"Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
+
+  #"onejet p_{T}":["onejet_pt",50,0,150,"p_{T} [GeV]"],
+  #"onejet eta":["onejet_eta",50,-3.14,3.14,"eta"],
+  #"onejet phi":["onejet_phi",50,0,3.14,"phi"],
+
+  #"twojets1 p_{T}":["twojets1_pt",50,0,150,"p_{T} [GeV]"],
+  #"twojets1 eta":["twojets1_eta",50,-3.14,3.14,"eta"],
+  #"twojets1 phi":["twojets1_phi",50,0,3.14,"phi"],
+
+  #"twojets2 p_{T}":["twojets2_pt",50,0,150,"p_{T} [GeV]"],
+  #"twojets2 eta":["twojets2_eta",50,-3.14,3.14,"eta"],
+  #"twojets2 phi":["twojets2_phi",50,0,3.14,"phi"],
+
+  "threejets1 p_{T}":["threejets1_pt",50,0,150,"p_{T} [GeV]"],
+  "threejets1 eta":["threejets1_eta",50,-3.14,3.14,"eta"],
+  "threejets1 phi":["threejets1_phi",50,0,3.14,"phi"],
+
+  "threejets2 p_{T}":["threejets2_pt",50,0,150,"p_{T} [GeV]"],
+  "threejets2 eta":["threejets2_eta",50,-3.14,3.14,"eta"],
+  "threejets2 phi":["threejets2_phi",50,0,3.14,"phi"],
+
+  "threejets3 p_{T}":["threejets3_pt",50,0,150,"p_{T} [GeV]"],
+  "threejets3 eta":["threejets3_eta",50,-3.14,3.14,"eta"],
+  "threejets3 phi":["threejets3_phi",50,0,3.14,"phi"],
+
 }
 
 for p in plots:
@@ -24,17 +58,17 @@ for p in plots:
   sumwB = 0
   for d in DY:
     #print d.get_storer("vars").attrs.metadata
-    sumwB += d.get_storer("vars").attrs.metadata["gensumweight"]
+    sumwB += d.get_storer("jetvars3").attrs.metadata["gensumweight"]
     weightsDY = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
-      if idx%1000 == 0: print idx
+      if idx%1000 == 0: print (idx)
       h1.Fill(val,weightsDY[idx])
 
   sumwS = 0
   for d in ZH:
-    if idx%1000 == 0: print idx
+    if idx%1000 == 0: print (idx)
     #print d.get_storer("vars").attrs.metadata
-    sumwS += d.get_storer("vars").attrs.metadata["gensumweight"]
+    sumwS += d.get_storer("jetvars3").attrs.metadata["gensumweight"]
     weightsZS = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
       h2.Fill(val, weightsZS[idx])

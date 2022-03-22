@@ -54,6 +54,3 @@ elif what == "StoB":
   print("S/B = %1.3f for a cut of %1.3f in %s"%(nSpass/nBpass, cut, var))
 elif what == "StoSqrtB":
   print("S/sqrt(B) = %1.3f for a cut of %1.3f in %s"%(nSpass/nBpass**0.5, cut, var))
-
-
-

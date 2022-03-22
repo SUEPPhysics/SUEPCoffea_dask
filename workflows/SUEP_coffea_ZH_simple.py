@@ -67,7 +67,6 @@ class SUEP_cluster(processor.ProcessorABC):
     def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
         output = pd.DataFrame()
         for field in ak.fields(jet_collection):
-            print(field)
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
                 for subfield in ak.fields(jet_collection[field]):
@@ -176,7 +175,8 @@ class SUEP_cluster(processor.ProcessorABC):
         return events, [coll[cutAnyHLT] for coll in extraColls]
 
     def selectByLeptons(self, events, extraColls = []):
-        ### Very basic lepton selection criteria, prepare lepton 4-momenta collection for plotting and so
+    ###lepton selection criteria--4momenta collection for plotting
+
         muons = ak.zip({
             "pt": events.Muon.pt,
             "eta": events.Muon.eta,
@@ -184,6 +184,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Muon.mass,
             "charge": events.Muon.pdgId/(-13),
         }, with_name="Momentum4D")
+	
         electrons = ak.zip({
             "pt": events.Electron.pt,
             "eta": events.Electron.eta,
@@ -191,20 +192,31 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.Electron.mass,
             "charge": events.Electron.pdgId/(-11),
         }, with_name="Momentum4D")
+
         ###  Some very simple selections on ID ###
         ###  Muons: loose ID + dxy dz cuts mimicking the medium prompt ID https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
         ###  Electrons: loose ID + dxy dz cuts for promptness https://twiki.cern.ch/twiki/bin/view/CMS/EgammaCutBasedIdentification
         cutMuons     = (events.Muon.looseId) & (events.Muon.pt >= 10) & (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1)
         cutElectrons = (events.Electron.cutBased >= 2) & (events.Electron.pt >= 15)
+
         ### Apply the cuts
+        # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
         selMuons     = muons[cutMuons]
         selElectrons = electrons[cutElectrons]
+
         ### Now global cuts to select events. Notice this means exactly two leptons with pT >= 10, and the leading one pT >= 25
+
+        # cutHasTwoMuons imposes three conditions:
+        #  First, number of muons (axis=1 means column. Each row is an event.) in an event is 2.
+        #  Second, pt of the muons is greater than 25.
+        #  Third, Sum of charge of muons should be 0. (because it originates from Z)
         cutHasTwoMuons = (ak.num(selMuons, axis=1)==2) & (ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selMuons.charge,axis=1) == 0)
         cutHasTwoElecs = (ak.num(selElectrons, axis=1)==2) & (ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25) & (ak.sum(selElectrons.charge,axis=1) == 0)
         cutTwoLeps     = ((ak.num(selElectrons, axis=1)+ak.num(selMuons, axis=1)) < 4)
         cutHasTwoLeps  = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
+
         ### Cut the events, also return the selected leptons for operation down the line
+
         events = events[ cutHasTwoLeps]
         return events, selElectrons[cutHasTwoLeps], selMuons[cutHasTwoLeps], [coll[cutHasTwoLeps] for coll in extraColls]
 
@@ -219,21 +231,38 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
-        # No cut applied, really, but we could do it
-        return events, ak4jets, [coll for coll in extraColls]
+
+        # This is a cut that selects one/two/three jet(s) (It's just an array of Booleans)
+        cutHasOneJet = (ak.num(ak4jets, axis=1)==1)
+        cutHasTwoJets = (ak.num(ak4jets, axis=1)==2)
+        cutHasThreeJets = (ak.num(ak4jets, axis=1)==3)
+        
+        # The following is the collection of jets with appropriate cuts applied.
+        onejet = ak4jets[cutHasOneJet] #format: [[13.8],[28.8],...[32.4]]
+        twojets = ak4jets[cutHasTwoJets] #format: [[13.8,19.0],[28.8,17.4],...[32.4,58.1]]
+        threejets = ak4jets[cutHasThreeJets] #format: [[13.8,19.0,16.4],[28.8,17.4,28.6],...[32.4,58.1,28.8]]      
+ 
+        # The following is the collection of events with respective number of jets
+        event_onejet = events[cutHasOneJet]
+        event_twojets = events[cutHasTwoJets]
+        event_threejets = events[cutHasThreeJets]
+
+        return event_onejet, event_twojets, event_threejets, onejet, twojets, threejets,[coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
 
         # Prepare the clean PFCand matched to tracks collection
+        # PFCands (Particle-Flow Candidates) : every particle in the particle flow is saved here.
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")
+        #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
         # Track selection requirements
-        cut = (events.PFCands.fromPV > 1) & \
-            (events.PFCands.trkPt >= 0.7) & \
+        cut = (events.PFCands.fromPV > 2) & \
+            (events.PFCands.trkPt >= 2.5) & \
             (abs(events.PFCands.trkEta) <= 2.5) & \
             (abs(events.PFCands.dz) < 10) & \
             (events.PFCands.dzErr < 0.05)
@@ -241,6 +270,8 @@ class SUEP_cluster(processor.ProcessorABC):
         Cleaned_cands = ak.packed(Cleaned_cands)
 
         # Prepare the Lost Track collection
+	# LostTracks : Tracks are reconstructed but not identified as one of the particles.
+	# SUEP particles usually fall into this category.
         LostTracks = ak.zip({
             "pt": events.lostTracks.pt,
             "eta": events.lostTracks.eta,
@@ -248,8 +279,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": 0.0
         }, with_name="Momentum4D")
         # More track selection requirement
-        cut = (events.lostTracks.fromPV > 1) & \
-            (events.lostTracks.pt >= 0.7) & \
+        cut = (events.lostTracks.fromPV > 2) & \
+            (events.lostTracks.pt >= 2.5) & \
             (abs(events.lostTracks.eta) <= 1.0) \
             & (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
@@ -258,11 +289,13 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
+	# Here we are concatenating the pf tracks and lost tracks.
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         tracks = Total_Tracks
         ## Tracks that overlap with the leptons are taken out
         tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
-        return events, leptons, tracks, [coll for coll in extraColls]
+        Ntracks = ak.num(tracks,axis=1)
+        return events, leptons, tracks, Ntracks, [coll for coll in extraColls]
 
     def selectByGEN(self, events):
         GenParts = ak.zip({
@@ -278,20 +311,24 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def shouldContinueAfterCut(self, events, out = pd.DataFrame(['empty'], columns=['empty'])):
         if len(events) == 0:
-            self.save_dfs([out],["vars"], chunkTag)
+            self.save_dfs([out,out],["lepvars","jetvars"])
             return False
         else:
             return True
 
     def process(self, events):
         debug    = True  # If we want some prints in the middle
-        doTracks = True # Just to speed things up
-        doGen    = True # In case we want info on the gen level 
         chunkTag = "out_%i_%i_%i.hdf5"%(events.event[0], events.luminosityBlock[0], events.run[0]) #Unique tag to get different outputs per tag
+        doTracks = True # Make it false, and it will speed things up
+        doGen    = False #i In case we want info on the gen level 
         # Main processor code
         # Define outputs
         output  = self.accumulator.identity()
-        out     = {}
+        outlep  = {}
+        out1jet  = {}
+        out2jets  = {}
+        out3jets  = {}
+        outnumtrk = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -320,17 +357,21 @@ class SUEP_cluster(processor.ProcessorABC):
         if not(self.shouldContinueAfterCut(events)): return output
 
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
-        # Right now no jet cuts, only selecting jets
-        events, ak4jets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
-        highpt_jets = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
-        ak4jets = ak4jets[highpt_jets]
+        event_onejet, event_twojets, event_threejets, onejet, twojets, threejets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
+	# Sorting jets by pt.
+        highpt_1jet = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
+        highpt_2jet = ak.argsort(twojets.pt, axis=1, ascending=False, stable=True)
+        highpt_3jet = ak.argsort(threejets.pt, axis=1, ascending=False, stable=True)
+        onejet = onejet[highpt_1jet]
+        twojets = twojets[highpt_2jet]
+        threejets = threejets[highpt_3jet]
 
         if not(self.shouldContinueAfterCut(events)): return output
         if debug: print("%i events pass jet cuts. Selecting tracks..."%len(events))
         
         if doTracks:
           # Right now no track cuts, only selecting tracks
-          events, leptons, tracks     = self.selectByTracks(events, leptons) [:3]
+          events, leptons, tracks, Ntracks = self.selectByTracks(events, leptons) [:4]
           if not(self.shouldContinueAfterCut(events)): return output
           if debug: print("%i events pass track cuts. Doing more stuff..."%len(events))
 
@@ -351,21 +392,56 @@ class SUEP_cluster(processor.ProcessorABC):
         # Define outputs for plotting
         if debug: print("Saving reco variables")
 	# The variables that I can get are listed above in "SelectByLeptons" function
-        out["leadlep_pt"]    = leptons.pt[:,0]
-        out["subleadlep_pt"] = leptons.pt[:,1]
-        out["leadlep_eta"]   = leptons.eta[:,0]
-        out["subleadlep_eta"]= leptons.eta[:,1]
-        out["leadlep_phi"] = leptons.phi[:,0]
-        out["subleadlep_phi"] = leptons.phi[:,1]
+        outlep["leadlep_pt"]    = leptons.pt[:,0]
+        outlep["subleadlep_pt"] = leptons.pt[:,1]
+        outlep["leadlep_eta"]   = leptons.eta[:,0]
+        outlep["subleadlep_eta"]= leptons.eta[:,1]
+        outlep["leadlep_phi"] = leptons.phi[:,0]
+        outlep["subleadlep_phi"] = leptons.phi[:,1]
 
-        out["Zpt"]  = Zcands.pt[:]
-        out["Zeta"] = Zcands.eta[:]
-        out["Zphi"] = Zcands.phi[:]
+
+        # From here I am working with Z boson reconstruction from the daugther leptons
+        outlep["Z_pt"] = Zcands.pt[:] 
+
+        outlep["Z_eta"] = Zcands.eta[:] 
+
+        outlep["Z_phi"] = Zcands.phi[:] 
+        outlep["Z_m"] =  Zcands.mass[:]
+
+        # From here I am working with jets
+        # ak4jets is an array of arrays.        
+        # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
+        #out1jet["onejet_pt"] = onejet.pt[:,0]
+        #out1jet["onejet_eta"] = onejet.eta[:,0]
+        #out1jet["onejet_phi"] = onejet.phi[:,0]
+
+        #out2jets["twojets1_pt"] = twojets.pt[:,0]
+        #out2jets["twojets1_eta"] = twojets.eta[:,0]
+        #out2jets["twojets1_phi"] = twojets.phi[:,0]
+
+        #out2jets["twojets2_pt"] = twojets.pt[:,1]
+        #out2jets["twojets2_eta"] = twojets.eta[:,1]
+        #out2jets["twojets2_phi"] = twojets.phi[:,1]
+
+        #out3jets["threejets1_pt"] = threejets.pt[:,0]
+        #out3jets["threejets1_eta"] = threejets.eta[:,0]
+        #out3jets["threejets1_phi"] = threejets.phi[:,0]
+
+        #out3jets["threejets2_pt"] = threejets.pt[:,1]
+        #out3jets["threejets2_eta"] = threejets.eta[:,1]
+        #out3jets["threejets2_phi"] = threejets.phi[:,1]
+
+        #out3jets["threejets3_pt"] = threejets.pt[:,2]
+        #out3jets["threejets3_eta"] = threejets.eta[:,2]
+        #out3jets["threejets3_phi"] = threejets.phi[:,2]
+
+        #From here I am working with track multiplicity
  
         if doTracks:
-          out["nTracks"]     = ak.num(tracks, axis=1)
-          spher =  self.sphericity(tracks, 2)
-          out["spher_lab"] = 1.5*(spher[:,1] + spher[:,0])
+          outnumtrk["Ntracks"] = Ntracks
+          outnumtrk["nTracks"]     = ak.num(tracks, axis=1)
+          """spher =  self.sphericity(tracks, 2)
+          outnumtrk["spher_lab"] = 1.5*(spher[:,1] + spher[:,0])
           print(spher[0:4,0], spher[0:4,1], spher[0:4,2])
 
           boost_Zinv = ak.zip({
@@ -387,48 +463,41 @@ class SUEP_cluster(processor.ProcessorABC):
           
           print("_")
           spherZ =  self.sphericity(tracks_boostedagainstZ, 2)
-          out["spher_Z"] = 1.5*(spherZ[:,1] + spherZ[:,0])
+          outnumtrk["spher_Z"] = 1.5*(spherZ[:,1] + spherZ[:,0])
           print(spherZ[0:4,0], spherZ[0:4,1], spherZ[0:4,2])
           print("_")
           sphertracks =  self.sphericity(tracks_boostedagainsttracks, 2)
-          out["spher_tracks"] = 1.5*(sphertracks[:,1] + sphertracks[:,0])
-          print(sphertracks[0:4,0], sphertracks[0:4,1], sphertracks[0:4,2])
-
-
-
-          """maxTracks = ak.max(out["nTracks"], axis=0)
-          print("Max Tracks: %i"%maxTracks)
-          print(ak.pad_none(tracks.pt, maxTracks, clip=True).tolist())
-          print(ak.pad_none(tracks.pt, maxTracks, clip=True).type)
-          out["Tracks_pt"]   = ak.pad_none(tracks.pt , maxTracks,clip=True).tolist()
-          out["Tracks_eta"]  = ak.pad_none(tracks.eta, maxTracks,clip=True).tolist()
-          out["Tracks_phi"]  = ak.pad_none(tracks.phi, maxTracks,clip=True).tolist()
-          out["dZTracksphi_mean"] = ak.mean(tracks.deltaphi(Zcands), axis=1)
-          out["dZTrackseta_mean"] = ak.mean(tracks.deltaeta(Zcands), axis=1)
-          out["dZTrackR_mean"]    = ak.mean(tracks.deltaR(Zcands),axis=1)"""
-
- 
+          outnumtrk["spher_tracks"] = 1.5*(sphertracks[:,1] + sphertracks[:,0])
+          print(sphertracks[0:4,0], sphertracks[0:4,1], sphertracks[0:4,2])"""
   
-        """if doGen:
+        if doGen:
           if debug: print("Saving gen variables")
-          out["genZpt"]  = genZ.pt[:,0]
-          out["genZeta"] = genZ.eta[:,0]
-          out["genZphi"] = genZ.phi[:,0]
+          outlep["genZpt"]  = genZ.pt[:,0]
+          outlep["genZeta"] = genZ.eta[:,0]
+          outlep["genZphi"] = genZ.phi[:,0]
 
-          out["genHpt"]  = genH.pt[:,0]
-          out["genHeta"] = genH.eta[:,0]
-          out["genHphi"] = genH.phi[:,0]
-        """ 
+          outlep["genHpt"]  = genH.pt[:,0]
+          outlep["genHeta"] = genH.eta[:,0]
+          outlep["genHphi"] = genH.phi[:,0]
+
 
         if self.isMC:
           # We need this to be able to normalize the samples 
-          out["genweight"]= events.genWeight[:]
+          outlep["genweight"]= events.genWeight[:]
+          out1jet["genweight"]= event_onejet.genWeight[:]
+          out2jets["genweight"]= event_twojets.genWeight[:]
+          out3jets["genweight"]= event_threejets.genWeight[:]
+          outnumtrk["genweight"]= events.genWeight[:]
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
-        if not isinstance(out, pd.DataFrame): out = self.ak_to_pandas(out)
+        if not isinstance(outlep, pd.DataFrame): outlep = self.ak_to_pandas(outlep)
+        if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
+        if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
+        if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
+        if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if debug: print("DFS saving....")
-        self.save_dfs([out],["vars"], chunkTag)
+        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"], chunkTag)
 
         return output
 
