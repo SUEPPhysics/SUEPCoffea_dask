@@ -1,14 +1,16 @@
 import pandas as pd
 import os
+import sys
 
 ######### Configuration parameters ##########
-SFile  = "../outputZH_archive/NumTrk[0.5,0.0]out.hdf5" # signal file
-BFile  = "../outputDY_archive/NumTrk[0.5,0.0]out.hdf5" # background file
-channel= "numtrkvars" # Channel name inside the analyzer
-var    = "Ntracks" #Var name inside the analyzer
-cut    = 280 # Cut value
-where  = "G" # L == less than, G== great than. For which region to compute significance
+SFile  = "../outputZH/out.hdf5" # signal file
+BFile  = "../outputDY/out.hdf5" # background file
+channel= "vars" # Channel name inside the analyzer
+var    = "nTracks" #Var name inside the analyzer
+cut    = float(sys.argv[1]) # Cut value
+where  = sys.argv[2] # L == less than, G== great than. For which region to compute significance
 what   = "StoSqrtSB" # What to report: StoB, StoSqrtSB, StoSqrtB
+addSys = float(sys.argv[3])
 
 ## Conf but shouldn't change
 lumi  = 137.0 # Luminosity of Run 2
@@ -51,7 +53,7 @@ print(nSpass, "This is final nSpass")
 print(nBpass, "This is final nBpass")
 
 if what == "StoSqrtSB":
-  print("S/sqrt(S+B) = %1.3f for a cut of %1.3f in %s"%(nSpass/(nSpass+nBpass)**0.5, cut, var))
+  print("S/sqrt(S+B) = %1.3f for a cut of %1.3f in %s"%(nSpass/(nSpass+nBpass+(addSys*nBpass)**2)**0.5, cut, var))
 elif what == "StoB":
   print("S/B = %1.3f for a cut of %1.3f in %s"%(nSpass/nBpass, cut, var))
 elif what == "StoSqrtB":
