@@ -29,7 +29,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
         self.prefixes = {"SUEP": "SUEP"}
-
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
 
@@ -83,8 +82,8 @@ class SUEP_cluster(processor.ProcessorABC):
         store.put(gname, df)
         store.get_storer(gname).attrs.metadata = kwargs
         
-    def save_dfs(self, dfs, df_names):
-        fname = "out.hdf5"
+    def save_dfs(self, dfs, df_names, fname=None):
+        if not(fname): fname = "out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
@@ -149,11 +148,14 @@ class SUEP_cluster(processor.ProcessorABC):
             dirname = os.path.dirname(destination)
             if not os.path.exists(dirname):
                 pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
-            if not os.path.samefile(local_file, destination):
+            if os.path.isfile(destination):
+              if not os.path.samefile(local_file, destination):
                 shutil.copy2(local_file, destination)
-            else:
+              else:
                 fname = "condor_" + fname
                 destination = os.path.join(location, os.path.join(merged_subdirs, fname))
+                shutil.copy2(local_file, destination)
+            else:
                 shutil.copy2(local_file, destination)
             assert os.path.isfile(destination)
         pathlib.Path(local_file).unlink()
@@ -276,7 +278,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def shouldContinueAfterCut(self, events, out = pd.DataFrame(['empty'], columns=['empty'])):
         if len(events) == 0:
-            self.save_dfs([out],["vars"])
+            self.save_dfs([out],["vars"], chunkTag)
             return False
         else:
             return True
@@ -284,7 +286,8 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         debug    = True  # If we want some prints in the middle
         doTracks = True # Just to speed things up
-        doGen    = False # In case we want info on the gen level 
+        doGen    = True # In case we want info on the gen level 
+        chunkTag = "out_%i_%i_%i.hdf5"%(events.event[0], events.luminosityBlock[0], events.run[0]) #Unique tag to get different outputs per tag
         # Main processor code
         # Define outputs
         output  = self.accumulator.identity()
@@ -336,6 +339,11 @@ class SUEP_cluster(processor.ProcessorABC):
           if not(self.shouldContinueAfterCut(events)): return output
           if debug: print("%i events pass gen cuts. Doing more stuff..."%len(events))
 
+
+        # Now deal with the Z candidate
+
+        Zcands = leptons[:,0] + leptons[:,1]
+        
         # ------------------------------------------------------------------------------
         # ------------------------------- PLOTTING -------------------------------------
         # ------------------------------------------------------------------------------
@@ -350,8 +358,58 @@ class SUEP_cluster(processor.ProcessorABC):
         out["leadlep_phi"] = leptons.phi[:,0]
         out["subleadlep_phi"] = leptons.phi[:,1]
 
+        out["Zpt"]  = Zcands.pt[:]
+        out["Zeta"] = Zcands.eta[:]
+        out["Zphi"] = Zcands.phi[:]
+ 
+        if doTracks:
+          out["nTracks"]     = ak.num(tracks, axis=1)
+          spher =  self.sphericity(tracks, 2)
+          out["spher_lab"] = 1.5*(spher[:,1] + spher[:,0])
+          print(spher[0:4,0], spher[0:4,1], spher[0:4,2])
 
-        if doGen:
+          boost_Zinv = ak.zip({
+            "px": Zcands.px,
+            "py": Zcands.py,
+            "pz": Zcands.pz,
+            "mass": Zcands.mass
+          }, with_name="Momentum4D")
+
+          boost_tracks = ak.zip({
+            "px": ak.sum(tracks.px, axis=1)*-1,
+            "py": ak.sum(tracks.py, axis=1)*-1,
+            "pz": ak.sum(tracks.pz, axis=1)*-1,
+            "mass": 125 # Assuming it is a Higgs?
+          }, with_name="Momentum4D")
+
+          tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
+          tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
+          
+          print("_")
+          spherZ =  self.sphericity(tracks_boostedagainstZ, 2)
+          out["spher_Z"] = 1.5*(spherZ[:,1] + spherZ[:,0])
+          print(spherZ[0:4,0], spherZ[0:4,1], spherZ[0:4,2])
+          print("_")
+          sphertracks =  self.sphericity(tracks_boostedagainsttracks, 2)
+          out["spher_tracks"] = 1.5*(sphertracks[:,1] + sphertracks[:,0])
+          print(sphertracks[0:4,0], sphertracks[0:4,1], sphertracks[0:4,2])
+
+
+
+          """maxTracks = ak.max(out["nTracks"], axis=0)
+          print("Max Tracks: %i"%maxTracks)
+          print(ak.pad_none(tracks.pt, maxTracks, clip=True).tolist())
+          print(ak.pad_none(tracks.pt, maxTracks, clip=True).type)
+          out["Tracks_pt"]   = ak.pad_none(tracks.pt , maxTracks,clip=True).tolist()
+          out["Tracks_eta"]  = ak.pad_none(tracks.eta, maxTracks,clip=True).tolist()
+          out["Tracks_phi"]  = ak.pad_none(tracks.phi, maxTracks,clip=True).tolist()
+          out["dZTracksphi_mean"] = ak.mean(tracks.deltaphi(Zcands), axis=1)
+          out["dZTrackseta_mean"] = ak.mean(tracks.deltaeta(Zcands), axis=1)
+          out["dZTrackR_mean"]    = ak.mean(tracks.deltaR(Zcands),axis=1)"""
+
+ 
+  
+        """if doGen:
           if debug: print("Saving gen variables")
           out["genZpt"]  = genZ.pt[:,0]
           out["genZeta"] = genZ.eta[:,0]
@@ -360,7 +418,7 @@ class SUEP_cluster(processor.ProcessorABC):
           out["genHpt"]  = genH.pt[:,0]
           out["genHeta"] = genH.eta[:,0]
           out["genHphi"] = genH.phi[:,0]
-
+        """ 
 
         if self.isMC:
           # We need this to be able to normalize the samples 
@@ -370,7 +428,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if debug: print("Conversion to pandas...")
         if not isinstance(out, pd.DataFrame): out = self.ak_to_pandas(out)
         if debug: print("DFS saving....")
-        self.save_dfs([out],["vars"])
+        self.save_dfs([out],["vars"], chunkTag)
 
         return output
 
