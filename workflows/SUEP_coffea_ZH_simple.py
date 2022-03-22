@@ -29,7 +29,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
         self.prefixes = {"SUEP": "SUEP"}
-
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
 
@@ -82,8 +81,8 @@ class SUEP_cluster(processor.ProcessorABC):
         store.put(gname, df)
         store.get_storer(gname).attrs.metadata = kwargs
         
-    def save_dfs(self, dfs, df_names):
-        fname = "NumTrk[1.0,1.0]out.hdf5"
+    def save_dfs(self, dfs, df_names, fname=None):
+        if not(fname): fname = "out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
@@ -148,11 +147,14 @@ class SUEP_cluster(processor.ProcessorABC):
             dirname = os.path.dirname(destination)
             if not os.path.exists(dirname):
                 pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
-            if not os.path.samefile(local_file, destination):
+            if os.path.isfile(destination):
+              if not os.path.samefile(local_file, destination):
                 shutil.copy2(local_file, destination)
-            else:
+              else:
                 fname = "condor_" + fname
                 destination = os.path.join(location, os.path.join(merged_subdirs, fname))
+                shutil.copy2(local_file, destination)
+            else:
                 shutil.copy2(local_file, destination)
             assert os.path.isfile(destination)
         pathlib.Path(local_file).unlink()
@@ -316,6 +318,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         debug    = True  # If we want some prints in the middle
+        chunkTag = "out_%i_%i_%i.hdf5"%(events.event[0], events.luminosityBlock[0], events.run[0]) #Unique tag to get different outputs per tag
         doTracks = True # Make it false, and it will speed things up
         doGen    = False #i In case we want info on the gen level 
         # Main processor code
@@ -377,6 +380,11 @@ class SUEP_cluster(processor.ProcessorABC):
           if not(self.shouldContinueAfterCut(events)): return output
           if debug: print("%i events pass gen cuts. Doing more stuff..."%len(events))
 
+
+        # Now deal with the Z candidate
+
+        Zcands = leptons[:,0] + leptons[:,1]
+        
         # ------------------------------------------------------------------------------
         # ------------------------------- PLOTTING -------------------------------------
         # ------------------------------------------------------------------------------
@@ -392,14 +400,16 @@ class SUEP_cluster(processor.ProcessorABC):
         outlep["subleadlep_phi"] = leptons.phi[:,1]
 
 
-	# From here I am working with Z boson reconstruction from the daugther leptons
-        outlep["Z_pt"] = np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))
-        outlep["Z_eta"] = np.arcsinh((leptons.pt[:,0]*np.sinh(leptons.eta[:,0])+leptons.pt[:,1]*np.sinh(leptons.eta[:,1]))/np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1])))
-        outlep["Z_phi"] = np.arcsin((leptons.pt[:,0]*np.sin(leptons.phi[:,0]) + leptons.pt[:,1]*np.sin(leptons.phi[:,1]))/(np.sqrt((leptons.pt[:,0])**2 + (leptons.pt[:,1])**2 + 2*leptons.pt[:,0]*leptons.pt[:,1]*np.cos(leptons.phi[:,0]-leptons.phi[:,1]))))
-        outlep["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
+        # From here I am working with Z boson reconstruction from the daugther leptons
+        outlep["Z_pt"] = Zcands.pt[:] 
+
+        outlep["Z_eta"] = Zcands.eta[:] 
+
+        outlep["Z_phi"] = Zcands.phi[:] 
+        outlep["Z_m"] =  Zcands.mass[:]
 
         # From here I am working with jets
-	# ak4jets is an array of arrays.	
+        # ak4jets is an array of arrays.        
         # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
         #out1jet["onejet_pt"] = onejet.pt[:,0]
         #out1jet["onejet_eta"] = onejet.eta[:,0]
@@ -426,8 +436,40 @@ class SUEP_cluster(processor.ProcessorABC):
         #out3jets["threejets3_phi"] = threejets.phi[:,2]
 
         #From here I am working with track multiplicity
-        outnumtrk["Ntracks"] = Ntracks 
+ 
+        if doTracks:
+          outnumtrk["Ntracks"] = Ntracks
+          outnumtrk["nTracks"]     = ak.num(tracks, axis=1)
+          """spher =  self.sphericity(tracks, 2)
+          outnumtrk["spher_lab"] = 1.5*(spher[:,1] + spher[:,0])
+          print(spher[0:4,0], spher[0:4,1], spher[0:4,2])
 
+          boost_Zinv = ak.zip({
+            "px": Zcands.px,
+            "py": Zcands.py,
+            "pz": Zcands.pz,
+            "mass": Zcands.mass
+          }, with_name="Momentum4D")
+
+          boost_tracks = ak.zip({
+            "px": ak.sum(tracks.px, axis=1)*-1,
+            "py": ak.sum(tracks.py, axis=1)*-1,
+            "pz": ak.sum(tracks.pz, axis=1)*-1,
+            "mass": 125 # Assuming it is a Higgs?
+          }, with_name="Momentum4D")
+
+          tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
+          tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
+          
+          print("_")
+          spherZ =  self.sphericity(tracks_boostedagainstZ, 2)
+          outnumtrk["spher_Z"] = 1.5*(spherZ[:,1] + spherZ[:,0])
+          print(spherZ[0:4,0], spherZ[0:4,1], spherZ[0:4,2])
+          print("_")
+          sphertracks =  self.sphericity(tracks_boostedagainsttracks, 2)
+          outnumtrk["spher_tracks"] = 1.5*(sphertracks[:,1] + sphertracks[:,0])
+          print(sphertracks[0:4,0], sphertracks[0:4,1], sphertracks[0:4,2])"""
+  
         if doGen:
           if debug: print("Saving gen variables")
           outlep["genZpt"]  = genZ.pt[:,0]
@@ -455,7 +497,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
         if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"])
+        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"], chunkTag)
 
         return output
 
