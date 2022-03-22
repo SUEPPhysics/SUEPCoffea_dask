@@ -2,11 +2,11 @@ import pandas as pd
 import os
 
 ######### Configuration parameters ##########
-SFile  = "../outputZH/out.hdf5" # signal file
-BFile  = "../outputDY/out.hdf5" # background file
-channel= "vars" # Channel name inside the analyzer
-var    = "nTracks" #Var name inside the analyzer
-cut    = 60. # Cut value
+SFile  = "../outputZH_archive/NumTrk[0.5,0.0]out.hdf5" # signal file
+BFile  = "../outputDY_archive/NumTrk[0.5,0.0]out.hdf5" # background file
+channel= "numtrkvars" # Channel name inside the analyzer
+var    = "Ntracks" #Var name inside the analyzer
+cut    = 280 # Cut value
 where  = "G" # L == less than, G== great than. For which region to compute significance
 what   = "StoSqrtSB" # What to report: StoB, StoSqrtSB, StoSqrtB
 
@@ -45,6 +45,10 @@ for idx, val in enumerate(B[channel][var]):
     nBpass += weightB[idx]*normB
   if where == "G" and val >= cut:
     nBpass += weightB[idx]*normB
+    print(idx,nBpass)
+
+print(nSpass, "This is final nSpass")
+print(nBpass, "This is final nBpass")
 
 if what == "StoSqrtSB":
   print("S/sqrt(S+B) = %1.3f for a cut of %1.3f in %s"%(nSpass/(nSpass+nBpass)**0.5, cut, var))
