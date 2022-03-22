@@ -399,8 +399,7 @@ class SUEP_cluster(processor.ProcessorABC):
         outlep["Z_m"] = np.sqrt(2*leptons.pt[:,0]*leptons.pt[:,1]*(np.cosh(leptons.eta[:,1]-leptons.eta[:,0])-np.cos(leptons.phi[:,1]-leptons.phi[:,0])))
 
         # From here I am working with jets
-	# ak4jets is an array of arrays. 
-	
+	# ak4jets is an array of arrays.	
         # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
         #out1jet["onejet_pt"] = onejet.pt[:,0]
         #out1jet["onejet_eta"] = onejet.eta[:,0]
