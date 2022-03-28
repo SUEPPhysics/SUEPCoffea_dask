@@ -22,7 +22,7 @@ options = parser.parse_args()
 out_dir = os.getcwd()
 modules_era = []
 #Run the SUEP code. Note the xsection as input. For Data the xsection = 1.0 from above
-modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, output_location=out_dir))
+modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=True, output_location=out_dir))
 
 for instance in modules_era:
     output = run_uproot_job(

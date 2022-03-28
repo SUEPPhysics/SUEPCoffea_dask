@@ -15,10 +15,16 @@ import fastjet
 from coffea import hist, processor
 import vector
 from typing import List, Optional
+import onnx
+import onnxruntime as ort
+from onnx import numpy_helper
+from scipy.sparse import csr_matrix
+import torch
+import torch.cuda as tcuda
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
-    def __init__(self, isMC: int, era: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, output_location: Optional[str]) -> None:
+    def __init__(self, isMC: int, era: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
         self._flag = flag
         self.output_location = output_location
         self.do_syst = do_syst
@@ -28,6 +34,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
+        self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
 
         #Set up for the histograms
@@ -57,6 +64,36 @@ class SUEP_cluster(processor.ProcessorABC):
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
+
+    def process_images(self, Cleaned_cands, ort_sess):
+
+        #Set up the image size and pixels
+        eta_pix = 280
+        phi_pix = 360
+        eta_span = (-2.5, 2.5)
+        phi_span = (-np.pi, np.pi)
+        eta_scale = eta_pix/(eta_span[1]-eta_span[0])
+        phi_scale = phi_pix/(phi_span[1]-phi_span[0])
+
+        #Turn the PFcand info into indexes on the image map. Normalize the pt to be applied
+        idx_eta = ak.values_astype(np.floor((Cleaned_cands.eta-eta_span[0])*eta_scale),"int64")-1
+        idx_phi = ak.values_astype(np.floor((Cleaned_cands.phi-phi_span[0])*phi_scale),"int64")-1
+        pt = Cleaned_cands.pt
+        pt = pt/ak.max(pt,axis=-1)#normalize the pt values
+
+        N_batches = len(Cleaned_cands)
+        to_infer = np.zeros((N_batches, 1, eta_pix, phi_pix))
+
+        for event_i, events in enumerate(pt):
+             to_infer[event_i,0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]         
+
+        #Running the inference in batch mode
+        input_name = ort_sess.get_inputs()[0].name
+        output_name = ort_sess.get_outputs()[0].name
+        outputs =  ort_sess.run([output_name], {input_name: to_infer.astype(np.float32)})[0]
+
+        return outputs
+
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -91,6 +128,7 @@ class SUEP_cluster(processor.ProcessorABC):
             for out, gname in zip(dfs, df_names):
                 if self.isMC:
                     metadata = dict(gensumweight=self.gensumweight,era=self.era, mc=self.isMC,sample=self.sample)
+                    #metadata.update({gensumweight:self.gensumweight})
                 else:
                     metadata = dict(era=self.era, mc=self.isMC,sample=self.sample)    
                     
@@ -159,14 +197,14 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        if self.isMC: self.gensumweight = ak.sum(events.genWeight)    
+        if self.isMC: self.gensumweight = ak.sum(events.genWeight)
 
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
-            "mass": 0.0
+            "mass": events.PFCands.mass
         }, with_name="Momentum4D")        
         cut = (events.PFCands.fromPV > 1) & \
                 (events.PFCands.trkPt >= 0.7) & \
@@ -175,7 +213,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 (events.PFCands.dzErr < 0.05)
         Cleaned_cands = Cands[cut]
         Cleaned_cands = ak.packed(Cleaned_cands)
-        
+
         #Prepare the Lost Track collection
         LostTracks = ak.zip({
             "pt": events.lostTracks.pt,
@@ -190,7 +228,15 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.lostTracks.dzErr < 0.05)
         Lost_Tracks_cands = LostTracks[cut]
         Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-     
+
+        #These lines control the inference from JetSSD. Conversion is done elsewhere
+        #The inference skips the lost tracks for now. 
+        if self.do_inf:    
+            ort_sess = ort.InferenceSession('data/augmented_model.onnx')
+            SSD_Jets = self.process_images(Cleaned_cands, ort_sess)
+
+        print("Jet SSD jets", ak.max(SSD_Jets, axis=-2).to_list())
+            
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
@@ -217,7 +263,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
         # jetId==2 means: pass tight ID, fail tightLepVeto
         # jetId==6 means: pass tight and tightLepVeto ID. 
-        tightJetId = (ak4jets.jetId == 6)
+        tightJetId = (ak4jets.jetId > 2)
         tight_ak4jets = ak4jets[tightJetId]
         looseJetId = (ak4jets.jetId >= 2)
         loose_ak4jets = ak4jets[looseJetId]
@@ -244,7 +290,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs
         out_vars["PV_npvsGood"] = events.PV.npvsGood
-        
+    
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
          
@@ -275,12 +321,11 @@ class SUEP_cluster(processor.ProcessorABC):
         
         ### SUEP_mult
         chonkocity = ak.num(ak_inclusive_cluster, axis=2)
-        ### section for chonkiest jet. We have removed the fills and just leave the choniness and thicc jets
         #chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
         #thicc_jets = ak_inclusive_jets[chonkiest_jet]
         #chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
         #singletrackCut = (ak.num(chonkiest_cands)>1)
-        
+
         ### SUEP_pt
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
@@ -334,14 +379,22 @@ class SUEP_cluster(processor.ProcessorABC):
             out_ch = SUEP_cand
             out_ch["event_index_ch"] = indices_ch
             out_ch["SUEP_nLostTracks_ch"] = ak.num(Lost_Christos_cands)
+            out_ch["SUEP_pt_ch"] = SUEP_cand.pt
+            out_ch["SUEP_eta_ch"] = SUEP_cand.eta
+            out_ch["SUEP_phi_ch"] = SUEP_cand.phi
+            out_ch["SUEP_mass_ch"] = SUEP_cand.mass
             out_ch["SUEP_dphi_SUEP_ISR_ch"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
             ch_eigs = self.sphericity(Christos_cands,2.0)
             out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
             out_ch["SUEP_ntracks_ch"] = ak.num(tracks_ch)
+            #out_ch["SUEP_pt_avg_b_ch"] = ak.mean(Christos_cands.pt, axis=-1)
             out_ch["SUEP_spher_ch"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
             #out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
             #out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
             #out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
+            #out_ch["SUEP_dphi_chcands_ISR_ch"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
+            #out_ch["SUEP_dphi_ISRtracks_ISR_ch"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
+            #out_ch["SUEP_dphi_SUEPtracks_ISR_ch"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
 
             # unboost for these
             Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
@@ -350,37 +403,24 @@ class SUEP_cluster(processor.ProcessorABC):
             out_ch["SUEP_girth_ch"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
             out_ch["SUEP_rho0_ch"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
             out_ch["SUEP_rho1_ch"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
-            
-            # reconstruct the SUEP in the unboosted frame from all the tracks
-            SUEPlist = []
-            for iEvent in range(len(Christos_cands_ub)):
-                SUEP = vector.obj(px=0,py=0,pz=0,E=0)
-                for track in Christos_cands_ub[iEvent]: SUEP = SUEP + track
-                SUEPlist.append(SUEP)
-                
+
             SUEPs = ak.zip({
-                "px": [s.px for s in SUEPlist],
-                "py": [s.py for s in SUEPlist],
-                "pz": [s.pz for s in SUEPlist],
-                "E": [s.E for s in SUEPlist],
+                "px": ak.sum(Christos_cands.px, axis=-1),
+                "py": ak.sum(Christos_cands.py, axis=-1),
+                "pz": ak.sum(Christos_cands.pz, axis=-1),
+                "energy": ak.sum(Christos_cands.energy, axis=-1),
             }, with_name="Momentum4D")
-            
-            print(SUEPs.mass)
-            print(SUEP_cand.mass)
-                            
+               
             out_ch["SUEP_pt_ch"] = SUEPs.pt
             out_ch["SUEP_eta_ch"] = SUEPs.eta
             out_ch["SUEP_phi_ch"] = SUEPs.phi
             out_ch["SUEP_mass_ch"] = SUEPs.mass
-            
 
         ### save outputs
-        # ak to pandas, if needed
+        # ak to pandas, if needed. Then pandas to hdf5
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
-        
-        # pandas to hdf5 file
         self.save_dfs([out_ch, out_vars],["ch","vars"])
-        
+
         return output
 
     def postprocess(self, accumulator):
