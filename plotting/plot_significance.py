@@ -22,7 +22,7 @@ pt_vals = ["0.5","1.0","1.5","2.0","2.5","3.0"]
 #pt_vals = ["0.5"]
 
 # Make this True, and it will generate plots. If False, it will only print out the max significance.
-doPlots = True
+doPlots = False
 
 ##### FUNCTION DEFINITION #####
 
@@ -90,11 +90,11 @@ for i in fromPV_vals:
         for idx in range(0,maxNtrk):
             significance, nEvent =  getSignificance(idx)[:2]
             #print(significance, nEvent, "significance, nEven")
-            if significance > max_significance:
-                max_significance = significance
-                max_Ntracks = idx
-            if doPlots:
-                if nEvent > 20: #Here I am sorting out the bins with small number of events
+            if nEvent > 20: #Here I am sorting out the bins with small number of events
+                if significance > max_significance:
+                    max_significance = significance
+                    max_Ntracks = idx
+                if doPlots:
                     plots["SigvNCut_plot["+j+","+i+"]"].Fill(idx,significance)
        
         if doPlots:

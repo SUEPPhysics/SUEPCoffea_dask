@@ -53,9 +53,15 @@ class SUEP_cluster(processor.ProcessorABC):
                        ak.sum(particles.pz * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
                        ak.sum(particles.pz * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
                       ]])
+
+        count = 0
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
-        evals = np.sort(np.linalg.eigvalsh(s))
-        return evals
+        evals = []
+        for idx in range(len(s)):
+            if len(particles[idx])>0: #sorting out events with 0 tracks
+                evals.append(np.linalg.eigvals(s[idx]))
+        #print(evals) # I want this to print clean arrays without dtype...
+        return s, evals
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -261,8 +267,8 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")
         #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
         # Track selection requirements
-        cut = (events.PFCands.fromPV > 2) & \
-            (events.PFCands.trkPt >= 2.5) & \
+        cut = (events.PFCands.fromPV > 1) & \
+            (events.PFCands.trkPt >= 1) & \
             (abs(events.PFCands.trkEta) <= 2.5) & \
             (abs(events.PFCands.dz) < 10) & \
             (events.PFCands.dzErr < 0.05)
@@ -279,8 +285,8 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": 0.0
         }, with_name="Momentum4D")
         # More track selection requirement
-        cut = (events.lostTracks.fromPV > 2) & \
-            (events.lostTracks.pt >= 2.5) & \
+        cut = (events.lostTracks.fromPV > 1) & \
+            (events.lostTracks.pt >= 1) & \
             (abs(events.lostTracks.eta) <= 1.0) \
             & (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
@@ -382,7 +388,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
 
         # Now deal with the Z candidate
-
         Zcands = leptons[:,0] + leptons[:,1]
         
         # ------------------------------------------------------------------------------
@@ -402,9 +407,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # From here I am working with Z boson reconstruction from the daugther leptons
         outlep["Z_pt"] = Zcands.pt[:] 
-
         outlep["Z_eta"] = Zcands.eta[:] 
-
         outlep["Z_phi"] = Zcands.phi[:] 
         outlep["Z_m"] =  Zcands.mass[:]
 
@@ -439,39 +442,45 @@ class SUEP_cluster(processor.ProcessorABC):
  
         if doTracks:
           outnumtrk["Ntracks"] = Ntracks
-          outnumtrk["nTracks"]     = ak.num(tracks, axis=1)
-          """spher =  self.sphericity(tracks, 2)
-          outnumtrk["spher_lab"] = 1.5*(spher[:,1] + spher[:,0])
-          print(spher[0:4,0], spher[0:4,1], spher[0:4,2])
+          #outnumtrk["nTracks"] = ak.num(tracks, axis=1)
+          s, evals = self.sphericity(tracks,2)
+          #for i in range(len(evals)):
+              #print(evals[i][1],"evals[:,1]")
+              #print(evals[i][2],"evals[:,2]")
+              #print(sum(evals[i]),"simple sum")
+              #print(np.mean([abs(evals[i][0]-evals[i][1]),abs(evals[i][1]-evals[i][2]),abs(evals[i][0]-evals[i][2])]),"mean of difference")
 
           boost_Zinv = ak.zip({
-            "px": Zcands.px,
-            "py": Zcands.py,
-            "pz": Zcands.pz,
-            "mass": Zcands.mass
+              "px": Zcands.px,
+              "py": Zcands.py,
+              "pz": Zcands.pz,
+              "mass": Zcands.mass
+          }, with_name="Momentum4D") 
+
+          # This is giving the sum of momenta of all tracks in an event, with signs reversed. Ps = -Pz = sum of Pparticles
+          boost_tracks = ak.zip({
+              "px": ak.sum(tracks.px, axis=1)*-1,
+              "py": ak.sum(tracks.py, axis=1)*-1,
+              "pz": ak.sum(tracks.pz, axis=1)*-1,
+              "mass": 125 # Assuming it is a Higgs?
           }, with_name="Momentum4D")
 
-          boost_tracks = ak.zip({
-            "px": ak.sum(tracks.px, axis=1)*-1,
-            "py": ak.sum(tracks.py, axis=1)*-1,
-            "pz": ak.sum(tracks.pz, axis=1)*-1,
-            "mass": 125 # Assuming it is a Higgs?
-          }, with_name="Momentum4D")
+          #print(boost_Zinv,"Attributes of reconstructed Z will be shown!")
+          #print(boost_tracks,"Attributes of reconstructed S will be shown!(momenta should be opposite to that of Z)")
 
           tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
           tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
-          
-          print("_")
-          spherZ =  self.sphericity(tracks_boostedagainstZ, 2)
-          outnumtrk["spher_Z"] = 1.5*(spherZ[:,1] + spherZ[:,0])
-          print(spherZ[0:4,0], spherZ[0:4,1], spherZ[0:4,2])
-          print("_")
-          sphertracks =  self.sphericity(tracks_boostedagainsttracks, 2)
-          outnumtrk["spher_tracks"] = 1.5*(sphertracks[:,1] + sphertracks[:,0])
-          print(sphertracks[0:4,0], sphertracks[0:4,1], sphertracks[0:4,2])"""
-  
+
+          #print(tracks_boostedagainstZ[0][0],"tracks_boostedagainstZ")
+          #print(tracks_boostedagainsttracks[0][0],"tracks_boostedagainsttracks")
+
+          spherZ, evalsZ = self.sphericity(tracks_boostedagainstZ,2) #Gives the sphericity in S frame
+          print(spherZ,"spherZ, supposed to give tensors")
+
+
         if doGen:
           if debug: print("Saving gen variables")
+          
           outlep["genZpt"]  = genZ.pt[:,0]
           outlep["genZeta"] = genZ.eta[:,0]
           outlep["genZphi"] = genZ.phi[:,0]

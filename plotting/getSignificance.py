@@ -3,10 +3,10 @@ import os
 import sys
 
 ######### Configuration parameters ##########
-SFile  = "../outputZH/out.hdf5" # signal file
-BFile  = "../outputDY/out.hdf5" # background file
-channel= "vars" # Channel name inside the analyzer
-var    = "nTracks" #Var name inside the analyzer
+SFile  = "../outputZH_archive/NumTrk[1.5,1.0]out.hdf5" # signal file
+BFile  = "../outputDY_archive/NumTrk[1.5,1.0]out.hdf5" # background file
+channel= "numtrkvars" # Channel name inside the analyzer
+var    = "Ntracks" #Var name inside the analyzer
 cut    = float(sys.argv[1]) # Cut value
 where  = sys.argv[2] # L == less than, G== great than. For which region to compute significance
 what   = "StoSqrtSB" # What to report: StoB, StoSqrtSB, StoSqrtB
@@ -40,6 +40,7 @@ for idx, val in enumerate(S[channel][var]):
     nSpass += weightS[idx]*normS
   if where == "G" and val >= cut:
     nSpass += weightS[idx]*normS
+    #print(idx,nBpass,"This is index and nSpass")
 
 ## Background loop
 for idx, val in enumerate(B[channel][var]):
@@ -47,10 +48,11 @@ for idx, val in enumerate(B[channel][var]):
     nBpass += weightB[idx]*normB
   if where == "G" and val >= cut:
     nBpass += weightB[idx]*normB
-    print(idx,nBpass)
+    #print(idx,nBpass,"This is index and nBpass")
 
 print(nSpass, "This is final nSpass")
 print(nBpass, "This is final nBpass")
+print((addSys*nBpass), "This is systematic uncertainty")
 
 if what == "StoSqrtSB":
   print("S/sqrt(S+B) = %1.3f for a cut of %1.3f in %s"%(nSpass/(nSpass+nBpass+(addSys*nBpass)**2)**0.5, cut, var))

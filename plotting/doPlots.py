@@ -9,7 +9,7 @@ output = "/eos/user/j/jkil/www"
 DY = [pd.HDFStore("../outputDY/"+f, 'r') for f in os.listdir("../outputDY/")]
 ZH = [pd.HDFStore("../outputZH/"+f, 'r') for f in os.listdir("../outputZH/")]
 
-channel   = "jetvars3"
+channel   = "numtrkvars"
 normalize = True
 
 plots = {
@@ -25,6 +25,7 @@ plots = {
   #"Zphi":["Z_phi",50,-np.pi,np.pi,"\phi_{Z}"],
   #"Zm":["Z_m",50,0,150,"m_{Z} [GeV]"],
 
+
   #"onejet p_{T}":["onejet_pt",50,0,150,"p_{T} [GeV]"],
   #"onejet eta":["onejet_eta",50,-3.14,3.14,"eta"],
   #"onejet phi":["onejet_phi",50,0,3.14,"phi"],
@@ -37,18 +38,19 @@ plots = {
   #"twojets2 eta":["twojets2_eta",50,-3.14,3.14,"eta"],
   #"twojets2 phi":["twojets2_phi",50,0,3.14,"phi"],
 
-  "threejets1 p_{T}":["threejets1_pt",50,0,150,"p_{T} [GeV]"],
-  "threejets1 eta":["threejets1_eta",50,-3.14,3.14,"eta"],
-  "threejets1 phi":["threejets1_phi",50,0,3.14,"phi"],
+  #"threejets1 p_{T}":["threejets1_pt",50,0,150,"p_{T} [GeV]"],
+  #"threejets1 eta":["threejets1_eta",50,-3.14,3.14,"eta"],
+  #"threejets1 phi":["threejets1_phi",50,0,3.14,"phi"],
 
-  "threejets2 p_{T}":["threejets2_pt",50,0,150,"p_{T} [GeV]"],
-  "threejets2 eta":["threejets2_eta",50,-3.14,3.14,"eta"],
-  "threejets2 phi":["threejets2_phi",50,0,3.14,"phi"],
+  #"threejets2 p_{T}":["threejets2_pt",50,0,150,"p_{T} [GeV]"],
+  #"threejets2 eta":["threejets2_eta",50,-3.14,3.14,"eta"],
+  #"threejets2 phi":["threejets2_phi",50,0,3.14,"phi"],
 
-  "threejets3 p_{T}":["threejets3_pt",50,0,150,"p_{T} [GeV]"],
-  "threejets3 eta":["threejets3_eta",50,-3.14,3.14,"eta"],
-  "threejets3 phi":["threejets3_phi",50,0,3.14,"phi"],
+  #"threejets3 p_{T}":["threejets3_pt",50,0,150,"p_{T} [GeV]"],
+  #"threejets3 eta":["threejets3_eta",50,-3.14,3.14,"eta"],
+  #"threejets3 phi":["threejets3_phi",50,0,3.14,"phi"],
 
+  "NumTrk(3,3)":["Ntracks",50,0,100,"counts(pt = 3, fromPV = 3)"],
 }
 
 for p in plots:
@@ -58,7 +60,7 @@ for p in plots:
   sumwB = 0
   for d in DY:
     #print d.get_storer("vars").attrs.metadata
-    sumwB += d.get_storer("jetvars3").attrs.metadata["gensumweight"]
+    sumwB += d.get_storer("numtrkvars").attrs.metadata["gensumweight"]
     weightsDY = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
       if idx%1000 == 0: print (idx)
@@ -68,7 +70,7 @@ for p in plots:
   for d in ZH:
     if idx%1000 == 0: print (idx)
     #print d.get_storer("vars").attrs.metadata
-    sumwS += d.get_storer("jetvars3").attrs.metadata["gensumweight"]
+    sumwS += d.get_storer("numtrkvars").attrs.metadata["gensumweight"]
     weightsZS = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
       h2.Fill(val, weightsZS[idx])
