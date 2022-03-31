@@ -27,6 +27,9 @@ echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset=
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
 rm temp.root
 
+echo "----- Merging HDF5 Files: "
+python merge.py
+
 #echo "----- transferring output to scratch :"
 echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
 xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
@@ -50,8 +53,8 @@ when_to_transfer_output = ON_EXIT
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
-x509userproxy         = /home/submit/freerc/x509up_u206148
-+AccountingGroup = "analysis.freerc"
+x509userproxy         = /home/submit/lavezzo/x509up_u210253
++AccountingGroup = "analysis.lavezzo"
 #requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
 #requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
 #requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
@@ -160,6 +163,7 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
+                        "../merge.py",
                         "../condor_SUEP_WS.py",
                         "../workflows",
                         #"../workflows/SUEP_coffea.py",
