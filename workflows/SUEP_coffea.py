@@ -15,12 +15,7 @@ import fastjet
 from coffea import hist, processor
 import vector
 from typing import List, Optional
-import onnx
 import onnxruntime as ort
-from onnx import numpy_helper
-from scipy.sparse import csr_matrix
-import torch
-import torch.cuda as tcuda
 vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -43,6 +38,10 @@ class SUEP_cluster(processor.ProcessorABC):
     @property
     def accumulator(self):
         return self._accumulator
+    
+    def softmax(self, data):
+        # some numpy magic
+        return np.exp(data)/(np.exp(data).sum(axis=-1)[:,:,None])
 
     def sphericity(self, particles, r):
         norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
@@ -68,31 +67,37 @@ class SUEP_cluster(processor.ProcessorABC):
     def process_images(self, Cleaned_cands, ort_sess):
 
         #Set up the image size and pixels
-        eta_pix = 280
-        phi_pix = 360
+        eta_pix = 500
+        phi_pix = 500
         eta_span = (-2.5, 2.5)
         phi_span = (-np.pi, np.pi)
         eta_scale = eta_pix/(eta_span[1]-eta_span[0])
         phi_scale = phi_pix/(phi_span[1]-phi_span[0])
 
         #Turn the PFcand info into indexes on the image map. Normalize the pt to be applied
-        idx_eta = ak.values_astype(np.floor((Cleaned_cands.eta-eta_span[0])*eta_scale),"int64")-1
-        idx_phi = ak.values_astype(np.floor((Cleaned_cands.phi-phi_span[0])*phi_scale),"int64")-1
+        idx_eta = ak.values_astype(np.floor((Cleaned_cands.eta-eta_span[0])*eta_scale),"int64")
+        idx_phi = ak.values_astype(np.floor((Cleaned_cands.phi-phi_span[0])*phi_scale),"int64")
+        idx_eta = ak.where(idx_eta == 500, 499, idx_eta)
+        idx_phi = ak.where(idx_phi == 500, 499, idx_phi)
         pt = Cleaned_cands.pt
-        pt = pt/ak.max(pt,axis=-1)#normalize the pt values
 
         N_batches = len(Cleaned_cands)
         to_infer = np.zeros((N_batches, 1, eta_pix, phi_pix))
 
         for event_i, events in enumerate(pt):
-             to_infer[event_i,0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]         
+            to_infer[event_i,0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
+            m = np.mean(to_infer[event_i,0,:,:])
+            s = np.std(to_infer[event_i,0,:,:])
+            to_infer[event_i,0,:,:] = (to_infer[event_i,0,:,:]-m)/s
 
         #Running the inference in batch mode
         input_name = ort_sess.get_inputs()[0].name
-        output_name = ort_sess.get_outputs()[0].name
-        outputs =  ort_sess.run([output_name], {input_name: to_infer.astype(np.float32)})[0]
 
-        return outputs
+        # grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
+        outputs =  ort_sess.run(None, {input_name: to_infer.astype(np.float32)})[1]
+        otuputs_softmax = self.softmax(outputs)
+
+        return otuputs_softmax
 
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
@@ -119,8 +124,8 @@ class SUEP_cluster(processor.ProcessorABC):
         store.put(gname, df)
         store.get_storer(gname).attrs.metadata = kwargs
         
-    def save_dfs(self, dfs, df_names):
-        fname = "out.hdf5"
+    def save_dfs(self, dfs, df_names, fname):
+        #fname = "out.hdf5"
         subdirs = []
         store = pd.HDFStore(fname)
         if self.output_location is not None:
@@ -198,7 +203,7 @@ class SUEP_cluster(processor.ProcessorABC):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
         if self.isMC: self.gensumweight = ak.sum(events.genWeight)
-
+        
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
@@ -231,12 +236,19 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #These lines control the inference from JetSSD. Conversion is done elsewhere
         #The inference skips the lost tracks for now. 
+        SUEP_pred_full = np.zeros(len(Cleaned_cands))*np.nan
         if self.do_inf:    
-            ort_sess = ort.InferenceSession('data/augmented_model.onnx')
-            SSD_Jets = self.process_images(Cleaned_cands, ort_sess)
-
-        print("Jet SSD jets", ak.max(SSD_Jets, axis=-2).to_list())
+            ort_sess = ort.InferenceSession('data/march14_disco_500x500_batch25_obj46_alpha1.onnx')
+            pass1050 = events.HLT.PFHT1050.to_list()
             
+            if ak.any(pass1050): 
+                Cleaned_cands_1050 = Cleaned_cands[pass1050]
+                SSD_Jets = self.process_images(Cleaned_cands_1050, ort_sess)
+                                
+                # highest SUEP prediction per event
+                SUEP_pred = np.max(SSD_Jets[:,:,1], axis=-1)    
+                SUEP_pred_full[pass1050] = SUEP_pred
+                
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
         Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
@@ -290,6 +302,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs
         out_vars["PV_npvsGood"] = events.PV.npvsGood
+        out_vars["SSD_SUEP_pred"] = SUEP_pred_full
     
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
@@ -316,7 +329,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if len(tracks) == 0:
             print("No events pass the selections. Saving empty outputs.")
             out_ch = pd.DataFrame(['empty'], columns=['empty'])
-            self.save_dfs([out_ch, out_vars],["ch","vars"])
+            self.save_dfs([out_ch, out_vars],["ch","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_"))
             return output
         
         ### SUEP_mult
@@ -419,7 +432,7 @@ class SUEP_cluster(processor.ProcessorABC):
         ### save outputs
         # ak to pandas, if needed. Then pandas to hdf5
         if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
-        self.save_dfs([out_ch, out_vars],["ch","vars"])
+        self.save_dfs([out_ch, out_vars],["ch","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
 
         return output
 
