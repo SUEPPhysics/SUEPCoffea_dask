@@ -30,9 +30,9 @@ for instance in modules_era:
         treename='Events',
         processor_instance=instance,
         executor=futures_executor,
-        executor_args={'workers': 10,
+        executor_args={'workers': 5,
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=500000
+        chunksize=100
     )
