@@ -27,12 +27,15 @@ echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset=
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
 rm temp.root
 
-echo "----- Merging HDF5 Files: "
-python merge.py
+echo "python3 merge.py"
+python3 merge.py
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
 xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+
+echo "rm *.hdf5"
+rm *.hdf5
 
 echo " ------ THE END (everyone dies !) ----- "
 """
@@ -117,7 +120,7 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             print(sample_name)
             if os.path.isdir(jobs_dir):
@@ -163,12 +166,12 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        "../merge.py",
-                        "../condor_SUEP_WS.py",
-                        "../workflows",
-                        #"../workflows/SUEP_coffea.py",
-                        #"../workflows/SumWeights.py",
-                        "../data",
+                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/merge.py",
+                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/condor_SUEP_WS.py",
+                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/workflows",
+                        #"/home/submit/lavezzo/SUEP/SUEPCoffea_dask/workflows/SUEP_coffea.py",
+                        #"/home/submit/lavezzo/SUEP/SUEPCoffea_dask/workflows/SumWeights.py",
+                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/data",
                         proxy_copy
                     ]),
                     just_file=just_file,

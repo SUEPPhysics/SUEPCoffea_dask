@@ -329,7 +329,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if len(tracks) == 0:
             print("No events pass the selections. Saving empty outputs.")
             out_ch = pd.DataFrame(['empty'], columns=['empty'])
-            self.save_dfs([out_ch, out_vars],["ch","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_"))
+            self.save_dfs([out_ch, out_vars],["ch","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
         ### SUEP_mult

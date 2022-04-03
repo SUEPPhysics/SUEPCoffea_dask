@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"       , type=str, help="Dataset tag.")
 parser.add_argument("-r"   , "--resubmits" , type=int, default=10     , help="Number of resubmissions.", required=False)
 parser.add_argument("-hours"   , "--hours"     , type=float, default=1.0  , help="Number of hours per resubmission, in addition to the time between sample submissions.", required=False)
-parser.add_argument("-ms"   , "--movesample"      , type=int, default=1, help="Move each sample after submitting it (accomplishes it during the buffer time between samples set by default in monitor.py).")
+parser.add_argument("-ms"   , "--movesample"      , type=int, default=0, help="Move each sample after submitting it (accomplishes it during the buffer time between samples set by default in monitor.py).")
 parser.add_argument("-m"   , "--move"      , type=int, default=0, help="Move all samples after all submissions (during the buffer specified by -hours).")
 parser.add_argument("-dry" , "--dryrun"    , type=int, default=0, help="running without submission")
 
@@ -51,6 +51,7 @@ if regenerate_proxy:
     shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
 
 
+logging.info("Running resubmission script from "+str(os.environ['HOSTNAME']))
 for i in range(nResubmits):
     logging.info("Resubmission "+str(i))
     logging.info("Removing all jobs...")
@@ -60,12 +61,12 @@ for i in range(nResubmits):
     t_start = time.time()
     
     # delete files that are corrupted
-    if os.path.isdir(moveDir):
-        subDirs = os.listdir(dataDir)
-        for subDir in subDirs:
-            for file in os.listdir(dataDir + subDir):
-                size = os.path.getsize(dataDir + subDir + "/" + file)
-                if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
+    subDirs = os.listdir(dataDir)
+    for subDir in subDirs:
+        for file in os.listdir(dataDir + subDir):
+            size = os.path.getsize(dataDir + subDir + "/" + file)
+            if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
+            elif size < 5000: subprocess.run(['rm',dataDir + subDir + "/" + file])
         
     if not options.dryrun:
         
