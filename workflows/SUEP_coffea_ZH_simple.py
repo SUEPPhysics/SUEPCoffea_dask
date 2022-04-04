@@ -37,30 +37,33 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def sphericity(self, particles, r):
-        norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
-        s = np.array([[
-                       ak.sum(particles.px * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.px * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.px * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
-                      ],
-                      [
-                       ak.sum(particles.py * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.py * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.py * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
-                      ],
-                      [
-                       ak.sum(particles.pz * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.pz * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.pz * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
-                      ]])
 
-        count = 0
-        s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
+        s = []
         evals = []
+
+        for idx in range(len(particles)):
+            if len(particles[idx]) > 0:
+                print("Loop going on...")
+                norm = ak.sum(particles.p[idx] ** r, keepdims=True)
+                s.append(
+                      [[
+                        ak.sum(particles.px[idx] * particles.px[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
+                        ak.sum(particles.px[idx] * particles.py[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
+                        ak.sum(particles.px[idx] * particles.pz[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm
+                       ],
+                       [
+                        ak.sum(particles.py[idx] * particles.px[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
+                        ak.sum(particles.py[idx] * particles.py[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
+                        ak.sum(particles.py[idx] * particles.pz[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm
+                       ],
+                       [
+                        ak.sum(particles.pz[idx] * particles.px[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
+                        ak.sum(particles.pz[idx] * particles.py[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
+                        ak.sum(particles.pz[idx] * particles.pz[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm
+                       ]])
+
         for idx in range(len(s)):
-            if len(particles[idx])>0: #sorting out events with 0 tracks
-                evals.append(np.linalg.eigvals(s[idx]))
-        #print(evals) # I want this to print clean arrays without dtype...
+            evals.append(np.linalg.eigvals(s[idx]))
         return s, evals
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
@@ -411,6 +414,7 @@ class SUEP_cluster(processor.ProcessorABC):
         outlep["Z_phi"] = Zcands.phi[:] 
         outlep["Z_m"] =  Zcands.mass[:]
 
+
         # From here I am working with jets
         # ak4jets is an array of arrays.        
         # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
@@ -443,13 +447,8 @@ class SUEP_cluster(processor.ProcessorABC):
         if doTracks:
           outnumtrk["Ntracks"] = Ntracks
           #outnumtrk["nTracks"] = ak.num(tracks, axis=1)
-          s, evals = self.sphericity(tracks,2)
-          #for i in range(len(evals)):
-              #print(evals[i][1],"evals[:,1]")
-              #print(evals[i][2],"evals[:,2]")
-              #print(sum(evals[i]),"simple sum")
-              #print(np.mean([abs(evals[i][0]-evals[i][1]),abs(evals[i][1]-evals[i][2]),abs(evals[i][0]-evals[i][2])]),"mean of difference")
 
+          # Reconstructing by setting pS = -pZ 
           boost_Zinv = ak.zip({
               "px": Zcands.px,
               "py": Zcands.py,
@@ -457,7 +456,8 @@ class SUEP_cluster(processor.ProcessorABC):
               "mass": Zcands.mass
           }, with_name="Momentum4D") 
 
-          # This is giving the sum of momenta of all tracks in an event, with signs reversed. Ps = -Pz = sum of Pparticles
+
+          # Reconstructing by summing all tracks
           boost_tracks = ak.zip({
               "px": ak.sum(tracks.px, axis=1)*-1,
               "py": ak.sum(tracks.py, axis=1)*-1,
@@ -465,18 +465,65 @@ class SUEP_cluster(processor.ProcessorABC):
               "mass": 125 # Assuming it is a Higgs?
           }, with_name="Momentum4D")
 
-          #print(boost_Zinv,"Attributes of reconstructed Z will be shown!")
-          #print(boost_tracks,"Attributes of reconstructed S will be shown!(momenta should be opposite to that of Z)")
-
           tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
           tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
 
-          #print(tracks_boostedagainstZ[0][0],"tracks_boostedagainstZ")
-          #print(tracks_boostedagainsttracks[0][0],"tracks_boostedagainsttracks")
+          # This part is taking tons of time.... UGH!
+          spher, evals = self.sphericity(tracks,2) # Gives the sphericity in Lab frame
+          spherZ, evalsZ = self.sphericity(tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
 
-          spherZ, evalsZ = self.sphericity(tracks_boostedagainstZ,2) #Gives the sphericity in S frame
-          print(spherZ,"spherZ, supposed to give tensors")
+          print("Done part 4!")
 
+          ###### OUTPUT FOR SPHERICITY ######
+          print(evals[:],"printing evals[:]") 
+          print(1.5*(evals[:][1] + evals[:][2]),"Printing scalar sphericity in L frame")
+
+          outnumtrk["scalarSpher_L"] = 1.5*(evals[:][1] + evals[:][2])
+          outnumtrk["scalarSpher_Z"] = 1.5*(evalsZ[:][1] + evalsZ[:][2])
+         
+          outnumtrk["eval_L1"] = evals[:][0]
+          outnumtrk["eval_L2"] = evals[:][1]
+          outnumtrk["eval_L3"] = evals[:][2]
+ 
+          outnumtrk["eval_Z1"] = evalsZ[:][0]
+          outnumtrk["eval_Z2"] = evalsZ[:][1]
+          outnumtrk["eval_Z3"] = evalsZ[:][2]
+
+          #print(1.5*(evalsZ[:][1] + evalsZ[:][2]),"Should print array of scalar spher")
+          
+          """
+          #counter = 0
+          #for i in range(len(evals)):
+              #print(evals[i][1],"evals[:,1]")
+              #print(evals[i][2],"evals[:,2]")
+              
+              #meandiffL = np.mean([abs(evals[i][0]-evals[i][1]),abs(evals[i][1]-evals[i][2]),abs(evals[i][0]-evals[i][2])])
+              #meandiffS = np.mean([abs(evalsZ[i][0]-evalsZ[i][1]),abs(evalsZ[i][1]-evalsZ[i][2]),abs(evalsZ[i][0]-evalsZ[i][2])])
+              #scalarSpherL = 1.5*(evals[i][1] + evals[i][2])
+              #scalarSpherS = 1.5*(evalsZ[i][1] + evalsZ[i][2])
+
+              #print(evals[i],"evals in Lab frame")
+              #print(evalsZ[i],"evals in S frame")
+
+              #print(sum(evals[i]),"simple sum of evals in Lab frame")
+              #print(meandiffL,"mean of difference in Lab frame")
+
+              #print(sum(evalsZ[i]),"simple sum of evals in S frame")
+              #print(meandiffS,"mean of difference in S frame")
+
+              #print(scalarSpherL,"Scalar sphericity in lab frame")
+              #print(scalarSpherS,"Scalar sphericity in S frame\n")
+
+              #if meandiffL > meandiffS:
+                  #counter += 1
+                  #print(meandiffL,"mean of difference in Lab frame")
+                  #print(meandiffS,"mean of difference in S frame")
+
+          #print(counter, "/", len(evals)," number of events where meandiffL is greater than meandiffS, which means it's more spherical in S frame!")
+
+          #outnumtrk["scalarSpherL"] = scalarSpherL
+          #outnumtrk["scalarSpherS"] = scalarSpherS
+          """
 
         if doGen:
           if debug: print("Saving gen variables")
@@ -504,7 +551,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
-        if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
+        #if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if debug: print("DFS saving....")
         self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"], chunkTag)
 
