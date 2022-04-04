@@ -36,7 +36,7 @@ redirector = "root://t3serv017.mit.edu/"
 # e.g. spher_g0p25 == "sphericity must be greater than 0.25"
 default_ABCD = ["spher_g0p25", 
                 "nconst_g10"]
-pv_l30_study = default_ABCD + "pv_l30"
+pv_l30_study = default_ABCD + ["pv_l30"]
 selections = default_ABCD         # selections applied to dfs
 
 # get list of files
