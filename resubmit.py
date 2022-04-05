@@ -2,7 +2,7 @@ import sys, os, subprocess
 import argparse
 import logging
 import time
-import shutils
+import shutil
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"       , type=str, help="Dataset tag.")
 parser.add_argument("-r"   , "--resubmits" , type=int, default=10     , help="Number of resubmissions.", required=False)
 parser.add_argument("-hours"   , "--hours"     , type=float, default=1.0  , help="Number of hours per resubmission, in addition to the time between sample submissions.", required=False)
-parser.add_argument("-ms"   , "--movesample"      , type=int, default=1, help="Move each sample after submitting it (accomplishes it during the buffer time between samples set by default in monitor.py).")
+parser.add_argument("-ms"   , "--movesample"      , type=int, default=0, help="Move each sample after submitting it (accomplishes it during the buffer time between samples set by default in monitor.py).")
 parser.add_argument("-m"   , "--move"      , type=int, default=0, help="Move all samples after all submissions (during the buffer specified by -hours).")
 parser.add_argument("-dry" , "--dryrun"    , type=int, default=0, help="running without submission")
 
@@ -70,10 +70,12 @@ for i in range(nResubmits):
     if not options.dryrun:
         
         logging.info("Executing monitor.py for data...")
-        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_data_A01.txt', options.movesample))
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2016_data_A01.txt', options.movesample))
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2017_data_A01.txt', options.movesample))
         logging.info("Executing monitor.py for MC...")
-        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_MC_A01.txt', options.movesample))
-    
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2016_MC_A01.txt', options.movesample))
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2017_MC_A01.txt', options.movesample))    
+
     if options.move:
         
         if not os.path.isdir(moveDir): os.system("mkdir " + moveDir)
