@@ -22,9 +22,9 @@ hostname
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "xrdcp $2 temp.root"
-xrdcp $2 temp.root
+#xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 rm temp.root
 
 #echo "----- transferring output to scratch :"
@@ -37,7 +37,8 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 1024
+request_disk          = 4G
+request_memory        = 4G
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
