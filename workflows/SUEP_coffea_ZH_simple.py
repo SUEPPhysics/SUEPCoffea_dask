@@ -37,34 +37,28 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def sphericity(self, particles, r):
+        particles = particles[ak.num(particles) != 0]
+        norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
 
-        s = []
-        evals = []
-
-        for idx in range(len(particles)):
-            if len(particles[idx]) > 0:
-                print("Loop going on...")
-                norm = ak.sum(particles.p[idx] ** r, keepdims=True)
-                s.append(
-                      [[
-                        ak.sum(particles.px[idx] * particles.px[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
-                        ak.sum(particles.px[idx] * particles.py[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
-                        ak.sum(particles.px[idx] * particles.pz[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm
-                       ],
-                       [
-                        ak.sum(particles.py[idx] * particles.px[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
-                        ak.sum(particles.py[idx] * particles.py[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
-                        ak.sum(particles.py[idx] * particles.pz[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm
-                       ],
-                       [
-                        ak.sum(particles.pz[idx] * particles.px[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
-                        ak.sum(particles.pz[idx] * particles.py[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm,
-                        ak.sum(particles.pz[idx] * particles.pz[idx] * particles.p[idx] ** (r-2.0), keepdims=True)/norm
+        s = np.array([[
+                       ak.sum(particles.px * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                       ak.sum(particles.px * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                       ak.sum(particles.px * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
+                      ],
+                      [
+                       ak.sum(particles.py * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                       ak.sum(particles.py * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                       ak.sum(particles.py * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
+                      ],
+                      [
+                       ak.sum(particles.pz * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                        ak.sum(particles.pz * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                        ak.sum(particles.pz * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
                        ]])
 
-        for idx in range(len(s)):
-            evals.append(np.linalg.eigvals(s[idx]))
-        return s, evals
+        s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
+        evals = np.sort(np.linalg.eigvals(s))
+        return evals
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -83,6 +77,7 @@ class SUEP_cluster(processor.ProcessorABC):
                         jet_collection[field][subfield]
                     )
             else:
+                print(len(jet_collection),"printing jet collection")
                 output[field] = ak.to_numpy(jet_collection[field])
         return output
 
@@ -469,14 +464,12 @@ class SUEP_cluster(processor.ProcessorABC):
           tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
 
           # This part is taking tons of time.... UGH!
-          spher, evals = self.sphericity(tracks,2) # Gives the sphericity in Lab frame
-          spherZ, evalsZ = self.sphericity(tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
+          evals = self.sphericity(tracks,2) # Gives the sphericity in Lab frame
+          evalsZ = self.sphericity(tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
 
-          print("Done part 4!")
 
           ###### OUTPUT FOR SPHERICITY ######
-          print(evals[:],"printing evals[:]") 
-          print(1.5*(evals[:][1] + evals[:][2]),"Printing scalar sphericity in L frame")
+          #print(1.5*(evals[:][1] + evals[:][2]),"Printing scalar sphericity in L frame")
 
           outnumtrk["scalarSpher_L"] = 1.5*(evals[:][1] + evals[:][2])
           outnumtrk["scalarSpher_Z"] = 1.5*(evalsZ[:][1] + evalsZ[:][2])
@@ -551,7 +544,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
-        #if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
+        if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if debug: print("DFS saving....")
         self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"], chunkTag)
 
