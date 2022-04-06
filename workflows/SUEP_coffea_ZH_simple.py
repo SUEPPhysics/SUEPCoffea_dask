@@ -36,8 +36,9 @@ class SUEP_cluster(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
-    def sphericity(self, particles, r):
+    def sphericity(self, events, particles, r):
         particles = particles[ak.num(particles) != 0]
+        events = events[ak.num(particles) != 0]
         norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
 
         s = np.array([[
@@ -58,7 +59,10 @@ class SUEP_cluster(processor.ProcessorABC):
 
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
         evals = np.sort(np.linalg.eigvals(s))
-        return evals
+        eval1 = np.moveaxis(evals,0,1)[0]
+        eval2 = np.moveaxis(evals,0,1)[1]
+        eval3 = np.moveaxis(evals,0,1)[2]
+        return events, particles, evals, eval1, eval2, eval3
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -77,7 +81,6 @@ class SUEP_cluster(processor.ProcessorABC):
                         jet_collection[field][subfield]
                     )
             else:
-                print(len(jet_collection),"printing jet collection")
                 output[field] = ak.to_numpy(jet_collection[field])
         return output
 
@@ -333,6 +336,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out2jets  = {}
         out3jets  = {}
         outnumtrk = {}
+        outSpher = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -362,7 +366,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         if debug: print("%i events pass trigger cuts. Selecting jets..."%len(events))
         event_onejet, event_twojets, event_threejets, onejet, twojets, threejets, [electrons, muons] = self.selectByJets(events, [electrons, muons])
-	# Sorting jets by pt.
+	    # Sorting jets by pt.
         highpt_1jet = ak.argsort(onejet.pt, axis=1, ascending=False, stable=True)
         highpt_2jet = ak.argsort(twojets.pt, axis=1, ascending=False, stable=True)
         highpt_3jet = ak.argsort(threejets.pt, axis=1, ascending=False, stable=True)
@@ -463,27 +467,24 @@ class SUEP_cluster(processor.ProcessorABC):
           tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
           tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
 
-          # This part is taking tons of time.... UGH!
-          evals = self.sphericity(tracks,2) # Gives the sphericity in Lab frame
-          evalsZ = self.sphericity(tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
+          clean_events, clean_particles, evals, eval1, eval2, eval3 = self.sphericity(events, tracks,2) # Gives the sphericity in Lab frame
+          clean_eventsZ, clean_particlesZ, evalsZ, eval1Z, eval2Z, eval3Z = self.sphericity(events, tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
 
+          #outSpher["scalarSpher"] = ak.num(evals)
 
           ###### OUTPUT FOR SPHERICITY ######
-          #print(1.5*(evals[:][1] + evals[:][2]),"Printing scalar sphericity in L frame")
 
-          outnumtrk["scalarSpher_L"] = 1.5*(evals[:][1] + evals[:][2])
-          outnumtrk["scalarSpher_Z"] = 1.5*(evalsZ[:][1] + evalsZ[:][2])
-         
-          outnumtrk["eval_L1"] = evals[:][0]
-          outnumtrk["eval_L2"] = evals[:][1]
-          outnumtrk["eval_L3"] = evals[:][2]
+          outSpher["scalarSpher_L"] = 1.5*(eval2[:] + eval3[:])
+          outSpher["scalarSpher_Z"] = 1.5*(eval2Z[:] + eval3Z[:])
+          """
+          outSpher["eval_L1"] = evals[:][0]
+          outSpher["eval_L2"] = evals[:][1]
+          outSpher["eval_L3"] = evals[:][2]
  
-          outnumtrk["eval_Z1"] = evalsZ[:][0]
-          outnumtrk["eval_Z2"] = evalsZ[:][1]
-          outnumtrk["eval_Z3"] = evalsZ[:][2]
-
-          #print(1.5*(evalsZ[:][1] + evalsZ[:][2]),"Should print array of scalar spher")
-          
+          outSpher["eval_Z1"] = evalsZ[:][0]
+          outSpher["eval_Z2"] = evalsZ[:][1]
+          outSpher["eval_Z3"] = evalsZ[:][2]
+          """
           """
           #counter = 0
           #for i in range(len(evals)):
@@ -537,6 +538,8 @@ class SUEP_cluster(processor.ProcessorABC):
           out2jets["genweight"]= event_twojets.genWeight[:]
           out3jets["genweight"]= event_threejets.genWeight[:]
           outnumtrk["genweight"]= events.genWeight[:]
+          outSpher["genweight"]= clean_events.genWeight[:]
+          
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
@@ -545,8 +548,9 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
         if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
+        if not isinstance(outSpher, pd.DataFrame): outSpher = self.ak_to_pandas(outSpher)
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars"], chunkTag)
+        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk, outSpher],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars","sphervars"], chunkTag)
 
         return output
 
