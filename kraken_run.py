@@ -22,9 +22,9 @@ hostname
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "xrdcp $2 temp.root"
-xrdcp $2 temp.root
+#xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 rm temp.root
 
 echo "python3 merge.py"
@@ -43,7 +43,9 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 1024
+request_disk          = 10GB
+request_memory        = 10GB
+request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
@@ -166,12 +168,12 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/merge.py",
-                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/condor_SUEP_WS.py",
-                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/workflows",
-                        #"/home/submit/lavezzo/SUEP/SUEPCoffea_dask/workflows/SUEP_coffea.py",
-                        #"/home/submit/lavezzo/SUEP/SUEPCoffea_dask/workflows/SumWeights.py",
-                        "/home/submit/lavezzo/SUEP/SUEPCoffea_dask/data",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/merge.py",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/condor_SUEP_WS.py",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows",
+                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SUEP_coffea.py",
+                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SumWeights.py",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/data",
                         proxy_copy
                     ]),
                     just_file=just_file,
