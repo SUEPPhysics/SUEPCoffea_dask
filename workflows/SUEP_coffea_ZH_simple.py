@@ -37,8 +37,8 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def sphericity(self, events, particles, r):
-        particles = particles[ak.num(particles) != 0]
         events = events[ak.num(particles) != 0]
+        particles = particles[ak.num(particles) != 0]
         norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
 
         s = np.array([[
@@ -58,6 +58,11 @@ class SUEP_cluster(processor.ProcessorABC):
                        ]])
 
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
+
+        for i in range(len(s)):
+            if np.any(s[i]) == np.NaN or np.any(s[i]) == np.inf:
+                print(s[i])
+
         evals = np.sort(np.linalg.eigvals(s))
         eval1 = np.moveaxis(evals,0,1)[0]
         eval2 = np.moveaxis(evals,0,1)[1]
