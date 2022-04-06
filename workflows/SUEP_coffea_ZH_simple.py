@@ -468,56 +468,33 @@ class SUEP_cluster(processor.ProcessorABC):
           tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
 
           clean_events, clean_particles, evals, eval1, eval2, eval3 = self.sphericity(events, tracks,2) # Gives the sphericity in Lab frame
-          clean_eventsZ, clean_particlesZ, evalsZ, eval1Z, eval2Z, eval3Z = self.sphericity(events, tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
-
-          #outSpher["scalarSpher"] = ak.num(evals)
+          clean_eventsZ, clean_particlesZ, evalsZ, evalZ1, evalZ2, evalZ3 = self.sphericity(events, tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
 
           ###### OUTPUT FOR SPHERICITY ######
 
+          ### Evals themselves ###
+          outSpher["eval_L1"] = eval1[:]
+          outSpher["eval_L2"] = eval2[:]
+          outSpher["eval_L3"] = eval3[:]
+          outSpher["eval_Z1"] = evalZ1[:]
+          outSpher["eval_Z2"] = evalZ2[:]
+          outSpher["eval_Z3"] = evalZ3[:]
+
+          ### Scalar Sphericity ###
           outSpher["scalarSpher_L"] = 1.5*(eval2[:] + eval3[:])
-          outSpher["scalarSpher_Z"] = 1.5*(eval2Z[:] + eval3Z[:])
-          """
-          outSpher["eval_L1"] = evals[:][0]
-          outSpher["eval_L2"] = evals[:][1]
-          outSpher["eval_L3"] = evals[:][2]
- 
-          outSpher["eval_Z1"] = evalsZ[:][0]
-          outSpher["eval_Z2"] = evalsZ[:][1]
-          outSpher["eval_Z3"] = evalsZ[:][2]
-          """
-          """
-          #counter = 0
-          #for i in range(len(evals)):
-              #print(evals[i][1],"evals[:,1]")
-              #print(evals[i][2],"evals[:,2]")
-              
-              #meandiffL = np.mean([abs(evals[i][0]-evals[i][1]),abs(evals[i][1]-evals[i][2]),abs(evals[i][0]-evals[i][2])])
-              #meandiffS = np.mean([abs(evalsZ[i][0]-evalsZ[i][1]),abs(evalsZ[i][1]-evalsZ[i][2]),abs(evalsZ[i][0]-evalsZ[i][2])])
-              #scalarSpherL = 1.5*(evals[i][1] + evals[i][2])
-              #scalarSpherS = 1.5*(evalsZ[i][1] + evalsZ[i][2])
+          outSpher["scalarSpher_Z"] = 1.5*(evalZ2[:] + evalZ3[:])
 
-              #print(evals[i],"evals in Lab frame")
-              #print(evalsZ[i],"evals in S frame")
+          ### Mean Difference ###
+          meandiffL = np.empty(len(evals))
+          meandiffZ = np.empty(len(evalsZ))
+          for i in range(len(evals)):
+              meandiffL[i] = np.mean([abs(evals[i][0]-evals[i][1]),abs(evals[i][1]-evals[i][2]),abs(evals[i][2]-evals[i][0])])
 
-              #print(sum(evals[i]),"simple sum of evals in Lab frame")
-              #print(meandiffL,"mean of difference in Lab frame")
+          for i in range(len(evalsZ)):
+              meandiffZ[i] = np.mean([abs(evalsZ[i][0]-evalsZ[i][1]),abs(evalsZ[i][1]-evalsZ[i][2]),abs(evalsZ[i][2]-evalsZ[i][0])])
 
-              #print(sum(evalsZ[i]),"simple sum of evals in S frame")
-              #print(meandiffS,"mean of difference in S frame")
-
-              #print(scalarSpherL,"Scalar sphericity in lab frame")
-              #print(scalarSpherS,"Scalar sphericity in S frame\n")
-
-              #if meandiffL > meandiffS:
-                  #counter += 1
-                  #print(meandiffL,"mean of difference in Lab frame")
-                  #print(meandiffS,"mean of difference in S frame")
-
-          #print(counter, "/", len(evals)," number of events where meandiffL is greater than meandiffS, which means it's more spherical in S frame!")
-
-          #outnumtrk["scalarSpherL"] = scalarSpherL
-          #outnumtrk["scalarSpherS"] = scalarSpherS
-          """
+          outSpher["meanDiff_L"] = meandiffL
+          outSpher["meanDiff_Z"] = meandiffZ
 
         if doGen:
           if debug: print("Saving gen variables")
