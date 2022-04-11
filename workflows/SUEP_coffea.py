@@ -310,8 +310,10 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ngood_fastjets"] = ak.num(ak_inclusive_jets).to_list()
         out_vars["ht"] = ak.sum(ak4jets.pt,axis=-1).to_list()
         out_vars["nLostTracks"] = ak.num(Lost_Tracks_cands).to_list()
-        out_vars["HLT_PFJet500"] = events.HLT.PFJet500.to_list()
-        out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050.to_list()
+        if self.era == 2016:
+            out_vars["HLT_PFHT900"] = events.HLT.PFHT900.to_list()
+        else:
+            out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050.to_list()
         oneAk4jet = (ak.num(ak4jets) >= 1)
         out_vars["eta_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.eta)]
         out_vars["phi_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.phi)]
@@ -332,7 +334,10 @@ class SUEP_cluster(processor.ProcessorABC):
          
         # remove events that fail the HT cut
         #trigger = ((out_vars['HLT_PFJet500'] == 1) | (out_vars['HLT_PFHT1050'] == 1))
-        trigger = ((out_vars['HLT_PFHT1050'] == 1))
+        if self.era == 2016:
+            trigger = ((out_vars['HLT_PFHT900'] == 1))
+        else:
+            trigger = ((out_vars['HLT_PFHT1050'] == 1))
         htCut = ((out_vars['ht'] > 1200) & (trigger))    
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]

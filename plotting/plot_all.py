@@ -117,21 +117,27 @@ QCD_HT_2016 = [
 results = []
 start = time.time()
 
-for sample in QCD_HT_2017:
-    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2017)
-    results.append(pool.apply_async(call_makeplots, (cmd,)))
-for sample in QCD_HT_2016:
-    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2016)
-    results.append(pool.apply_async(call_makeplots, (cmd,)))
+for sample in data_2018:
+    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2018)
+    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+for sample in QCD_2018:
+    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2018)
+    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in QCD_HT_2017:
+#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2017)
+#     results.append(pool.apply_async(call_makeplots, (cmd,)))
+# for sample in QCD_HT_2016:
+#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2016)
+#     results.append(pool.apply_async(call_makeplots, (cmd,)))
 # for sample in data_2017:
 #     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2017)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in data_2016:
 #     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2016)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
-# for sample in SUEP:
-#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1'.format(options.tag, options.output, sample, options.xrootd)
-#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+for sample in SUEP:
+    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1'.format(options.tag, options.output, sample, options.xrootd)
+    results.append(pool.apply_async(call_makeplots, (cmd,))) 
 
 # Close the pool and wait for each running task to complete
 pool.close()

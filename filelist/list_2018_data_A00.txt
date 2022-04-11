@@ -1,5 +1,0 @@
-/store/user/paus/nanosu/A00//JetHT+Run2018A-17Sep2018-v1+MINIAOD
-/store/user/paus/nanosu/A00//JetHT+Run2018B-17Sep2018-v1+MINIAOD
-/store/user/paus/nanosu/A00//JetHT+Run2018C-17Sep2018-v1+MINIAOD
-/store/user/paus/nanosu/A00//JetHT+Run2018D-PromptReco-v1+MINIAOD
-/store/user/paus/nanosu/A00//JetHT+Run2018D-PromptReco-v2+MINIAOD
