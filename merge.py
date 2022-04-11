@@ -23,7 +23,7 @@ metadata_tot = 0
 for ifile, file in enumerate(files):
     
     df_vars, metadata = h5load(file, 'vars') 
-    df, _ = h5load(file, 'ch')
+    df, _ = h5load(file, 'IRM')
     
     ### Error out here
     if type(df_vars) == int: 
@@ -46,7 +46,7 @@ for ifile, file in enumerate(files):
     if 'empty' in list(df.keys()): continue
     if df.shape[0] == 0: continue
     
-    ### MERGE DF_CH
+    ### MERGE DF_IRM
     if type(df_tot) == int: df_tot = df
     else: df_tot = pd.concat((df_tot, df))
     
@@ -59,7 +59,7 @@ if type(df_tot) == int:
     df_tot = pd.DataFrame(['empty'], columns=['empty'])
 store = pd.HDFStore("condor_out.hdf5")
 store.put('vars', df_vars_tot)
-store.put('ch', df_tot)
+store.put('IRM', df_tot)
 store.get_storer('vars').attrs.metadata = metadata_tot
-store.get_storer('ch').attrs.metadata = metadata_tot
+store.get_storer('IRM').attrs.metadata = metadata_tot
 store.close()
