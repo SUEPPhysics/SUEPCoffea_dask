@@ -23,8 +23,8 @@ tag = 'jetIDv2'
 dataset = 'QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM'
 redirector = "root://t3serv017.mit.edu/"
 
-dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,tag,dataset)
-result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
+dataDir = "/scratIRM/{}/SUEP/{}/{}/".format(username,tag,dataset)
+result = subprocess.IRMeck_output(["xrdfs",redirector,"ls",dataDir])
 result = result.decode("utf-8")
 files = result.split("\n")
 files = [f for f in files if '.hdf5' in f]
@@ -40,9 +40,9 @@ def save_dfs(df_tot, df_vars_tot, output):
         df_tot = pd.DataFrame(['empty'], columns=['empty'])
     store = pd.HDFStore(output)
     store.put('vars', df_vars_tot)
-    store.put('ch', df_tot)
+    store.put('IRM', df_tot)
     store.get_storer('vars').attrs.metadata = metadata_tot
-    store.get_storer('ch').attrs.metadata = metadata_tot
+    store.get_storer('IRM').attrs.metadata = metadata_tot
     store.close()
     
 
@@ -61,7 +61,7 @@ for ifile, file in enumerate(files):
     subprocess.run(["xrdcp",xrd_file,dataset+".hdf5"])
     
     df_vars, metadata = h5load(dataset+'.hdf5', 'vars') 
-    df, _ = h5load(dataset+'.hdf5', 'ch')
+    df, _ = h5load(dataset+'.hdf5', 'IRM')
             
     ### Error out here
     if type(df_vars) == int: 
