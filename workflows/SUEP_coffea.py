@@ -67,7 +67,7 @@ class SUEP_cluster(processor.ProcessorABC):
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
 
-    def process_images(self, Cleaned_cands, ort_sess):
+    def process_images(self, events, ort_sess):
 
         #Set up the image size and pixels
         eta_pix = 280
@@ -77,41 +77,68 @@ class SUEP_cluster(processor.ProcessorABC):
         eta_scale = eta_pix/(eta_span[1]-eta_span[0])
         phi_scale = phi_pix/(phi_span[1]-phi_span[0])
 
-        #Turn the PFcand info into indexes on the image map. Normalize the pt to be applied
-        idx_eta = ak.values_astype(np.floor((Cleaned_cands.eta-eta_span[0])*eta_scale),"int64")
-        idx_phi = ak.values_astype(np.floor((Cleaned_cands.phi-phi_span[0])*phi_scale),"int64")
+        #Turn the PFcand info into indexes on the image map
+        idx_eta = ak.values_astype(np.floor((events.eta-eta_span[0])*eta_scale),"int64")
+        idx_phi = ak.values_astype(np.floor((events.phi-phi_span[0])*phi_scale),"int64")
         idx_eta = ak.where(idx_eta == eta_pix, eta_pix-1, idx_eta)
         idx_phi = ak.where(idx_phi == phi_pix, phi_pix-1, idx_phi)
-        pt = Cleaned_cands.pt
+        pt = events.pt
 
-        N_batches = len(Cleaned_cands)
-        to_infer = np.zeros((N_batches, 1, eta_pix, phi_pix))
-        for event_i, events in enumerate(pt):
-            to_infer[event_i,0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
-            m = np.mean(to_infer[event_i,0,:,:])
-            s = np.std(to_infer[event_i,0,:,:])
-            to_infer[event_i,0,:,:] = (to_infer[event_i,0,:,:]-m)/s
+#         N_batches = len(events)
+#         to_infer = np.zeros((N_batches, 1, eta_pix, phi_pix))
+#         for event_i, events in enumerate(pt):
+#             to_infer[event_i,0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
+#             m = np.mean(to_infer[event_i,0,:,:])
+#             s = np.std(to_infer[event_i,0,:,:])
+#             to_infer[event_i,0,:,:] = (to_infer[event_i,0,:,:]-m)/s
 
-        print("made images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+#         print("made images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
         
+#         #Running the inference in batch mode
+#         input_name = ort_sess.get_inputs()[0].name
+        
+#         # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
+#         # resnet: only classification as output
+#         outputs = np.array([])
+#         for i, image in enumerate(to_infer):
+#             output =  ort_sess.run(None, {input_name: np.array([image.astype(np.float32)])})
+#             outputs_softmax = self.softmax(output)[0]
+#             if i == 0: 
+#                 outputs = outputs_softmax
+#             else: 
+#                 outputs = np.concatenate((outputs, outputs_softmax))
+
+#         print("processed images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+
         #Running the inference in batch mode
         input_name = ort_sess.get_inputs()[0].name
-        
-        # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
-        # resnet: only classification as output
         outputs = np.array([])
-        for i, image in enumerate(to_infer):
-            output =  ort_sess.run(None, {input_name: np.array([image.astype(np.float32)])})
+        
+        for event_i, events in enumerate(pt):
+            
+            # form image
+            to_infer = np.zeros((1, eta_pix, phi_pix))
+            to_infer[0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
+            
+            # normalize pt
+            m = np.mean(to_infer[0,:,:])
+            s = np.std(to_infer[0,:,:])
+            to_infer[0,:,:] = (to_infer[0,:,:]-m)/s
+
+            print("made images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+           
+            # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
+            # resnet: only classification as output
+            output =  ort_sess.run(None, {input_name: np.array([to_infer.astype(np.float32)])})
             outputs_softmax = self.softmax(output)[0]
-            if i == 0: 
+            if event_i == 0: 
                 outputs = outputs_softmax
             else: 
                 outputs = np.concatenate((outputs, outputs_softmax))
 
-        print("procesed images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+            print("processed images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
                 
         return outputs
-
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -251,7 +278,10 @@ class SUEP_cluster(processor.ProcessorABC):
         #The inference skips the lost tracks for now. 
         SUEP_pred_full = np.zeros(len(Cleaned_cands))*np.nan
         if self.do_inf:    
-            ort_sess = ort.InferenceSession('data/test.onnx')
+            
+            print("made it here")
+            
+            ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
             options.intra_op_num_threads = 1 # number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.
             options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
@@ -347,8 +377,8 @@ class SUEP_cluster(processor.ProcessorABC):
         # output an empty file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass the selections. Saving empty outputs.")
-            out_ch = pd.DataFrame(['empty'], columns=['empty'])
-            self.save_dfs([out_ch, out_vars],["ch","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            out_IRM = pd.DataFrame(['empty'], columns=['empty'])
+            self.save_dfs([out_IRM, out_vars],["IRM","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
         ### SUEP_mult
@@ -369,89 +399,91 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pt_nconst = SUEP_pt_nconst[singletrackCut]
         SUEP_pt_tracks = SUEP_pt_tracks[singletrackCut]
         highpt_cands = highpt_cands[singletrackCut] 
-        tracks_ch = tracks[singletrackCut]
-        indices_ch = indices[singletrackCut]
+        tracks_IRM = tracks[singletrackCut]
+        indices_IRM = indices[singletrackCut]
         Lost_Tracks_cands = Lost_Tracks_cands[singletrackCut]
 
-        # ISR removal method
+        # ISR removal method (IRM)
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
         SUEP_cand_tracks = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
         ISR_cand = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
         ISR_cand_tracks = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
         dphi_SUEP_ISR = abs(SUEP_cand.deltaphi(ISR_cand))
-        boost_ch = ak.zip({
+        boost_IRM = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
             "pz": SUEP_cand.pz*-1,
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")
-        ISR_cand_b = ISR_cand.boost_p4(boost_ch)
-        tracks_ch = tracks_ch.boost_p4(boost_ch)
-        Lost_Tracks_ch = Lost_Tracks_cands.boost_p4(boost_ch)
-        Christos_cands = tracks_ch[abs(tracks_ch.deltaphi(ISR_cand_b)) > 1.6]
-        Lost_Christos_cands = Lost_Tracks_ch[abs(Lost_Tracks_ch.deltaphi(ISR_cand_b)) > 1.6]
-        onechtrackCut = (ak.num(Christos_cands)>1)
+        ISR_cand_b = ISR_cand.boost_p4(boost_IRM)
+        tracks_IRM = tracks_IRM.boost_p4(boost_IRM)
+        Lost_Tracks_IRM = Lost_Tracks_cands.boost_p4(boost_IRM)
+        IRM_cands = tracks_IRM[abs(tracks_IRM.deltaphi(ISR_cand_b)) > 1.6]
+        Lost_IRM_cands = Lost_Tracks_IRM[abs(Lost_Tracks_IRM.deltaphi(ISR_cand_b)) > 1.6]
+        oneIRMtrackCut = (ak.num(IRM_cands)>1)
         
         # account for no events passing our selections
-        if not any(onechtrackCut):
+        if not any(oneIRMtrackCut):
             print("No events in ISR Removal Method.")
-            out_ch = pd.DataFrame()
+            out_IRM = pd.DataFrame()
         else:
-            Christos_cands = Christos_cands[onechtrackCut]#remove the events left with one track
-            tracks_ch = tracks_ch[onechtrackCut]
-            SUEP_cand = SUEP_cand[onechtrackCut]
-            ISR_cand = ISR_cand[onechtrackCut]
-            ISR_cand_b = ISR_cand_b[onechtrackCut]
-            SUEP_cand_tracks = SUEP_cand_tracks[onechtrackCut]
-            ISR_cand_tracks = ISR_cand_tracks[onechtrackCut]
-            boost_ch = boost_ch[onechtrackCut]
-            indices_ch = indices_ch[onechtrackCut]
-            Lost_Christos_cands = Lost_Christos_cands[onechtrackCut]
+            IRM_cands = IRM_cands[oneIRMtrackCut]#remove the events left with one track
+            tracks_IRM = tracks_IRM[oneIRMtrackCut]
+            SUEP_cand = SUEP_cand[oneIRMtrackCut]
+            ISR_cand = ISR_cand[oneIRMtrackCut]
+            ISR_cand_b = ISR_cand_b[oneIRMtrackCut]
+            SUEP_cand_tracks = SUEP_cand_tracks[oneIRMtrackCut]
+            ISR_cand_tracks = ISR_cand_tracks[oneIRMtrackCut]
+            boost_IRM = boost_IRM[oneIRMtrackCut]
+            indices_IRM = indices_IRM[oneIRMtrackCut]
+            Lost_IRM_cands = Lost_IRM_cands[oneIRMtrackCut]
             
-            out_ch = SUEP_cand
-            out_ch["event_index_ch"] = indices_ch
-            out_ch["SUEP_nLostTracks_ch"] = ak.num(Lost_Christos_cands)
-            out_ch["SUEP_pt_ch"] = SUEP_cand.pt
-            out_ch["SUEP_eta_ch"] = SUEP_cand.eta
-            out_ch["SUEP_phi_ch"] = SUEP_cand.phi
-            out_ch["SUEP_mass_ch"] = SUEP_cand.mass
-            out_ch["SUEP_dphi_SUEP_ISR_ch"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
-            ch_eigs = self.sphericity(Christos_cands,2.0)
-            out_ch["SUEP_nconst_ch"] = ak.num(Christos_cands)
-            out_ch["SUEP_ntracks_ch"] = ak.num(tracks_ch)
-            #out_ch["SUEP_pt_avg_b_ch"] = ak.mean(Christos_cands.pt, axis=-1)
-            out_ch["SUEP_spher_ch"] = 1.5 * (ch_eigs[:,1]+ch_eigs[:,0])
-            #out_ch["SUEP_aplan_ch"] = 1.5 * ch_eigs[:,0]
-            #out_ch["SUEP_FW2M_ch"] = 1.0 - 3.0 * (ch_eigs[:,2]*ch_eigs[:,1] + ch_eigs[:,2]*ch_eigs[:,0] + ch_eigs[:,1]*ch_eigs[:,0])
-            #out_ch["SUEP_D_ch"] = 27.0 * ch_eigs[:,2]*ch_eigs[:,1]*ch_eigs[:,0]
-            #out_ch["SUEP_dphi_chcands_ISR_ch"] = ak.mean(abs(Christos_cands.deltaphi(ISR_cand_b)), axis=-1)
-            #out_ch["SUEP_dphi_ISRtracks_ISR_ch"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)
-            #out_ch["SUEP_dphi_SUEPtracks_ISR_ch"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_ch).deltaphi(ISR_cand_b)), axis=-1)    
+            out_IRM = SUEP_cand
+            out_IRM["event_index_IRM"] = indices_IRM
+            out_IRM["SUEP_nLostTracks_IRM"] = ak.num(Lost_IRM_cands)
+            out_IRM["SUEP_pt_IRM"] = SUEP_cand.pt
+            out_IRM["SUEP_eta_IRM"] = SUEP_cand.eta
+            out_IRM["SUEP_phi_IRM"] = SUEP_cand.phi
+            out_IRM["SUEP_mass_IRM"] = SUEP_cand.mass
+            out_IRM["SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
+            eigs_2 = self.sphericity(IRM_cands,2.0)
+            eigs = self.sphericity(IRM_cands,1.0)
+            out_IRM["SUEP_nconst_IRM"] = ak.num(IRM_cands)
+            out_IRM["SUEP_ntracks_IRM"] = ak.num(tracks_IRM)
+            out_IRM["SUEP_pt_avg_b_IRM"] = ak.mean(IRM_cands.pt, axis=-1)
+            out_IRM["SUEP_spher_IRM"] = 1.5 * (eigs_2[:,1]+eigs_2[:,0])
+            out_IRM["SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
+            #out_IRM["SUEP_aplan_IRM"] = 1.5 * eigs_2[:,0]
+            #out_IRM["SUEP_FW2M_IRM"] = 1.0 - 3.0 * (eigs_2[:,2]*eigs_2[:,1] + eigs_2[:,2]*eigs_2[:,0] + eigs_2[:,1]*eigs_2[:,0])
+            #out_IRM["SUEP_D_IRM"] = 27.0 * eigs_2[:,2]*eigs_2[:,1]*eigs_2[:,0]
+            #out_IRM["SUEP_dphi_IRMcands_ISR_IRM"] = ak.mean(abs(IRM_cands.deltaphi(ISR_cand_b)), axis=-1)
+            #out_IRM["SUEP_dphi_ISRtracks_ISR_IRM"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)
+            #out_IRM["SUEP_dphi_SUEPtracks_ISR_IRM"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)    
 
             # unboost for these
-            Christos_cands_ub = Christos_cands.boost_p4(SUEP_cand)
-            deltaR = Christos_cands_ub.deltaR(SUEP_cand)
-            out_ch["SUEP_pt_avg_ch"] = ak.mean(Christos_cands_ub.pt, axis=-1)
-            out_ch["SUEP_girth_ch"] = ak.sum((deltaR/1.5)*Christos_cands_ub.pt, axis=-1)/SUEP_cand.pt
-            out_ch["SUEP_rho0_ch"] = self.rho(0, SUEP_cand, Christos_cands_ub, deltaR)
-            out_ch["SUEP_rho1_ch"] = self.rho(1, SUEP_cand, Christos_cands_ub, deltaR)
+            IRM_cands_ub = IRM_cands.boost_p4(SUEP_cand)
+            deltaR = IRM_cands_ub.deltaR(SUEP_cand)
+            out_IRM["SUEP_pt_avg_IRM"] = ak.mean(IRM_cands_ub.pt, axis=-1)
+            out_IRM["SUEP_girth_IRM"] = ak.sum((deltaR/1.5)*IRM_cands_ub.pt, axis=-1)/SUEP_cand.pt
+            out_IRM["SUEP_rho0_IRM"] = self.rho(0, SUEP_cand, IRM_cands_ub, deltaR)
+            out_IRM["SUEP_rho1_IRM"] = self.rho(1, SUEP_cand, IRM_cands_ub, deltaR)
 
             SUEPs = ak.zip({
-                "px": ak.sum(Christos_cands.px, axis=-1),
-                "py": ak.sum(Christos_cands.py, axis=-1),
-                "pz": ak.sum(Christos_cands.pz, axis=-1),
-                "energy": ak.sum(Christos_cands.energy, axis=-1),
+                "px": ak.sum(IRM_cands.px, axis=-1),
+                "py": ak.sum(IRM_cands.py, axis=-1),
+                "pz": ak.sum(IRM_cands.pz, axis=-1),
+                "energy": ak.sum(IRM_cands.energy, axis=-1),
             }, with_name="Momentum4D")
                
-            out_ch["SUEP_pt_ch"] = SUEPs.pt
-            out_ch["SUEP_eta_ch"] = SUEPs.eta
-            out_ch["SUEP_phi_ch"] = SUEPs.phi
-            out_ch["SUEP_mass_ch"] = SUEPs.mass
+            out_IRM["SUEP_pt_IRM"] = SUEPs.pt
+            out_IRM["SUEP_eta_IRM"] = SUEPs.eta
+            out_IRM["SUEP_phi_IRM"] = SUEPs.phi
+            out_IRM["SUEP_mass_IRM"] = SUEPs.mass
 
         ### save outputs
         # ak to pandas, if needed. Then pandas to hdf5
-        if not isinstance(out_ch, pd.DataFrame): out_ch = self.ak_to_pandas(out_ch)
-        self.save_dfs([out_ch, out_vars],["ch","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+        if not isinstance(out_IRM, pd.DataFrame): out_IRM = self.ak_to_pandas(out_IRM)
+        self.save_dfs([out_IRM, out_vars],["IRM","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
 
         return output
 
