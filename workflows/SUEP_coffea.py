@@ -84,37 +84,11 @@ class SUEP_cluster(processor.ProcessorABC):
         idx_phi = ak.where(idx_phi == phi_pix, phi_pix-1, idx_phi)
         pt = events.pt
 
-#         N_batches = len(events)
-#         to_infer = np.zeros((N_batches, 1, eta_pix, phi_pix))
-#         for event_i, events in enumerate(pt):
-#             to_infer[event_i,0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
-#             m = np.mean(to_infer[event_i,0,:,:])
-#             s = np.std(to_infer[event_i,0,:,:])
-#             to_infer[event_i,0,:,:] = (to_infer[event_i,0,:,:]-m)/s
-
-#         print("made images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-        
-#         #Running the inference in batch mode
-#         input_name = ort_sess.get_inputs()[0].name
-        
-#         # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
-#         # resnet: only classification as output
-#         outputs = np.array([])
-#         for i, image in enumerate(to_infer):
-#             output =  ort_sess.run(None, {input_name: np.array([image.astype(np.float32)])})
-#             outputs_softmax = self.softmax(output)[0]
-#             if i == 0: 
-#                 outputs = outputs_softmax
-#             else: 
-#                 outputs = np.concatenate((outputs, outputs_softmax))
-
-#         print("processed images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-
         #Running the inference in batch mode
         input_name = ort_sess.get_inputs()[0].name
         outputs = np.array([])
         
-        for event_i, events in enumerate(pt):
+        for event_i in range(len(events)):
             
             # form image
             to_infer = np.zeros((1, eta_pix, phi_pix))
@@ -279,7 +253,7 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_pred_full = np.zeros(len(Cleaned_cands))*np.nan
         if self.do_inf:    
             
-            print("made it here")
+            print("Starting inference")
             
             ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
@@ -351,7 +325,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs
         out_vars["PV_npvsGood"] = events.PV.npvsGood
-        out_vars["SSD_SUEP_pred"] = SUEP_pred_full
+        out_vars["resnet_SUEP_pred"] = SUEP_pred_full
     
         # indices of events in tracks, used to keep track which events pass the selections
         indices = np.arange(0,len(tracks))
@@ -425,7 +399,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # account for no events passing our selections
         if not any(oneIRMtrackCut):
             print("No events in ISR Removal Method.")
-            out_IRM = pd.DataFrame()
+            out_IRM = pd.DataFrame(['empty'], columns=['empty'])
         else:
             IRM_cands = IRM_cands[oneIRMtrackCut]#remove the events left with one track
             tracks_IRM = tracks_IRM[oneIRMtrackCut]

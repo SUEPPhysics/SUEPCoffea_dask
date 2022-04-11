@@ -43,8 +43,8 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 10GB
-request_memory        = 10GB
+request_disk          = 2GB
+request_memory        = 2GB
 request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -60,6 +60,7 @@ max_retries           = 3
 use_x509userproxy     = True
 x509userproxy         = /home/submit/lavezzo/x509up_u210253
 +AccountingGroup = "analysis.lavezzo"
+#requirements          = (target.MACHINE == t3btch115.mit.edu)
 #requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
 #requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
 #requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
