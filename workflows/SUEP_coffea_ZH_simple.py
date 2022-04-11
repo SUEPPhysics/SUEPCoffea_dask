@@ -37,9 +37,15 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def sphericity(self, events, particles, r):
-        events = events[ak.num(particles) != 0]
-        particles = particles[ak.num(particles) != 0]
-        norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
+
+        cut = [0]*len(events)
+        for i in range(len(events)):
+            cut[i] = (ak.num(particles) != 0)[i] & np.all(~(np.isnan(particles.x))[i]) & np.all(~(np.isnan(particles.p))[i])
+
+        events = events[cut]
+        particles = particles[cut] 
+
+        norm = np.squeeze(ak.sum(particles.p ** r, axis=1, keepdims=True))
 
         s = np.array([[
                        ak.sum(particles.px * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
@@ -58,12 +64,8 @@ class SUEP_cluster(processor.ProcessorABC):
                        ]])
 
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
-
-        for i in range(len(s)):
-            if np.any(s[i]) == np.NaN or np.any(s[i]) == np.inf:
-                print(s[i])
-
         evals = np.sort(np.linalg.eigvals(s))
+
         eval1 = np.moveaxis(evals,0,1)[0]
         eval2 = np.moveaxis(evals,0,1)[1]
         eval3 = np.moveaxis(evals,0,1)[2]
@@ -87,6 +89,7 @@ class SUEP_cluster(processor.ProcessorABC):
                     )
             else:
                 output[field] = ak.to_numpy(jet_collection[field])
+
         return output
 
     def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
@@ -329,6 +332,7 @@ class SUEP_cluster(processor.ProcessorABC):
             return True
 
     def process(self, events):
+        #if not(events.event[0]==208940120 and events.luminosityBlock[0]==77328 and events.run[0]==1): return self.accumulator.identity()
         debug    = True  # If we want some prints in the middle
         chunkTag = "out_%i_%i_%i.hdf5"%(events.event[0], events.luminosityBlock[0], events.run[0]) #Unique tag to get different outputs per tag
         doTracks = True # Make it false, and it will speed things up
@@ -403,7 +407,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # Define outputs for plotting
         if debug: print("Saving reco variables")
-	# The variables that I can get are listed above in "SelectByLeptons" function
+
+	    # The variables that I can get are listed above in "SelectByLeptons" function
         outlep["leadlep_pt"]    = leptons.pt[:,0]
         outlep["subleadlep_pt"] = leptons.pt[:,1]
         outlep["leadlep_eta"]   = leptons.eta[:,0]
@@ -460,7 +465,6 @@ class SUEP_cluster(processor.ProcessorABC):
               "mass": Zcands.mass
           }, with_name="Momentum4D") 
 
-
           # Reconstructing by summing all tracks
           boost_tracks = ak.zip({
               "px": ak.sum(tracks.px, axis=1)*-1,
@@ -472,8 +476,8 @@ class SUEP_cluster(processor.ProcessorABC):
           tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
           tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
 
-          clean_events, clean_particles, evals, eval1, eval2, eval3 = self.sphericity(events, tracks,2) # Gives the sphericity in Lab frame
-          clean_eventsZ, clean_particlesZ, evalsZ, evalZ1, evalZ2, evalZ3 = self.sphericity(events, tracks_boostedagainstZ,2) #Gives the sphericity in -Z frame
+          clean_events, clean_particles, evals, eval1, eval2, eval3 = self.sphericity(events, tracks, 2) # Gives the sphericity in Lab frame
+          clean_eventsZ, clean_particlesZ, evalsZ, evalZ1, evalZ2, evalZ3 = self.sphericity(events, tracks_boostedagainstZ, 2) #Gives the sphericity in -Z frame
 
           ###### OUTPUT FOR SPHERICITY ######
 
