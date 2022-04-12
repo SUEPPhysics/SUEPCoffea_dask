@@ -37,8 +37,10 @@ default_ABCD = [
     ["SUEP_spher", ">=", 0.25],
     ["SUEP_nconst", ">=", 10]
 ]
-nPVs_gr35_study = default_ABCD + [['PV_npvs','<',35]]
-selections = nPVs_gr35_study
+nPVs_l35_study = default_ABCD + [['PV_npvs','<',35]]
+nPVs_l35_njets2_study = default_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
+nPVs_l40_study = default_ABCD + [['PV_npvs','<',40]]
+selections = nPVs_l35_njets2_study
     
 def apply_selection(df, variable, operator, value):
     """
@@ -67,6 +69,7 @@ if options.xrootd:
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
     result = result.decode("utf-8")
     files = result.split("\n")
+    files = [f for f in files if 'condor_out' not in f]
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
     files = [dataDir + f for f in os.listdir(dataDir)]
@@ -96,7 +99,7 @@ def create_output_file(label):
             "C_var2_"+label: Hist.new.Integer(0, 500, name="C_var2_"+label).Weight(),
             "D_exp_var2_"+label: Hist.new.Integer(0, 500, name="D_exp_var2_"+label).Weight(),
             "D_obs_var2_"+label: Hist.new.Integer(0, 500, name="D_obs_var2_"+label).Weight(),
-            "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_label+"_"+label).Integer(0, 500, name=var2_label"_"+label).Weight(),
+            "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_label+"_"+label).Integer(0, 500, name=var2_label+"_"+label).Weight(),
         
             # 2D histograms
             "2D_SUEP_girth_SUEP_nconst_"+label : Hist.new.Reg(50, 0, 1.0, name="SUEP_girth_"+label).Integer(0, 200, name="SUEP_nconst_"+label).Weight(),
@@ -104,7 +107,7 @@ def create_output_file(label):
             "2D_SUEP_rho1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 20, name="SUEP_rho1_"+label).Integer(0, 200, name="nconst_"+label).Weight(),
             "2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Integer(0, 500, name="ntracks_"+label).Weight(),
             "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Integer(0, 500, name="nconst_"+label).Weight(),
-            "2D_nJets_SUEP_pT_"+label : Hist.new.Integer(0 20, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),
+            "2D_nJets_SUEP_pT_"+label : Hist.new.Integer(0, 20, name="nJets_"+label).Reg(100, 0, 3000, name="pt_"+label).Weight(),
         
     }
     
