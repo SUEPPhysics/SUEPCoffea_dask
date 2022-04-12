@@ -27,9 +27,15 @@ echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset=
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 rm temp.root
 
+echo "python3 merge.py"
+python3 merge.py
+
 #echo "----- transferring output to scratch :"
 echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
 xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+
+echo "rm *.hdf5"
+rm *.hdf5
 
 echo " ------ THE END (everyone dies !) ----- "
 """
@@ -37,8 +43,9 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 4G
-request_memory        = 4G
+request_disk          = 2GB
+request_memory        = 2GB
+request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
@@ -51,8 +58,9 @@ when_to_transfer_output = ON_EXIT
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
-x509userproxy         = /home/submit/freerc/x509up_u206148
-+AccountingGroup = "analysis.freerc"
+x509userproxy         = /home/submit/lavezzo/x509up_u210253
++AccountingGroup = "analysis.lavezzo"
+#requirements          = (target.MACHINE == t3btch115.mit.edu)
 #requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
 #requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
 #requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
@@ -115,7 +123,7 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             print(sample_name)
             if os.path.isdir(jobs_dir):
@@ -161,11 +169,12 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        "../condor_SUEP_WS.py",
-                        "../workflows",
-                        #"../workflows/SUEP_coffea.py",
-                        #"../workflows/SumWeights.py",
-                        "../data",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/merge.py",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/condor_SUEP_WS.py",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows",
+                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SUEP_coffea.py",
+                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SumWeights.py",
+                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/data",
                         proxy_copy
                     ]),
                     just_file=just_file,

@@ -51,6 +51,7 @@ if regenerate_proxy:
     shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
 
 
+logging.info("Running resubmission script from "+str(os.environ['HOSTNAME']))
 for i in range(nResubmits):
     logging.info("Resubmission "+str(i))
     logging.info("Removing all jobs...")
@@ -60,12 +61,12 @@ for i in range(nResubmits):
     t_start = time.time()
     
     # delete files that are corrupted
-    if os.path.isdir(moveDir):
-        subDirs = os.listdir(dataDir)
-        for subDir in subDirs:
-            for file in os.listdir(dataDir + subDir):
-                size = os.path.getsize(dataDir + subDir + "/" + file)
-                if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
+    subDirs = os.listdir(dataDir)
+    for subDir in subDirs:
+        for file in os.listdir(dataDir + subDir):
+            size = os.path.getsize(dataDir + subDir + "/" + file)
+            if size == 0: subprocess.run(['rm',dataDir + subDir + "/" + file])
+            elif size < 5000: subprocess.run(['rm',dataDir + subDir + "/" + file])
         
     if not options.dryrun:
         

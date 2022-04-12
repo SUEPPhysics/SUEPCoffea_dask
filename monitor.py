@@ -17,6 +17,7 @@ def isFileGood(fname, label='ch'):
     except:
         return 0
     
+    
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-i"   , "--input" , type=str, default="input"  , required=True)
@@ -69,7 +70,9 @@ def main():
             t_start = time.time()
             
             sample_name = sample.split("/")[-1]
+            jobs_base_dir = '/work/submit/'+username+'/SUEP/logs/'
             jobs_dir =  '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir = jobs_base_dir + jobs_dir
             
             # delete files that are corrupted (i.e., empty)
             for file in os.listdir(out_dir.format(sample_name)):
@@ -156,13 +159,13 @@ def main():
                 
             # give time to xrootd on T2 to process the jobs
             # for now, this is fixed such that it waits 15mins for 1000 files
-            # if options.resubmit:
-            #     sleepTime = len(jobs_resubmit) * 15.0*60.0/1000.0
-            #     t_end = time.time()
-            #     mod = (t_end - t_start) 
-            #     logging.info("Deleting, resubmitting, and moving files took " + str(round(mod)) + " seconds")
-            #     logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
-            #     time.sleep(sleepTime - mod)
+            if options.resubmit:
+                sleepTime = len(jobs_resubmit) * 15.0*60.0/1000.0
+                t_end = time.time()
+                mod = (t_end - t_start) 
+                logging.info("Deleting, resubmitting, and moving files took " + str(round(mod)) + " seconds")
+                logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
+                time.sleep(sleepTime - mod)
                 
 
 if __name__ == "__main__":
