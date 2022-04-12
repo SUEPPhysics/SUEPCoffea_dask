@@ -22,6 +22,7 @@ def h5load(ifile, label):
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
+parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 options = parser.parse_args()
 
 # script parameters
@@ -84,8 +85,9 @@ for ifile, file in enumerate(files):
     else: df_vars_tot = pd.concat((df_vars_tot, df_vars))
     
     ### MERGE METADATA
-    if type(metadata_tot) == int: metadata_tot = metadata
-    else: metadata_tot['gensumweight'] += metadata['gensumweight']
+    if options.isMC:
+        if type(metadata_tot) == int: metadata_tot = metadata
+        else: metadata_tot['gensumweight'] += metadata['gensumweight']
     
     # no need to add empty ones
     if 'empty' in list(df.keys()): 
@@ -99,8 +101,6 @@ for ifile, file in enumerate(files):
     if type(df_tot) == int: 
         df_tot = df
     else: 
-        print("here")
-        print(df_tot.shape)
         df_tot = pd.concat((df_tot, df), ignore_index=True)
     
     subprocess.run(['rm',dataset+'.hdf5'])   
@@ -115,3 +115,10 @@ for ifile, file in enumerate(files):
         df_vars_tot = 0
         df_tot = 0
         metadata_tot = 0
+
+# in case last file is skipped
+output_file = "merged_" + str(i_out) + ".hdf5"
+save_dfs(df_tot, df_vars_tot, output_file)
+print("xrdcp {} {}".format(output_file, redirector+dataDir))
+os.system("xrdcp {} {}".format(output_file, redirector+dataDir))
+subprocess.run(['rm',output_file])

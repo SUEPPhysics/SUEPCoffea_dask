@@ -5,6 +5,7 @@ import pwd
 import subprocess
 import shutil
 import getpass
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -27,8 +28,8 @@ echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset=
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 rm temp.root
 
-echo "python3 merge.py"
-python3 merge.py
+echo "python3 merge.py --isMC={ismc}"
+python3 merge.py --isMC={ismc}
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
@@ -43,8 +44,8 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 2GB
-request_memory        = 2GB
+request_disk          = 4GB
+request_memory        = 4GB
 request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -141,6 +142,7 @@ def main():
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
+                nfiles=0
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
                      for i in Raw_list:
                          #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
@@ -149,6 +151,7 @@ def main():
                          just_file = full_file.split("/")[-1]
                          infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
                          #infiles.write(i.split(" ")[0]+"\n")
+                         nfiles+=1
                      infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
@@ -199,6 +202,12 @@ def main():
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
+            
+            # give time to xrootd on T2 to process the jobs
+            # for now, this is fixed such that it waits 15mins for 1000 files
+            sleepTime = nfiles * 15.0*60.0/1000.0
+            logging.info("Sleeping for "+str(round(sleepTime))+" seconds")
+            time.sleep(sleepTime)
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 import pandas as pd
 import sys, os, glob
+import argparse
 
 def h5load(ifile, label):
     try:
@@ -16,6 +17,10 @@ def h5load(ifile, label):
         print("Some error occurred", ifile)
         return 0, 0
     
+parser = argparse.ArgumentParser(description='Famous Submitter')
+parser.add_argument("-isMC"   , "--isMC"   , type=str, default="IronMan"  , help="MC or real data", required=True)
+options = parser.parse_args()
+
 files = glob.glob("*.hdf5")
 df_vars_tot = 0
 df_tot = 0
@@ -39,8 +44,9 @@ for ifile, file in enumerate(files):
     else: df_vars_tot = pd.concat((df_vars_tot, df_vars))
     
     ### MERGE METADATA
-    if type(metadata_tot) == int: metadata_tot = metadata
-    else: metadata_tot['gensumweight'] += metadata['gensumweight']
+    if options.isMC:
+        if type(metadata_tot) == int: metadata_tot = metadata
+        else: metadata_tot['gensumweight'] += metadata['gensumweight']
     
     # no need to add empty ones
     if 'empty' in list(df.keys()): continue
