@@ -9,7 +9,8 @@ output = "/eos/user/j/jkil/www"
 DY = [pd.HDFStore("../outputDY/"+f, 'r') for f in os.listdir("../outputDY/")]
 ZH = [pd.HDFStore("../outputZH/"+f, 'r') for f in os.listdir("../outputZH/")]
 
-channel   = "numtrkvars"
+#channel   = "numtrkvars" #remember to change this to sphervars
+channel   = "sphervars"
 normalize = True
 
 plots = {
@@ -50,7 +51,19 @@ plots = {
   #"threejets3 eta":["threejets3_eta",50,-3.14,3.14,"eta"],
   #"threejets3 phi":["threejets3_phi",50,0,3.14,"phi"],
 
-  "NumTrk(3,3)":["Ntracks",50,0,100,"counts(pt = 3, fromPV = 3)"],
+  #"NumTrk(3,3)":["Ntracks",50,0,100,"counts(pt = 3, fromPV = 3)"],
+
+  "Eigenvalue #lambda_{1} (L)":["eval_L1",50,0,1,"1st Eigenvalue #lambda_{1} in Lab frame"],
+  "Eigenvalue #lambda_{1} (S)":["eval_Z1",50,0,1,"1st Eigenvalue #lambda_{1} in -Z frame"],
+
+  "Eigenvalue #lambda_{2} (L)":["eval_L2",50,0,1,"2nd Eigenvalue #lambda_{2} in Lab frame"],
+  "Eigenvalue #lambda_{2} (S)":["eval_Z2",50,0,1,"2nd Eigenvalue #lambda_{2} in -Z frame"],
+
+  "Eigenvalue #lambda_{3} (L)":["eval_L3",50,0,1,"3rd Eigenvalue #lambda_{3} in Lab frame"],
+  "Eigenvalue #lambda_{3} (S)":["eval_Z3",50,0,1,"3rd Eigenvalue #lambda_{3} in -Z frame"],
+
+  "Scalar Sphericity (L)":["scalarSpher_L",50,0,1,"Scalar Sphericity in Lab frame"],
+  "Scalar Sphericity (S)":["scalarSpher_Z",50,0,1,"Scalar Sphericity in -Z frame"],
 }
 
 for p in plots:
@@ -64,7 +77,7 @@ for p in plots:
     weightsDY = d[channel]["genweight"]
     for idx, val in enumerate(d[channel][plots[p][0]]):
       if idx%1000 == 0: print (idx)
-      h1.Fill(val,weightsDY[idx])
+      h1.Fill(np.real(val),weightsDY[idx])
 
   sumwS = 0
   for d in ZH:
