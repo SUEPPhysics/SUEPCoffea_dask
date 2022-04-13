@@ -38,10 +38,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def sphericity(self, events, particles, r):
 
-        cut = [0]*len(events)
-        for i in range(len(events)):
-            cut[i] = (ak.num(particles) != 0)[i] & np.all(~(np.isnan(particles.x))[i]) & np.all(~(np.isnan(particles.p))[i])
-
+        cut = (ak.num(particles) != 0) & ak.all(9999998 > (ak.nan_to_num(particles.x,nan = 9999999)),axis = 1) & ak.all(9999998 > (ak.nan_to_num(particles.p,nan = 9999999)),axis = 1)
         events = events[cut]
         particles = particles[cut] 
 
@@ -59,13 +56,14 @@ class SUEP_cluster(processor.ProcessorABC):
                       ],
                       [
                        ak.sum(particles.pz * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                        ak.sum(particles.pz * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                        ak.sum(particles.pz * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
+                       ak.sum(particles.pz * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
+                       ak.sum(particles.pz * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
                        ]])
 
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
         evals = np.sort(np.linalg.eigvals(s))
 
+        # Evals are sorted from smallest to greatest, so eval1 is smallest, eval3 is greatest
         eval1 = np.moveaxis(evals,0,1)[0]
         eval2 = np.moveaxis(evals,0,1)[1]
         eval3 = np.moveaxis(evals,0,1)[2]
@@ -345,7 +343,8 @@ class SUEP_cluster(processor.ProcessorABC):
         out2jets  = {}
         out3jets  = {}
         outnumtrk = {}
-        outSpher = {}
+        outSpherL = {}
+        outSpherZ = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -482,16 +481,16 @@ class SUEP_cluster(processor.ProcessorABC):
           ###### OUTPUT FOR SPHERICITY ######
 
           ### Evals themselves ###
-          outSpher["eval_L1"] = eval1[:]
-          outSpher["eval_L2"] = eval2[:]
-          outSpher["eval_L3"] = eval3[:]
-          outSpher["eval_Z1"] = evalZ1[:]
-          outSpher["eval_Z2"] = evalZ2[:]
-          outSpher["eval_Z3"] = evalZ3[:]
+          outSpherL["eval_L1"] = eval1[:]
+          outSpherL["eval_L2"] = eval2[:]
+          outSpherL["eval_L3"] = eval3[:]
+          outSpherZ["eval_Z1"] = evalZ1[:]
+          outSpherZ["eval_Z2"] = evalZ2[:]
+          outSpherZ["eval_Z3"] = evalZ3[:]
 
           ### Scalar Sphericity ###
-          outSpher["scalarSpher_L"] = 1.5*(eval2[:] + eval3[:])
-          outSpher["scalarSpher_Z"] = 1.5*(evalZ2[:] + evalZ3[:])
+          outSpherL["scalarSpher_L"] = 1.5*(eval1[:] + eval2[:])
+          outSpherZ["scalarSpher_Z"] = 1.5*(evalZ1[:] + evalZ2[:])
 
           ### Mean Difference ###
           meandiffL = np.empty(len(evals))
@@ -502,8 +501,8 @@ class SUEP_cluster(processor.ProcessorABC):
           for i in range(len(evalsZ)):
               meandiffZ[i] = np.mean([abs(evalsZ[i][0]-evalsZ[i][1]),abs(evalsZ[i][1]-evalsZ[i][2]),abs(evalsZ[i][2]-evalsZ[i][0])])
 
-          outSpher["meanDiff_L"] = meandiffL
-          outSpher["meanDiff_Z"] = meandiffZ
+          outSpherL["meanDiff_L"] = meandiffL
+          outSpherZ["meanDiff_Z"] = meandiffZ
 
         if doGen:
           if debug: print("Saving gen variables")
@@ -524,7 +523,8 @@ class SUEP_cluster(processor.ProcessorABC):
           out2jets["genweight"]= event_twojets.genWeight[:]
           out3jets["genweight"]= event_threejets.genWeight[:]
           outnumtrk["genweight"]= events.genWeight[:]
-          outSpher["genweight"]= clean_events.genWeight[:]
+          outSpherL["genweight"]= clean_events.genWeight[:]
+          outSpherZ["genweight"]= clean_eventsZ.genWeight[:]
           
 
         # This goes last, convert from awkward array to pandas and save the hdf5
@@ -534,9 +534,10 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
         if not isinstance(out3jets, pd.DataFrame): out3jets = self.ak_to_pandas(out3jets)
         if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
-        if not isinstance(outSpher, pd.DataFrame): outSpher = self.ak_to_pandas(outSpher)
+        if not isinstance(outSpherL, pd.DataFrame): outSpherL = self.ak_to_pandas(outSpherL)
+        if not isinstance(outSpherZ, pd.DataFrame): outSpherZ = self.ak_to_pandas(outSpherZ)
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk, outSpher],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars","sphervars"], chunkTag)
+        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk, outSpherL, outSpherZ],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars","sphervarsL","sphervarsZ"], chunkTag)
 
         return output
 
