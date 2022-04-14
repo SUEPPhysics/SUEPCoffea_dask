@@ -347,7 +347,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 # highest SUEP prediction per event
                 SUEP_pred = resnet_jets[:,1]
                 
-        out_vars["resnet_SUEP_pred"] = SUEP_pred
+        out_vars["resnet_SUEP_pred_ML"] = SUEP_pred
                 
         #####################################################################################
         # ---- ISR Removal Method
@@ -438,10 +438,6 @@ class SUEP_cluster(processor.ProcessorABC):
         Lost_IRM_cands = Lost_IRM_cands[oneIRMtrackCut]
 
         out_vars.loc[indices_IRM, "SUEP_nLostTracks_IRM"] = ak.num(Lost_IRM_cands)        
-        out_vars.loc[indices_IRM, "SUEP_pt_IRM"] = SUEP_cand.pt     
-        out_vars.loc[indices_IRM, "SUEP_eta_IRM"] = SUEP_cand.eta
-        out_vars.loc[indices_IRM, "SUEP_phi_IRM"] = SUEP_cand.phi
-        out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEP_cand.mass
         out_vars.loc[indices_IRM, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
         eigs_2 = self.sphericity(IRM_cands,2.0)
         eigs = self.sphericity(IRM_cands,1.0)
