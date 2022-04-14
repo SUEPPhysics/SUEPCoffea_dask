@@ -3,6 +3,7 @@ import sys, os, glob
 import subprocess
 import getpass
 import argparse
+from tqdm import tqdm
 
 def h5load(ifile, label):
     #try:
@@ -59,14 +60,11 @@ df_tot = 0
 metadata_tot = 0
 i_out = 0
 
-for ifile, file in enumerate(files):
-        
-    print(file)
-    
+for ifile, file in enumerate(tqdm(files)):
+            
     if os.path.exists(dataset+'.hdf5'): subprocess.run(['rm',dataset+'.hdf5'])
     xrd_file = redirector + file
-    #print("xrdcp {} {}.hdf5".format(xrd_file, dataset))
-    subprocess.run(["xrdcp",xrd_file,dataset+".hdf5"])
+    subprocess.run(["xrdcp","-s",xrd_file,dataset+".hdf5"])
     
     df_vars, metadata = h5load(dataset+'.hdf5', 'vars') 
     df, _ = h5load(dataset+'.hdf5', 'ch')
@@ -105,8 +103,9 @@ for ifile, file in enumerate(files):
     
     subprocess.run(['rm',dataset+'.hdf5'])   
     
-    if df_tot.shape[0] > 5000000 or ifile == len(files)-1:
-        output_file = "merged_" + str(i_out) + ".hdf5"
+    # save every N events
+    if df_tot.shape[0] > 5000000:
+        output_file = "/work/submit/lavezzo/merged_" + str(i_out) + ".hdf5"
         save_dfs(df_tot, df_vars_tot, output_file)
         print("xrdcp {} {}".format(output_file, redirector+dataDir))
         os.system("xrdcp {} {}".format(output_file, redirector+dataDir))
@@ -116,7 +115,7 @@ for ifile, file in enumerate(files):
         df_tot = 0
         metadata_tot = 0
 
-# in case last file is skipped
+# save last file as well
 output_file = "merged_" + str(i_out) + ".hdf5"
 save_dfs(df_tot, df_vars_tot, output_file)
 print("xrdcp {} {}".format(output_file, redirector+dataDir))

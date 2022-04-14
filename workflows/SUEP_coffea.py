@@ -86,7 +86,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #Running the inference in batch mode
         input_name = ort_sess.get_inputs()[0].name
-        outputs = np.array([])
+        cl_outputs = np.array([])
         
         for event_i in range(len(events)):
             
@@ -97,22 +97,19 @@ class SUEP_cluster(processor.ProcessorABC):
             # normalize pt
             m = np.mean(to_infer[0,:,:])
             s = np.std(to_infer[0,:,:])
-            to_infer[0,:,:] = (to_infer[0,:,:]-m)/s
-
-            print("made images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+            if s != 0: 
+                to_infer[0,:,:] = (to_infer[0,:,:]-m)/s
            
             # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
             # resnet: only classification as output
-            output =  ort_sess.run(None, {input_name: np.array([to_infer.astype(np.float32)])})
-            outputs_softmax = self.softmax(output)[0]
+            cl_output =  ort_sess.run(None, {input_name: np.array([to_infer.astype(np.float32)])})
+            cl_output_softmax = self.softmax(cl_output)[0]
             if event_i == 0: 
-                outputs = outputs_softmax
+                cl_outputs = cl_output_softmax
             else: 
-                outputs = np.concatenate((outputs, outputs_softmax))
-
-            print("processed images", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-                
-        return outputs
+                cl_outputs = np.concatenate((cl_outputs, cl_output_softmax))
+                                
+        return cl_outputs
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -122,17 +119,17 @@ class SUEP_cluster(processor.ProcessorABC):
         return rho_values
 
     def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
-        output = pd.DataFrame()
+        out_df = pd.DataFrame()
         for field in ak.fields(jet_collection):
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
                 for subfield in ak.fields(jet_collection[field]):
-                    output[f"{prefix}_{subfield}"] = ak.to_numpy(
+                    out_df[f"{prefix}_{subfield}"] = ak.to_numpy(
                         jet_collection[field][subfield]
                     )
             else:
-                output[field] = ak.to_numpy(jet_collection[field])
-        return output
+                out_df[field] = ak.to_numpy(jet_collection[field])
+        return out_df
 
     def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
         store.put(gname, df)
@@ -247,44 +244,19 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.lostTracks.dzErr < 0.05)
         Lost_Tracks_cands = LostTracks[cut]
         Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-
-        #These lines control the inference from JetSSD. Conversion is done elsewhere
-        #The inference skips the lost tracks for now. 
-        SUEP_pred_full = np.zeros(len(Cleaned_cands))*np.nan
-        if self.do_inf:    
-            
-            print("Starting inference")
-            
-            ort_sess = ort.InferenceSession('data/resnet.onnx')
-            options = ort.SessionOptions() 
-            options.intra_op_num_threads = 1 # number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.
-            options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
-            pass1050 = events.HLT.PFHT1050.to_list()
-            
-            if ak.any(pass1050): 
-                Cleaned_cands_1050 = Cleaned_cands[pass1050]
-                
-                print("pre-processing", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-                resnet_jets = self.process_images(Cleaned_cands_1050, ort_sess)
-                print("post-processing", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-                                
-                # highest SUEP prediction per event
-                SUEP_pred = resnet_jets[:,1]
-                SUEP_pred_full[pass1050] = SUEP_pred
                                                 
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
-        Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
-        tracks = Total_Tracks
+        tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         minPt = 150
         
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
         cluster = fastjet.ClusterSequence(tracks, jetdef)
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D")  
+        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D") 
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
                         
-        # cut based on ak4 jets to replicate the trigger
+        # cut based on ak4 jets to replicate the trigCger
         Jets = ak.zip({
             "pt": events.Jet.pt,
             "eta": events.Jet.eta,
@@ -327,24 +299,70 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs
         out_vars["PV_npvsGood"] = events.PV.npvsGood
-        out_vars["resnet_SUEP_pred"] = SUEP_pred_full
-    
-        # indices of events in tracks, used to keep track which events pass the selections
-        indices = np.arange(0,len(tracks))
          
-        # remove events that fail the HT cut
-        #trigger = ((out_vars['HLT_PFJet500'] == 1) | (out_vars['HLT_PFHT1050'] == 1))
+        # define triggers by era
         if self.era == 2016:
             trigger = ((out_vars['HLT_PFHT900'] == 1))
         else:
             trigger = ((out_vars['HLT_PFHT1050'] == 1))
-        htCut = ((out_vars['ht'] > 1200) & (trigger))    
+            
+        # remove events that fail the trigger and HT cuts
+        htCut = ((out_vars["ht"]>1200) & (trigger))    
         ak_inclusive_cluster = ak_inclusive_cluster[htCut]
         ak_inclusive_jets = ak_inclusive_jets[htCut]
         tracks = tracks[htCut]
-        indices = indices[htCut]
         Lost_Tracks_cands = Lost_Tracks_cands[htCut]
-           
+        
+        # indices of events in tracks, used to keep track which events pass IRM
+        indices = np.arange(0,len(tracks))
+        
+        # only care about events that pass either of IRM or ML methods
+        out_vars = out_vars.loc[htCut, :]
+        out_vars = out_vars.reset_index(drop=True)
+        
+        # output empty dataframe if no events pass trigger
+        if len(indices) == 0:
+            print("No events passed trigger. Saving empty outputs.")
+            out_vars = pd.DataFrame(['empty'], columns=['empty'])
+            self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            return output
+        
+        #####################################################################################
+        # ---- ML METHOD
+        #####################################################################################
+        
+        #These lines control the inference from JetSSD. Conversion is done elsewhere
+        #The inference skips the lost tracks for now. 
+        SUEP_pred = np.ones(len(Cleaned_cands[htCut]))*np.nan
+        if self.do_inf:    
+            ort_sess = ort.InferenceSession('data/resnet.onnx')
+            options = ort.SessionOptions() 
+            options.intra_op_num_threads = 1 # number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.
+            options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
+            
+            if ak.any(htCut): 
+                inf_cands = Cleaned_cands[htCut]
+                resnet_jets = self.process_images(inf_cands, ort_sess)
+                                
+                # highest SUEP prediction per event
+                SUEP_pred = resnet_jets[:,1]
+                
+        out_vars["resnet_SUEP_pred"] = SUEP_pred
+                
+        #####################################################################################
+        # ---- ISR Removal Method
+        #####################################################################################
+        
+        # need to add these to dataframe when no events pass to make the merging work
+        # for some reason, initializing these as empty and then trying to fill them doesn't work
+        columns_ISR = [
+                "SUEP_nLostTracks_IRM", "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM",
+                "SUEP_mass_IRM", "SUEP_dphi_SUEP_ISR_IRM", "SUEP_nconst_IRM", "SUEP_ntracks_IRM",
+                "SUEP_pt_avg_b_IRM", "SUEP_spher_IRM", "SUEP_S1_IRM", "SUEP_pt_avg_IRM",         
+                "SUEP_girth_IRM", "SUEP_rho0_IRM", "SUEP_rho1_IRM", "SUEP_pt_IRM", 
+                "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM"
+        ]
+        
         # remove events without a cluster
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
@@ -352,12 +370,12 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
         Lost_Tracks_cands = Lost_Tracks_cands[clusterCut]
- 
-        # output an empty file if no events pass selections, avoids errors later on
+        
+        # output file if no events pass selections for ISR, avoids errors later on
         if len(tracks) == 0:
-            print("No events pass the selections. Saving empty outputs.")
-            out_IRM = pd.DataFrame(['empty'], columns=['empty'])
-            self.save_dfs([out_IRM, out_vars],["IRM","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            print("No events in ISR Removal Method, clusterCut.")
+            for c in columns_ISR: out_vars[c] = np.nan
+            self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
         ### SUEP_mult
@@ -401,69 +419,67 @@ class SUEP_cluster(processor.ProcessorABC):
         Lost_IRM_cands = Lost_Tracks_IRM[abs(Lost_Tracks_IRM.deltaphi(ISR_cand_b)) > 1.6]
         oneIRMtrackCut = (ak.num(IRM_cands)>1)
         
-        # account for no events passing our selections
+        # output file if no events pass selections for ISR, avoids errors later on
         if not any(oneIRMtrackCut):
-            print("No events in ISR Removal Method.")
-            out_IRM = pd.DataFrame(['empty'], columns=['empty'])
-        else:
-            IRM_cands = IRM_cands[oneIRMtrackCut]#remove the events left with one track
-            tracks_IRM = tracks_IRM[oneIRMtrackCut]
-            SUEP_cand = SUEP_cand[oneIRMtrackCut]
-            ISR_cand = ISR_cand[oneIRMtrackCut]
-            ISR_cand_b = ISR_cand_b[oneIRMtrackCut]
-            SUEP_cand_tracks = SUEP_cand_tracks[oneIRMtrackCut]
-            ISR_cand_tracks = ISR_cand_tracks[oneIRMtrackCut]
-            boost_IRM = boost_IRM[oneIRMtrackCut]
-            indices_IRM = indices_IRM[oneIRMtrackCut]
-            Lost_IRM_cands = Lost_IRM_cands[oneIRMtrackCut]
-            
-            out_IRM = SUEP_cand
-            out_IRM["event_index_IRM"] = indices_IRM
-            out_IRM["SUEP_nLostTracks_IRM"] = ak.num(Lost_IRM_cands)
-            out_IRM["SUEP_pt_IRM"] = SUEP_cand.pt
-            out_IRM["SUEP_eta_IRM"] = SUEP_cand.eta
-            out_IRM["SUEP_phi_IRM"] = SUEP_cand.phi
-            out_IRM["SUEP_mass_IRM"] = SUEP_cand.mass
-            out_IRM["SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
-            eigs_2 = self.sphericity(IRM_cands,2.0)
-            eigs = self.sphericity(IRM_cands,1.0)
-            out_IRM["SUEP_nconst_IRM"] = ak.num(IRM_cands)
-            out_IRM["SUEP_ntracks_IRM"] = ak.num(tracks_IRM)
-            out_IRM["SUEP_pt_avg_b_IRM"] = ak.mean(IRM_cands.pt, axis=-1)
-            out_IRM["SUEP_spher_IRM"] = 1.5 * (eigs_2[:,1]+eigs_2[:,0])
-            out_IRM["SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
-            #out_IRM["SUEP_aplan_IRM"] = 1.5 * eigs_2[:,0]
-            #out_IRM["SUEP_FW2M_IRM"] = 1.0 - 3.0 * (eigs_2[:,2]*eigs_2[:,1] + eigs_2[:,2]*eigs_2[:,0] + eigs_2[:,1]*eigs_2[:,0])
-            #out_IRM["SUEP_D_IRM"] = 27.0 * eigs_2[:,2]*eigs_2[:,1]*eigs_2[:,0]
-            #out_IRM["SUEP_dphi_IRMcands_ISR_IRM"] = ak.mean(abs(IRM_cands.deltaphi(ISR_cand_b)), axis=-1)
-            #out_IRM["SUEP_dphi_ISRtracks_ISR_IRM"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)
-            #out_IRM["SUEP_dphi_SUEPtracks_ISR_IRM"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)    
+            print("No events in ISR Removal Method, oneIRMtrackCut.")
+            for c in columns_ISR: out_vars[c] = np.nan
+            self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            return output
+        
+        IRM_cands = IRM_cands[oneIRMtrackCut]#remove the events left with one track
+        tracks_IRM = tracks_IRM[oneIRMtrackCut]
+        SUEP_cand = SUEP_cand[oneIRMtrackCut]
+        ISR_cand = ISR_cand[oneIRMtrackCut]
+        ISR_cand_b = ISR_cand_b[oneIRMtrackCut]
+        SUEP_cand_tracks = SUEP_cand_tracks[oneIRMtrackCut]
+        ISR_cand_tracks = ISR_cand_tracks[oneIRMtrackCut]
+        boost_IRM = boost_IRM[oneIRMtrackCut]
+        indices_IRM = indices_IRM[oneIRMtrackCut]
+        Lost_IRM_cands = Lost_IRM_cands[oneIRMtrackCut]
 
-            # unboost for these
-            IRM_cands_ub = IRM_cands.boost_p4(SUEP_cand)
-            deltaR = IRM_cands_ub.deltaR(SUEP_cand)
-            out_IRM["SUEP_pt_avg_IRM"] = ak.mean(IRM_cands_ub.pt, axis=-1)
-            out_IRM["SUEP_girth_IRM"] = ak.sum((deltaR/1.5)*IRM_cands_ub.pt, axis=-1)/SUEP_cand.pt
-            out_IRM["SUEP_rho0_IRM"] = self.rho(0, SUEP_cand, IRM_cands_ub, deltaR)
-            out_IRM["SUEP_rho1_IRM"] = self.rho(1, SUEP_cand, IRM_cands_ub, deltaR)
+        out_vars.loc[indices_IRM, "SUEP_nLostTracks_IRM"] = ak.num(Lost_IRM_cands)        
+        out_vars.loc[indices_IRM, "SUEP_pt_IRM"] = SUEP_cand.pt     
+        out_vars.loc[indices_IRM, "SUEP_eta_IRM"] = SUEP_cand.eta
+        out_vars.loc[indices_IRM, "SUEP_phi_IRM"] = SUEP_cand.phi
+        out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEP_cand.mass
+        out_vars.loc[indices_IRM, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
+        eigs_2 = self.sphericity(IRM_cands,2.0)
+        eigs = self.sphericity(IRM_cands,1.0)
+        out_vars.loc[indices_IRM, "SUEP_nconst_IRM"] = ak.num(IRM_cands)
+        out_vars.loc[indices_IRM, "SUEP_ntracks_IRM"] = ak.num(tracks_IRM)
+        out_vars.loc[indices_IRM, "SUEP_pt_avg_b_IRM"] = ak.mean(IRM_cands.pt, axis=-1)
+        out_vars.loc[indices_IRM, "SUEP_spher_IRM"] = 1.5 * (eigs_2[:,1]+eigs_2[:,0])
+        out_vars.loc[indices_IRM, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
+        #out_vars.loc[indices_IRM, "SUEP_aplan_IRM"] = 1.5 * eigs_2[:,0]
+        #out_vars.loc[indices_IRM, "SUEP_FW2M_IRM"] = 1.0 - 3.0 * (eigs_2[:,2]*eigs_2[:,1] + eigs_2[:,2]*eigs_2[:,0] + eigs_2[:,1]*eigs_2[:,0])
+        #out_vars.loc[indices_IRM, "SUEP_D_IRM"] = 27.0 * eigs_2[:,2]*eigs_2[:,1]*eigs_2[:,0]
+        #out_vars.loc[indices_IRM, "SUEP_dphi_IRMcands_ISR_IRM"] = ak.mean(abs(IRM_cands.deltaphi(ISR_cand_b)), axis=-1)
+        #out_vars.loc[indices_IRM, "SUEP_dphi_ISRtracks_ISR_IRM"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)
+        #out_vars.loc[indices_IRM, "SUEP_dphi_SUEPtracks_ISR_IRM"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)    
 
-            SUEPs = ak.zip({
-                "px": ak.sum(IRM_cands.px, axis=-1),
-                "py": ak.sum(IRM_cands.py, axis=-1),
-                "pz": ak.sum(IRM_cands.pz, axis=-1),
-                "energy": ak.sum(IRM_cands.energy, axis=-1),
-            }, with_name="Momentum4D")
-               
-            out_IRM["SUEP_pt_IRM"] = SUEPs.pt
-            out_IRM["SUEP_eta_IRM"] = SUEPs.eta
-            out_IRM["SUEP_phi_IRM"] = SUEPs.phi
-            out_IRM["SUEP_mass_IRM"] = SUEPs.mass
+        # unboost for these
+        IRM_cands_ub = IRM_cands.boost_p4(SUEP_cand)
+        deltaR = IRM_cands_ub.deltaR(SUEP_cand)
+        out_vars.loc[indices_IRM, "SUEP_pt_avg_IRM"] = ak.mean(IRM_cands_ub.pt, axis=-1)
+        out_vars.loc[indices_IRM, "SUEP_girth_IRM"] = ak.sum((deltaR/1.5)*IRM_cands_ub.pt, axis=-1)/SUEP_cand.pt
+        out_vars.loc[indices_IRM, "SUEP_rho0_IRM"] = self.rho(0, SUEP_cand, IRM_cands_ub, deltaR)
+        out_vars.loc[indices_IRM, "SUEP_rho1_IRM"] = self.rho(1, SUEP_cand, IRM_cands_ub, deltaR)
 
+        SUEPs = ak.zip({
+            "px": ak.sum(IRM_cands.px, axis=-1),
+            "py": ak.sum(IRM_cands.py, axis=-1),
+            "pz": ak.sum(IRM_cands.pz, axis=-1),
+            "energy": ak.sum(IRM_cands.energy, axis=-1),
+        }, with_name="Momentum4D")
+
+        out_vars.loc[indices_IRM, "SUEP_pt_IRM"] = SUEPs.pt
+        out_vars.loc[indices_IRM, "SUEP_eta_IRM"] = SUEPs.eta
+        out_vars.loc[indices_IRM, "SUEP_phi_IRM"] = SUEPs.phi
+        out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEPs.mass
+        
         ### save outputs
-        # ak to pandas, if needed. Then pandas to hdf5
-        if not isinstance(out_IRM, pd.DataFrame): out_IRM = self.ak_to_pandas(out_IRM)
-        self.save_dfs([out_IRM, out_vars],["IRM","vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
-
+        self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+        
         return output
 
     def postprocess(self, accumulator):

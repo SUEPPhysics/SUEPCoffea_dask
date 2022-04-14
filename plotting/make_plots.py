@@ -114,12 +114,12 @@ def create_output_file(label):
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in ["", "A_", "B_", "C_"]:
         output.update({
-            r+"SUEP_nconst_"+label : Hist.new.Integer(0, 200, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
-            r+"SUEP_ntracks_"+label : Hist.new.Integer(0, 500, name=r+"ntracks_"+label, label="# Tracks in event").Weight(),
+            r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 200, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
+            r+"SUEP_ntracks_"+label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label="# Tracks in event").Weight(),
             r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
             r+"SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 100, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
             r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (boosted frame)").Weight(),
-            r+"SUEP_nLostTracks_"+label : Hist.new.Integer(0, 200, name=r+"SUEP_nLostTracks_"+label, label="# Lost Tracks in SUEP").Weight(),
+            r+"SUEP_nLostTracks_"+label : Hist.new.Reg(199,0, 200, name=r+"SUEP_nLostTracks_"+label, label="# Lost Tracks in SUEP").Weight(),
             r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
             r+"SUEP_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"SUEP_phi_"+label, label=r"SUEP $\phi$").Weight(),
             r+"SUEP_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"SUEP_mass_"+label, label="SUEP Mass [GeV]").Weight(),
@@ -132,18 +132,18 @@ def create_output_file(label):
             r+"SUEP_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             
             r+"ht_" + label : Hist.new.Reg(1000, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
-            r+"ngood_fastjets_" + label : Hist.new.Integer(0, 50, name=r+"ngood_fastjets_"+label, label='# Jets in Event').Weight(),
-            r+"nLostTracks_"+label : Hist.new.Integer(0, 200, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
-            r+"PV_npvs_"+label : Hist.new.Integer(0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
-            r+"ngood_ak4jets_" + label : Hist.new.Integer(0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight()
+            r+"ngood_fastjets_" + label : Hist.new.Reg(49,0, 50, name=r+"ngood_fastjets_"+label, label='# Jets in Event').Weight(),
+            r+"nLostTracks_"+label : Hist.new.Reg(199,0, 200, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
+            r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
+            r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight()
         })
     
     # histograms for A, B, C regions only
     for r in ["A_", "B_", "C_"]:
         output.update({     
-            r+"2D_SUEP_pt_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_"+label).Integer(0, 200, name=r+" nconst_"+label).Weight(),
-            r+"2D_SUEP_nconst_ntracks_"+label : Hist.new.Integer(0, 200, name=r+"SUEP_nconst_"+label).Integer(0, 500, name=r+"ntracks_"+label).Weight(),
-            r+"2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_spher_"+label).Integer(0, 500, name=r+"ntracks_"+label).Weight(),
+            r+"2D_SUEP_pt_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_"+label).Red(199,0, 200, name=r+" nconst_"+label).Weight(),
+            r+"2D_SUEP_nconst_ntracks_"+label : Hist.new.Reg(199, 0, 200, name=r+"SUEP_nconst_"+label).Reg(499,0, 500, name=r+"ntracks_"+label).Weight(),
+            r+"2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_spher_"+label).Reg(499, 0, 500, name=r+"ntracks_"+label).Weight(),
         })
         
     # ISR removal method only
