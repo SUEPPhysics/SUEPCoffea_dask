@@ -140,11 +140,16 @@ def create_output_file(l):
 
 # load hdf5 with pandas
 def h5load(ifile, label):
+    print("ifile: "+ifile)#FIXME
+    print("label: "+label)#FIXME
     try:
+        print("try")#FIXME
         with pd.HDFStore(ifile, 'r') as store:
+            print("with")#FIXME
             try:
                 data = store[label] 
                 metadata = store.get_storer(label).attrs.metadata
+                #print(" Metadata: "+metadata)#FIXME
                 return data, metadata
         
             except KeyError:
@@ -172,8 +177,12 @@ for ifile in tqdm(files):
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
         xrd_file = redirector + ifile.split('hadoop')[1]
         os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
+        print("--"+xrd_file+"--")#FIXME
+        print("_____a_____")#FIXME
+        print("options.dataset: "+options.dataset)#FIXME
         df_vars, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
+        print("_____b_____")#FIXME
         df_vars, metadata = h5load(ifile, 'vars')   
         
     # check if file is corrupted
@@ -194,8 +203,12 @@ for ifile in tqdm(files):
     nPVs = df_vars['PV_npvs']
     
     for label in labels:
-        if options.xrootd: df, metadata = h5load(options.dataset+'.hdf5', label) 
-        else: df, metadata = h5load(ifile, label)
+        if options.xrootd:
+            print("_____c_____")#FIXME 
+            df, metadata = h5load(options.dataset+'.hdf5', label) 
+        else: 
+            print("_____d_____")#FIXME
+            df, metadata = h5load(ifile, label)
         if 'empty' in list(df.keys()): continue
         if df.shape[0] == 0: continue
         

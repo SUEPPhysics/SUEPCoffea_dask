@@ -19,7 +19,7 @@ vector.register_awkward()
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, output_location: Optional[str]) -> None:
-        self._flag = flag
+        self._flag = flag#what does this do?
         self.output_location = output_location
         self.do_syst = do_syst
         self.gensumweight = 1.0
@@ -157,7 +157,7 @@ class SUEP_cluster(processor.ProcessorABC):
         pathlib.Path(local_file).unlink()
 
     def process(self, events):
-        output = self.accumulator.identity()
+        output = self.accumulator.identity()#this line no longer does anything according to Chad
         dataset = events.metadata['dataset']
         if self.isMC: self.gensumweight = ak.sum(events.genWeight)    
 
