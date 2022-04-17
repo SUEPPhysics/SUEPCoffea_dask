@@ -10,6 +10,7 @@ import getpass
 import pickle
 import json
 from tqdm import tqdm
+import dask
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
@@ -37,13 +38,13 @@ redirector = "root://t3serv017.mit.edu/"
 
 # selections
 default_ABCD = [ 
-    ["SUEP_spher", ">=", 0.25],
-    ["SUEP_nconst", ">=", 10]
+    ["SUEP_spher_IRM", ">=", 0.25],
+    ["SUEP_nconst_IRM", ">=", 10]
 ]
 nPVs_l35_study = default_ABCD + [['PV_npvs','<',35]]
-nPVs_l35_njets2_study = default_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
+nPVs_l35_njets_2_study = default_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
 nPVs_l40_study = default_ABCD + [['PV_npvs','<',40]]
-selections = nPVs_l35_njets2_study
+selections = nPVs_l35_njets_2_study
     
 def apply_selection(df, variable, operator, value):
     """
@@ -102,9 +103,12 @@ def create_output_file(label):
             "C_var2_"+label: Hist.new.Integer(0, 500, name="C_var2_"+label).Weight(),
             "D_exp_var2_"+label: Hist.new.Integer(0, 500, name="D_exp_var2_"+label).Weight(),
             "D_obs_var2_"+label: Hist.new.Integer(0, 500, name="D_obs_var2_"+label).Weight(),
-            "ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_label+"_"+label).Integer(0, 500, name=var2_label+"_"+label).Weight(),
     }
-    
+    if label == 'IRM':
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_IRM+"_IRM").Integer(0, 500, name=var2_IRM+"_IRM").Weight()})
+    elif label == 'ML':
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_ML+"_ML").Integer(0, 500, name=var2_ML+"_ML").Weight()})
+
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in ["", "A_", "B_", "C_"]:
         output.update({
@@ -172,7 +176,7 @@ nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 output, sizeA, sizeB, sizeC = {}, {}, {}, {}
-for label in ['ISR','ML']: 
+for label in ['IRM','ML']: 
     output.update(create_output_file(label))
     sizeA.update({label:0})
     sizeB.update({label:0})
@@ -199,10 +203,6 @@ for ifile in tqdm(files):
     # check if file is empty
     if 'empty' in list(df.keys()): continue
     if df.shape[0] == 0: continue    
-            
-    # apply selections
-    for sel in selections: 
-        df = apply_selection(df, sel[0] + "_" + label, sel[1], sel[2])
 
     #####################################################################################
     # ---- ML Method Plots
@@ -254,6 +254,10 @@ for ifile in tqdm(files):
     #####################################################################################
     label = 'IRM'
     
+    # apply selections
+    for sel in selections: 
+        df = apply_selection(df, sel[0], sel[1], sel[2])
+        
     # keep event wide and IRM variables, cut out events that don't pass IRM
     df_IRM = df[[c for c in df.keys() if 'ML' not in c]]
     df_IRM = df_IRM[~df['SUEP_pt_IRM'].isnull()]
@@ -263,10 +267,10 @@ for ifile in tqdm(files):
          df_IRM = df_IRM.loc[((df_IRM[var1_IRM] < var1_IRM_val) & (df_IRM[var2_IRM] < var2_IRM_val)) | ((df_IRM[var1_IRM] >= var1_IRM_val) & (df_IRM[var2_IRM] < var2_IRM_val)) | ((df_IRM[var1_IRM] < var1_IRM_val) & (df_IRM[var2_IRM] >= var2_IRM_val))]
 
     # divide the dfs by region
-    df_A = df.loc[(df[var1_IRM] < var1_IRM_val) & (df[var2_IRM] < var2_IRM_val)]
-    df_B = df.loc[(df[var1_IRM] >= var1_IRM_val) & (df[var2_IRM] < var2_IRM_val)]
-    df_C = df.loc[(df[var1_IRM] < var1_IRM_val) & (df[var2_IRM] >= var2_IRM_val)]
-    df_D_obs = df.loc[(df[var1_IRM] >= var1_IRM_val) & (df[var2_IRM] >= var2_IRM_val)]
+    df_A = df_IRM.loc[(df_IRM[var1_IRM] < var1_IRM_val) & (df_IRM[var2_IRM] < var2_IRM_val)]
+    df_B = df_IRM.loc[(df_IRM[var1_IRM] >= var1_IRM_val) & (df_IRM[var2_IRM] < var2_IRM_val)]
+    df_C = df_IRM.loc[(df_IRM[var1_IRM] < var1_IRM_val) & (df_IRM[var2_IRM] >= var2_IRM_val)]
+    df_D_obs = df_IRM.loc[(df_IRM[var1_IRM] >= var1_IRM_val) & (df_IRM[var2_IRM] >= var2_IRM_val)]
 
     # keep track of number of events per region, used to measure D_exp
     sizeC[label] += df_C.shape[0]
@@ -284,19 +288,18 @@ for ifile in tqdm(files):
     output["D_exp_var2_"+label].fill(df_C[var2_IRM])
     output["C_var2_"+label].fill(df_C[var2_IRM])
     output["D_obs_var2_"+label].fill(df_D_obs[var2_IRM])
-    output["ABCDvars_2D_"+label].fill(df_IRM[var1_IRM], df[var2_IRM])
+    output["ABCDvars_2D_"+label].fill(df_IRM[var1_IRM], df_IRM[var2_IRM])
 
     # fill the distributions as they are saved in the dataframes
     plot_labels = [key for key in df_IRM.keys() if key in list(output.keys())]
     for plot in plot_labels: output[plot].fill(df_IRM[plot])  
 
     # fill some new distributions  
-    output["2D_SUEP_spher_SUEP_nconst_"+label].fill(df_IRM["SUEP_spher_"+label], df["SUEP_nconst_"+label])
-    output["2D_SUEP_spher_ntracks_"+label].fill(df_IRM["SUEP_spher_"+label], df["SUEP_ntracks_"+label])
+    output["2D_SUEP_spher_SUEP_nconst_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_nconst_"+label])
+    output["2D_SUEP_spher_ntracks_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_ntracks_"+label])
     output["2D_SUEP_S1_ntracks_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_ntracks_"+label])
-    output["2D_SUEP_S1_nconst_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_nconst_"+label])
+    output["2D_SUEP_S1_SUEP_nconst_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_nconst_"+label])
 
-    ### FIXME
     # per region
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
 
@@ -305,6 +308,8 @@ for ifile in tqdm(files):
         for plot in plot_labels: output[r+plot].fill(df_r[plot])  
 
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
+
+### end plotting loop
         
 # ABCD method to obtain D expected for each selection
 for label in ['IRM', 'ML']:

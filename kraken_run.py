@@ -28,7 +28,7 @@ echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset=
 python3 condor_SUEP_WS.py --wait={wait} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 #rm temp.root
 
-echo "python3 merge.py --xrisMC={ismc}"
+echo "python3 merge.py --isMC={ismc}"
 python3 merge.py --isMC={ismc}
 
 #echo "----- transferring output to scratch :"
@@ -106,8 +106,8 @@ def main():
         )
         lifetime = float(lifetime)
         lifetime = lifetime / (60*60)
-        logging.info("--- proxy lifetime is {} hours".format(lifetime))
-        if lifetime < 139.00: # we want at least 3 hours
+        logging.info("--- proxy lifetime is {} hours".format(round(lifetime,1)))
+        if lifetime < 139.00: # it's not overkill
             logging.warning("--- proxy has expired !")
             regenerate_proxy = True
 
@@ -135,6 +135,7 @@ def main():
         
         # wait 1 min for 100 jobs
         wait_time = 60.0*nJobs/100
+        wait_time = min(wait_time, 60.0*15)     # don't wait more than 15 mins
         logging.info('-- Wait time set to ' + str(wait_time) + ' seconds.')
         
     with open(options.input, 'r') as stream:
@@ -170,8 +171,6 @@ def main():
                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
                         #infiles.write(i.split(" ")[0]+"\n")
                         nfiles+=1
-                        print("debug")
-                        break
                     infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
