@@ -31,7 +31,7 @@ python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={datas
 #rm temp.root
 
 #echo "python3 merge.py --isMC={ismc}"
-#python3 merge.py --isMC={ismc}
+python3 merge.py --isMC={ismc}
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/."
@@ -194,6 +194,7 @@ def main():
                         #"../workflows/SUEP_coffea.py",
                         #"../workflows/SumWeights.py",
                         "../data",
+                        "../merge.py",
                         proxy_copy
                     ]),
                     just_file=just_file,
