@@ -223,12 +223,5 @@ def main():
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
             
-            ### DEPRECATED
-            # give time to xrootd on T2 to process the jobs
-            # for now, this is fixed such that it waits 15mins for 1000 files
-            # sleepTime = nfiles * 5.0*60.0/1000.0
-            # logging.info("Sleeping for "+str(round(sleepTime))+" seconds")
-            # time.sleep(sleepTime)
-
 if __name__ == "__main__":
     main()
