@@ -36,5 +36,5 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=5000,
+        chunksize=10000,
     )

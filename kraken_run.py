@@ -219,6 +219,5 @@ def main():
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
             
-
 if __name__ == "__main__":
     main()

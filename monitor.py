@@ -107,7 +107,7 @@ def main():
 
             #If files are missing we resubmit with the same condor.sub 
             if options.resubmit:
-                print("resubmitting files for {}".format(sample))
+                logging.info("-- resubmitting files for {}".format(sample))
                 file_names = []
                 for item in complete_list:
                     if 'hdf5' not in item: continue
@@ -118,6 +118,11 @@ def main():
                 for redo_file in jobs_resubmit:
                     resubmit_file.write(redo_file+"\n")
                 resubmit_file.close()
+                
+                # remove log files from previous iteration
+                subprocess.call('rm ' + jobs_dir + "/*.err", shell=True)
+                subprocess.call('rm ' + jobs_dir + "/*.out", shell=True)
+                subprocess.call('rm ' + jobs_dir + "/*.log", shell=True)
                 
                 htc = subprocess.Popen(
                       "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
@@ -130,8 +135,7 @@ def main():
                 out, err = htc.communicate()
                 exit_status = htc.returncode
                 logging.info("condor submission status : {}".format(exit_status))
-                
-                
+                 
             if options.move:
                 
                 if not os.path.isdir(move_dir.format(sample_name)): os.system("mkdir " + move_dir.format(sample_name)) 
@@ -156,16 +160,6 @@ def main():
                     subprocess.run(['xrdcp', 
                                "root://t3serv017.mit.edu/" + out_dir.split('hadoop')[-1].format(sample_name) + "/" + file,
                                move_dir.format(sample_name) + "/"])
-                
-            # give time to xrootd on T2 to process the jobs
-            # for now, this is fixed such that it waits 15mins for 1000 files
-            if options.resubmit:
-                sleepTime = len(jobs_resubmit) * 15.0*60.0/1000.0
-                t_end = time.time()
-                mod = (t_end - t_start) 
-                logging.info("Deleting, resubmitting, and moving files took " + str(round(mod)) + " seconds")
-                logging.info("Sleeping for "+str(round(sleepTime - mod))+" seconds")
-                time.sleep(sleepTime - mod)
                 
 
 if __name__ == "__main__":
