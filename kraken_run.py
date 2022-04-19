@@ -61,8 +61,8 @@ when_to_transfer_output = ON_EXIT
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
-x509userproxy         = /home/submit/freerc/x509up_u206148
-+AccountingGroup = "analysis.freerc"
+x509userproxy         = /home/submit/{user}/{proxy}
++AccountingGroup = "analysis.{user}"
 #requirements          = (target.MACHINE == t3btch115.mit.edu)
 #requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
 #requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
@@ -200,7 +200,8 @@ def main():
                     just_file=just_file,
                     jobdir=jobs_dir,
                     proxy=proxy_base,
-                    queue=options.queue
+                    queue=options.queue,
+                    user=username
                 )
                 condorfile.write(condor)
                 condorfile.close()
