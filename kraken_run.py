@@ -21,19 +21,21 @@ export HOME=.
 echo "hostname:"
 hostname
 
+sleep $[ ( $RANDOM % 900 )  + 1 ]s
+
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "xrdcp $2 temp.root"
 #xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --wait={wait} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 #rm temp.root
 
-echo "python3 merge.py --isMC={ismc}"
-python3 merge.py --isMC={ismc}
+#echo "python3 merge.py --isMC={ismc}"
+#python3 merge.py --isMC={ismc}
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
-xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+echo "xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/."
+xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/.
 
 echo "rm *.hdf5"
 rm *.hdf5
@@ -44,9 +46,9 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 2GB
-request_memory        = 2GB
-request_cpus          = 1
+request_disk          = 4GB
+request_memory        = 4GB
+#request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
@@ -59,8 +61,8 @@ when_to_transfer_output = ON_EXIT
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
-x509userproxy         = /home/submit/lavezzo/x509up_u210253
-+AccountingGroup = "analysis.lavezzo"
+x509userproxy         = /home/submit/freerc/x509up_u206148
++AccountingGroup = "analysis.freerc"
 #requirements          = (target.MACHINE == t3btch115.mit.edu)
 #requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
 #requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
@@ -133,18 +135,14 @@ def main():
             nJobs += len(Raw_list.readlines())
         logging.info('-- Submitting a total of ' + str(nJobs) + ' jobs.')
         
-        # wait 1 min for 100 jobs
-        wait_time = 60.0*nJobs/100
-        wait_time = min(wait_time, 60.0*15)     # don't wait more than 15 mins
-        logging.info('-- Wait time set to ' + str(wait_time) + ' seconds.')
-        
     with open(options.input, 'r') as stream:
         
         for sample in stream.read().split('\n'):  
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
+            #jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
+            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             if os.path.isdir(jobs_dir):
                 if not options.force:
@@ -184,7 +182,6 @@ def main():
                     era=options.era,
                     outdir=fin_outdir_condor,          
                     dataset=sample_name,
-                    wait=wait_time
                 )
                 scriptfile.write(script)
                 scriptfile.close()
@@ -192,12 +189,11 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/merge.py",
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/condor_SUEP_WS.py",
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows",
-                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SUEP_coffea.py",
-                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SumWeights.py",
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/data",
+                        "../condor_SUEP_WS.py",
+                        "../workflows",
+                        #"../workflows/SUEP_coffea.py",
+                        #"../workflows/SumWeights.py",
+                        "../data",
                         proxy_copy
                     ]),
                     just_file=just_file,
@@ -223,12 +219,6 @@ def main():
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
             
-            ### DEPRECATED
-            # give time to xrootd on T2 to process the jobs
-            # for now, this is fixed such that it waits 15mins for 1000 files
-            # sleepTime = nfiles * 5.0*60.0/1000.0
-            # logging.info("Sleeping for "+str(round(sleepTime))+" seconds")
-            # time.sleep(sleepTime)
 
 if __name__ == "__main__":
     main()

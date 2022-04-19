@@ -19,13 +19,7 @@ parser.add_argument('--doSyst', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
-parser.add_argument('--wait', type=float, default=0.0, help="Wait [0,<wait>] seconds, needed so that MIT T2 XRootD doesn't crash.") 
 options = parser.parse_args()
-
-if options.wait != 0:
-    random_time = np.random.randint(0,int(options.wait))
-    print("They can't handle my power. I must sleep", random_time, "seconds.")
-    time.sleep(random_time)
 
 out_dir = os.getcwd()
 modules_era = []
@@ -38,9 +32,9 @@ for instance in modules_era:
         treename='Events',
         processor_instance=instance,
         executor=futures_executor,
-        executor_args={'workers': 2,
+        executor_args={'workers': 1,
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=1000,
+        chunksize=5000,
     )
