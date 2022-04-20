@@ -69,14 +69,16 @@ class SUEP_cluster(processor.ProcessorABC):
         eval3 = np.moveaxis(evals,0,1)[2]
 
         scalarSpher = 1.5*(eval1[:] + eval2[:])
-        selectionCut = scalarSpher > 0.3
+        selectionCut = scalarSpher > 0.4
 
         events = events[selectionCut]
+        particles = particles[selectionCut] 
+        evals = evals[selectionCut]
         eval1 = eval1[selectionCut]
         eval2 = eval2[selectionCut]
         eval3 = eval3[selectionCut]
         
-        return events, eval1, eval2, eval3
+        return events, particles, evals, eval1, eval2, eval3
 
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
@@ -272,52 +274,45 @@ class SUEP_cluster(processor.ProcessorABC):
         return event_onejet, event_twojets, event_threejets, onejet, twojets, threejets,[coll for coll in extraColls]
 
     def selectByTracks(self, events, leptons, extraColls = []):
-
-        # Prepare the clean PFCand matched to tracks collection
-        # PFCands (Particle-Flow Candidates) : every particle in the particle flow is saved here.
+        ### PARTICLE FLOW CANDIDATES ###
+        # Every particle in particle flow (clean PFCand matched to tracks collection)
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")
-        #print(len(ak.num(Cands, axis=1)),"Printing len of ak.num(Cands, axis=0)(hopefully matches the number of events)")
-        # Track selection requirements
-        cut = (events.PFCands.fromPV > 1) & \
+
+        cutPF = (events.PFCands.fromPV > 1) & \
             (events.PFCands.trkPt >= 1) & \
             (abs(events.PFCands.trkEta) <= 2.5) & \
             (abs(events.PFCands.dz) < 10) & \
             (events.PFCands.dzErr < 0.05)
-        Cleaned_cands = Cands[cut]
-        Cleaned_cands = ak.packed(Cleaned_cands)
+        Cleaned_cands = ak.packed(Cands[cutPF])
 
-        # Prepare the Lost Track collection
-	# LostTracks : Tracks are reconstructed but not identified as one of the particles.
-	# SUEP particles usually fall into this category.
+	    ### LOST TRACKS ###
+        # Unidentified tracks, usually SUEP Particles
         LostTracks = ak.zip({
             "pt": events.lostTracks.pt,
             "eta": events.lostTracks.eta,
             "phi": events.lostTracks.phi,
             "mass": 0.0
         }, with_name="Momentum4D")
-        # More track selection requirement
-        cut = (events.lostTracks.fromPV > 1) & \
+
+        cutLost = (events.lostTracks.fromPV > 1) & \
             (events.lostTracks.pt >= 1) & \
             (abs(events.lostTracks.eta) <= 1.0) \
             & (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
-        Lost_Tracks_cands = LostTracks[cut]
-        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
+        Lost_Tracks_cands = ak.packed(LostTracks[cutLost])
 
-        # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
-	# Here we are concatenating the pf tracks and lost tracks.
-        Total_Tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
-        tracks = Total_Tracks
-        ## Tracks that overlap with the leptons are taken out
-        tracks = tracks[(tracks.deltaR(leptons[:,0])>= 0.4) & (tracks.deltaR(leptons[:,1])>= 0.4)]
-        Ntracks = ak.num(tracks,axis=1)
-        return events, leptons, tracks, Ntracks, [coll for coll in extraColls]
+        totalTracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
+
+        # Sorting out the tracks that overlap with leptons
+        totalTracks = totalTracks[(totalTracks.deltaR(leptons[:,0])>= 0.4) & (totalTracks.deltaR(leptons[:,1])>= 0.4)]
+        nTracks = ak.num(totalTracks,axis=1)
+        return events, leptons, totalTracks, nTracks, [coll for coll in extraColls]
 
     def selectByGEN(self, events):
         GenParts = ak.zip({
@@ -355,6 +350,9 @@ class SUEP_cluster(processor.ProcessorABC):
         outSpherL = {}
         outSpherZ = {}
         outSpherT = {}
+        outnTrkL = {}
+        outnTrkZ = {}
+        outnTrkT = {}
         outgen  = {}
 
         # Data dependant stuff
@@ -365,18 +363,16 @@ class SUEP_cluster(processor.ProcessorABC):
         # ------------------------------------------------------------------------------------
         # ------------------------------- OBJECT LOADING -------------------------------------
         # ------------------------------------------------------------------------------------
-        # First, the trigger selection, as it takes out significant load for other steps
+        # Trigger selection
         if debug: print("Applying lepton requirements.... %i events in"%len(events))
         events, electrons, muons = self.selectByLeptons(events)[:3]
 
         if not(self.shouldContinueAfterCut(events)): return output # If we have no events, we simply stop
 
-        # Then, the lepton selection
+        # Lepton selection
         if debug: print("%i events pass lepton cuts. Applying trigger requirements...."%len(events))
         events, [electrons, muons] = self.selectByTrigger(events,[electrons, muons])
-        # Once passed the trigger, we can just merge the collections
         leptons = ak.concatenate([electrons, muons], axis=1)
-        # Sort leptons by pt
         highpt_leptons = ak.argsort(leptons.pt, axis=1, ascending=False, stable=True)
         leptons = leptons[highpt_leptons]
 
@@ -397,7 +393,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         if doTracks:
           # Right now no track cuts, only selecting tracks
-          events, leptons, tracks, Ntracks = self.selectByTracks(events, leptons) [:4]
+          events, leptons, tracks, nTracks = self.selectByTracks(events, leptons) [:4]
           if not(self.shouldContinueAfterCut(events)): return output
           if debug: print("%i events pass track cuts. Doing more stuff..."%len(events))
 
@@ -417,7 +413,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Define outputs for plotting
         if debug: print("Saving reco variables")
 
-	    # The variables that I can get are listed above in "SelectByLeptons" function
+        #region: LEPTONS
         outlep["leadlep_pt"]    = leptons.pt[:,0]
         outlep["subleadlep_pt"] = leptons.pt[:,1]
         outlep["leadlep_eta"]   = leptons.eta[:,0]
@@ -431,11 +427,9 @@ class SUEP_cluster(processor.ProcessorABC):
         outlep["Z_eta"] = Zcands.eta[:] 
         outlep["Z_phi"] = Zcands.phi[:] 
         outlep["Z_m"] =  Zcands.mass[:]
+        #endregion
 
-
-        # From here I am working with jets
-        # ak4jets is an array of arrays.        
-        # Each element in the big array is an event, and each element (which is an array) has n entries, where n = # of jets in an event.
+        #region: JETS
         #out1jet["onejet_pt"] = onejet.pt[:,0]
         #out1jet["onejet_eta"] = onejet.eta[:,0]
         #out1jet["onejet_phi"] = onejet.phi[:,0]
@@ -459,54 +453,80 @@ class SUEP_cluster(processor.ProcessorABC):
         #out3jets["threejets3_pt"] = threejets.pt[:,2]
         #out3jets["threejets3_eta"] = threejets.eta[:,2]
         #out3jets["threejets3_phi"] = threejets.phi[:,2]
+        #endregion
 
-        #From here I am working with track multiplicity
- 
+        #region: TRACK MULTIPLICITY & SPHERICITY
         if doTracks:
-          outnumtrk["Ntracks"] = Ntracks
-          #outnumtrk["nTracks"] = ak.num(tracks, axis=1)
+            outnumtrk["Ntracks"] = nTracks
 
-          # Reconstructing by setting pS = -pZ 
-          boost_Zinv = ak.zip({
-              "px": Zcands.px,
-              "py": Zcands.py,
-              "pz": Zcands.pz,
-              "mass": Zcands.mass
-          }, with_name="Momentum4D") 
+            # Reconstructing by setting pS = -pZ 
+            boost_Zinv = ak.zip({
+                "px": Zcands.px,
+                "py": Zcands.py,
+                "pz": Zcands.pz,
+                "mass": Zcands.mass
+            }, with_name="Momentum4D") 
 
-          # Reconstructing by summing all tracks
-          boost_tracks = ak.zip({
-              "px": ak.sum(tracks.px, axis=1)*-1,
-              "py": ak.sum(tracks.py, axis=1)*-1,
-              "pz": ak.sum(tracks.pz, axis=1)*-1,
-              "mass": 125 # Assuming it is a Higgs?
-          }, with_name="Momentum4D")
+            # Reconstructing by summing all tracks
+            boost_tracks = ak.zip({
+                "px": ak.sum(tracks.px, axis=1)*-1,
+                "py": ak.sum(tracks.py, axis=1)*-1,
+                "pz": ak.sum(tracks.pz, axis=1)*-1,
+                "mass": 125 # Assuming it is a Higgs?
+            }, with_name="Momentum4D")
 
-          tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
-          tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
+            tracks_boostedagainstZ      = tracks.boost_p4(boost_Zinv)
+            tracks_boostedagainsttracks = tracks.boost_p4(boost_tracks)
 
-          clean_events, eval1, eval2, eval3 = self.sphericity(events, tracks, 2) # Gives the sphericity in Lab frame
-          clean_eventsZ, evalZ1, evalZ2, evalZ3 = self.sphericity(events, tracks_boostedagainstZ, 2) #Gives the sphericity in -Z frame (-pZ = pS)
-          clean_eventsT, evalT1, evalT2, evalT3 = self.sphericity(events, tracks_boostedagainsttracks, 2) #Gives the sphericity in -Z frame (tracks)
+            clean_eventsL, particlesL, evalsL, evalL1, evalL2, evalL3 = self.sphericity(events, tracks, 2) # Gives the sphericity in Lab frame
+            clean_eventsZ, particlesZ, evalsZ, evalZ1, evalZ2, evalZ3 = self.sphericity(events, tracks_boostedagainstZ, 2) #Gives the sphericity in -Z frame (-pZ = pS)
+            clean_eventsT, particlesT, evalsT, evalT1, evalT2, evalT3 = self.sphericity(events, tracks_boostedagainsttracks, 2) #Gives the sphericity in -Z frame (tracks)
 
-          ###### OUTPUT FOR SPHERICITY ######
+            #region: OUTPUT FOR SPHERICITY
 
-          ### Evals themselves ###
-          outSpherL["eval_L1"] = eval1[:]
-          outSpherL["eval_L2"] = eval2[:]
-          outSpherL["eval_L3"] = eval3[:]
-          outSpherZ["eval_Z1"] = evalZ1[:]
-          outSpherZ["eval_Z2"] = evalZ2[:]
-          outSpherZ["eval_Z3"] = evalZ3[:]
+            ### Evals themselves ###
+            outSpherL["eval_L1"] = evalL1[:]
+            outSpherL["eval_L2"] = evalL2[:]
+            outSpherL["eval_L3"] = evalL3[:]
+            outSpherZ["eval_Z1"] = evalZ1[:]
+            outSpherZ["eval_Z2"] = evalZ2[:]
+            outSpherZ["eval_Z3"] = evalZ3[:]
+            outSpherT["eval_T1"] = evalT1[:]
+            outSpherT["eval_T2"] = evalT2[:]
+            outSpherT["eval_T3"] = evalT3[:]
 
-          ### Scalar Sphericity ###
-          outSpherL["scalarSpher_L"] = 1.5*(eval1[:] + eval2[:])
-          outSpherZ["scalarSpher_Z"] = 1.5*(evalZ1[:] + evalZ2[:])
+            ### Scalar Sphericity ###
+            outSpherL["scalarSpher_L"] = 1.5*(evalL1[:] + evalL2[:])
+            outSpherZ["scalarSpher_Z"] = 1.5*(evalZ1[:] + evalZ2[:])
+            outSpherT["scalarSpher_T"] = 1.5*(evalT1[:] + evalT2[:])
 
-          ### Mean Difference ###
+            ### Mean Difference ###
+            meandiffL = np.empty(len(evalsL))
+            meandiffZ = np.empty(len(evalsZ))
+            meandiffT = np.empty(len(evalsT))
+            
+            for i in range(len(evalsL)):
+                meandiffL[i] = np.mean([abs(evalsL[i][0]-evalsL[i][1]),abs(evalsL[i][1]-evalsL[i][2]),abs(evalsL[i][2]-evalsL[i][0])])
 
-          outSpherL["meanDiff_L"] = np.mean(eval2[:] - eval1[:],eval3[:] - eval2[:],eval3[:] - eval1[:])
-          outSpherZ["meanDiff_Z"] = np.mean(evalZ2[:] - evalZ1[:],evalZ3[:] - evalZ2[:],evalZ3[:] - evalZ1[:])
+            for i in range(len(evalsZ)):
+                meandiffZ[i] = np.mean([abs(evalsZ[i][0]-evalsZ[i][1]),abs(evalsZ[i][1]-evalsZ[i][2]),abs(evalsZ[i][2]-evalsZ[i][0])])
+
+            for i in range(len(evalsT)):
+                meandiffT[i] = np.mean([abs(evalsT[i][0]-evalsT[i][1]),abs(evalsT[i][1]-evalsT[i][2]),abs(evalsT[i][2]-evalsT[i][0])])
+
+            outSpherL["meanDiff_L"] = meandiffL
+            outSpherZ["meanDiff_Z"] = meandiffZ
+            outSpherT["meanDiff_T"] = meandiffT
+
+            ### Tracks with Sphericity Selection ###
+            """
+            outnTrkL["spherSel_tracksL"] = particlesL
+            outnTrkZ["spherSel_tracksZ"] = particlesZ
+            outnTrkT["spherSel_tracksT"] = particlesT 
+            """
+
+            #endregion
+        #endregion
 
         if doGen:
           if debug: print("Saving gen variables")
@@ -519,20 +539,43 @@ class SUEP_cluster(processor.ProcessorABC):
           outlep["genHeta"] = genH.eta[:,0]
           outlep["genHphi"] = genH.phi[:,0]
 
+        outputs = {
+            "lepvars":[outlep,events],
+            "jetvars1":[out1jet,event_onejet],
+            "jetvars2":[out2jets,event_twojets],
+            "jetvars3":[out3jets,event_threejets],
+            "numtrkvars":[outnumtrk,events],
+            "sphervarsL":[outSpherL,clean_eventsL],
+            "sphervarsZ":[outSpherZ,clean_eventsZ],
+            "sphervarsT":[outSpherT,clean_eventsT],
+            "spherTrkL":[outnTrkL,clean_eventsL],
+            "spherTrkZ":[outnTrkZ,clean_eventsZ],
+            "spherTrkT":[outnTrkT,clean_eventsT]
+            }
 
+        for output in outputs:
+            if self.isMC:
+                outputs[output][0]["genweight"] = outputs[output][1].genWeight[:]
+            if debug: print("Conversion to pandas...")
+            if not isinstance(outputs[output][0], pd.DataFrame): 
+                outputs[output][0] = self.ak_to_pandas(outputs[output][0])
+
+        """
         if self.isMC:
-          # We need this to be able to normalize the samples 
-          outlep["genweight"]= events.genWeight[:]
-          out1jet["genweight"]= event_onejet.genWeight[:]
-          out2jets["genweight"]= event_twojets.genWeight[:]
-          out3jets["genweight"]= event_threejets.genWeight[:]
-          outnumtrk["genweight"]= events.genWeight[:]
-          outSpherL["genweight"]= clean_events.genWeight[:]
-          outSpherZ["genweight"]= clean_eventsZ.genWeight[:]
+            # We need this to be able to normalize the samples 
+            outlep["genweight"]= events.genWeight[:]
+            out1jet["genweight"]= event_onejet.genWeight[:]
+            out2jets["genweight"]= event_twojets.genWeight[:]
+            out3jets["genweight"]= event_threejets.genWeight[:]
+            outnumtrk["genweight"]= events.genWeight[:]
+            outSpherL["genweight"]= clean_eventsL.genWeight[:]
+            outSpherZ["genweight"]= clean_eventsZ.genWeight[:]
+            outSpherT["genweight"]= clean_eventsT.genWeight[:]
           
 
         # This goes last, convert from awkward array to pandas and save the hdf5
         if debug: print("Conversion to pandas...")
+    
         if not isinstance(outlep, pd.DataFrame): outlep = self.ak_to_pandas(outlep)
         if not isinstance(out1jet, pd.DataFrame): out1jet = self.ak_to_pandas(out1jet)
         if not isinstance(out2jets, pd.DataFrame): out2jets = self.ak_to_pandas(out2jets)
@@ -540,8 +583,16 @@ class SUEP_cluster(processor.ProcessorABC):
         if not isinstance(outnumtrk, pd.DataFrame): outnumtrk = self.ak_to_pandas(outnumtrk)
         if not isinstance(outSpherL, pd.DataFrame): outSpherL = self.ak_to_pandas(outSpherL)
         if not isinstance(outSpherZ, pd.DataFrame): outSpherZ = self.ak_to_pandas(outSpherZ)
+        if not isinstance(outSpherT, pd.DataFrame): outSpherT = self.ak_to_pandas(outSpherT)
+        """
+
         if debug: print("DFS saving....")
-        self.save_dfs([outlep, out1jet, out2jets, out3jets, outnumtrk, outSpherL, outSpherZ],["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars","sphervarsL","sphervarsZ"], chunkTag)
+
+        self.save_dfs(
+            [ outlep,    out1jet,  out2jets,  out3jets,  outnumtrk,   outSpherL,   outSpherZ,   outSpherT,   outnTrkL,   outnTrkZ,   outnTrkT],
+            ["lepvars","jetvars1","jetvars2","jetvars3","numtrkvars","sphervarsL","sphervarsZ","sphervarsT","spherTrkL","spherTrkZ","spherTrkT"],
+            chunkTag
+        )
 
         return output
 
