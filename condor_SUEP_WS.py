@@ -18,6 +18,7 @@ parser.add_argument('--nevt', type=str, default=-1, help="")
 parser.add_argument('--analyzer', type=str, default="GluGlu", help="")
 parser.add_argument('--outputdir', type=str, default=None, help="")
 parser.add_argument('--chunksize', type=int, default=250000, help="")
+parser.add_argument('--test', type=bool, default=False, help="")
 options = parser.parse_args()
 
 out_dir = options.outputdir if options.outputdir else os.getcwd()
@@ -44,5 +45,6 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize = options.chunksize
+        chunksize = 100 if options.test else options.chunksize,
+        maxchunks = 1 if options.test else None,
     )
