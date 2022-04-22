@@ -33,6 +33,7 @@ def main():
     out_dir = "/mnt/T3_US_MIT/hadoop/scratch/" + username  + "/SUEP/" + options.tag + "/{}/"
     out_dir_xrd = "/scratch/" + username  + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
+    jobs_base_dir = '/work/submit/'+username+'/SUEP/logs/'
     
     if options.move:
         if not os.path.isdir("/work/submit/" + username + "/SUEP/" + options.tag): 
@@ -70,9 +71,8 @@ def main():
             t_start = time.time()
             
             sample_name = sample.split("/")[-1]
-            #jobs_base_dir = '/work/submit/'+username+'/SUEP/logs/'
             jobs_dir =  '_'.join(['jobs', options.tag, sample_name])
-            #jobs_dir = jobs_base_dir + jobs_dir
+            jobs_dir = jobs_base_dir + jobs_dir
             
             # delete files that are corrupted (i.e., empty)
             for file in os.listdir(out_dir.format(sample_name)):
