@@ -55,6 +55,18 @@ QCD_2018 = [
     "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
 ]
 
+QCD_HT_2018 = [
+   "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
+]
+    
+
 data_2018 = [
            "JetHT+Run2018A-UL2018_MiniAODv2-v1+MINIAOD",
            "JetHT+Run2018B-UL2018_MiniAODv2-v1+MINIAOD",
@@ -117,10 +129,13 @@ QCD_HT_2016 = [
 results = []
 start = time.time()
 
-for sample in data_2018:
-    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2018)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
-for sample in QCD_2018:
+# for sample in data_2018:
+#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2018)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in QCD_2018:
+#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2018)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+for sample in QCD_HT_2018:
     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2018)
     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_HT_2017:
@@ -135,9 +150,9 @@ for sample in QCD_2018:
 # for sample in data_2016:
 #     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2016)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
-for sample in SUEP:
-    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1'.format(options.tag, options.output, sample, options.xrootd)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in SUEP:
+#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1'.format(options.tag, options.output, sample, options.xrootd)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 
 # Close the pool and wait for each running task to complete
 pool.close()
