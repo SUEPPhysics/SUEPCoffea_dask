@@ -1,6 +1,8 @@
 import os
 import json
 import argparse
+import time
+import numpy
 
 #Import coffea specific features
 from coffea.processor import run_uproot_job, futures_executor
@@ -34,5 +36,5 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=1000
+        chunksize=10000,
     )

@@ -21,19 +21,21 @@ export HOME=.
 echo "hostname:"
 hostname
 
+sleep $[ ( $RANDOM % 900 )  + 1 ]s
+
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "xrdcp $2 temp.root"
 #xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
-rm temp.root
+#rm temp.root
 
-echo "python3 merge.py --isMC={ismc}"
+#echo "python3 merge.py --isMC={ismc}"
 python3 merge.py --isMC={ismc}
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
-xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+echo "xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/."
+xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/.
 
 echo "rm *.hdf5"
 rm *.hdf5
@@ -46,7 +48,7 @@ condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 4GB
 request_memory        = 4GB
-request_cpus          = 1
+#request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
@@ -106,8 +108,8 @@ def main():
         )
         lifetime = float(lifetime)
         lifetime = lifetime / (60*60)
-        logging.info("--- proxy lifetime is {} hours".format(lifetime))
-        if lifetime < 139.00: # we want at least 3 hours
+        logging.info("--- proxy lifetime is {} hours".format(round(lifetime,1)))
+        if lifetime < 139.00: # it's not overkill
             logging.warning("--- proxy has expired !")
             regenerate_proxy = True
 
@@ -120,13 +122,28 @@ def main():
         shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
 
     with open(options.input, 'r') as stream:
+        
+        
+        # count total number of files to submit
+        nJobs = 0
         for sample in stream.read().split('\n'):
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
+            input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
+            Raw_list = open(input_list, "r")
+            nJobs += len(Raw_list.readlines())
+        logging.info('-- Submitting a total of ' + str(nJobs) + ' jobs.')
+        
+    with open(options.input, 'r') as stream:
+        
+        for sample in stream.read().split('\n'):  
+            if '#' in sample: continue
+            if len(sample.split('/')) <= 1: continue
+            sample_name = sample.split("/")[-1]
+            #jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
+            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
-            print(sample_name)
             if os.path.isdir(jobs_dir):
                 if not options.force:
                     logging.error(" " + jobs_dir + " already exist !")
@@ -144,15 +161,15 @@ def main():
                 Raw_list = open(input_list, "r")
                 nfiles=0
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
-                     for i in Raw_list:
-                         #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
-                         #infiles.write(i+"\n")
-                         full_file = i.split(" ")[0]
-                         just_file = full_file.split("/")[-1]
-                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
-                         #infiles.write(i.split(" ")[0]+"\n")
-                         nfiles+=1
-                     infiles.close()
+                    for i in Raw_list:
+                        #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
+                        #infiles.write(i+"\n")
+                        full_file = i.split(" ")[0]
+                        just_file = full_file.split("/")[-1]
+                        infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
+                        #infiles.write(i.split(" ")[0]+"\n")
+                        nfiles+=1
+                    infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
             os.system("mkdir -p {}".format(fin_outdir))
@@ -164,7 +181,7 @@ def main():
                     ismc=options.isMC,
                     era=options.era,
                     outdir=fin_outdir_condor,          
-                    dataset=sample_name
+                    dataset=sample_name,
                 )
                 scriptfile.write(script)
                 scriptfile.close()
@@ -172,12 +189,12 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/merge.py",
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/condor_SUEP_WS.py",
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows",
-                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SUEP_coffea.py",
-                        #"/home/submit/"+username+"/SUEP/SUEPCoffea_dask/workflows/SumWeights.py",
-                        "/home/submit/"+username+"/SUEP/SUEPCoffea_dask/data",
+                        "../condor_SUEP_WS.py",
+                        "../workflows",
+                        #"../workflows/SUEP_coffea.py",
+                        #"../workflows/SumWeights.py",
+                        "../data",
+                        "../merge.py",
                         proxy_copy
                     ]),
                     just_file=just_file,
@@ -204,11 +221,5 @@ def main():
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
             
-            # give time to xrootd on T2 to process the jobs
-            # for now, this is fixed such that it waits 15mins for 1000 files
-            sleepTime = nfiles * 15.0*60.0/1000.0
-            logging.info("Sleeping for "+str(round(sleepTime))+" seconds")
-            time.sleep(sleepTime)
-
 if __name__ == "__main__":
     main()

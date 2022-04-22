@@ -71,11 +71,9 @@ for i in range(nResubmits):
     if not options.dryrun:
         
         logging.info("Executing monitor.py for data...")
-        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2016_data_A01.txt', options.movesample))
-        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2017_data_A01.txt', options.movesample))
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_data_A01.txt', options.movesample))
         logging.info("Executing monitor.py for MC...")
-        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2016_MC_A01.txt', options.movesample))
-        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'list_2017_MC_A01.txt', options.movesample))    
+        os.system("python3 monitor.py --tag={} --input={} -r=1 -m={}".format(tag, 'filelist/list_2018_MC_A01.txt', options.movesample)) 
 
     if options.move:
         
@@ -110,7 +108,7 @@ for i in range(nResubmits):
         logging.info("All done")
         break
         
-    # additional buffer time can be added, such that all the jobs can run
+    # wait to resubmit jobs using the parameter <hours>, accounts for time it took to submit them
     sleepTime = 60*60*nHours
     mod = t_end-t_start
     logging.info("Submitting and moving files took " + str(round(mod)) + " seconds")

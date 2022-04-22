@@ -116,25 +116,25 @@ results = []
 start = time.time()
 
 for sample in data_2018:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample, False)
+    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 0)
     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 for sample in QCD_2018:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample, True)
+    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_HT_2017:
-#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample)
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
 #     results.append(pool.apply_async(call_makeplots, (cmd,)))
 # for sample in QCD_HT_2016:
-#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample)
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
 #     results.append(pool.apply_async(call_makeplots, (cmd,)))
 # for sample in data_2017:
-#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample)
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in data_2016:
-#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample)
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 for sample in SUEP:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC{}'.format(options.tag, sample, True)
+    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 
 # Close the pool and wait for each running task to complete
