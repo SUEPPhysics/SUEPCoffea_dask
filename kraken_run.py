@@ -17,25 +17,27 @@ export PATH=$USER_PATH
 
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
+    
+echo $PATH
 
 echo "hostname:"
 hostname
 
-sleep $[ ( $RANDOM % 900 )  + 1 ]s
+sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "xrdcp $2 temp.root"
-#xrdcp $2 temp.root
+xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
-#rm temp.root
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
+rm temp.root
 
 #echo "python3 merge.py --isMC={ismc}"
 python3 merge.py --isMC={ismc}
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/."
-xrdcp *.hdf5 root://t3serv017.mit.edu/{outdir}/.
+echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
+xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
 
 echo "rm *.hdf5"
 rm *.hdf5
@@ -97,7 +99,9 @@ def main():
     username = getpass.getuser()
     outdir = '/mnt/T3_US_MIT/hadoop/scratch/'+ username + '/SUEP/{tag}/{sample}/'
     outdir_condor = '/scratch/'+username+'/SUEP/{tag}/{sample}/'
-
+    workdir = os.getcwd()
+    logdir = '/work/submit/'+username+'/SUEP/logs/'
+    
     regenerate_proxy = False
     if not os.path.isfile(proxy_copy):
         logging.warning('--- proxy file does not exist')
@@ -123,7 +127,6 @@ def main():
 
     with open(options.input, 'r') as stream:
         
-        
         # count total number of files to submit
         nJobs = 0
         for sample in stream.read().split('\n'):
@@ -141,8 +144,8 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            #jobs_dir = '_'.join(['/work/submit/'+username+'/SUEP/logs/jobs', options.tag, sample_name])
-            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir = '_'.join([logdir+"jobs", options.tag, sample_name])
+            #jobs_dir = '_'.join(['jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             if os.path.isdir(jobs_dir):
                 if not options.force:
@@ -189,12 +192,12 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        "../condor_SUEP_WS.py",
-                        "../workflows",
-                        #"../workflows/SUEP_coffea.py",
-                        #"../workflows/SumWeights.py",
-                        "../data",
-                        "../merge.py",
+                        workdir + "/condor_SUEP_WS.py",
+                        workdir + "/workflows",
+                        #workdir + "workflows/SUEP_coffea.py",
+                        #workdir + "workflows/SumWeights.py",
+                        workdir + "/data",
+                        workdir + "/merge.py",
                         proxy_copy
                     ]),
                     just_file=just_file,
@@ -220,6 +223,7 @@ def main():
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
+            
             
 if __name__ == "__main__":
     main()

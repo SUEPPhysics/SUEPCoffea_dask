@@ -11,6 +11,7 @@ import pickle
 import json
 from tqdm import tqdm
 import dask
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
@@ -41,10 +42,16 @@ default_ABCD = [
     ["SUEP_spher_IRM", ">=", 0.25],
     ["SUEP_nconst_IRM", ">=", 10]
 ]
+spher_ntracks_ABCD = [
+    ['ntracks','>',0],
+    ["SUEP_spher_IRM", ">=", 0.25],
+    #["ntracks_IRM", ">=", 10]
+]
 nPVs_l35_study = default_ABCD + [['PV_npvs','<',35]]
 nPVs_l35_njets_2_study = default_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
-nPVs_l40_study = default_ABCD + [['PV_npvs','<',40]]
-selections = nPVs_l35_njets_2_study
+inf_ntracksABCD = spher_ntracks_ABCD + [['PV_npvs','<',35]]
+raw = [['ntracks','>',0]]
+selections = raw
     
 def apply_selection(df, variable, operator, value):
     """
@@ -67,13 +74,12 @@ def apply_selection(df, variable, operator, value):
 
 # get list of files
 username = getpass.getuser()
-# username = 'freerc'
 if options.xrootd:
     dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
     result = result.decode("utf-8")
     files = result.split("\n")
-    files = [f for f in files if 'condor_out' not in f]
+    files = [f for f in files if 'merged' not in f]
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
     files = [dataDir + f for f in os.listdir(dataDir)]
@@ -98,21 +104,22 @@ def create_output_file(label):
             "C_"+label: Hist.new.Reg(100, 0, 1, name="C_"+label).Weight(),
             "D_exp_"+label: Hist.new.Reg(100, 0, 1, name="D_exp_"+label).Weight(),
             "D_obs_"+label: Hist.new.Reg(100, 0, 1, name="D_obs_"+label).Weight(),
-            "A_var2_"+label: Hist.new.Integer(0, 500, name="A_var2_"+label).Weight(),
-            "B_var2_"+label: Hist.new.Integer(0, 500, name="B_var2_"+label).Weight(),
-            "C_var2_"+label: Hist.new.Integer(0, 500, name="C_var2_"+label).Weight(),
-            "D_exp_var2_"+label: Hist.new.Integer(0, 500, name="D_exp_var2_"+label).Weight(),
-            "D_obs_var2_"+label: Hist.new.Integer(0, 500, name="D_obs_var2_"+label).Weight(),
+            "A_var2_"+label: Hist.new.Reg(499, 0, 500, name="A_var2_"+label).Weight(),
+            "B_var2_"+label: Hist.new.Reg(499, 0, 500, name="B_var2_"+label).Weight(),
+            "C_var2_"+label: Hist.new.Reg(499, 0, 500, name="C_var2_"+label).Weight(),
+            "D_exp_var2_"+label: Hist.new.Reg(499, 0, 500, name="D_exp_var2_"+label).Weight(),
+            "D_obs_var2_"+label: Hist.new.Reg(499, 0, 500, name="D_obs_var2_"+label).Weight(),
     }
     if label == 'IRM':
-        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_IRM+"_IRM").Integer(0, 500, name=var2_IRM+"_IRM").Weight()})
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_IRM+"_IRM").Reg(499, 0, 500, name=var2_IRM+"_IRM").Weight()})
     elif label == 'ML':
-        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_ML+"_ML").Integer(0, 500, name=var2_ML+"_ML").Weight()})
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_ML+"_ML").Reg(499, 0, 500, name=var2_ML+"_ML").Weight()})
 
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in ["", "A_", "B_", "C_"]:
         output.update({
             r+"ht_" + label : Hist.new.Reg(1000, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
+            r+"ntracks_" + label : Hist.new.Reg(999, 0, 1000, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
             r+"ngood_fastjets_" + label : Hist.new.Reg(49,0, 50, name=r+"ngood_fastjets_"+label, label='# Jets in Event').Weight(),
             r+"nLostTracks_"+label : Hist.new.Reg(199,0, 200, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
@@ -123,10 +130,10 @@ def create_output_file(label):
     if label == 'IRM':
         output.update({
             # 2D histograms
-            "2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Integer(0, 500, name="ntracks_"+label).Weight(),
-            "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Integer(0, 500, name="nconst_"+label).Weight(),
-            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Integer(0, 500, name="ntracks_"+label).Weight(),
-            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Integer(0, 500, name="nconst_"+label).Weight(),       
+            "2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Reg(499, 0, 500, name="ntracks_"+label).Weight(),
+            "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Reg(499, 0, 500, name="nconst_"+label).Weight(),
+            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(499, 0, 500, name="ntracks_"+label).Weight(),
+            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(499, 0, 500, name="nconst_"+label).Weight(),       
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in ["", "A_", "B_", "C_"]:
@@ -187,7 +194,7 @@ for ifile in tqdm(files):
     if options.xrootd:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
         xrd_file = redirector + ifile
-        os.system("xrdcp {} {}.hdf5".format(xrd_file, options.dataset))
+        os.system("xrdcp -s {} {}.hdf5".format(xrd_file, options.dataset))
         df, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
         df, metadata = h5load(ifile, 'vars')   
@@ -198,7 +205,7 @@ for ifile in tqdm(files):
         continue
             
     # update the gensumweight
-    if options.isMC: weight += metadata['gensumweight']
+    if options.isMC and metadata != 0: weight += metadata['gensumweight']
     
     # check if file is empty
     if 'empty' in list(df.keys()): continue
@@ -211,10 +218,25 @@ for ifile in tqdm(files):
 
     # keep event wide and ML variables, cut out events that don't pass IRM
     df_ML = df[[c for c in df.keys() if 'IRM' not in c]]
-
+    df_ML = df_ML[~df['resnet_SUEP_pred_ML'].isnull()]
+    
+    # apply selections
+    for sel in selections: 
+        if sel[0] in list(df_ML.keys()):
+            df_ML = apply_selection(df_ML, sel[0], sel[1], sel[2])
+    
+    # debug
+    #if df_ML['ht'].max() > 10000: print(ifile)
+    
+    # plt.hist(df_ML['ht'], bins=100)
+    # plt.yscale("log")
+    # plt.savefig("test/"+ifile.split("/")[-1]+".png")
+    # plt.clf()
+    # continue
+  
     # blind
     if options.blind and not options.isMC:
-         df_ML = df_ML.loc[((df[var1_ML] < var1_ML_val) & (df[var2_ML] < var2_ML_val)) | ((df[var1_ML] >= var1_ML_val) & (df[var2_ML] < var2_ML_val)) | ((df[var1_ML] < var1_ML_val) & (df[var2_ML] >= var2_ML_val))]
+         df_ML = df_ML.loc[((df_ML[var1_ML] < var1_ML_val) & (df_ML[var2_ML] < var2_ML_val)) | ((df_ML[var1_ML] >= var1_ML_val) & (df_ML[var2_ML] < var2_ML_val)) | ((df_ML[var1_ML] < var1_ML_val) & (df_ML[var2_ML] >= var2_ML_val))]
 
     # divide the dfs by region
     df_A = df_ML.loc[(df_ML[var1_ML] < var1_ML_val) & (df_ML[var2_ML] < var2_ML_val)]
@@ -238,22 +260,26 @@ for ifile in tqdm(files):
     output["D_exp_var2_"+label].fill(df_C[var2_ML])
     output["C_var2_"+label].fill(df_C[var2_ML])
     output["D_obs_var2_"+label].fill(df_D_obs[var2_ML])
-    output["ABCDvars_2D_"+label].fill(df[var1_ML], df[var2_ML])
+    output["ABCDvars_2D_"+label].fill(df_ML[var1_ML], df_ML[var2_ML])
         
     # fill the distributions as they are saved in the dataframes
-    plot_labels = [key for key in df_ML.keys() if key in list(output.keys())]
+    plot_labels = [key for key in df_ML.keys() if key in list(output.keys())]      # all the _ML things
     for plot in plot_labels: output[plot].fill(df_ML[plot])  
+    plot_labels = [key for key in df_ML.keys() if key+"_"+label in list(output.keys())]      # event wide variables
+    for plot in plot_labels: output[plot+"_"+label].fill(df_ML[plot]) 
     
     # per region
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
-        plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]
+        plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]     # all the _ML things
         for plot in plot_labels: output[r+plot].fill(df_r[plot])  
+        plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]    # event wide variables
+        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot])  
 
     #####################################################################################
     # ---- ISR Removal Method Plots
     #####################################################################################
     label = 'IRM'
-    
+        
     # apply selections
     for sel in selections: 
         df = apply_selection(df, sel[0], sel[1], sel[2])
@@ -261,7 +287,7 @@ for ifile in tqdm(files):
     # keep event wide and IRM variables, cut out events that don't pass IRM
     df_IRM = df[[c for c in df.keys() if 'ML' not in c]]
     df_IRM = df_IRM[~df['SUEP_pt_IRM'].isnull()]
-
+    
     # blind
     if options.blind and not options.isMC:
          df_IRM = df_IRM.loc[((df_IRM[var1_IRM] < var1_IRM_val) & (df_IRM[var2_IRM] < var2_IRM_val)) | ((df_IRM[var1_IRM] >= var1_IRM_val) & (df_IRM[var2_IRM] < var2_IRM_val)) | ((df_IRM[var1_IRM] < var1_IRM_val) & (df_IRM[var2_IRM] >= var2_IRM_val))]
@@ -291,8 +317,10 @@ for ifile in tqdm(files):
     output["ABCDvars_2D_"+label].fill(df_IRM[var1_IRM], df_IRM[var2_IRM])
 
     # fill the distributions as they are saved in the dataframes
-    plot_labels = [key for key in df_IRM.keys() if key in list(output.keys())]
+    plot_labels = [key for key in df_IRM.keys() if key in list(output.keys())]     # all the _IRM things
     for plot in plot_labels: output[plot].fill(df_IRM[plot])  
+    plot_labels = [key for key in df_IRM.keys() if key+"_"+label in list(output.keys())]     # event wide variables
+    for plot in plot_labels: output[plot+"_"+label].fill(df_IRM[plot])  
 
     # fill some new distributions  
     output["2D_SUEP_spher_SUEP_nconst_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_nconst_"+label])
@@ -304,9 +332,11 @@ for ifile in tqdm(files):
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
 
         # fill the distributions as they are saved in the dataframes
-        plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]
+        plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]    # all the _IRM things
         for plot in plot_labels: output[r+plot].fill(df_r[plot])  
-
+        plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]   # event wide variables
+        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot])  
+        
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
 ### end plotting loop
