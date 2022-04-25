@@ -120,9 +120,9 @@ def main():
                 resubmit_file.close()
                 
                 # remove log files from previous iteration
-                subprocess.call('rm ' + jobs_dir + "/*.err", shell=True)
-                subprocess.call('rm ' + jobs_dir + "/*.out", shell=True)
-                subprocess.call('rm ' + jobs_dir + "/*.log", shell=True)
+                # subprocess.call('rm ' + jobs_dir + "/*.err", shell=True)
+                # subprocess.call('rm ' + jobs_dir + "/*.out", shell=True)
+                # subprocess.call('rm ' + jobs_dir + "/*.log", shell=True)
                 
                 htc = subprocess.Popen(
                       "condor_submit " + os.path.join(jobs_dir, "condor.sub"),

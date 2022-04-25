@@ -26,11 +26,11 @@ hostname
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "xrdcp $2 temp.root"
-xrdcp $2 temp.root
+echo "# xrdcp $2 temp.root"
+# xrdcp $2 temp.root
 echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=temp.root
-rm temp.root
+python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
+# rm temp.root
 
 #echo "python3 merge.py --isMC={ismc}"
 python3 merge.py --isMC={ismc}
@@ -48,8 +48,8 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 4GB
-request_memory        = 4GB
+request_disk          = 8GB
+request_memory        = 8GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -197,7 +197,6 @@ def main():
                         #workdir + "workflows/SUEP_coffea.py",
                         #workdir + "workflows/SumWeights.py",
                         workdir + "/data",
-                        workdir + "/merge.py",
                         proxy_copy
                     ]),
                     just_file=just_file,

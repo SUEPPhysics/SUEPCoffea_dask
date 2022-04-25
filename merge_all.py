@@ -10,6 +10,11 @@ parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="Production tag", required=True)
 options = parser.parse_args()
 
+print("""WARNING: This wrapper will launch a process per dataset with this tag, 
+        each of which use large amounts of memory, depending on how many events
+        are kept in each merged file, so make sure to run it somewhere where
+        you have enough memory available.""")
+
 def call_makeplots(cmd):
     """ This runs in a separate thread. """
     print("----[%] :", cmd)
@@ -115,12 +120,12 @@ QCD_HT_2016 = [
 results = []
 start = time.time()
 
-for sample in data_2018:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 0)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
-for sample in QCD_2018:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in data_2018:
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 0)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in QCD_2018:
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_HT_2017:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
 #     results.append(pool.apply_async(call_makeplots, (cmd,)))

@@ -32,6 +32,10 @@ tag = options.tag
 dataset = options.dataset
 redirector = "root://t3serv017.mit.edu/"
 dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,tag,dataset)
+outDir = dataDir + "/merged/"
+
+# create output dir
+subprocess.run(["xrdfs",redirector,"mkdir",outDir])
 
 # list files in dir using xrootd
 result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
@@ -68,7 +72,7 @@ for ifile, file in enumerate(tqdm(files)):
     if df.shape[0] == 0: 
         subprocess.run(['rm',dataset +'.hdf5'])  
         continue
-        
+                
     ### MERGE DF VARS
     if type(df_tot) == int: df_tot = df
     else: df_tot = pd.concat((df_tot, df))
@@ -82,18 +86,18 @@ for ifile, file in enumerate(tqdm(files)):
     
     # save every N events
     if df_tot.shape[0] > 5000000:
-        output_file = "/work/submit/lavezzo/merged_" + str(i_out) + ".hdf5"
+        output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
         save_dfs(df_tot, output_file)
-        print("xrdcp {} {}".format(output_file, redirector+dataDir))
-        os.system("xrdcp {} {}".format(output_file, redirector+dataDir))
+        print("xrdcp {} {}".format(output_file, redirector+outDir))
+        os.system("xrdcp {} {}".format(output_file, redirector+outDir))
         subprocess.run(['rm',output_file])
         i_out += 1
         df_tot = 0
         metadata_tot = 0
 
 # save last file as well
-output_file = "merged_" + str(i_out) + ".hdf5"
+output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
 save_dfs(df_tot, output_file)
-print("xrdcp {} {}".format(output_file, redirector+dataDir))
-os.system("xrdcp {} {}".format(output_file, redirector+dataDir))
+print("xrdcp {} {}".format(output_file, redirector+outDir))
+os.system("xrdcp {} {}".format(output_file, redirector+outDir))
 subprocess.run(['rm',output_file])
