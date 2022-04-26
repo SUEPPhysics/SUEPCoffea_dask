@@ -13,11 +13,12 @@ script_TEMPLATE = """#!/bin/bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 export X509_USER_PROXY={proxy}
-export PATH=$USER_PATH
+export PATH=$USER_PATH:$PATH
 
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
-    
+   
+echo "PATH"
 echo $PATH
 
 echo "hostname:"
@@ -32,12 +33,9 @@ echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset=
 python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 # rm temp.root
 
-#echo "python3 merge.py --isMC={ismc}"
-python3 merge.py --isMC={ismc}
-
 #echo "----- transferring output to scratch :"
-echo "xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
-xrdcp condor_out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+echo "xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
+xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
 
 echo "rm *.hdf5"
 rm *.hdf5
