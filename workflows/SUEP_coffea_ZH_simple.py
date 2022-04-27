@@ -45,7 +45,6 @@ class SUEP_cluster(processor.ProcessorABC):
         p  = ak.nan_to_num(particles.p,  0)
 
         norm = np.squeeze(ak.sum(p ** r, axis=1, keepdims=True))
-
         s = np.array([[
                        ak.sum(px*px * p ** (r-2.0), axis=1 ,keepdims=True)/norm,
                        ak.sum(px*py * p ** (r-2.0), axis=1 ,keepdims=True)/norm,
@@ -61,8 +60,9 @@ class SUEP_cluster(processor.ProcessorABC):
                        ak.sum(pz*py * p ** (r-2.0), axis=1 ,keepdims=True)/norm,
                        ak.sum(pz*pz * p ** (r-2.0), axis=1 ,keepdims=True)/norm
                        ]])
-
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
+        s = np.nan_to_num(s, copy=False, nan=1., posinf=1., neginf=1.) 
+
         evals = np.sort(np.linalg.eigvals(s))
         # eval1 < eval2 < eval3
         return evals
@@ -241,6 +241,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "eta": events.Jet.eta,
             "phi": events.Jet.phi,
             "mass": events.Jet.mass,
+            "btag": events.Jet.btagDeepFlavB,
             "jetId": events.Jet.jetId
         }, with_name="Momentum4D")
         # Minimimum pT, eta requirements + jet-lepton recleaning
@@ -325,11 +326,13 @@ class SUEP_cluster(processor.ProcessorABC):
             return True
 
     def process(self, events):
-        #if not(events.event[0]==208940120 and events.luminosityBlock[0]==77328 and events.run[0]==1): return self.accumulator.identity()
+        #print(events.event[0], events.luminosityBlock[0], events.run[0])
+        # 255955082 94729 1
+        #if not(events.event[0]==255955082 and events.luminosityBlock[0]==94729 and events.run[0]==1): return self.accumulator.identity()
         debug    = True  # If we want some prints in the middle
         chunkTag = "out_%i_%i_%i.hdf5"%(events.event[0], events.luminosityBlock[0], events.run[0]) #Unique tag to get different outputs per tag
         self.doTracks = True  # Make it false, and it will speed things up but not run the tracks
-        self.doGen    = False # In case we want info on the gen level 
+        self.doGen    = True # In case we want info on the gen level 
         # Main processor code
 
 
@@ -469,6 +472,10 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # Object: jets, a bit tricky as number varies per event!
         out["njets"]          = ak.num(self.jets, axis=1)[:]
+        out["nBLoose"]        = ak.sum((self.jets.btag >= 0.0490), axis=1)[:]
+        out["nBMedium"]       = ak.sum((self.jets.btag >= 0.2783), axis=1)[:]
+        out["nBTight"]        = ak.sum((self.jets.btag >= 0.7100), axis=1)[:]
+
         out["leadjet_pt"]     = ak.fill_none(ak.pad_none(self.jets.pt,  1, axis=1, clip=True), 0.)[:,0] # So take all events, if there is no jet_pt fill it with none, then replace none with 0
         out["leadjet_eta"]    = ak.fill_none(ak.pad_none(self.jets.eta, 1, axis=1, clip=True), -999)[:,0] # So take all events, if there is no jet_pt fill it with none, then replace none with -999
         out["leadjet_phi"]    = ak.fill_none(ak.pad_none(self.jets.phi, 1, axis=1, clip=True), -999)[:,0] # So take all events, if there is no jet_pt fill it with none, then replace none with -999
@@ -482,18 +489,18 @@ class SUEP_cluster(processor.ProcessorABC):
         out["trailjet_phi"]   = ak.fill_none(ak.pad_none(self.jets.phi, 3, axis=1, clip=True), -999)[:,2] # So take all events, if there is no jet_pt fill it with none, then replace none with -999
 
         #### ALL JETS PROPERTIES ####
-        maxnjets = ak.max(ak.num(self.jets, axis=1)) # We need to know the maximum to do the proper padding
-        out["alljets_pt"]      = ak.fill_none(ak.pad_none(self.jets.pt,  maxnjets, axis=1, clip=True), 0.)
-        out["alljets_eta"]     = ak.fill_none(ak.pad_none(self.jets.eta,  maxnjets, axis=1, clip=True), -999.)
-        out["alljets_phi"]     = ak.fill_none(ak.pad_none(self.jets.phi,  maxnjets, axis=1, clip=True), -999.)
+        ##maxnjets = ak.max(ak.num(self.jets, axis=1)) # We need to know the maximum to do the proper padding
+        ##out["alljets_pt"]      = ak.fill_none(ak.pad_none(self.jets.pt,  maxnjets, axis=1, clip=True), 0.)
+        ##out["alljets_eta"]     = ak.fill_none(ak.pad_none(self.jets.eta,  maxnjets, axis=1, clip=True), -999.)
+        ##out["alljets_phi"]     = ak.fill_none(ak.pad_none(self.jets.phi,  maxnjets, axis=1, clip=True), -999.)
 
 
         if self.doTracks:
             out["ntracks"]     = ak.num(self.tracks, axis=1)[:]
-            maxntracks         = ak.max(ak.num(self.tracks, axis=1))
-            out["tracks_pt"]   = ak.fill_none(ak.pad_none(self.tracks.pt,  maxntracks, axis=1, clip=True), 0.)
-            out["tracks_eta"]  = ak.fill_none(ak.pad_none(self.tracks.eta,  maxntracks, axis=1, clip=True), -999.)
-            out["tracks_phi"]  = ak.fill_none(ak.pad_none(self.tracks.phi,  maxntracks, axis=1, clip=True), -999.)
+            ##maxntracks         = ak.max(ak.num(self.tracks, axis=1))
+            ##out["tracks_pt"]   = ak.fill_none(ak.pad_none(self.tracks.pt,  maxntracks, axis=1, clip=True), 0.)
+            ##out["tracks_eta"]  = ak.fill_none(ak.pad_none(self.tracks.eta,  maxntracks, axis=1, clip=True), -999.)
+            ##out["tracks_phi"]  = ak.fill_none(ak.pad_none(self.tracks.phi,  maxntracks, axis=1, clip=True), -999.)
 
             if self.isSpherable:
               
