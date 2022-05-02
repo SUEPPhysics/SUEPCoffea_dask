@@ -39,6 +39,17 @@ SUEP = [
            "SUEP-m750-generic+RunIIAutumn18-private+MINIAODSIM"
 ]
 
+QCD_HT_2018 = [
+   "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
+"QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
+]
+
 QCD_2018 = [ 
     "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",          
     "QCD_Pt_120to170_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM",          
@@ -85,6 +96,24 @@ data_2017 = [
     "JetHT+Run2017F-UL2017_MiniAODv2-v1+MINIAOD",
 ]
 
+QCD_2017 = [
+    "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_120to170_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_15to30_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_170to300_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_2400to3200_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_300to470_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_30to50_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_470to600_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_50to80_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_600to800_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
+    "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM"   
+]
+
 QCD_HT_2017 = [
     "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
     "QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM",
@@ -117,6 +146,39 @@ QCD_HT_2016 = [
     "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",    
 ]
 
+QCD_2016 = [
+   "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_120to170_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_120to170_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_15to30_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_15to30_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_170to300_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_170to300_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_2400to3200_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_2400to3200_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_300to470_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_300to470_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_30to50_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_30to50_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_470to600_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_470to600_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_50to80_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_50to80_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_600to800_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_600to800_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM",
+    "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM",
+    "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM"
+]
+
 results = []
 start = time.time()
 
@@ -126,8 +188,14 @@ start = time.time()
 # for sample in QCD_2018:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+for sample in QCD_HT_2018:
+    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
+    results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_HT_2017:
-#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
+#     results.append(pool.apply_async(call_makeplots, (cmd,)))
+# for sample in QCD_2017:
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
 #     results.append(pool.apply_async(call_makeplots, (cmd,)))
 # for sample in QCD_HT_2016:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
@@ -138,9 +206,9 @@ start = time.time()
 # for sample in data_2016:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
-for sample in SUEP:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in SUEP:
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 
 # Close the pool and wait for each running task to complete
 pool.close()

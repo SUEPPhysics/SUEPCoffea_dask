@@ -143,7 +143,6 @@ def main():
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
             jobs_dir = '_'.join([logdir+"jobs", options.tag, sample_name])
-            #jobs_dir = '_'.join(['jobs', options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             if os.path.isdir(jobs_dir):
                 if not options.force:
@@ -163,12 +162,9 @@ def main():
                 nfiles=0
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
                     for i in Raw_list:
-                        #i=i.split(" ")[0].replace('root://xrootd.cmsaf.mit.edu/','/mnt/hadoop/cms')
-                        #infiles.write(i+"\n")
                         full_file = i.split(" ")[0]
                         just_file = full_file.split("/")[-1]
                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
-                        #infiles.write(i.split(" ")[0]+"\n")
                         nfiles+=1
                     infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
@@ -192,8 +188,6 @@ def main():
                     transfer_file= ",".join([
                         workdir + "/condor_SUEP_WS.py",
                         workdir + "/workflows",
-                        #workdir + "workflows/SUEP_coffea.py",
-                        #workdir + "workflows/SumWeights.py",
                         workdir + "/data",
                         proxy_copy
                     ]),
