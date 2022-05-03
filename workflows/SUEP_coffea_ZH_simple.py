@@ -316,11 +316,9 @@ class SUEP_cluster(processor.ProcessorABC):
                 if self.isMC:
                   out[channel][0]["genweight"] = out[channel][1].genWeight[:]
 
-            if not isinstance(outputs[output][0], pd.DataFrame): 
-                outputs[output][0] = self.ak_to_pandas(outputs[output][0])
+              if not isinstance(out[channel][0], pd.DataFrame): 
+                out[channel][0] = self.ak_to_pandas(out[channel][0])
 
-
-            self.save_dfs([out,out],["lepvars","jetvars"])
             return False
         else:
             return True
@@ -555,13 +553,13 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.doGen:
           if debug: print("Saving gen variables")
           
-          out["genZpt"]  = genZ.pt[:,0]
-          out["genZeta"] = genZ.eta[:,0]
-          out["genZphi"] = genZ.phi[:,0]
+          out["genZpt"]  = self.genZ.pt[:,0]
+          out["genZeta"] = self.genZ.eta[:,0]
+          out["genZphi"] = self.genZ.phi[:,0]
 
-          out["genHpt"]  = genH.pt[:,0]
-          out["genHeta"] = genH.eta[:,0]
-          out["genHphi"] = genH.phi[:,0]
+          out["genHpt"]  = self.genH.pt[:,0]
+          out["genHeta"] = self.genH.eta[:,0]
+          out["genHphi"] = self.genH.phi[:,0]
 
         return out
 
