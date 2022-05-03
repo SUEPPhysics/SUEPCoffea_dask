@@ -29,7 +29,8 @@ if options.analyzer == "GluGlu":
   from workflows.SUEP_coffea import *
 elif options.analyzer == "ZH_simple":
   from workflows.SUEP_coffea_ZH_simple import *
-
+elif options.analyzer == "ZH_trackID":
+  from workflows.SUEP_coffea_ZH_trackID import * 
 
 modules_era = []
 #Run the SUEP code. Note the xsection as input. For Data the xsection = 1.0 from above
