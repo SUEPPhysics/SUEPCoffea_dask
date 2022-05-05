@@ -5,7 +5,7 @@ https://github.com/scikit-hep/fastjet
 Chad Freer, 2021
 """
 
-import os
+import os, sys
 import pathlib
 import shutil
 import awkward as ak
@@ -253,9 +253,27 @@ class SUEP_cluster(processor.ProcessorABC):
         #The jet clustering part
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
         cluster = fastjet.ClusterSequence(tracks, jetdef)
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D") 
-        ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
-                        
+        
+        # debug        
+        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= 0),"Momentum4D") 
+        ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= 0),"Momentum4D")
+        
+        minPtCut = ak_inclusive_jets.pt > minPt
+        ak_inclusive_jets = ak_inclusive_jets[minPtCut]
+        ak_inclusive_cluster = ak_inclusive_cluster[minPtCut]
+        
+        atLeastOneJet = ak.num(ak_inclusive_jets) > 0
+        ak_inclusive_jets = ak_inclusive_jets[atLeastOneJet]
+        ak_inclusive_cluster = ak_inclusive_cluster[atLeastOneJet]
+        
+        tracks = tracks[atLeastOneJet]
+        print()
+        print(len(tracks))
+        print()
+        
+        #ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D") 
+        #ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
+        
         # cut based on ak4 jets to replicate the trigCger
         Jets = ak.zip({
             "pt": events.Jet.pt,
@@ -267,6 +285,9 @@ class SUEP_cluster(processor.ProcessorABC):
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         
+        # debug
+        ak4jets = ak4jets[atLeastOneJet]
+        
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
         # jetId==2 means: pass tight ID, fail tightLepVeto
         # jetId==6 means: pass tight and tightLepVeto ID. 
@@ -274,18 +295,18 @@ class SUEP_cluster(processor.ProcessorABC):
         tight_ak4jets = ak4jets[tightJetId]
         looseJetId = (ak4jets.jetId >= 2)
         loose_ak4jets = ak4jets[looseJetId]
-        
+                
         # save per event variables to a dataframe
         out_vars = pd.DataFrame()
-        out_vars["uncleaned_tracks"] = ak.num(Cands).to_list()
+        out_vars["uncleaned_tracks"] = ak.num(Cands[atLeastOneJet]).to_list()
         out_vars["ntracks"] = ak.num(tracks).to_list()
         out_vars["ngood_fastjets"] = ak.num(ak_inclusive_jets).to_list()
         out_vars["ht"] = ak.sum(ak4jets.pt,axis=-1).to_list()
-        out_vars["nLostTracks"] = ak.num(Lost_Tracks_cands).to_list()
+        out_vars["nLostTracks"] = ak.num(Lost_Tracks_cands[atLeastOneJet]).to_list()
         if self.era == 2016:
-            out_vars["HLT_PFHT900"] = events.HLT.PFHT900.to_list()
+            out_vars["HLT_PFHT900"] = events.HLT.PFHT900[atLeastOneJet]
         else:
-            out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050.to_list()
+            out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050[atLeastOneJet]
         oneAk4jet = (ak.num(ak4jets) >= 1)
         out_vars["eta_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.eta)]
         out_vars["phi_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.phi)]
@@ -297,8 +318,8 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
-        out_vars["PV_npvs"] = events.PV.npvs
-        out_vars["PV_npvsGood"] = events.PV.npvsGood
+        out_vars["PV_npvs"] = events.PV.npvs[atLeastOneJet]
+        out_vars["PV_npvsGood"] = events.PV.npvsGood[atLeastOneJet]
          
         # define triggers by era
         if self.era == 2016:
@@ -337,11 +358,11 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.do_inf:    
             ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
-            options.intra_op_num_threads = 1 # number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.
-            options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
+            # options.intra_op_num_threads = 1 # number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.
+            # options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
             
             if ak.any(htCut): 
-                inf_cands = Cleaned_cands[htCut]
+                inf_cands = Cleaned_cands[atLeastOneJet][htCut]
                 resnet_jets = self.process_images(inf_cands, ort_sess)
                                 
                 # highest SUEP prediction per event

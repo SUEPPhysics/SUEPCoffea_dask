@@ -26,7 +26,7 @@ options = parser.parse_args()
 
 
 # parameters for script
-var1_IRM = 'SUEP_spher_IRM'
+var1_IRM = 'SUEP_S1_IRM'
 var2_IRM = 'ntracks'
 var1_IRM_val = 0.50
 var2_IRM_val = 100
@@ -54,7 +54,7 @@ nPVs_l35_study = spher_nconst_ABCD + [['PV_npvs','<',35]]
 nPVs_l35_njets_2_study = spher_nconst_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
 inf_ntracksABCD = spher_ntracks_ABCD + [['PV_npvs','<',35]]
 raw = [['ntracks','>',0]]
-selections = raw
+selections = S1_ntracks_ABCD
     
 def apply_selection(df, variable, operator, value):
     """
@@ -164,7 +164,7 @@ def create_output_file(label):
             })
 
     if label == 'ML':
-        for r in ["A_", "B_", "C_"]:
+        for r in ["", "A_", "B_", "C_"]:
             output.update({
                 r+"resnet_SUEP_pred_"+label : Hist.new.Reg(100, 0, 1, name=r+"resnet_SUEP_pred_"+label, label="Resnet Output").Weight(),
                 r+"ntracks_"+label : Hist.new.Reg(100, 0, 500, name=r+"ntracks"+label, label="# Tracks in Event").Weight(),
