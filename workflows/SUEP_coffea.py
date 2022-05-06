@@ -2,7 +2,7 @@
 SUEP_coffea.py
 Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
-Chad Freer, 2021
+Chad Freer and Luca Lavezzo, 2021
 """
 
 import os, sys
@@ -265,14 +265,7 @@ class SUEP_cluster(processor.ProcessorABC):
         atLeastOneJet = ak.num(ak_inclusive_jets) > 0
         ak_inclusive_jets = ak_inclusive_jets[atLeastOneJet]
         ak_inclusive_cluster = ak_inclusive_cluster[atLeastOneJet]
-        
         tracks = tracks[atLeastOneJet]
-        print()
-        print(len(tracks))
-        print()
-        
-        #ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= minPt),"Momentum4D") 
-        #ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= minPt),"Momentum4D")
         
         # cut based on ak4 jets to replicate the trigCger
         Jets = ak.zip({
@@ -284,8 +277,6 @@ class SUEP_cluster(processor.ProcessorABC):
         })
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
-        
-        # debug
         ak4jets = ak4jets[atLeastOneJet]
         
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
@@ -307,12 +298,15 @@ class SUEP_cluster(processor.ProcessorABC):
             out_vars["HLT_PFHT900"] = events.HLT.PFHT900[atLeastOneJet]
         else:
             out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050[atLeastOneJet]
-        oneAk4jet = (ak.num(ak4jets) >= 1)
-        out_vars["eta_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.eta)]
-        out_vars["phi_ak4jets1"] = [x[0] if i else -100 for i, x in zip(oneAk4jet, ak4jets.phi)]
-        twoAk4jets = (ak.num(ak4jets) >= 2)
-        out_vars["eta_ak4jets2"] = [x[1] if i else -100 for i, x in zip(twoAk4jets, ak4jets.eta)]
-        out_vars["phi_ak4jets2"] = [x[1] if i else -100 for i, x in zip(twoAk4jets, ak4jets.phi)]
+        
+        # store first n jets infos per event
+        for i in range(20):
+            iAk4jet = (ak.num(ak4jets) > i)  
+            if not ak.any(iAk4jet): break    # be done if no events have the ith jet
+            out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
+            out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
+            out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
+        
         out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
         out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
         out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
