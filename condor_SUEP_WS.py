@@ -39,7 +39,7 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=1000,
+        chunksize=100000,
     )
     
 #############################################################################
@@ -73,7 +73,7 @@ if len(files) == 0:
 
 df_tot = None
 metadata_tot = None
-for ifile, file in enumerate(tqdm(files)):
+for ifile, file in enumerate(tqdm(files, desc="Merging")):
     
     df, metadata = h5load(file, 'vars') 
     
