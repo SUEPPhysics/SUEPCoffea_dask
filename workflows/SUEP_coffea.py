@@ -5,7 +5,7 @@ https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
 
-import os, sys
+import os, sys, psutil
 import pathlib
 import shutil
 import awkward as ak
@@ -16,6 +16,7 @@ from coffea import hist, processor
 import vector
 from typing import List, Optional
 import onnxruntime as ort
+from numba import jit
 
 # temporary
 import os, psutil
@@ -34,6 +35,14 @@ class SUEP_cluster(processor.ProcessorABC):
         self.weight_syst = weight_syst
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
+        
+        #Set up the image size and pixels
+        self.eta_pix = 280
+        self.phi_pix = 360
+        self.eta_span = (-2.5, 2.5)
+        self.phi_span = (-np.pi, np.pi)
+        self.eta_scale = self.eta_pix/(self.eta_span[1]-self.eta_span[0])
+        self.phi_scale = self.phi_pix/(self.phi_span[1]-self.phi_span[0])
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
@@ -66,48 +75,38 @@ class SUEP_cluster(processor.ProcessorABC):
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
-
+    
+    @jit(forceobj=True)
     def process_images(self, events, ort_sess):
 
-        #Set up the image size and pixels
-        eta_pix = 280
-        phi_pix = 360
-        eta_span = (-2.5, 2.5)
-        phi_span = (-np.pi, np.pi)
-        eta_scale = eta_pix/(eta_span[1]-eta_span[0])
-        phi_scale = phi_pix/(phi_span[1]-phi_span[0])
-
         #Turn the PFcand info into indexes on the image map
-        idx_eta = ak.values_astype(np.floor((events.eta-eta_span[0])*eta_scale),"int64")
-        idx_phi = ak.values_astype(np.floor((events.phi-phi_span[0])*phi_scale),"int64")
-        idx_eta = ak.where(idx_eta == eta_pix, eta_pix-1, idx_eta)
-        idx_phi = ak.where(idx_phi == phi_pix, phi_pix-1, idx_phi)
+        idx_eta = ak.values_astype(np.floor((events.eta-self.eta_span[0])*self.eta_scale),"int64")
+        idx_phi = ak.values_astype(np.floor((events.phi-self.phi_span[0])*self.phi_scale),"int64")
+        idx_eta = ak.where(idx_eta == self.eta_pix, self.eta_pix-1, idx_eta)
+        idx_phi = ak.where(idx_phi == self.phi_pix, self.phi_pix-1, idx_phi)
         pt = events.pt
-
-        #Running the inference in batch mode
-        input_name = ort_sess.get_inputs()[0].name
-        cl_outputs = np.array([])
-        
+    
+        to_infer = np.zeros((len(events), 1, self.eta_pix, self.phi_pix))    
         for event_i in range(len(events)):
             
             # form image
-            to_infer = np.zeros((1, eta_pix, phi_pix))
-            to_infer[0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
+            to_infer[event_i, 0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
             
             # normalize pt
             m = np.mean(to_infer[0,:,:])
             s = np.std(to_infer[0,:,:])
             if s != 0: 
                 to_infer[0,:,:] = (to_infer[0,:,:]-m)/s
-           
-            # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
-            # resnet: only classification as output
-            cl_output =  ort_sess.run(None, {input_name: np.array([to_infer.astype(np.float32)])})
-            cl_output_softmax = self.softmax(cl_output)[0]
-            if event_i == 0: 
-                cl_outputs = cl_output_softmax
-            else: 
-                cl_outputs = np.concatenate((cl_outputs, cl_output_softmax))
+                           
+        #Running the inference in batch mode
+        input_name = ort_sess.get_inputs()[0].name
+        cl_outputs = np.array([])
+        
+        # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
+        # resnet: only classification as output
+        cl_output =  ort_sess.run(None, {input_name: np.array(to_infer.astype(np.float32))})
+        cl_output_softmax = self.softmax(cl_output)[0]
+        cl_outputs = cl_output_softmax
                                 
         return cl_outputs
 
