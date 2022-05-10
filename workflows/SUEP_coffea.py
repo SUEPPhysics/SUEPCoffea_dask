@@ -285,6 +285,10 @@ class SUEP_cluster(processor.ProcessorABC):
         tight_ak4jets = ak4jets[tightJetId]
         looseJetId = (ak4jets.jetId >= 2)
         loose_ak4jets = ak4jets[looseJetId]
+        
+        # barrel jets
+        barrelCut = abs(ak4jets.eta) < 2.4
+        barrel_ak4jets = ak4jets[barrelCut]
                 
         # save per event variables to a dataframe
         out_vars = pd.DataFrame()
@@ -301,7 +305,6 @@ class SUEP_cluster(processor.ProcessorABC):
         # store first n jets infos per event
         for i in range(20):
             iAk4jet = (ak.num(ak4jets) > i)  
-            if not ak.any(iAk4jet): break    # be done if no events have the ith jet
             out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
             out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
             out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
@@ -311,6 +314,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
+        out_vars["ht_barrel"] = ak.sum(barrel_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs[atLeastOneJet]
         out_vars["PV_npvsGood"] = events.PV.npvsGood[atLeastOneJet]
          
