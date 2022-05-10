@@ -84,7 +84,7 @@ if options.xrootd:
     files = result.split("\n")
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
-    #files = [dataDir + f for f in os.listdir(dataDir)]
+    files = [dataDir + f for f in os.listdir(dataDir)]
 
 # cross section
 xsection = 1.0
@@ -200,7 +200,6 @@ for label in ['IRM','ML']:
     sizeC.update({label:0})
 
 
-files = ['68D10013-7848-4549-9D32-5179A397E91C.hdf5']
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 for ifile in tqdm(files):
 
@@ -229,8 +228,10 @@ for ifile in tqdm(files):
     #Additional weights [pileup_weight]
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    pu = puweights_up[(np.array(df['PV_npvs']))]
-    event_weight *= pu
+    pu = puweights[(np.array(df['PV_npvs']))]
+    if options.isMC == 1:
+        event_weight *= pu
+        #event_weight *= another event weight, etc
     df['event_weight'] = event_weight
 
     #####################################################################################
