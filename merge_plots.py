@@ -6,19 +6,18 @@ import argparse
 from tqdm import tqdm
 
 def h5load(ifile, label):
-    #try:
-    with pd.HDFStore(ifile, 'r') as store:
-        try:
-            data = store[label] 
-            metadata = store.get_storer(label).attrs.metadata
-            return data, metadata
-
-        except KeyError:
-            print("No key",label,ifile)
-            return 0, 0
-    #except:
-    #    print("Some error occurred", ifile)
-    #    return 0, 0
+    try:
+        with pd.HDFStore(ifile, 'r') as store:
+            try:
+                data = store[label] 
+                metadata = store.get_storer(label).attrs.metadata
+                return data, metadata
+            except KeyError:
+                print("No key",label,ifile)
+                return 0, 0
+    except:
+       print("Some error occurred", ifile)
+       return 0, 0
     
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
@@ -66,6 +65,7 @@ for ifile, file in enumerate(tqdm(files)):
     df, metadata = h5load(dataset+'.hdf5', 'vars') 
     
     # no need to add empty ones
+    if type(df) == int: continue
     if 'empty' in list(df.keys()): 
         subprocess.run(['rm',dataset+'.hdf5'])    
         continue
