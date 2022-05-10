@@ -291,6 +291,16 @@ class SUEP_cluster(processor.ProcessorABC):
         nTracks = ak.num(totalTracks,axis=1)
         return events, totalTracks, nTracks, [coll for coll in extraColls]
 
+    def clusterizeTracks(self, events, tracks):
+        # anti-kt, dR=1.5 jets
+        jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
+        cluster = fastjet.ClusterSequence(tracks, jetdef)
+        ak15_jets   = ak.with_name(cluster.inclusive_jets(min_pt=0),"Momentum4D") # These are the ak15_jets
+        ak15_consts = ak.with_name(cluster.constituents(min_pt=0),"Momentum4D")   # And these are the collections of constituents of the ak15_jets
+
+        return events, ak15_jets, ak15_consts
+
+
     def selectByGEN(self, events):
         GenParts = ak.zip({
             "pt": events.GenPart.pt,
@@ -329,8 +339,9 @@ class SUEP_cluster(processor.ProcessorABC):
         #if not(events.event[0]==255955082 and events.luminosityBlock[0]==94729 and events.run[0]==1): return self.accumulator.identity()
         debug    = True  # If we want some prints in the middle
         chunkTag = "out_%i_%i_%i.hdf5"%(events.event[0], events.luminosityBlock[0], events.run[0]) #Unique tag to get different outputs per tag
-        self.doTracks = True  # Make it false, and it will speed things up but not run the tracks
-        self.doGen    = True # In case we want info on the gen level 
+        self.doTracks   = True  # Make it false, and it will speed things up but not run the tracks
+        self.doClusters = True
+        self.doGen      = False # In case we want info on the gen level 
         # Main processor code
 
 
@@ -343,6 +354,7 @@ class SUEP_cluster(processor.ProcessorABC):
         outputs = {
             "twoleptons"  :[{},[]], # Has Two Leptons, pT and Trigger requirements
             "onetrack"  :[{},[]], # + at least one track
+            "onecluster":[{},[]],
         }
 
         # Data dependant stuff
@@ -383,6 +395,8 @@ class SUEP_cluster(processor.ProcessorABC):
           self.events, self.tracks = self.selectByTracks(self.events, self.leptons)[:2]
           if not(self.shouldContinueAfterCut(self.events, outputs)): return accumulator
           if debug: print("%i events pass track cuts. Doing more stuff..."%len(self.events))
+          if self.doClusters:
+            self.events, self.clusters, self.constituents = self.clusterizeTracks(self.events, self.tracks)[:3]
 
         if self.doGen:
           self.events, self.genZ, self.genH, self.genSUEP = self.selectByGEN(self.events)[:4]
@@ -395,7 +409,8 @@ class SUEP_cluster(processor.ProcessorABC):
         # ------------------------------------------------------------------------------
         # ------------------------------- SELECTION + PLOTTING -------------------------
         # ------------------------------------------------------------------------------
-        self.isSpherable = False # So we don't do sphericity plots
+        self.isSpherable   = False # So we don't do sphericity plots
+        self.isClusterable = False # So we don't do cluster plots without clusters
         outputs["twoleptons"] = [self.doAllPlots("twoleptons", debug), self.events]
         if not(self.shouldContinueAfterCut(self.events, outputs)): return accumulator
         if debug: print("%i events pass twoleptons cuts. Doing more stuff..."%len(self.events))
@@ -407,8 +422,14 @@ class SUEP_cluster(processor.ProcessorABC):
           outputs["onetrack"] = [self.doAllPlots("onetrack", debug), self.events]
           if not(self.shouldContinueAfterCut(self.events, outputs)): return accumulator
           if debug: print("%i events pass onetrack cuts. Doing more stuff..."%len(self.events))
-
-        
+          
+          if self.doClusters:
+            cutOneCluster = (ak.num(self.clusters) != 0)
+            self.applyCutToAllCollections(cutOneCluster)
+            self.isClusterable = True # So we do cluster plots
+            outputs["onecluster"] = [self.doAllPlots("onecluster", debug), self.events]
+            if not(self.shouldContinueAfterCut(self.events, outputs)): return accumulator
+            if debug: print("%i events pass onecluster cuts. Doing more stuff..."%len(self.events))        
 
         # ------------------------------------------------------------------------------
         # -------------------------------- SAVING --------------------------------------
@@ -419,6 +440,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 outputs[out][0]["genweight"] = outputs[out][1].genWeight[:]
             if debug: print("Conversion to pandas...")
             if not isinstance(outputs[out][0], pd.DataFrame):
+                if debug: print("......%s"%out)
                 outputs[out][0] = self.ak_to_pandas(outputs[out][0])
 
         if debug: print("DFS saving....")
@@ -437,6 +459,10 @@ class SUEP_cluster(processor.ProcessorABC):
         self.Zcands    = self.Zcands[cut]
         if self.doTracks:
           self.tracks  = self.tracks[cut]
+          if self.doClusters:
+            self.clusters     = self.clusters[cut]
+            self.constituents = self.constituents[cut]
+
         if self.doGen:
           self.genZ    = self.genZ[cut]
           self.genH    = self.genH[cut]
@@ -547,6 +573,36 @@ class SUEP_cluster(processor.ProcessorABC):
               out["meanDiff_L"] = np.mean(np.stack([evalsL[:,2]-evalsL[:,1], evalsL[:,2]-evalsL[:,0], evalsL[:,1]-evalsL[:,0]]), axis=0)
               out["meanDiff_Z"] = np.mean(np.stack([evalsZ[:,2]-evalsZ[:,1], evalsZ[:,2]-evalsZ[:,0], evalsZ[:,1]-evalsZ[:,0]]), axis=0)
               out["meanDiff_T"] = np.mean(np.stack([evalsT[:,2]-evalsT[:,1], evalsT[:,2]-evalsT[:,0], evalsT[:,1]-evalsT[:,0]]), axis=0)
+
+            if self.doClusters and self.isClusterable:
+              out["nclusters"]           = ak.num(self.clusters, axis=1)[:]
+              #maxnclusters              = ak.max(ak.num(self.clusters, axis=1))
+              out["leadcluster_pt"]      = self.clusters.pt[:,-1]
+              out["leadcluster_eta"]     = self.clusters.eta[:,-1]
+              out["leadcluster_phi"]     = self.clusters.phi[:,-1]
+              out["leadcluster_ntracks"] = ak.num(self.constituents[:,-1], axis = 1)
+              boost_leading = ak.zip({
+                "px": self.clusters[:,-1].px*-1,
+                "py": self.clusters[:,-1].py*-1,
+                "pz": self.clusters[:,-1].pz*-1,
+                "mass": self.clusters[:,-1].mass
+              }, with_name="Momentum4D")
+
+              leadingclustertracks = self.constituents[:,-1]
+              leadingclustertracks_boostedagainstZ      = leadingclustertracks.boost_p4(boost_Zinv)
+              leadingclustertracks_boostedagainsttracks = leadingclustertracks.boost_p4(boost_tracks)
+              leadingclustertracks_boostedagainstSUEP   = leadingclustertracks.boost_p4(boost_leading)
+
+              evalsL = self.sphericity(self.events, leadingclustertracks, 2) 
+              evalsZ = self.sphericity(self.events, leadingclustertracks_boostedagainstZ, 2)
+              evalsT = self.sphericity(self.events, leadingclustertracks_boostedagainsttracks, 2)
+              evalsC = self.sphericity(self.events, leadingclustertracks_boostedagainstSUEP, 2)
+
+              out["leadclusterSpher_L"] =  np.real(1.5*(evalsL[:,0] + evalsL[:,1]))
+              out["leadclusterSpher_Z"] =  np.real(1.5*(evalsZ[:,0] + evalsZ[:,1]))
+              out["leadclusterSpher_T"] =  np.real(1.5*(evalsT[:,0] + evalsT[:,1]))
+              out["leadclusterSpher_C"] =  np.real(1.5*(evalsC[:,0] + evalsC[:,1]))
+
 
 
 
