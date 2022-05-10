@@ -82,6 +82,7 @@ if options.xrootd:
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
     result = result.decode("utf-8")
     files = result.split("\n")
+    files = [f for f in files if len(f) > 0]
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
     files = [dataDir + f for f in os.listdir(dataDir)]
@@ -228,7 +229,9 @@ for ifile in tqdm(files):
     #Additional weights [pileup_weight]
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    pu = puweights[(np.array(df['PV_npvs']))]
+    npvs = np.array(df['PV_npvs'])
+    npvs[npvs>=100] = 1
+    pu = puweights[npvs]
     if options.isMC == 1:
         event_weight *= pu
         #event_weight *= another event weight, etc
