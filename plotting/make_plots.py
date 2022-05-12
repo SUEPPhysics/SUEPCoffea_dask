@@ -1,17 +1,17 @@
-import os, sys
+#Make plots for SUEP analysis. Reads in hdf5 files and outputs to pickle and root files
+import os, sys, subprocess
 import pandas as pd 
 import numpy as np
-from hist import Hist
 import argparse
-import os, sys, subprocess
-import awkward as ak
 import uproot
 import getpass
 import pickle
 import json
 from tqdm import tqdm
-import dask
-import matplotlib.pyplot as plt
+from hist import Hist
+
+#Import our own functions
+import pileup_weight
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
@@ -199,7 +199,9 @@ for label in ['IRM','ML']:
     sizeA.update({label:0})
     sizeB.update({label:0})
     sizeC.update({label:0})
-    
+
+
+puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 for ifile in tqdm(files):
 
     if options.xrootd:
@@ -209,7 +211,8 @@ for ifile in tqdm(files):
         df, metadata = h5load(options.dataset+'.hdf5', 'vars')   
     else:
         df, metadata = h5load(ifile, 'vars')   
-        
+ 
+
     # check if file is corrupted
     if type(df) == int: 
         nfailed += 1
@@ -217,10 +220,22 @@ for ifile in tqdm(files):
             
     # update the gensumweight
     if options.isMC and metadata != 0: weight += metadata['gensumweight']
-    
+
     # check if file is empty
     if 'empty' in list(df.keys()): continue
     if df.shape[0] == 0: continue    
+
+    #####################################################################################
+    #Additional weights [pileup_weight]
+    #####################################################################################
+    event_weight = np.ones(df.shape[0])
+    npvs = np.array(df['PV_npvs'])
+    npvs[npvs>=100] = 1
+    pu = puweights[npvs]
+    if options.isMC == 1:
+        event_weight *= pu
+        #event_weight *= another event weight, etc
+    df['event_weight'] = event_weight
 
     #####################################################################################
     # ---- ML Method Plots
@@ -236,14 +251,6 @@ for ifile in tqdm(files):
         if sel[0] in list(df_ML.keys()):
             df_ML = apply_selection(df_ML, sel[0], sel[1], sel[2])
     
-    # debug
-    #if df_ML['ht'].max() > 10000: print(ifile)
-    
-    # plt.hist(df_ML['ht'], bins=100)
-    # plt.yscale("log")
-    # plt.savefig("test/"+ifile.split("/")[-1]+".png")
-    # plt.clf()
-    # continue
   
     # blind
     if options.blind and not options.isMC:
@@ -261,30 +268,30 @@ for ifile in tqdm(files):
     sizeA[label] += df_A.shape[0]
     
     # fill the ABCD histograms for both variables
-    output["A_"+label].fill(df_A[var1_ML])
-    output["B_"+label].fill(df_B[var1_ML])
-    output["D_exp_"+label].fill(df_B[var1_ML])
-    output["C_"+label].fill(df_C[var1_ML])
-    output["D_obs_"+label].fill(df_D_obs[var1_ML])
-    output["A_var2_"+label].fill(df_A[var2_ML])
-    output["B_var2_"+label].fill(df_B[var2_ML])
-    output["D_exp_var2_"+label].fill(df_C[var2_ML])
-    output["C_var2_"+label].fill(df_C[var2_ML])
-    output["D_obs_var2_"+label].fill(df_D_obs[var2_ML])
-    output["ABCDvars_2D_"+label].fill(df_ML[var1_ML], df_ML[var2_ML])
+    output["A_"+label].fill(df_A[var1_ML], weight=df_A['event_weight'])
+    output["B_"+label].fill(df_B[var1_ML], weight=df_B['event_weight'])
+    output["D_exp_"+label].fill(df_B[var1_ML], weight=df_B['event_weight'])
+    output["C_"+label].fill(df_C[var1_ML], weight=df_C['event_weight'])
+    output["D_obs_"+label].fill(df_D_obs[var1_ML], weight=df_D_obs['event_weight'])
+    output["A_var2_"+label].fill(df_A[var2_ML], weight=df_A['event_weight'])
+    output["B_var2_"+label].fill(df_B[var2_ML], weight=df_B['event_weight'])
+    output["D_exp_var2_"+label].fill(df_C[var2_ML], weight=df_C['event_weight'])
+    output["C_var2_"+label].fill(df_C[var2_ML], weight=df_C['event_weight'])
+    output["D_obs_var2_"+label].fill(df_D_obs[var2_ML], weight=df_D_obs['event_weight'])
+    output["ABCDvars_2D_"+label].fill(df_ML[var1_ML], df_ML[var2_ML], weight=df_ML['event_weight'])
         
     # fill the distributions as they are saved in the dataframes
     plot_labels = [key for key in df_ML.keys() if key in list(output.keys())]      # all the _ML things
-    for plot in plot_labels: output[plot].fill(df_ML[plot])  
+    for plot in plot_labels: output[plot].fill(df_ML[plot], weight=df_ML['event_weight'])  
     plot_labels = [key for key in df_ML.keys() if key+"_"+label in list(output.keys())]      # event wide variables
-    for plot in plot_labels: output[plot+"_"+label].fill(df_ML[plot]) 
+    for plot in plot_labels: output[plot+"_"+label].fill(df_ML[plot], weight=df_ML['event_weight']) 
     
     # per region
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
         plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]     # all the _ML things
-        for plot in plot_labels: output[r+plot].fill(df_r[plot])  
+        for plot in plot_labels: output[r+plot].fill(df_r[plot], weight=df_r['event_weight'])  
         plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]    # event wide variables
-        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot])  
+        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight'])  
 
     #####################################################################################
     # ---- ISR Removal Method Plots
@@ -315,41 +322,41 @@ for ifile in tqdm(files):
     sizeA[label] += df_A.shape[0]
 
     # fill the ABCD histograms for both variables
-    output["A_"+label].fill(df_A[var1_IRM])
-    output["B_"+label].fill(df_B[var1_IRM])
-    output["D_exp_"+label].fill(df_B[var1_IRM])
-    output["C_"+label].fill(df_C[var1_IRM])
-    output["D_obs_"+label].fill(df_D_obs[var1_IRM])
-    output["A_var2_"+label].fill(df_A[var2_IRM])
-    output["B_var2_"+label].fill(df_B[var2_IRM])
-    output["D_exp_var2_"+label].fill(df_C[var2_IRM])
-    output["C_var2_"+label].fill(df_C[var2_IRM])
-    output["D_obs_var2_"+label].fill(df_D_obs[var2_IRM])
-    output["ABCDvars_2D_"+label].fill(df_IRM[var1_IRM], df_IRM[var2_IRM])
+    output["A_"+label].fill(df_A[var1_IRM], weight=df_A['event_weight'])
+    output["B_"+label].fill(df_B[var1_IRM], weight=df_B['event_weight'])
+    output["D_exp_"+label].fill(df_B[var1_IRM], weight=df_B['event_weight'])
+    output["C_"+label].fill(df_C[var1_IRM], weight=df_C['event_weight'])
+    output["D_obs_"+label].fill(df_D_obs[var1_IRM], weight=df_D_obs['event_weight'])
+    output["A_var2_"+label].fill(df_A[var2_IRM], weight=df_A['event_weight'])
+    output["B_var2_"+label].fill(df_B[var2_IRM], weight=df_B['event_weight'])
+    output["D_exp_var2_"+label].fill(df_C[var2_IRM], weight=df_C['event_weight'])
+    output["C_var2_"+label].fill(df_C[var2_IRM], weight=df_C['event_weight'])
+    output["D_obs_var2_"+label].fill(df_D_obs[var2_IRM], weight=df_D_obs['event_weight'])
+    output["ABCDvars_2D_"+label].fill(df_IRM[var1_IRM], df_IRM[var2_IRM], weight=df_IRM['event_weight'])
 
     # fill the distributions as they are saved in the dataframes
     plot_labels = [key for key in df_IRM.keys() if key in list(output.keys())]     # all the _IRM things
-    for plot in plot_labels: output[plot].fill(df_IRM[plot])  
+    for plot in plot_labels: output[plot].fill(df_IRM[plot], weight=df_IRM['event_weight'])  
     plot_labels = [key for key in df_IRM.keys() if key+"_"+label in list(output.keys())]     # event wide variables
-    for plot in plot_labels: output[plot+"_"+label].fill(df_IRM[plot])  
+    for plot in plot_labels: output[plot+"_"+label].fill(df_IRM[plot], weight=df_IRM['event_weight'])  
 
     # fill some new distributions  
-    output["2D_SUEP_spher_SUEP_nconst_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_nconst_"+label])
-    output["2D_SUEP_spher_ntracks_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_ntracks_"+label])
-    output["2D_SUEP_S1_ntracks_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_ntracks_"+label])
-    output["2D_SUEP_S1_SUEP_nconst_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_nconst_"+label])
-    output["2D_SUEP_spher_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_pt_avg_"+label])
-    output["2D_SUEP_S1_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_pt_avg_"+label])
-    output["2D_ntracks_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_ntracks_"+label], df_IRM["SUEP_pt_avg_"+label])
+    output["2D_SUEP_spher_SUEP_nconst_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_nconst_"+label], weight=df_IRM['event_weight'])
+    output["2D_SUEP_spher_ntracks_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_ntracks_"+label], weight=df_IRM['event_weight'])
+    output["2D_SUEP_S1_ntracks_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_ntracks_"+label], weight=df_IRM['event_weight'])
+    output["2D_SUEP_S1_SUEP_nconst_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_nconst_"+label], weight=df_IRM['event_weight'])
+    output["2D_SUEP_spher_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
+    output["2D_SUEP_S1_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
+    output["2D_ntracks_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_ntracks_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
 
     # per region
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
 
         # fill the distributions as they are saved in the dataframes
         plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]    # all the _IRM things
-        for plot in plot_labels: output[r+plot].fill(df_r[plot])  
+        for plot in plot_labels: output[r+plot].fill(df_r[plot], weight=df_r['event_weight'])  
         plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]   # event wide variables
-        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot])  
+        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight'])  
         
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
