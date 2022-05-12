@@ -82,6 +82,7 @@ if options.xrootd:
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
     result = result.decode("utf-8")
     files = result.split("\n")
+    files = [f for f in files if len(f) > 0]
 else:
     dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
     files = [dataDir + f for f in os.listdir(dataDir)]
@@ -132,10 +133,10 @@ def create_output_file(label):
     if label == 'IRM':
         output.update({
             # 2D histograms
-            "2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Reg(499, 0, 500, name="ntracks_"+label).Weight(),
-            "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Reg(499, 0, 500, name="nconst_"+label).Weight(),
-            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(499, 0, 500, name="ntracks_"+label).Weight(),
-            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(499, 0, 500, name="nconst_"+label).Weight(),     
+            "2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label, label='Sphericity').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label, label='Sphericity').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),
+            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             
             
             "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),
@@ -157,7 +158,7 @@ def create_output_file(label):
                 r+"SUEP_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"SUEP_phi_"+label, label=r"SUEP $\phi$").Weight(),
                 r+"SUEP_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"SUEP_mass_"+label, label="SUEP Mass [GeV]").Weight(),
                 r+"SUEP_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_spher_"+label, label="SUEP Sphericity").Weight(),
-                r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label="SUEP S1").Weight(),
+                r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label='$Sph_1$').Weight(),
                 r+"SUEP_girth": Hist.new.Reg(50, 0, 1.0, name=r+"SUEP_girth_"+label, label=r"SUEP Girth").Weight(),
                 r+"SUEP_rho0_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho0_"+label, label=r"SUEP $\rho_0$").Weight(),
                 r+"SUEP_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),

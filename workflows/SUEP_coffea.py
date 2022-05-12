@@ -5,7 +5,8 @@ https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
 
-import os, sys
+import os, sys, psutil
+import time
 import pathlib
 import shutil
 import awkward as ak
@@ -16,6 +17,7 @@ from coffea import hist, processor
 import vector
 from typing import List, Optional
 import onnxruntime as ort
+from numba import jit
 
 # temporary
 import os, psutil
@@ -34,6 +36,14 @@ class SUEP_cluster(processor.ProcessorABC):
         self.weight_syst = weight_syst
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
+        
+        #Set up the image size and pixels
+        self.eta_pix = 280
+        self.phi_pix = 360
+        self.eta_span = (-2.5, 2.5)
+        self.phi_span = (-np.pi, np.pi)
+        self.eta_scale = self.eta_pix/(self.eta_span[1]-self.eta_span[0])
+        self.phi_scale = self.phi_pix/(self.phi_span[1]-self.phi_span[0])
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
@@ -66,51 +76,50 @@ class SUEP_cluster(processor.ProcessorABC):
         s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
         evals = np.sort(np.linalg.eigvalsh(s))
         return evals
-
-    def process_images(self, events, ort_sess):
-
-        #Set up the image size and pixels
-        eta_pix = 280
-        phi_pix = 360
-        eta_span = (-2.5, 2.5)
-        phi_span = (-np.pi, np.pi)
-        eta_scale = eta_pix/(eta_span[1]-eta_span[0])
-        phi_scale = phi_pix/(phi_span[1]-phi_span[0])
-
-        #Turn the PFcand info into indexes on the image map
-        idx_eta = ak.values_astype(np.floor((events.eta-eta_span[0])*eta_scale),"int64")
-        idx_phi = ak.values_astype(np.floor((events.phi-phi_span[0])*phi_scale),"int64")
-        idx_eta = ak.where(idx_eta == eta_pix, eta_pix-1, idx_eta)
-        idx_phi = ak.where(idx_phi == phi_pix, phi_pix-1, idx_phi)
+    
+    @jit(forceobj=True)
+    def convert_to_images(self, events):
+        
+         #Turn the PFcand info into indexes on the image map
+        idx_eta = ak.values_astype(np.floor((events.eta-self.eta_span[0])*self.eta_scale),"int64")
+        idx_phi = ak.values_astype(np.floor((events.phi-self.phi_span[0])*self.phi_scale),"int64")
+        idx_eta = ak.where(idx_eta == self.eta_pix, self.eta_pix-1, idx_eta)
+        idx_phi = ak.where(idx_phi == self.phi_pix, self.phi_pix-1, idx_phi)
         pt = events.pt
+        
+        to_infer = np.zeros((len(events), 1, self.eta_pix, self.phi_pix))    
+        for event_i in range(len(events)):
+            
+            # form image
+            to_infer[event_i, 0, idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
+            
+            # normalize pt
+            m = np.mean(to_infer[event_i, 0,:,:])
+            s = np.std(to_infer[event_i, 0,:,:])
+            if s != 0: 
+                to_infer[event_i, 0,:,:] = (to_infer[event_i, 0,:,:]-m)/s
+                
+        return to_infer
+    
+    def run_inference(self, imgs, ort_sess):
 
         #Running the inference in batch mode
         input_name = ort_sess.get_inputs()[0].name
         cl_outputs = np.array([])
-        
-        for event_i in range(len(events)):
-            
-            # form image
-            to_infer = np.zeros((1, eta_pix, phi_pix))
-            to_infer[0,idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
-            
-            # normalize pt
-            m = np.mean(to_infer[0,:,:])
-            s = np.std(to_infer[0,:,:])
-            if s != 0: 
-                to_infer[0,:,:] = (to_infer[0,:,:]-m)/s
-           
+                   
+        for i, img in enumerate(imgs):
             # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
             # resnet: only classification as output
-            cl_output =  ort_sess.run(None, {input_name: np.array([to_infer.astype(np.float32)])})
+            cl_output =  ort_sess.run(None, {input_name: np.array([img.astype(np.float32)])})
             cl_output_softmax = self.softmax(cl_output)[0]
-            if event_i == 0: 
+            if i == 0: 
                 cl_outputs = cl_output_softmax
             else: 
                 cl_outputs = np.concatenate((cl_outputs, cl_output_softmax))
-                                
+    
         return cl_outputs
-
+    
+    
     def rho(self, number, jet, tracks, deltaR, dr=0.05):
         r_start = number*dr
         r_end = (number+1)*dr
@@ -254,7 +263,6 @@ class SUEP_cluster(processor.ProcessorABC):
         jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
         cluster = fastjet.ClusterSequence(tracks, jetdef)
         
-        # debug        
         ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(min_pt= 0),"Momentum4D") 
         ak_inclusive_cluster = ak.with_name(cluster.constituents(min_pt= 0),"Momentum4D")
         
@@ -286,7 +294,11 @@ class SUEP_cluster(processor.ProcessorABC):
         tight_ak4jets = ak4jets[tightJetId]
         looseJetId = (ak4jets.jetId >= 2)
         loose_ak4jets = ak4jets[looseJetId]
-                
+        
+        # barrel jets
+        barrelCut = abs(ak4jets.eta) < 2.4
+        barrel_ak4jets = ak4jets[barrelCut]
+            
         # save per event variables to a dataframe
         out_vars = pd.DataFrame()
         out_vars["uncleaned_tracks"] = ak.num(Cands[atLeastOneJet]).to_list()
@@ -300,9 +312,8 @@ class SUEP_cluster(processor.ProcessorABC):
             out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050[atLeastOneJet]
         
         # store first n jets infos per event
-        for i in range(20):
+        for i in range(10):
             iAk4jet = (ak.num(ak4jets) > i)  
-            if not ak.any(iAk4jet): break    # be done if no events have the ith jet
             out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
             out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
             out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
@@ -312,9 +323,10 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
+        out_vars["ht_barrel"] = ak.sum(barrel_ak4jets.pt,axis=-1).to_list()
         out_vars["PV_npvs"] = events.PV.npvs[atLeastOneJet]
         out_vars["PV_npvsGood"] = events.PV.npvsGood[atLeastOneJet]
-         
+            
         # define triggers by era
         if self.era == 2016:
             trigger = ((out_vars['HLT_PFHT900'] == 1))
@@ -357,8 +369,20 @@ class SUEP_cluster(processor.ProcessorABC):
             
             if ak.any(htCut): 
                 inf_cands = Cleaned_cands[atLeastOneJet][htCut]
-                resnet_jets = self.process_images(inf_cands, ort_sess)
-                                
+                
+                # convert events to images and run inference in batches
+                # in order to avoid memory issues
+                # also exploits the numba-compiled convert_to_images function
+                batch_size = 100
+                for i in range(0, len(inf_cands), batch_size):
+                    
+                    if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
+                    batch = inf_cands[i:i+batch_size]
+                    imgs = self.convert_to_images(batch)
+                    batch_resnet_jets = self.run_inference(imgs, ort_sess)
+                    if i == 0: resnet_jets = batch_resnet_jets
+                    else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
+                
                 # highest SUEP prediction per event
                 SUEP_pred = resnet_jets[:,1]
                 
