@@ -1,5 +1,3 @@
-import os, sys
-import time
 import argparse
 import glob
 import logging
@@ -68,8 +66,6 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             
-            t_start = time.time()
-            
             sample_name = sample.split("/")[-1]
             jobs_dir =  '_'.join(['jobs', options.tag, sample_name])
             jobs_dir = jobs_base_dir + jobs_dir
@@ -118,11 +114,6 @@ def main():
                 for redo_file in jobs_resubmit:
                     resubmit_file.write(redo_file+"\n")
                 resubmit_file.close()
-                
-                # remove log files from previous iteration
-                # subprocess.call('rm ' + jobs_dir + "/*.err", shell=True)
-                # subprocess.call('rm ' + jobs_dir + "/*.out", shell=True)
-                # subprocess.call('rm ' + jobs_dir + "/*.log", shell=True)
                 
                 htc = subprocess.Popen(
                       "condor_submit " + os.path.join(jobs_dir, "condor.sub"),

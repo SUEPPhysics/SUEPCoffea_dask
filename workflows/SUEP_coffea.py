@@ -4,24 +4,19 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
-
-import os, sys, psutil
-import time
-import pathlib
-import shutil
+from coffea import hist, processor
+from typing import List, Optional
 import awkward as ak
 import pandas as pd
 import numpy as np
 import fastjet
-from coffea import hist, processor
 import vector
-from typing import List, Optional
-import onnxruntime as ort
-from numba import jit
-
-# temporary
-import os, psutil
 vector.register_awkward()
+
+#Importing SUEP specific functions
+from workflows.inference_utils import *
+from workflows.pandas_utils import *
+from workflows.math_utils import *
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -51,179 +46,16 @@ class SUEP_cluster(processor.ProcessorABC):
     @property
     def accumulator(self):
         return self._accumulator
-    
-    def softmax(self, data):
-        # some numpy magic
-        return np.exp(data)/(np.exp(data).sum(axis=-1)[:,:,None])
-
-    def sphericity(self, particles, r):
-        norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
-        s = np.array([[
-                       ak.sum(particles.px * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.px * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.px * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
-                      ],
-                      [
-                       ak.sum(particles.py * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.py * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.py * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
-                      ],
-                      [
-                       ak.sum(particles.pz * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.pz * particles.py * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
-                       ak.sum(particles.pz * particles.pz * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm
-                      ]])
-        s = np.squeeze(np.moveaxis(s, 2, 0),axis=3)
-        evals = np.sort(np.linalg.eigvalsh(s))
-        return evals
-    
-    @jit(forceobj=True)
-    def convert_to_images(self, events):
-        
-         #Turn the PFcand info into indexes on the image map
-        idx_eta = ak.values_astype(np.floor((events.eta-self.eta_span[0])*self.eta_scale),"int64")
-        idx_phi = ak.values_astype(np.floor((events.phi-self.phi_span[0])*self.phi_scale),"int64")
-        idx_eta = ak.where(idx_eta == self.eta_pix, self.eta_pix-1, idx_eta)
-        idx_phi = ak.where(idx_phi == self.phi_pix, self.phi_pix-1, idx_phi)
-        pt = events.pt
-        
-        to_infer = np.zeros((len(events), 1, self.eta_pix, self.phi_pix))    
-        for event_i in range(len(events)):
-            
-            # form image
-            to_infer[event_i, 0, idx_eta[event_i],idx_phi[event_i]] = pt[event_i]  
-            
-            # normalize pt
-            m = np.mean(to_infer[event_i, 0,:,:])
-            s = np.std(to_infer[event_i, 0,:,:])
-            if s != 0: 
-                to_infer[event_i, 0,:,:] = (to_infer[event_i, 0,:,:]-m)/s
-                
-        return to_infer
-    
-    def run_inference(self, imgs, ort_sess):
-
-        #Running the inference in batch mode
-        input_name = ort_sess.get_inputs()[0].name
-        cl_outputs = np.array([])
-                   
-        for i, img in enumerate(imgs):
-            # SSD: grab classification outputs (0 - loc, 1 - classifation, 2 - regression)
-            # resnet: only classification as output
-            cl_output =  ort_sess.run(None, {input_name: np.array([img.astype(np.float32)])})
-            cl_output_softmax = self.softmax(cl_output)[0]
-            if i == 0: 
-                cl_outputs = cl_output_softmax
-            else: 
-                cl_outputs = np.concatenate((cl_outputs, cl_output_softmax))
-    
-        return cl_outputs
-    
-    
-    def rho(self, number, jet, tracks, deltaR, dr=0.05):
-        r_start = number*dr
-        r_end = (number+1)*dr
-        ring = (deltaR > r_start) & (deltaR < r_end)
-        rho_values = ak.sum(tracks[ring].pt, axis=1)/(dr*jet.pt)
-        return rho_values
-
-    def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
-        out_df = pd.DataFrame()
-        for field in ak.fields(jet_collection):
-            prefix = self.prefixes.get(field, "")
-            if len(prefix) > 0:
-                for subfield in ak.fields(jet_collection[field]):
-                    out_df[f"{prefix}_{subfield}"] = ak.to_numpy(
-                        jet_collection[field][subfield]
-                    )
-            else:
-                out_df[field] = ak.to_numpy(jet_collection[field])
-        return out_df
-
-    def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float) -> None:
-        store.put(gname, df)
-        store.get_storer(gname).attrs.metadata = kwargs
-        
-    def save_dfs(self, dfs, df_names, fname):
-        #fname = "out.hdf5"
-        subdirs = []
-        store = pd.HDFStore(fname)
-        if self.output_location is not None:
-            # pandas to hdf5
-            for out, gname in zip(dfs, df_names):
-                if self.isMC:
-                    metadata = dict(gensumweight=self.gensumweight,era=self.era, mc=self.isMC,sample=self.sample)
-                    #metadata.update({gensumweight:self.gensumweight})
-                else:
-                    metadata = dict(era=self.era, mc=self.isMC,sample=self.sample)    
-                    
-                store_fin = self.h5store(store, out, fname, gname, **metadata)
-
-            store.close()
-            self.dump_table(fname, self.output_location, subdirs)
-        else:
-            print("self.output_location is None")
-            store.close()
-
-    def dump_table(self, fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
-        subdirs = subdirs or []
-        xrd_prefix = "root://"
-        pfx_len = len(xrd_prefix)
-        xrootd = False
-        if xrd_prefix in location:
-            try:
-                import XRootD
-                import XRootD.client
-
-                xrootd = True
-            except ImportError:
-                raise ImportError(
-                    "Install XRootD python bindings with: conda install -c conda-forge xroot"
-                )
-        local_file = (
-            os.path.abspath(os.path.join(".", fname))
-            if xrootd
-            else os.path.join(".", fname)
-        )
-        merged_subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
-        destination = (
-            location + merged_subdirs + f"/{fname}"
-            if xrootd
-            else os.path.join(location, os.path.join(merged_subdirs, fname))
-        )
-        if xrootd:
-            copyproc = XRootD.client.CopyProcess()
-            copyproc.add_job(local_file, destination)
-            copyproc.prepare()
-            copyproc.run()
-            client = XRootD.client.FileSystem(
-                location[: location[pfx_len:].find("/") + pfx_len]
-            )
-            status = client.locate(
-                destination[destination[pfx_len:].find("/") + pfx_len + 1 :],
-                XRootD.client.flags.OpenFlags.READ,
-            )
-            assert status[0].ok
-            del client
-            del copyproc
-        else:
-            dirname = os.path.dirname(destination)
-            if not os.path.exists(dirname):
-                pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
-            if not os.path.samefile(local_file, destination):
-                shutil.copy2(local_file, destination)
-            else:
-                fname = "condor_" + fname
-                destination = os.path.join(location, os.path.join(merged_subdirs, fname))
-                shutil.copy2(local_file, destination)
-            assert os.path.isfile(destination)
-        pathlib.Path(local_file).unlink()
 
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
         if self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
+        #####################################################################################
+        # ---- Fastejet reclustering
+        #####################################################################################
+
         #Prepare the clean PFCand matched to tracks collection
         Cands = ak.zip({
             "pt": events.PFCands.trkPt,
@@ -275,7 +107,11 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_cluster = ak_inclusive_cluster[atLeastOneJet]
         tracks = tracks[atLeastOneJet]
         
-        # cut based on ak4 jets to replicate the trigCger
+        #####################################################################################
+        # ---- Event level information and selections
+        #####################################################################################
+
+        # cut based on ak4 jets to replicate the trigger
         Jets = ak.zip({
             "pt": events.Jet.pt,
             "eta": events.Jet.eta,
@@ -324,6 +160,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_barrel"] = ak.sum(barrel_ak4jets.pt,axis=-1).to_list()
+        out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt[atLeastOneJet]
         out_vars["PV_npvs"] = events.PV.npvs[atLeastOneJet]
         out_vars["PV_npvsGood"] = events.PV.npvsGood[atLeastOneJet]
             
@@ -351,7 +188,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if len(indices) == 0:
             print("No events passed trigger. Saving empty outputs.")
             out_vars = pd.DataFrame(['empty'], columns=['empty'])
-            self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
         #####################################################################################
@@ -364,7 +201,6 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.do_inf:    
             ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
-            # options.intra_op_num_threads = 1 # number of threads used to parallelize the execution within nodes. Default is 0 to let onnxruntime choose.
             # options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
             
             if ak.any(htCut): 
@@ -378,8 +214,8 @@ class SUEP_cluster(processor.ProcessorABC):
                     
                     if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
                     batch = inf_cands[i:i+batch_size]
-                    imgs = self.convert_to_images(batch)
-                    batch_resnet_jets = self.run_inference(imgs, ort_sess)
+                    imgs = convert_to_images(self, batch)
+                    batch_resnet_jets = run_inference(self, imgs, ort_sess)
                     if i == 0: resnet_jets = batch_resnet_jets
                     else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
                 
@@ -414,7 +250,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if len(tracks) == 0:
             print("No events in ISR Removal Method, clusterCut.")
             for c in columns_ISR: out_vars[c] = np.nan
-            self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
         ### SUEP_mult
@@ -422,9 +258,8 @@ class SUEP_cluster(processor.ProcessorABC):
         #chonkiest_jet = ak.argsort(chonkocity, axis=1, ascending=True, stable=True)[:, ::-1]
         #thicc_jets = ak_inclusive_jets[chonkiest_jet]
         #chonkiest_cands = ak_inclusive_cluster[chonkiest_jet][:,0]
-        #singletrackCut = (ak.num(chonkiest_cands)>1)
 
-        ### SUEP_pt
+        ### Order the reclustered jets by pT (will take top 2 for ISR removal method)
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         SUEP_pt = ak_inclusive_jets[highpt_jet]
         SUEP_pt_nconst = chonkocity[highpt_jet]
@@ -439,7 +274,7 @@ class SUEP_cluster(processor.ProcessorABC):
         indices_IRM = indices[singletrackCut]
         Lost_Tracks_cands = Lost_Tracks_cands[singletrackCut]
 
-        # ISR removal method (IRM)
+        # ISR removal method (IRM): Top 2 pT jets. If jet1 has fewer tracks than jet2 then swap. Boost and remove ISR 
         SUEP_cand = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
         SUEP_cand_tracks = ak.where(SUEP_pt_nconst[:,1]<=SUEP_pt_nconst[:,0],SUEP_pt_tracks[:,0],SUEP_pt_tracks[:,1])
         ISR_cand = ak.where(SUEP_pt_nconst[:,1]>SUEP_pt_nconst[:,0],SUEP_pt[:,0],SUEP_pt[:,1])
@@ -462,7 +297,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not any(oneIRMtrackCut):
             print("No events in ISR Removal Method, oneIRMtrackCut.")
             for c in columns_ISR: out_vars[c] = np.nan
-            self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
         IRM_cands = IRM_cands[oneIRMtrackCut]#remove the events left with one track
@@ -478,27 +313,22 @@ class SUEP_cluster(processor.ProcessorABC):
 
         out_vars.loc[indices_IRM, "SUEP_nLostTracks_IRM"] = ak.num(Lost_IRM_cands)        
         out_vars.loc[indices_IRM, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
-        eigs_2 = self.sphericity(IRM_cands,2.0)
-        eigs = self.sphericity(IRM_cands,1.0)
+        eigs = sphericity(self, IRM_cands,1.0) #Set r=1.0 for IRC safe
         out_vars.loc[indices_IRM, "SUEP_nconst_IRM"] = ak.num(IRM_cands)
         out_vars.loc[indices_IRM, "SUEP_ntracks_IRM"] = ak.num(tracks_IRM)
         out_vars.loc[indices_IRM, "SUEP_pt_avg_b_IRM"] = ak.mean(IRM_cands.pt, axis=-1)
-        out_vars.loc[indices_IRM, "SUEP_spher_IRM"] = 1.5 * (eigs_2[:,1]+eigs_2[:,0])
         out_vars.loc[indices_IRM, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
         #out_vars.loc[indices_IRM, "SUEP_aplan_IRM"] = 1.5 * eigs_2[:,0]
         #out_vars.loc[indices_IRM, "SUEP_FW2M_IRM"] = 1.0 - 3.0 * (eigs_2[:,2]*eigs_2[:,1] + eigs_2[:,2]*eigs_2[:,0] + eigs_2[:,1]*eigs_2[:,0])
         #out_vars.loc[indices_IRM, "SUEP_D_IRM"] = 27.0 * eigs_2[:,2]*eigs_2[:,1]*eigs_2[:,0]
-        #out_vars.loc[indices_IRM, "SUEP_dphi_IRMcands_ISR_IRM"] = ak.mean(abs(IRM_cands.deltaphi(ISR_cand_b)), axis=-1)
-        #out_vars.loc[indices_IRM, "SUEP_dphi_ISRtracks_ISR_IRM"] = ak.mean(abs(ISR_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)
-        #out_vars.loc[indices_IRM, "SUEP_dphi_SUEPtracks_ISR_IRM"] = ak.mean(abs(SUEP_cand_tracks.boost_p4(boost_IRM).deltaphi(ISR_cand_b)), axis=-1)    
 
         # unboost for these
         IRM_cands_ub = IRM_cands.boost_p4(SUEP_cand)
         deltaR = IRM_cands_ub.deltaR(SUEP_cand)
         out_vars.loc[indices_IRM, "SUEP_pt_avg_IRM"] = ak.mean(IRM_cands_ub.pt, axis=-1)
         out_vars.loc[indices_IRM, "SUEP_girth_IRM"] = ak.sum((deltaR/1.5)*IRM_cands_ub.pt, axis=-1)/SUEP_cand.pt
-        out_vars.loc[indices_IRM, "SUEP_rho0_IRM"] = self.rho(0, SUEP_cand, IRM_cands_ub, deltaR)
-        out_vars.loc[indices_IRM, "SUEP_rho1_IRM"] = self.rho(1, SUEP_cand, IRM_cands_ub, deltaR)
+        out_vars.loc[indices_IRM, "SUEP_rho0_IRM"] = rho(self, 0, SUEP_cand, IRM_cands_ub, deltaR)
+        out_vars.loc[indices_IRM, "SUEP_rho1_IRM"] = rho(self, 1, SUEP_cand, IRM_cands_ub, deltaR)
 
         SUEPs = ak.zip({
             "px": ak.sum(IRM_cands.px, axis=-1),
@@ -513,7 +343,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEPs.mass
         
         ### save outputs
-        self.save_dfs([out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+        save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
         
         return output
 
