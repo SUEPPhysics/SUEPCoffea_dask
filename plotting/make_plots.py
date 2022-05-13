@@ -229,8 +229,7 @@ for ifile in tqdm(files):
     #Additional weights [pileup_weight]
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    npvs = np.array(df['PV_npvs'])
-    npvs[npvs>=100] = 1
+    npvs = np.array(df['Pileup_nTrueInt'])
     pu = puweights[npvs]
     if options.isMC == 1:
         event_weight *= pu
