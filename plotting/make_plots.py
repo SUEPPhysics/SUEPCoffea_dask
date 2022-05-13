@@ -54,6 +54,7 @@ nPVs_l35_study = spher_nconst_ABCD + [['PV_npvs','<',35]]
 nPVs_l35_njets_2_study = spher_nconst_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
 inf_ntracksABCD = spher_ntracks_ABCD + [['PV_npvs','<',35]]
 raw = [['ntracks','>',0]]
+ht_barrel = [['ht_barrel', '>', 1200]]
 selections = S1_ntracks_ABCD
     
 def apply_selection(df, variable, operator, value):
@@ -126,9 +127,20 @@ def create_output_file(label):
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
             r+"nLostTracks_"+label : Hist.new.Reg(49,0, 50, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
-            r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight()
+            r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
         })
-            
+        for i in range(10):
+            output.update({
+                r+"eta_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100,-5,5, name=r+"eta_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $\eta$").Weight(),
+                r+"phi_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $\phi$").Weight(),
+                r+"pt_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $p_T$").Weight(),
+            })
+        for i in range(2):
+            output.update({
+                r+"eta_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-5,5, name=r+"eta_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\eta$").Weight(),
+                r+"phi_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\phi$").Weight(),
+                r+"pt_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $p_T$").Weight(),
+            })
             
     if label == 'IRM':
         output.update({
@@ -137,13 +149,9 @@ def create_output_file(label):
             "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label, label='Sphericity').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),
             "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            
-            
             "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),
             "2D_SUEP_spher_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),  
             "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),  
-            
-            
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in ["", "A_", "B_", "C_"]:
@@ -229,10 +237,12 @@ for ifile in tqdm(files):
     #Additional weights [pileup_weight]
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    npvs = np.array(df['Pileup_nTrueInt'])
+    npvs = np.array(df['PV_npvs'])
+    npvs_l100 = (npvs < 100)
+    npvs = npvs[npvs_l100]
     pu = puweights[npvs]
     if options.isMC == 1:
-        event_weight *= pu
+        event_weight[npvs_l100] *= pu
         #event_weight *= another event weight, etc
     df['event_weight'] = event_weight
 
@@ -347,7 +357,7 @@ for ifile in tqdm(files):
     output["2D_SUEP_spher_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
     output["2D_SUEP_S1_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
     output["2D_ntracks_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_ntracks_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
-
+    
     # per region
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
 
@@ -355,7 +365,15 @@ for ifile in tqdm(files):
         plot_labels = [key for key in df_r.keys() if r+key in list(output.keys())]    # all the _IRM things
         for plot in plot_labels: output[r+plot].fill(df_r[plot], weight=df_r['event_weight'])  
         plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]   # event wide variables
-        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight'])  
+        for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight']) 
+        
+        df_r_4jets = df_r[~df_r['pt_ak4jets4'].isnull()]
+        output[r+'pt_ak4jets0_4jets_'+label].fill(df_r_4jets['pt_ak4jets0'], weight=df_r_4jets['event_weight'])
+        output[r+'phi_ak4jets0_4jets_'+label].fill(df_r_4jets['phi_ak4jets0'], weight=df_r_4jets['event_weight'])
+        output[r+'eta_ak4jets0_4jets_'+label].fill(df_r_4jets['eta_ak4jets0'], weight=df_r_4jets['event_weight'])
+        output[r+'pt_ak4jets1_4jets_'+label].fill(df_r_4jets['pt_ak4jets1'], weight=df_r_4jets['event_weight'])
+        output[r+'phi_ak4jets1_4jets_'+label].fill(df_r_4jets['phi_ak4jets1'], weight=df_r_4jets['event_weight'])
+        output[r+'eta_ak4jets1_4jets_'+label].fill(df_r_4jets['eta_ak4jets1'], weight=df_r_4jets['event_weight'])
         
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 

@@ -39,7 +39,7 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=10000,
+        chunksize=100000,
     )
     
 merge(options)

@@ -160,7 +160,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_barrel"] = ak.sum(barrel_ak4jets.pt,axis=-1).to_list()
-        out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt[atLeastOneJet]
+        if self.isMC: out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt[atLeastOneJet]
         out_vars["PV_npvs"] = events.PV.npvs[atLeastOneJet]
         out_vars["PV_npvsGood"] = events.PV.npvsGood[atLeastOneJet]
             
@@ -201,7 +201,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.do_inf:    
             ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
-            # options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
+            options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
             
             if ak.any(htCut): 
                 inf_cands = Cleaned_cands[atLeastOneJet][htCut]
