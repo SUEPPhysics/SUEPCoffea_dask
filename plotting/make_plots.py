@@ -55,7 +55,7 @@ nPVs_l35_njets_2_study = spher_nconst_ABCD + [['PV_npvs','<',35], ['ngood_fastje
 inf_ntracksABCD = spher_ntracks_ABCD + [['PV_npvs','<',35]]
 raw = [['ntracks','>',0]]
 ht_barrel = [['ht_barrel', '>', 1200]]
-selections = S1_ntracks_ABCD
+selections = S1_ntracks_ABCD + ht_barrel
     
 def apply_selection(df, variable, operator, value):
     """
@@ -127,6 +127,7 @@ def create_output_file(label):
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
             r+"nLostTracks_"+label : Hist.new.Reg(49,0, 50, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
+            r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
         })
         for i in range(10):
@@ -145,12 +146,9 @@ def create_output_file(label):
     if label == 'IRM':
         output.update({
             # 2D histograms
-            "2D_SUEP_spher_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label, label='Sphericity').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
-            "2D_SUEP_spher_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label, label='Sphericity').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),
             "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),
-            "2D_SUEP_spher_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_spher_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),  
             "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),  
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
@@ -165,7 +163,6 @@ def create_output_file(label):
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
                 r+"SUEP_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"SUEP_phi_"+label, label=r"SUEP $\phi$").Weight(),
                 r+"SUEP_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"SUEP_mass_"+label, label="SUEP Mass [GeV]").Weight(),
-                r+"SUEP_spher_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_spher_"+label, label="SUEP Sphericity").Weight(),
                 r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label='$Sph_1$').Weight(),
                 r+"SUEP_girth": Hist.new.Reg(50, 0, 1.0, name=r+"SUEP_girth_"+label, label=r"SUEP Girth").Weight(),
                 r+"SUEP_rho0_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho0_"+label, label=r"SUEP $\rho_0$").Weight(),
@@ -237,13 +234,11 @@ for ifile in tqdm(files):
     #Additional weights [pileup_weight]
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    npvs = np.array(df['PV_npvs'])
-    npvs_l100 = (npvs < 100)
-    npvs = npvs[npvs_l100]
-    pu = puweights[npvs]
     if options.isMC == 1:
-        event_weight[npvs_l100] *= pu
-        #event_weight *= another event weight, etc
+        Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
+        pu = puweights[Pileup_nTrueInt]
+        event_weight *= pu
+    #event_weight *= another event weight, etc
     df['event_weight'] = event_weight
 
     #####################################################################################
@@ -350,11 +345,8 @@ for ifile in tqdm(files):
     for plot in plot_labels: output[plot+"_"+label].fill(df_IRM[plot], weight=df_IRM['event_weight'])  
 
     # fill some new distributions  
-    output["2D_SUEP_spher_SUEP_nconst_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_nconst_"+label], weight=df_IRM['event_weight'])
-    output["2D_SUEP_spher_ntracks_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_ntracks_"+label], weight=df_IRM['event_weight'])
     output["2D_SUEP_S1_ntracks_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_ntracks_"+label], weight=df_IRM['event_weight'])
     output["2D_SUEP_S1_SUEP_nconst_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_nconst_"+label], weight=df_IRM['event_weight'])
-    output["2D_SUEP_spher_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_spher_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
     output["2D_SUEP_S1_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
     output["2D_ntracks_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_ntracks_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
     
