@@ -55,7 +55,7 @@ nPVs_l35_njets_2_study = spher_nconst_ABCD + [['PV_npvs','<',35], ['ngood_fastje
 inf_ntracksABCD = spher_ntracks_ABCD + [['PV_npvs','<',35]]
 raw = [['ntracks','>',0]]
 ht_barrel = [['ht_barrel', '>', 1200]]
-selections = S1_ntracks_ABCD + ht_barrel
+selections = S1_ntracks_ABCD
     
 def apply_selection(df, variable, operator, value):
     """
@@ -123,6 +123,7 @@ def create_output_file(label):
     for r in ["", "A_", "B_", "C_"]:
         output.update({
             r+"ht_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
+            r+"ht_barrel_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_barrel_"+label, label='HT Barrel').Weight(),
             r+"ntracks_" + label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
             r+"nLostTracks_"+label : Hist.new.Reg(49,0, 50, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
@@ -148,8 +149,10 @@ def create_output_file(label):
             # 2D histograms
             "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),
-            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(500, 0, 5000, name="SUEP_pt_avg_"+label).Weight(),  
+            "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 1000, name="SUEP_pt_avg_"+label).Weight(),
+            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(500, 0, 1000, name="SUEP_pt_avg_"+label).Weight(),  
+            "2D_SUEP_S1_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(100, 0, 100, name="SUEP_pt_avg_"+label).Weight(),
+            "2D_ntracks_SUEP_pt_avg_b_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(100, 0, 100, name="SUEP_pt_avg_"+label).Weight(),  
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in ["", "A_", "B_", "C_"]:
@@ -349,6 +352,8 @@ for ifile in tqdm(files):
     output["2D_SUEP_S1_SUEP_nconst_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_nconst_"+label], weight=df_IRM['event_weight'])
     output["2D_SUEP_S1_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
     output["2D_ntracks_SUEP_pt_avg_"+label].fill(df_IRM["SUEP_ntracks_"+label], df_IRM["SUEP_pt_avg_"+label], weight=df_IRM['event_weight'])
+    output["2D_SUEP_S1_SUEP_pt_avg_b_"+label].fill(df_IRM["SUEP_S1_"+label], df_IRM["SUEP_pt_avg_b_"+label], weight=df_IRM['event_weight'])
+    output["2D_ntracks_SUEP_pt_avg_b_"+label].fill(df_IRM["SUEP_ntracks_"+label], df_IRM["SUEP_pt_avg_b_"+label], weight=df_IRM['event_weight'])
     
     # per region
     for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):

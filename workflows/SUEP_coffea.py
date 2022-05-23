@@ -219,18 +219,20 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["resnet_SUEP_pred_ML"] = SUEP_pred
                 
         #####################################################################################
-        # ---- ISR Removal Method (IRM)
+        # ---- Cut Based Analysis
         #####################################################################################
         
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
         columns_IRM = [
-                "SUEP_nconst_IRM", "SUEP_ntracks_IRM", "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM", 
+                "SUEP_nconst_IRM", "SUEP_ntracks_IRM", 
+                "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM", "SUEP_pt_mean_scaled",
                 "SUEP_S1_IRM", "SUEP_rho0_IRM", "SUEP_rho1_IRM", 
-                "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM"
+                "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM",
+                "dphi_SUEP_ISR_IRM"
         ]
-        columns_IRM += [c.replace("SUEP", "ISR") for c in columns_IRM]
-        columns_IRM += ["dphi_SUEP_ISR_IRM"]
+        columns_CL = [c.replace("IRM", "CL") for c in columns_IRM]
+        columns = columns_IRM + columns_CL
                 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
@@ -239,10 +241,10 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
         
-        # output file if no events pass selections for ISR, avoids errors later on
+        # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
-            print("No events in ISR Removal Method, clusterCut.")
-            for c in columns_IRM: out_vars[c] = np.nan
+            print("No events pass clusterCut.")
+            for c in columns: out_vars[c] = np.nan
             save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
 
@@ -265,8 +267,17 @@ class SUEP_cluster(processor.ProcessorABC):
         # Top 2 pT jets. If jet1 has fewer tracks than jet2 then swap
         SUEP_cand = ak.where(nconst_pTsorted[:,1]<=nconst_pTsorted[:,0],jets_pTsorted[:,0],jets_pTsorted[:,1])
         ISR_cand = ak.where(nconst_pTsorted[:,1]>nconst_pTsorted[:,0],jets_pTsorted[:,0],jets_pTsorted[:,1])
+        SUEP_cluster_tracks = ak.where(nconst_pTsorted[:,1]<=nconst_pTsorted[:,0],clusters_pTsorted[:,0],clusters_pTsorted[:,1])
+        ISR_cluster_tracks = ak.where(nconst_pTsorted[:,1]>nconst_pTsorted[:,0],clusters_pTsorted[:,0],clusters_pTsorted[:,1])
         
-        # ISR REMOVAL: boost into frame of SUEP and use dphi cut to select tracks away from ISR
+        #####################################################################################
+        # ---- ISR Removal Method (IRM)
+        # In this method, we boost into the frame of the SUEP jet as selected previously
+        # and select all tracks that are dphi > 1.6 from the ISR jet in this frame
+        # to be the SUEP tracks. Variables such as sphericity are calculated using these.
+        #####################################################################################
+        
+        # boost into frame of SUEP
         boost_SUEP = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
@@ -275,6 +286,9 @@ class SUEP_cluster(processor.ProcessorABC):
         }, with_name="Momentum4D")        
         ISR_cand_b = ISR_cand.boost_p4(boost_SUEP)
         tracks_b = tracks.boost_p4(boost_SUEP)
+        
+        # SUEP and IRM tracks as defined by IRS Removal Method (IRM):
+        # all tracks outside/inside dphi 1.6 from ISR jet
         SUEP_tracks_b = tracks_b[abs(tracks_b.deltaphi(ISR_cand_b)) > 1.6]
         ISR_tracks_b = tracks_b[abs(tracks_b.deltaphi(ISR_cand_b)) <= 1.6]
         oneIRMtrackCut = (ak.num(SUEP_tracks_b)>1)
@@ -287,79 +301,96 @@ class SUEP_cluster(processor.ProcessorABC):
             return output
         
         #remove the events left with one track
-        SUEP_tracks_b = SUEP_tracks_b[oneIRMtrackCut]
-        ISR_tracks_b = ISR_tracks_b[oneIRMtrackCut]
-        SUEP_cand = SUEP_cand[oneIRMtrackCut]
-        ISR_cand = ISR_cand[oneIRMtrackCut]        
-        tracks = tracks[oneIRMtrackCut]
-        indices = indices[oneIRMtrackCut]
+        SUEP_tracks_b_IRM = SUEP_tracks_b[oneIRMtrackCut]
+        ISR_tracks_b_IRM = ISR_tracks_b[oneIRMtrackCut]
+        SUEP_cand_IRM = SUEP_cand[oneIRMtrackCut]
+        ISR_cand_IRM = ISR_cand[oneIRMtrackCut]        
+        tracks_IRM = tracks[oneIRMtrackCut]
+        indices_IRM = indices[oneIRMtrackCut]
 
-        out_vars.loc[indices, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand)), axis=-1)
+        out_vars.loc[indices_IRM, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand_IRM.deltaphi(ISR_cand_IRM)), axis=-1)
         
         # SUEP jet variables
-        eigs = sphericity(self, SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
-        out_vars.loc[indices, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b)
-        out_vars.loc[indices, "SUEP_ntracks_IRM"] = ak.num(tracks)
-        out_vars.loc[indices, "SUEP_pt_avg_b_IRM"] = ak.mean(SUEP_tracks_b.pt, axis=-1)
-        out_vars.loc[indices, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
+        eigs = sphericity(self, SUEP_tracks_b_IRM,1.0) #Set r=1.0 for IRC safe
+        out_vars.loc[indices_IRM, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b_IRM)
+        out_vars.loc[indices_IRM, "SUEP_pt_avg_b_IRM"] = ak.mean(SUEP_tracks_b_IRM.pt, axis=-1)
+        out_vars.loc[indices_IRM, "SUEP_pt_mean_scaled_IRM"] = ak.mean(SUEP_tracks_b_IRM.pt, axis=-1)/ak.max(SUEP_tracks_b_IRM.pt, axis=-1)
+        out_vars.loc[indices_IRM, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
        
-        # ISR jet variables
-        out_vars.loc[indices, "ISR_nconst_IRM"] = ak.num(ISR_tracks_b)
-        out_vars.loc[indices, "ISR_ntracks_IRM"] = ak.num(tracks)
-        # unboost to lab frame, boost to ISR frame
-        ISR_tracks = ISR_tracks_b.boost_p4(SUEP_cand)
-        boost_ISR = ak.zip({
-            "px": ISR_cand.px*-1,
-            "py": ISR_cand.py*-1,
-            "pz": ISR_cand.pz*-1,
-            "mass": ISR_cand.mass
-        }, with_name="Momentum4D") 
-        ISR_tracks_bISR = ISR_tracks.boost_p4(boost_ISR)
-        eigs = sphericity(self, ISR_tracks_bISR, 1.0) #Set r=1.0 for IRC safe
-        out_vars.loc[indices, "ISR_pt_avg_b_IRM"] = ak.mean(ISR_tracks_bISR.pt, axis=-1)
-        out_vars.loc[indices, "ISR_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
-
         # unboost for these
-        SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
-        out_vars.loc[indices, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks.pt, axis=-1)
-        out_vars.loc[indices, "ISR_pt_avg_IRM"] = ak.mean(ISR_tracks.pt, axis=-1)
-        
-        deltaR = SUEP_tracks.deltaR(SUEP_cand)
-        out_vars.loc[indices, "SUEP_rho0_IRM"] = rho(self, 0, SUEP_cand, SUEP_tracks, deltaR)
-        out_vars.loc[indices, "SUEP_rho1_IRM"] = rho(self, 1, SUEP_cand, SUEP_tracks, deltaR)
-        deltaR = ISR_tracks.deltaR(ISR_cand)
-        out_vars.loc[indices, "ISR_rho0_IRM"] = rho(self, 0, ISR_cand, ISR_tracks, deltaR)
-        out_vars.loc[indices, "ISR_rho1_IRM"] = rho(self, 1, ISR_cand, ISR_tracks, deltaR)
+        SUEP_tracks_IRM = SUEP_tracks_b_IRM.boost_p4(SUEP_cand_IRM)
+        out_vars.loc[indices_IRM, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks_IRM.pt, axis=-1)
+        deltaR = SUEP_tracks_IRM.deltaR(SUEP_cand_IRM)
+        out_vars.loc[indices_IRM, "SUEP_rho0_IRM"] = rho(self, 0, SUEP_cand_IRM, SUEP_tracks_IRM, deltaR)
+        out_vars.loc[indices_IRM, "SUEP_rho1_IRM"] = rho(self, 1, SUEP_cand_IRM, SUEP_tracks_IRM, deltaR)
         
         # redefine the jets using the tracks as selected by IRM
         SUEP = ak.zip({
-            "px": ak.sum(SUEP_tracks.px, axis=-1),
-            "py": ak.sum(SUEP_tracks.py, axis=-1),
-            "pz": ak.sum(SUEP_tracks.pz, axis=-1),
-            "energy": ak.sum(SUEP_tracks.energy, axis=-1),
+            "px": ak.sum(SUEP_tracks_IRM.px, axis=-1),
+            "py": ak.sum(SUEP_tracks_IRM.py, axis=-1),
+            "pz": ak.sum(SUEP_tracks_IRM.pz, axis=-1),
+            "energy": ak.sum(SUEP_tracks_IRM.energy, axis=-1),
         }, with_name="Momentum4D")
-        out_vars.loc[indices, "SUEP_pt_IRM"] = SUEP.pt
-        out_vars.loc[indices, "SUEP_eta_IRM"] = SUEP.eta
-        out_vars.loc[indices, "SUEP_phi_IRM"] = SUEP.phi
-        out_vars.loc[indices, "SUEP_mass_IRM"] = SUEP.mass
-        ISR = ak.zip({
-            "px": ak.sum(ISR_tracks.px, axis=-1),
-            "py": ak.sum(ISR_tracks.py, axis=-1),
-            "pz": ak.sum(ISR_tracks.pz, axis=-1),
-            "energy": ak.sum(ISR_tracks.energy, axis=-1),
-        }, with_name="Momentum4D")
-        out_vars.loc[indices, "ISR_pt_IRM"] = ISR.pt
-        out_vars.loc[indices, "ISR_eta_IRM"] = ISR.eta
-        out_vars.loc[indices, "ISR_phi_IRM"] = ISR.phi
-        out_vars.loc[indices, "ISR_mass_IRM"] = ISR.mass
+        out_vars.loc[indices_IRM, "SUEP_pt_IRM"] = SUEP.pt
+        out_vars.loc[indices_IRM, "SUEP_eta_IRM"] = SUEP.eta
+        out_vars.loc[indices_IRM, "SUEP_phi_IRM"] = SUEP.phi
+        out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEP.mass
         
+        #####################################################################################
+        # ---- Cluster Method (CL)
+        # In this method, we use the tracks that were already clustered into the SUEP jet
+        # to be the SUEP jet. Variables such as sphericity are calculated using these.
+        #####################################################################################
+        
+        # boost into frame of SUEP
+        boost_SUEP = ak.zip({
+            "px": SUEP_cand.px*-1,
+            "py": SUEP_cand.py*-1,
+            "pz": SUEP_cand.pz*-1,
+            "mass": SUEP_cand.mass
+        }, with_name="Momentum4D")        
+        tracks_b_CL = tracks.boost_p4(boost_SUEP)
+        
+        # SUEP tracks for this method are defined to be the ones from the cluster
+        # that was picked to be the SUEP jet
+        SUEP_tracks_b_CL = SUEP_cluster_tracks.boost_p4(boost_SUEP)
+        
+        # no cut needed, but still define new variables for this method
+        # so we don't mix things up
+        indices_CL = indices
+        SUEP_cand_CL = SUEP_cand
+        
+        # SUEP jet variables
+        eigs = sphericity(self, SUEP_tracks_b_CL,1.0) #Set r=1.0 for IRC safe
+        out_vars.loc[indices_CL, "SUEP_nconst_CL"] = ak.num(SUEP_tracks_b_CL)
+        out_vars.loc[indices_CL, "SUEP_pt_avg_b_CL"] = ak.mean(SUEP_tracks_b_CL.pt, axis=-1)
+        out_vars.loc[indices_CL, "SUEP_pt_mean_scaled_CL"] = ak.mean(SUEP_tracks_b_CL.pt, axis=-1)/ak.max(SUEP_tracks_b_CL.pt, axis=-1)
+        out_vars.loc[indices_CL, "SUEP_S1_CL"] = 1.5 * (eigs[:,1]+eigs[:,0])
+       
+        # unboost for these
+        SUEP_tracks_CL = SUEP_tracks_b_CL.boost_p4(SUEP_cand_CL)
+        out_vars.loc[indices_CL, "SUEP_pt_avg_CL"] = ak.mean(SUEP_tracks_CL.pt, axis=-1)
+        deltaR = SUEP_tracks_CL.deltaR(SUEP_cand_CL)
+        out_vars.loc[indices_CL, "SUEP_rho0_CL"] = rho(self, 0, SUEP_cand_CL, SUEP_tracks_CL, deltaR)
+        out_vars.loc[indices_CL, "SUEP_rho1_CL"] = rho(self, 1, SUEP_cand_CL, SUEP_tracks_CL, deltaR)
+        
+        # redefine the jets using the tracks as selected by CL
+        SUEP = ak.zip({
+            "px": ak.sum(SUEP_tracks_CL.px, axis=-1),
+            "py": ak.sum(SUEP_tracks_CL.py, axis=-1),
+            "pz": ak.sum(SUEP_tracks_CL.pz, axis=-1),
+            "energy": ak.sum(SUEP_tracks_CL.energy, axis=-1),
+        }, with_name="Momentum4D")
+        out_vars.loc[indices_CL, "SUEP_pt_CL"] = SUEP.pt
+        out_vars.loc[indices_CL, "SUEP_eta_CL"] = SUEP.eta
+        out_vars.loc[indices_CL, "SUEP_phi_CL"] = SUEP.phi
+        out_vars.loc[indices_CL, "SUEP_mass_CL"] = SUEP.mass
         
         #####################################################################################
         # ---- Save outputs
         #####################################################################################
         
         save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
-        
         
         return output
 
