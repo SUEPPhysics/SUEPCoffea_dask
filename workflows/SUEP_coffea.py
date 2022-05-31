@@ -117,7 +117,7 @@ class SUEP_cluster(processor.ProcessorABC):
             (events.lostTracks.dzErr < 0.05)
         Lost_Tracks_cands = LostTracks[cut]
         Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-                                                
+    
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
         tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
@@ -188,7 +188,9 @@ class SUEP_cluster(processor.ProcessorABC):
         indices = np.arange(0,len(tracks))
  
         #####################################################################################
-        # ---- ML METHOD
+        # ---- ML Analysis
+        # Each event is converted into an input for the ML model. Using ONNX, we run
+        # inference on each event to obtain a prediction of the class (SUEP or QCD).
         #####################################################################################
         
         #These lines control the inference from ML models. Conversion is done elsewhere
@@ -232,6 +234,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "dphi_SUEP_ISR_IRM"
         ]
         columns_CL = [c.replace("IRM", "CL") for c in columns_IRM]
+        if self.isMC: columns_CL += [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in columns_IRM]
         columns = columns_IRM + columns_CL
                 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
@@ -349,16 +352,24 @@ class SUEP_cluster(processor.ProcessorABC):
             "pz": SUEP_cand.pz*-1,
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")        
-        tracks_b_CL = tracks.boost_p4(boost_SUEP)
         
         # SUEP tracks for this method are defined to be the ones from the cluster
         # that was picked to be the SUEP jet
         SUEP_tracks_b_CL = SUEP_cluster_tracks.boost_p4(boost_SUEP)
+        if self.isMC: 
+            boost_ISR = ak.zip({
+                "px": ISR_cand.px*-1,
+                "py": ISR_cand.py*-1,
+                "pz": ISR_cand.pz*-1,
+                "mass": ISR_cand.mass
+            }, with_name="Momentum4D")    
+            ISR_tracks_b_CL = ISR_cluster_tracks.boost_p4(boost_ISR)
         
         # no cut needed, but still define new variables for this method
         # so we don't mix things up
         indices_CL = indices
         SUEP_cand_CL = SUEP_cand
+        if self.isMC: ISR_cand_CL = ISR_cand
         
         # SUEP jet variables
         eigs = sphericity(self, SUEP_tracks_b_CL,1.0) #Set r=1.0 for IRC safe
@@ -366,6 +377,14 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars.loc[indices_CL, "SUEP_pt_avg_b_CL"] = ak.mean(SUEP_tracks_b_CL.pt, axis=-1)
         out_vars.loc[indices_CL, "SUEP_pt_mean_scaled_CL"] = ak.mean(SUEP_tracks_b_CL.pt, axis=-1)/ak.max(SUEP_tracks_b_CL.pt, axis=-1)
         out_vars.loc[indices_CL, "SUEP_S1_CL"] = 1.5 * (eigs[:,1]+eigs[:,0])
+        
+        # ISR jet variables
+        if self.isMC:
+            eigs = sphericity(self, ISR_tracks_b_CL,1.0) #Set r=1.0 for IRC safe
+            out_vars.loc[indices_CL, "ISR_nconst_CL"] = ak.num(ISR_tracks_b_CL)
+            out_vars.loc[indices_CL, "ISR_pt_avg_b_CL"] = ak.mean(ISR_tracks_b_CL.pt, axis=-1)
+            out_vars.loc[indices_CL, "ISR_pt_mean_scaled_CL"] = ak.mean(ISR_tracks_b_CL.pt, axis=-1)/ak.max(ISR_tracks_b_CL.pt, axis=-1)
+            out_vars.loc[indices_CL, "ISR_S1_CL"] = 1.5 * (eigs[:,1]+eigs[:,0])
        
         # unboost for these
         SUEP_tracks_CL = SUEP_tracks_b_CL.boost_p4(SUEP_cand_CL)
@@ -374,17 +393,23 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars.loc[indices_CL, "SUEP_rho0_CL"] = rho(self, 0, SUEP_cand_CL, SUEP_tracks_CL, deltaR)
         out_vars.loc[indices_CL, "SUEP_rho1_CL"] = rho(self, 1, SUEP_cand_CL, SUEP_tracks_CL, deltaR)
         
-        # redefine the jets using the tracks as selected by CL
-        SUEP = ak.zip({
-            "px": ak.sum(SUEP_tracks_CL.px, axis=-1),
-            "py": ak.sum(SUEP_tracks_CL.py, axis=-1),
-            "pz": ak.sum(SUEP_tracks_CL.pz, axis=-1),
-            "energy": ak.sum(SUEP_tracks_CL.energy, axis=-1),
-        }, with_name="Momentum4D")
-        out_vars.loc[indices_CL, "SUEP_pt_CL"] = SUEP.pt
-        out_vars.loc[indices_CL, "SUEP_eta_CL"] = SUEP.eta
-        out_vars.loc[indices_CL, "SUEP_phi_CL"] = SUEP.phi
-        out_vars.loc[indices_CL, "SUEP_mass_CL"] = SUEP.mass
+        if self.isMC:
+            ISR_tracks_CL = ISR_tracks_b_CL.boost_p4(ISR_cand_CL)
+            out_vars.loc[indices_CL, "ISR_pt_avg_CL"] = ak.mean(ISR_tracks_CL.pt, axis=-1)
+            deltaR = ISR_tracks_CL.deltaR(ISR_cand_CL)
+            out_vars.loc[indices_CL, "ISR_rho0_CL"] = rho(self, 0, ISR_cand_CL, ISR_tracks_CL, deltaR)
+            out_vars.loc[indices_CL, "ISR_rho1_CL"] = rho(self, 1, ISR_cand_CL, ISR_tracks_CL, deltaR)
+
+        out_vars.loc[indices_CL, "SUEP_pt_CL"] = SUEP_cand.pt
+        out_vars.loc[indices_CL, "SUEP_eta_CL"] = SUEP_cand.eta
+        out_vars.loc[indices_CL, "SUEP_phi_CL"] = SUEP_cand.phi
+        out_vars.loc[indices_CL, "SUEP_mass_CL"] = SUEP_cand.mass
+        
+        if self.isMC:
+            out_vars.loc[indices_CL, "ISR_pt_CL"] = ISR_cand.pt
+            out_vars.loc[indices_CL, "ISR_eta_CL"] = ISR_cand.eta
+            out_vars.loc[indices_CL, "ISR_phi_CL"] = ISR_cand.phi
+            out_vars.loc[indices_CL, "ISR_mass_CL"] = ISR_cand.mass
         
         #####################################################################################
         # ---- Save outputs
