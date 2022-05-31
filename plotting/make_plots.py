@@ -24,7 +24,6 @@ parser.add_argument('--blind', type=int, default=1, help="Blind the data (defaul
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
-
 # parameters for script
 var1_IRM = 'SUEP_S1_IRM'
 var2_IRM = 'ntracks'
@@ -34,6 +33,10 @@ var1_CL = 'SUEP_S1_CL'
 var2_CL = 'ntracks'
 var1_CL_val = 0.50
 var2_CL_val = 100
+var1_CLi = 'ISR_S1_CL'
+var2_CLi = 'ntracks'
+var1_CLi_val = 0.50
+var2_CLi_val = 100
 var1_ML = 'resnet_SUEP_pred_ML'
 var2_ML = 'ntracks'
 var1_ML_val = 0.50
@@ -41,7 +44,7 @@ var2_ML_val = 100
 output_label = options.output
 redirector = "root://t3serv017.mit.edu/"
 
-# selections
+# a stash of selections
 spher_nconst_ABCD = [ 
     ["SUEP_spher_IRM", ">=", 0.25],
     ["SUEP_nconst_IRM", ">=", 10]
@@ -58,15 +61,31 @@ S1_ntracks_ABCD_CL = [
     ['ntracks','>', 0],
     ["SUEP_S1_CL", ">=", 0.35],
 ]
+S1_ntracks_ABCD_CLi = [
+    ['ntracks','>', 0],
+    ["ISR_S1_CL", ">=", 0.35],
+]
+
+S1_ntracks_ptAvgB_ABCD_IRM = [
+    ['ntracks','>', 0],
+    ["SUEP_S1_IRM", ">=", 0.15],
+    ["SUEP_pt_avg_b_IRM", "<=", 10],
+]
+S1_ntracks_ptAvgB_ABCD_CL = [[s[0].replace("IRM", "CL"), s[1], s[2]] for s in S1_ntracks_ptAvgB_ABCD_IRM]
+S1_ntracks_ptAvgB_ABCD_CLi = [[s[0].replace("SUEP", "ISR").replace("IRM", "CL"), s[1], s[2]] for s in S1_ntracks_ptAvgB_ABCD_IRM]
+
 nPVs_l35_study = spher_nconst_ABCD + [['PV_npvs','<',35]]
 nPVs_l35_njets_2_study = spher_nconst_ABCD + [['PV_npvs','<',35], ['ngood_fastjets','==',2]]
 inf_ntracksABCD = spher_ntracks_ABCD + [['PV_npvs','<',35]]
 raw = [['ntracks','>',0]]
 ht_tracker = [['ht_tracker', '>', 1200]]
+ISR_2jets = S1_ntracks_ABCD_CL + [['ngood_fastjets','==',2]]
 
+# pick selections to be used for different methods
 selections_ML = raw + ht_tracker
-selections_IRM = S1_ntracks_ABCD_IRM + ht_tracker
-selections_CL = S1_ntracks_ABCD_CL + ht_tracker
+selections_IRM = S1_ntracks_ptAvgB_ABCD_IRM + ht_tracker
+selections_CL = S1_ntracks_ptAvgB_ABCD_CL + ht_tracker
+selections_CLi = S1_ntracks_ptAvgB_ABCD_CLi + ht_tracker
     
 def apply_selection(df, variable, operator, value):
     """
@@ -85,7 +104,7 @@ def apply_selection(df, variable, operator, value):
     elif operator in ["equal to", "eq", "=="]:
         return df.loc[df[variable] == value]
     else:
-        sys.exit("Couldn't find operator requested")
+        sys.exit("Couldn't find operator requested " + operator)
 
 # get list of files
 username = getpass.getuser()
@@ -119,58 +138,59 @@ def create_output_file(label):
             "C_"+label: Hist.new.Reg(100, 0, 1, name="C_"+label).Weight(),
             "D_exp_"+label: Hist.new.Reg(100, 0, 1, name="D_exp_"+label).Weight(),
             "D_obs_"+label: Hist.new.Reg(100, 0, 1, name="D_obs_"+label).Weight(),
-            "A_var2_"+label: Hist.new.Reg(499, 0, 500, name="A_var2_"+label).Weight(),
-            "B_var2_"+label: Hist.new.Reg(499, 0, 500, name="B_var2_"+label).Weight(),
-            "C_var2_"+label: Hist.new.Reg(499, 0, 500, name="C_var2_"+label).Weight(),
-            "D_exp_var2_"+label: Hist.new.Reg(499, 0, 500, name="D_exp_var2_"+label).Weight(),
-            "D_obs_var2_"+label: Hist.new.Reg(499, 0, 500, name="D_obs_var2_"+label).Weight(),
+            "A_var2_"+label: Hist.new.Reg(200, 0, 500, name="A_var2_"+label).Weight(),
+            "B_var2_"+label: Hist.new.Reg(200, 0, 500, name="B_var2_"+label).Weight(),
+            "C_var2_"+label: Hist.new.Reg(200, 0, 500, name="C_var2_"+label).Weight(),
+            "D_exp_var2_"+label: Hist.new.Reg(200, 0, 500, name="D_exp_var2_"+label).Weight(),
+            "D_obs_var2_"+label: Hist.new.Reg(200, 0, 500, name="D_obs_var2_"+label).Weight(),
     }
     if label == 'IRM':
-        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CL).Reg(499, 0, 500, name=var2_CL).Weight()})
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CL).Reg(200, 0, 500, name=var2_CL).Weight()})
     elif label == 'CL':
-        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CL).Reg(499, 0, 500, name=var2_CL).Weight()})
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CL).Reg(200, 0, 500, name=var2_CL).Weight()})
+    elif label == 'CLi':
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CLi).Reg(200, 0, 500, name=var2_CLi).Weight()})
     elif label == 'ML':
-        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CL).Reg(499, 0, 500, name=var2_CL).Weight()})
+        output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, 1, name= var1_CL).Reg(200, 0, 500, name=var2_CL).Weight()})
 
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in ["", "A_", "B_", "C_"]:
         output.update({
             r+"ht_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
-            r+"ht_barrel_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_barrel_"+label, label='HT Barrel').Weight(),
-            r+"ntracks_" + label : Hist.new.Reg(499, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
+            r+"ht_tracker_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_tracker_"+label, label='HT Tracker').Weight(),
+            r+"ntracks_" + label : Hist.new.Reg(200, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
-            r+"nLostTracks_"+label : Hist.new.Reg(49,0, 50, name=r+"nLostTracks_"+label, label="# Lost Tracks in Event ").Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
         })
-        for i in range(10):
-            output.update({
-                r+"eta_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100,-5,5, name=r+"eta_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $\eta$").Weight(),
-                r+"phi_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $\phi$").Weight(),
-                r+"pt_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $p_T$").Weight(),
-            })
-        for i in range(2):
-            output.update({
-                r+"eta_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-5,5, name=r+"eta_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\eta$").Weight(),
-                r+"phi_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\phi$").Weight(),
-                r+"pt_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $p_T$").Weight(),
-            })
+        # for i in range(10):
+        #     output.update({
+        #         r+"eta_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100,-5,5, name=r+"eta_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $\eta$").Weight(),
+        #         r+"phi_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $\phi$").Weight(),
+        #         r+"pt_ak4jets"+str(i)+"_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_"+label, label=r"ak4jets"+str(i)+" $p_T$").Weight(),
+        #     })
+        # for i in range(2):
+        #     output.update({
+        #         r+"eta_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-5,5, name=r+"eta_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\eta$").Weight(),
+        #         r+"phi_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\phi$").Weight(),
+        #         r+"pt_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $p_T$").Weight(),
+        #     })
             
     if label == 'IRM' or label == 'CL':
         output.update({
             # 2D histograms
-            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
-            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(499, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
+            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(),
-            "2D_SUEP_nconst_SUEP_pt_avg_"+label : Hist.new.Reg(499, 0, 500, name="SUEP_nconst_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(), 
-            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(),  
-            "2D_SUEP_S1_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(100, 0, 100, name="SUEP_pt_avg_"+label).Weight(),
-            "2D_ntracks_SUEP_pt_avg_b_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(100, 0, 100, name="SUEP_pt_avg_"+label).Weight(),  
-            "2D_SUEP_nconst_SUEP_pt_avg_b_"+label : Hist.new.Reg(499, 0, 500, name="SUEP_nconst_"+label).Reg(100, 0, 100, name="SUEP_pt_avg_"+label).Weight(), 
+            "2D_SUEP_nconst_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(), 
+            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(),  
+            "2D_SUEP_S1_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(200, 0, 50, name="SUEP_pt_avg_b_"+label).Weight(),
+            "2D_ntracks_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(200, 0, 50, name="SUEP_pt_avg_b_"+label).Weight(),  
+            "2D_SUEP_nconst_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label).Reg(200, 0, 50, name="SUEP_pt_avg_b_"+label).Weight(), 
             "2D_SUEP_S1_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),
-            "2D_ntracks_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(499, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),  
-            "2D_SUEP_nconst_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(499, 0, 500, name="SUEP_nconst_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),  
+            "2D_ntracks_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),  
+            "2D_SUEP_nconst_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),  
             
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
@@ -179,7 +199,7 @@ def create_output_file(label):
                 r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 200, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_pt_avg_"+label : Hist.new.Reg(500, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
-                r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
+                r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
                 r+"SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_pt_mean_scaled_"+label, label=r"SUEP Components $p_T$ Mean / Max (Boosted Frame)").Weight(),
                 r+"SUEP_nLostTracks_"+label : Hist.new.Reg(199,0, 200, name=r+"SUEP_nLostTracks_"+label, label="# Lost Tracks in SUEP").Weight(),
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
@@ -190,7 +210,41 @@ def create_output_file(label):
                 r+"SUEP_rho0_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho0_"+label, label=r"SUEP $\rho_0$").Weight(),
                 r+"SUEP_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             })
-
+    
+    if label == 'CLi':
+        output.update({
+            # 2D histograms
+            "2D_ISR_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_ISR_S1_ISR_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
+            "2D_ISR_S1_ISR_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),
+            "2D_ISR_nconst_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(), 
+            "2D_ntracks_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),  
+            "2D_ISR_S1_ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),
+            "2D_ntracks_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),  
+            "2D_ISR_nconst_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(), 
+            "2D_ISR_S1_ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="ISR_S1_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),
+            "2D_ntracks_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
+            "2D_ISR_nconst_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
+            
+        })
+        # variables from the dataframe for all the events, and those in A, B, C regions
+        for r in ["", "A_", "B_", "C_"]:
+            output.update({
+                r+"ISR_nconst_"+label : Hist.new.Reg(199, 0, 200, name=r+"ISR_nconst_"+label, label="# Tracks in ISR").Weight(),
+                r+"ISR_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"ISR_pt_"+label, label=r"ISR $p_T$ [GeV]").Weight(),
+                r+"ISR_pt_avg_"+label : Hist.new.Reg(500, 0, 500, name=r+"ISR_pt_avg_"+label, label=r"ISR Components $p_T$ Avg.").Weight(),
+                r+"ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name=r+"ISR_pt_avg_b_"+label, label=r"ISR Components $p_T$ avg (Boosted Frame)").Weight(),
+                r+"ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name=r+"ISR_pt_mean_scaled_"+label, label=r"ISR Components $p_T$ Mean / Max (Boosted Frame)").Weight(),
+                r+"ISR_nLostTracks_"+label : Hist.new.Reg(199,0, 200, name=r+"ISR_nLostTracks_"+label, label="# Lost Tracks in ISR").Weight(),
+                r+"ISR_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"ISR_eta_"+label, label=r"ISR $\eta$").Weight(),
+                r+"ISR_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"ISR_phi_"+label, label=r"ISR $\phi$").Weight(),
+                r+"ISR_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"ISR_mass_"+label, label="ISR Mass [GeV]").Weight(),
+                r+"ISR_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"ISR_S1_"+label, label='$Sph_1$').Weight(),
+                r+"ISR_girth": Hist.new.Reg(50, 0, 1.0, name=r+"ISR_girth_"+label, label=r"ISR Girth").Weight(),
+                r+"ISR_rho0_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho0_"+label, label=r"ISR $\rho_0$").Weight(),
+                r+"ISR_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho1_"+label, label=r"ISR $\rho_1$").Weight(),
+            })
+    
     if label == 'ML':
         for r in ["", "A_", "B_", "C_"]:
             output.update({
@@ -221,7 +275,7 @@ nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 output, sizeA, sizeB, sizeC = {}, {}, {}, {}
-for label in ['IRM','ML','CL']: 
+for label in ['IRM','ML','CL','CLi']: 
     output.update(create_output_file(label))
     sizeA.update({label:0})
     sizeB.update({label:0})
@@ -388,13 +442,13 @@ for ifile in tqdm(files):
         plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]   # event wide variables
         for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight']) 
         
-        df_r_4jets = df_r[~df_r['pt_ak4jets4'].isnull()]
-        output[r+'pt_ak4jets0_4jets_'+label].fill(df_r_4jets['pt_ak4jets0'], weight=df_r_4jets['event_weight'])
-        output[r+'phi_ak4jets0_4jets_'+label].fill(df_r_4jets['phi_ak4jets0'], weight=df_r_4jets['event_weight'])
-        output[r+'eta_ak4jets0_4jets_'+label].fill(df_r_4jets['eta_ak4jets0'], weight=df_r_4jets['event_weight'])
-        output[r+'pt_ak4jets1_4jets_'+label].fill(df_r_4jets['pt_ak4jets1'], weight=df_r_4jets['event_weight'])
-        output[r+'phi_ak4jets1_4jets_'+label].fill(df_r_4jets['phi_ak4jets1'], weight=df_r_4jets['event_weight'])
-        output[r+'eta_ak4jets1_4jets_'+label].fill(df_r_4jets['eta_ak4jets1'], weight=df_r_4jets['event_weight'])
+        # df_r_4jets = df_r[~df_r['pt_ak4jets4'].isnull()]
+        # output[r+'pt_ak4jets0_4jets_'+label].fill(df_r_4jets['pt_ak4jets0'], weight=df_r_4jets['event_weight'])
+        # output[r+'phi_ak4jets0_4jets_'+label].fill(df_r_4jets['phi_ak4jets0'], weight=df_r_4jets['event_weight'])
+        # output[r+'eta_ak4jets0_4jets_'+label].fill(df_r_4jets['eta_ak4jets0'], weight=df_r_4jets['event_weight'])
+        # output[r+'pt_ak4jets1_4jets_'+label].fill(df_r_4jets['pt_ak4jets1'], weight=df_r_4jets['event_weight'])
+        # output[r+'phi_ak4jets1_4jets_'+label].fill(df_r_4jets['phi_ak4jets1'], weight=df_r_4jets['event_weight'])
+        # output[r+'eta_ak4jets1_4jets_'+label].fill(df_r_4jets['eta_ak4jets1'], weight=df_r_4jets['event_weight'])
         
     #####################################################################################
     # ---- Cluster Method
@@ -466,22 +520,101 @@ for ifile in tqdm(files):
         plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]   # event wide variables
         for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight']) 
         
-        df_r_4jets = df_r[~df_r['pt_ak4jets4'].isnull()]
-        output[r+'pt_ak4jets0_4jets_'+label].fill(df_r_4jets['pt_ak4jets0'], weight=df_r_4jets['event_weight'])
-        output[r+'phi_ak4jets0_4jets_'+label].fill(df_r_4jets['phi_ak4jets0'], weight=df_r_4jets['event_weight'])
-        output[r+'eta_ak4jets0_4jets_'+label].fill(df_r_4jets['eta_ak4jets0'], weight=df_r_4jets['event_weight'])
-        output[r+'pt_ak4jets1_4jets_'+label].fill(df_r_4jets['pt_ak4jets1'], weight=df_r_4jets['event_weight'])
-        output[r+'phi_ak4jets1_4jets_'+label].fill(df_r_4jets['phi_ak4jets1'], weight=df_r_4jets['event_weight'])
-        output[r+'eta_ak4jets1_4jets_'+label].fill(df_r_4jets['eta_ak4jets1'], weight=df_r_4jets['event_weight'])
-        
-        
+#         df_r_4jets = df_r[~df_r['pt_ak4jets4'].isnull()]
+#         output[r+'pt_ak4jets0_4jets_'+label].fill(df_r_4jets['pt_ak4jets0'], weight=df_r_4jets['event_weight'])
+#         output[r+'phi_ak4jets0_4jets_'+label].fill(df_r_4jets['phi_ak4jets0'], weight=df_r_4jets['event_weight'])
+#         output[r+'eta_ak4jets0_4jets_'+label].fill(df_r_4jets['eta_ak4jets0'], weight=df_r_4jets['event_weight'])
+#         output[r+'pt_ak4jets1_4jets_'+label].fill(df_r_4jets['pt_ak4jets1'], weight=df_r_4jets['event_weight'])
+#         output[r+'phi_ak4jets1_4jets_'+label].fill(df_r_4jets['phi_ak4jets1'], weight=df_r_4jets['event_weight'])
+#         output[r+'eta_ak4jets1_4jets_'+label].fill(df_r_4jets['eta_ak4jets1'], weight=df_r_4jets['event_weight'])
+    
+    if options.isMC:
+        #####################################################################################
+        # ---- Cluster Method Inverted
+        #####################################################################################
+        label = 'CLi'
+        label_in = 'CL'
+
+        # apply selections
+        df_CL = df.copy()
+        for sel in selections_CLi: 
+            df_CL = apply_selection(df_CL, sel[0], sel[1], sel[2])
+
+        # keep event wide and IRM variables, cut out events that don't pass IRM
+        df_CL = df_CL[[c for c in df_CL.keys() if 'ML' not in c and 'IRM' not in c]]
+        df_CL = df_CL[~df_CL['ISR_pt_CL'].isnull()]
+
+        # blind
+        if options.blind and not options.isMC:
+             df_CL = df_CL.loc[((df_CL[var1_CLi] < var1_CLi_val) & (df_CL[var2_CLi] < var2_CLi_val)) | ((df_CL[var1_CLi] >= var1_CLi_val) & (df_CL[var2_CLi] < var2_CLi_val)) | ((df_CL[var1_CLi] < var1_CLi_val) & (df_CL[var2_CLi] >= var2_CLi_val))]
+
+        # divide the dfs by region
+        df_A = df_CL.loc[(df_CL[var1_CLi] < var1_CLi_val) & (df_CL[var2_CLi] < var2_CLi_val)]
+        df_B = df_CL.loc[(df_CL[var1_CLi] >= var1_CLi_val) & (df_CL[var2_CLi] < var2_CLi_val)]
+        df_C = df_CL.loc[(df_CL[var1_CLi] < var1_CLi_val) & (df_CL[var2_CLi] >= var2_CLi_val)]
+        df_D_obs = df_CL.loc[(df_CL[var1_CLi] >= var1_CLi_val) & (df_CL[var2_CLi] >= var2_CLi_val)]
+
+        # keep track of number of events per region, used to measure D_exp
+        sizeC[label] += df_C.shape[0]
+        sizeB[label] += df_B.shape[0]
+        sizeA[label] += df_A.shape[0]
+
+        # fill the ABCD histograms for both variables
+        output["A_"+label].fill(df_A[var1_CLi], weight=df_A['event_weight'])
+        output["B_"+label].fill(df_B[var1_CLi], weight=df_B['event_weight'])
+        output["D_exp_"+label].fill(df_B[var1_CLi], weight=df_B['event_weight'])
+        output["C_"+label].fill(df_C[var1_CLi], weight=df_C['event_weight'])
+        output["D_obs_"+label].fill(df_D_obs[var1_CLi], weight=df_D_obs['event_weight'])
+        output["A_var2_"+label].fill(df_A[var2_CLi], weight=df_A['event_weight'])
+        output["B_var2_"+label].fill(df_B[var2_CLi], weight=df_B['event_weight'])
+        output["D_exp_var2_"+label].fill(df_C[var2_CLi], weight=df_C['event_weight'])
+        output["C_var2_"+label].fill(df_C[var2_CLi], weight=df_C['event_weight'])
+        output["D_obs_var2_"+label].fill(df_D_obs[var2_CLi], weight=df_D_obs['event_weight'])
+        output["ABCDvars_2D_"+label].fill(df_CL[var1_CLi], df_CL[var2_CLi], weight=df_CL['event_weight'])
+
+        # fill the distributions as they are saved in the dataframes
+        plot_labels = [key for key in df_CL.keys() if key.replace(label_in, label) in list(output.keys())]     # all the _IRM things
+        for plot in plot_labels: output[plot.replace(label_in, label)].fill(df_CL[plot], weight=df_CL['event_weight'])  
+        plot_labels = [key for key in df_CL.keys() if key+"_"+label in list(output.keys())]     # event wide variables
+        for plot in plot_labels: output[plot+"_"+label].fill(df_CL[plot], weight=df_CL['event_weight'])  
+
+        # fill some new distributions  
+        output["2D_ISR_S1_ntracks_"+label].fill(df_CL["ISR_S1_"+label_in], df_CL["ntracks"], weight=df_CL['event_weight'])
+        output["2D_ISR_S1_ISR_nconst_"+label].fill(df_CL["ISR_S1_"+label_in], df_CL["ISR_nconst_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ISR_S1_ISR_pt_avg_"+label].fill(df_CL["ISR_S1_"+label_in], df_CL["ISR_pt_avg_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ntracks_ISR_pt_avg_"+label].fill(df_CL["ntracks"], df_CL["ISR_pt_avg_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ISR_nconst_ISR_pt_avg_"+label].fill(df_CL["ISR_nconst_"+label_in], df_CL["ISR_pt_avg_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ISR_S1_ISR_pt_avg_b_"+label].fill(df_CL["ISR_S1_"+label_in], df_CL["ISR_pt_avg_b_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ntracks_ISR_pt_avg_b_"+label].fill(df_CL["ntracks"], df_CL["ISR_pt_avg_b_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ISR_nconst_ISR_pt_avg_b_"+label].fill(df_CL["ISR_nconst_"+label_in], df_CL["ISR_pt_avg_b_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ISR_S1_ISR_pt_mean_scaled_"+label].fill(df_CL["ISR_S1_"+label_in], df_CL["ISR_pt_mean_scaled_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ntracks_ISR_pt_mean_scaled_"+label].fill(df_CL["ntracks"], df_CL["ISR_pt_mean_scaled_"+label_in], weight=df_CL['event_weight'])
+        output["2D_ISR_nconst_ISR_pt_mean_scaled_"+label].fill(df_CL["ISR_nconst_"+label_in], df_CL["ISR_pt_mean_scaled_"+label_in], weight=df_CL['event_weight'])
+
+        # per region
+        for r, df_r in zip(["A_", "B_", "C_"], [df_A, df_B, df_C]):
+
+            # fill the distributions as they are saved in the dataframes
+            plot_labels = [key for key in df_r.keys() if r+key.replace(label_in, label) in list(output.keys())]    # all the _IRM things
+            for plot in plot_labels: output[r+plot.replace(label_in, label)].fill(df_r[plot], weight=df_r['event_weight'])  
+            plot_labels = [key for key in df_r.keys() if r+key+"_"+label in list(output.keys())]   # event wide variables
+            for plot in plot_labels: output[r+plot+"_"+label].fill(df_r[plot], weight=df_r['event_weight']) 
+
+    #         df_r_4jets = df_r[~df_r['pt_ak4jets4'].isnull()]
+    #         output[r+'pt_ak4jets0_4jets_'+label].fill(df_r_4jets['pt_ak4jets0'], weight=df_r_4jets['event_weight'])
+    #         output[r+'phi_ak4jets0_4jets_'+label].fill(df_r_4jets['phi_ak4jets0'], weight=df_r_4jets['event_weight'])
+    #         output[r+'eta_ak4jets0_4jets_'+label].fill(df_r_4jets['eta_ak4jets0'], weight=df_r_4jets['event_weight'])
+    #         output[r+'pt_ak4jets1_4jets_'+label].fill(df_r_4jets['pt_ak4jets1'], weight=df_r_4jets['event_weight'])
+    #         output[r+'phi_ak4jets1_4jets_'+label].fill(df_r_4jets['phi_ak4jets1'], weight=df_r_4jets['event_weight'])
+    #         output[r+'eta_ak4jets1_4jets_'+label].fill(df_r_4jets['eta_ak4jets1'], weight=df_r_4jets['event_weight'])
+
     # remove file at the end of loop   
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
 ### end plotting loop
         
 # ABCD method to obtain D expected for each selection
-for label in ['IRM', 'ML', 'CL']:
+for label in ['IRM', 'ML', 'CL', 'CLi']:
     if sizeA[label]>0.0:
         CoverA =  sizeC[label] / sizeA[label]
         CoverA_var2 =  sizeB[label] / sizeA[label]
