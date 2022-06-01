@@ -315,7 +315,7 @@ def create_output_file(label, abcd):
         output.update({
             r+"ht_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
             r+"ht_tracker_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_tracker_"+label, label='HT Tracker').Weight(),
-            r+"ntracks_" + label : Hist.new.Reg(200, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
+            r+"ntracks_" + label : Hist.new.Reg(101, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
@@ -337,34 +337,33 @@ def create_output_file(label, abcd):
     if label == 'IRM' or label == 'CL':
         output.update({
             # 2D histograms
-            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(),
-            "2D_SUEP_nconst_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(), 
-            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="SUEP_pt_avg_"+label).Weight(),  
-            "2D_SUEP_S1_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label).Reg(200, 0, 50, name="SUEP_pt_avg_b_"+label).Weight(),
-            "2D_ntracks_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(200, 0, 50, name="SUEP_pt_avg_b_"+label).Weight(),  
-            "2D_SUEP_nconst_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label).Reg(200, 0, 50, name="SUEP_pt_avg_b_"+label).Weight(), 
-            "2D_SUEP_S1_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),
-            "2D_ntracks_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),  
-            "2D_SUEP_nconst_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label).Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label).Weight(),  
-            
+            "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),
+            "2D_SUEP_nconst_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(), 
+            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),  
+            "2D_SUEP_S1_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),
+            "2D_ntracks_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),  
+            "2D_SUEP_nconst_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(), 
+            "2D_SUEP_S1_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),
+            "2D_ntracks_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
+            "2D_SUEP_nconst_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
             output.update({
                 r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 200, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
-                r+"SUEP_pt_avg_"+label : Hist.new.Reg(500, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
-                r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
+                r+"SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
+                r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(50, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
                 r+"SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_pt_mean_scaled_"+label, label=r"SUEP Components $p_T$ Mean / Max (Boosted Frame)").Weight(),
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
                 r+"SUEP_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"SUEP_phi_"+label, label=r"SUEP $\phi$").Weight(),
                 r+"SUEP_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"SUEP_mass_"+label, label="SUEP Mass [GeV]").Weight(),
                 r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label='$Sph_1$').Weight(),
                 r+"SUEP_girth": Hist.new.Reg(50, 0, 1.0, name=r+"SUEP_girth_"+label, label=r"SUEP Girth").Weight(),
-                r+"SUEP_rho0_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho0_"+label, label=r"SUEP $\rho_0$").Weight(),
-                r+"SUEP_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
+                r+"SUEP_rho0_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho0_"+label, label=r"SUEP $\rho_0$").Weight(),
+                r+"SUEP_rho1_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             })
     
     if label == 'CLi':

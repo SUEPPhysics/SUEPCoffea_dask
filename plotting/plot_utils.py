@@ -308,7 +308,7 @@ def plot_ratio_regions(plots, plot_label,
     ax2.axhline(1, ls="--", color='gray')
     ax2.set_ylim(0.4,1.6)
     ax2.set_ylabel("Ratio", y=1, ha='right')
-    ax2.set_xlabel(plot_label, y=1)
+    ax2.set_xlabel(h1.axes[0].label, y=1)
         
     return fig, (ax1, ax2)
     
