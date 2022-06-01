@@ -203,8 +203,7 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
     # 3. blind
     if options.blind and not options.isMC:       
         SR = abcd['SR']
-        if len(SR) != 2: sys.exit("Make sure you have correctly defined your signal region for " + label)
-
+        if len(SR) != 2: sys.exit(label_out + ": Make sure you have correctly defined your signal region. Exiting.")
         df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
         
     # 4. apply selections
@@ -262,7 +261,8 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
             
             # double check blinding
             if iRegion == (len(abcd[x_var])-1)*(len(abcd[y_var])-1) and not options.isMC:
-                if df_r.shape[1] > 0: sys.exit("You are not blinding correctly!")
+                if df_r.shape[0] > 0: 
+                    sys.exit(label_out+": You are not blinding correctly! Exiting.")
         
             # 3a. Plot event wide variables
             plot_labels = [key for key in df_r.keys() if r+key+"_"+label_out in list(output.keys())]   # event wide variables
@@ -526,10 +526,11 @@ for ifile in tqdm(files):
 ### End plotting loop ###################################################################
     
 # apply normalization
-if weight > 0.0 and options.isMC:
-    for plot in list(output.keys()): output[plot] = output[plot]*xsection/weight
-else:
-    print("Weight is 0")
+if options.isMC:
+    if weight > 0.0:
+        for plot in list(output.keys()): output[plot] = output[plot]*xsection/weight
+    else:
+        print("Weight is 0")
         
 #Save to pickle
 pickle.dump(output, fpickle)
