@@ -27,11 +27,8 @@ hostname
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "# xrdcp $2 temp.root"
-# xrdcp $2 temp.root
-echo "python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 condor_SUEP_WS.py --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
-# rm temp.root
+echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
+python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
@@ -81,6 +78,7 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
     parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
+    parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="")
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
     parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
@@ -131,7 +129,10 @@ def main():
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
-            input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
+            if options.scout == 1:
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
+            else:
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
             Raw_list = open(input_list, "r")
             nJobs += len(Raw_list.readlines())
         logging.info('-- Submitting a total of ' + str(nJobs) + ' jobs.')
@@ -157,7 +158,10 @@ def main():
             
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
+                if options.scout == 1:
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
+                else:
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
                 nfiles=0
                 with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
@@ -171,6 +175,10 @@ def main():
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
             os.system("mkdir -p {}".format(fin_outdir))
   
+            if options.scout == 1:
+                condor_file = "condor_Scouting.py"
+            else:
+                condor_file = "condor_SUEP_WS.py"
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 script = script_TEMPLATE.format(
                     #home_base=home_base,
@@ -179,6 +187,7 @@ def main():
                     era=options.era,
                     outdir=fin_outdir_condor,          
                     dataset=sample_name,
+                    condor_file=condor_file,
                 )
                 scriptfile.write(script)
                 scriptfile.close()
@@ -187,6 +196,7 @@ def main():
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
                         workdir + "/condor_SUEP_WS.py",
+                        workdir + "/condor_Scouting.py",
                         workdir + "/workflows",
                         workdir + "/data",
                         proxy_copy

@@ -32,6 +32,7 @@ rewrite(options.infile)
 
 modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=1, do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=False, output_location=out_dir))
 
+processor.NanoAODSchema.mixins["PFcand"] = "PFCand"
 for instance in modules_era:
     output = run_uproot_job(
         {instance.sample: ["rewrite.root"]},
@@ -44,5 +45,6 @@ for instance in modules_era:
         },
         chunksize=100000,
     )
-    
+ 
+os.system("rm rewrite.root")   
 merge(options)

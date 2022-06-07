@@ -50,7 +50,8 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        if self.isMC: self.gensumweight = ak.sum(events.genWeight)
+        if self.isMC and self.scouting==1: self.gensumweight = ak.count(events.PFcand.pt)
+        elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # cut based on ak4 jets to replicate the trigger
         if self.scouting == 1:
@@ -96,18 +97,30 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         #Prepare the clean PFCand matched to tracks collection
-        Cands = ak.zip({
-            "pt": events.PFCands.trkPt,
-            "eta": events.PFCands.trkEta,
-            "phi": events.PFCands.trkPhi,
-            "mass": events.PFCands.mass
-        }, with_name="Momentum4D")        
+        #Cands = ak.zip({
+        #    "pt": events.PFCands.trkPt,
+        #    "eta": events.PFCands.trkEta,
+        #    "phi": events.PFCands.trkPhi,
+        #    "mass": events.PFCands.mass
+        #}, with_name="Momentum4D")        
         if self.scouting == 1:
-            cut = (events.PFCands.trkPt >= 0.7) & \
-                     (abs(events.PFCands.trkEta) <= 2.5) 
+            Cands = ak.zip({
+                "pt": events.PFcand.pt,
+                "eta": events.PFcand.eta,
+                "phi": events.PFcand.phi,
+                "mass": events.PFcand.mass
+            }, with_name="Momentum4D")
+            cut = (events.PFcand.pt >= 0.7) & \
+                     (abs(events.PFcand.eta) <= 2.5) 
             Cleaned_cands = Cands[cut]
             tracks =  ak.packed(Cleaned_cands)
         else:
+            Cands = ak.zip({
+                "pt": events.PFCands.trkPt,
+                "eta": events.PFCands.trkEta,
+                "phi": events.PFCands.trkPhi,
+                "mass": events.PFCands.mass
+            }, with_name="Momentum4D")
             cut = (events.PFCands.fromPV > 1) & \
                      (events.PFCands.trkPt >= 0.7) & \
                      (abs(events.PFCands.trkEta) <= 2.5) & \
@@ -439,7 +452,6 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
         
         save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
-        
         return output
 
     def postprocess(self, accumulator):
