@@ -10,6 +10,7 @@ from tqdm import tqdm
 from coffea.processor import run_uproot_job, futures_executor
 
 #SUEP Repo Specific
+from workflows.root_rewrite import *
 from workflows.SUEP_coffea import *
 from workflows.merger import *
 
@@ -27,12 +28,14 @@ options = parser.parse_args()
 out_dir = os.getcwd()
 modules_era = []
 
-modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=False, output_location=out_dir))
+rewrite(options.infile)
+
+modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=1, do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=False, output_location=out_dir))
 
 for instance in modules_era:
     output = run_uproot_job(
-        {instance.sample: [options.infile]},
-        treename='Events',
+        {instance.sample: ["rewrite.root"]},
+        treename='tree',
         processor_instance=instance,
         executor=futures_executor,
         executor_args={'workers': 1,
