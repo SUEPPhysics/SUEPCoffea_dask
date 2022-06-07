@@ -22,6 +22,7 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
+parser.add_argument('--weights', type=int, default=0, help="Apply binned weights (default=False)")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
@@ -284,7 +285,7 @@ if options.xrootd:
     files = result.split("\n")
     files = [f for f in files if len(f) > 0]
 else:
-    dataDir = "/work/submit/{}/SUEP/{}/{}/".format(username, options.tag, options.dataset)
+    dataDir = "/data/submit/{}/{}/{}/merged/".format(username, options.tag, options.dataset)
     files = [dataDir + f for f in os.listdir(dataDir)]
 
 # get cross section
@@ -298,6 +299,11 @@ if options.isMC:
             xsection *= MC_xsecs[options.dataset]["br"]
         except:
             print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
+
+# get weights
+w = np.load('nconst_weights.npy', allow_pickle=True)
+weights = defaultdict(lambda: np.zeros(2))
+weights.update(w.item())
 
 # output histos
 def create_output_file(label, abcd):
@@ -352,7 +358,7 @@ def create_output_file(label, abcd):
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
             output.update({
-                r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 200, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
+                r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
                 r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(50, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
@@ -385,7 +391,7 @@ def create_output_file(label, abcd):
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
             output.update({
-                r+"ISR_nconst_"+label : Hist.new.Reg(199, 0, 200, name=r+"ISR_nconst_"+label, label="# Tracks in ISR").Weight(),
+                r+"ISR_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"ISR_nconst_"+label, label="# Tracks in ISR").Weight(),
                 r+"ISR_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"ISR_pt_"+label, label=r"ISR $p_T$ [GeV]").Weight(),
                 r+"ISR_pt_avg_"+label : Hist.new.Reg(500, 0, 500, name=r+"ISR_pt_avg_"+label, label=r"ISR Components $p_T$ Avg.").Weight(),
                 r+"ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name=r+"ISR_pt_avg_b_"+label, label=r"ISR Components $p_T$ avg (Boosted Frame)").Weight(),
@@ -449,12 +455,54 @@ for ifile in tqdm(files):
     # ---- Additional weights [pileup_weight]
     #####################################################################################
     event_weight = np.ones(df.shape[0])
+    df['event_weight'] = event_weight
+    #event_weight *= another event weight, etc
+
+    # pileup weights
     if options.isMC == 1:
         Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
         pu = puweights[Pileup_nTrueInt]
-        event_weight *= pu
-    #event_weight *= another event weight, etc
-    df['event_weight'] = event_weight
+        df['event_weight'] *= pu
+    
+    # scaling weights
+    if options.isMC == 1 and options.weights:
+        
+        regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        x_var = list(abcd.keys())[0]
+        y_var = list(abcd.keys())[1]
+        iRegion = 0
+        
+        # S1 regions
+        for i in range(len(abcd[x_var])-1):
+            x_val_lo = abcd[x_var][i]
+            x_val_hi = abcd[x_var][i+1]
+
+            # nconst regions
+            for j in range(len(abcd[y_var])-1):
+                y_val_lo = abcd[y_var][j]
+                y_val_hi = abcd[y_var][j+1]
+                
+                r = regions[iRegion]
+                
+                # from the weights
+                bins = weights[r]['bins']
+                ratios = weights[r]['ratios']
+                
+                # nconst bins
+                for k in range(len(bins)-1):
+                    z_val_lo = bins[k]
+                    z_val_hi = bins[k+1]
+                    ratio = ratios[k]
+                
+                    zslice = (df['SUEP_nconst_CL'] >= z_val_lo) & (df['SUEP_nconst_CL'] < z_val_hi)
+                    yslice = (df['SUEP_nconst_CL'] >= y_val_lo) & (df['SUEP_nconst_CL'] < y_val_hi)
+                    xslice = (df['SUEP_S1_CL'] >= x_val_lo) & (df['SUEP_S1_CL'] < x_val_hi)
+                                        
+                    df.loc[xslice & yslice & zslice, 'event_weight'] *= ratio
+                
+                iRegion += 1
+    
+    #df['event_weight'] = event_weight
 
     #####################################################################################
     # ---- Make plots
@@ -470,7 +518,7 @@ for ifile in tqdm(files):
         ['SUEP_pt_mean_scaled_IRM', 'SUEP_nconst_IRM'],
         ['SUEP_S1_IRM', 'SUEP_pt_mean_scaled_IRM'],
     ]
-    output, size_dict = plot(df.copy(), size_dict, output,
+    output, size_dict = plot(df, size_dict, output,
                          selections_IRM, abcd_IRM, 
                          label='IRM', label_out='IRM', 
                          vars2d=vars2d)
