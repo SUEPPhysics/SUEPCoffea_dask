@@ -19,11 +19,12 @@ from workflows.pandas_utils import *
 from workflows.math_utils import *
 
 class SUEP_cluster(processor.ProcessorABC):
-    def __init__(self, isMC: int, era: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
+    def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
         self._flag = flag
         self.output_location = output_location
         self.do_syst = do_syst
         self.gensumweight = 1.0
+        self.scouting = scouting
         self.era = era
         self.isMC = isMC
         self.sample = sample
@@ -31,7 +32,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.weight_syst = weight_syst
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
-        
+
         #Set up the image size and pixels
         self.eta_pix = 280
         self.phi_pix = 360
@@ -42,7 +43,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
-
     @property
     def accumulator(self):
         return self._accumulator
@@ -50,32 +50,40 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        if self.isMC: self.gensumweight = ak.sum(events.genWeight)
-        
-        #####################################################################################
-        # ---- Trigger
-        #####################################################################################
-        
-        if self.era == 2016:
-            trigger = (events.HLT.PFHT900 == 1)
-        else:
-            trigger = (events.HLT.PFHT1050 == 1)
+        if self.isMC and self.scouting==1: self.gensumweight = ak.count(events.PFcand.pt)
+        elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # cut based on ak4 jets to replicate the trigger
-        Jets = ak.zip({
-            "pt": events.Jet.pt,
-            "eta": events.Jet.eta,
-            "phi": events.Jet.phi,
-            "mass": events.Jet.mass,
-            "jetId": events.Jet.jetId
-        })
+        if self.scouting == 1:
+            Jets = ak.zip({
+                "pt": events.Jet.pt,
+                "eta": events.Jet.eta,
+                "phi": events.Jet.phi,
+                "mass": events.Jet.mass,
+            })
+        else:
+            Jets = ak.zip({
+                "pt": events.Jet.pt,
+                "eta": events.Jet.eta,
+                "phi": events.Jet.phi,
+                "mass": events.Jet.mass,
+                "jetId": events.Jet.jetId
+            })
         jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
         ak4jets = Jets[jetCut]
         ht = ak.sum(ak4jets.pt,axis=-1)
         
         # apply trigger selection
-        events = events[(trigger & (ht > 1200))]
-        ak4jets = ak4jets[(trigger & (ht > 1200))]
+        if self.scouting == 1:
+            events = events[(ht > 500)]
+            ak4jets = ak4jets[(ht > 500)]
+        else:
+            if self.era == 2016:
+                trigger = (events.HLT.PFHT900 == 1)
+            else:
+                trigger = (events.HLT.PFHT1050 == 1)
+            events = events[(trigger & (ht > 1200))]
+            ak4jets = ak4jets[(trigger & (ht > 1200))]
         
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -89,38 +97,58 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         #Prepare the clean PFCand matched to tracks collection
-        Cands = ak.zip({
-            "pt": events.PFCands.trkPt,
-            "eta": events.PFCands.trkEta,
-            "phi": events.PFCands.trkPhi,
-            "mass": events.PFCands.mass
-        }, with_name="Momentum4D")        
-        cut = (events.PFCands.fromPV > 1) & \
-                (events.PFCands.trkPt >= 0.7) & \
-                (abs(events.PFCands.trkEta) <= 2.5) & \
-                (abs(events.PFCands.dz) < 10) & \
-                (events.PFCands.dzErr < 0.05)
-        Cleaned_cands = Cands[cut]
-        Cleaned_cands = ak.packed(Cleaned_cands)
+        #Cands = ak.zip({
+        #    "pt": events.PFCands.trkPt,
+        #    "eta": events.PFCands.trkEta,
+        #    "phi": events.PFCands.trkPhi,
+        #    "mass": events.PFCands.mass
+        #}, with_name="Momentum4D")        
+        if self.scouting == 1:
+            Cands = ak.zip({
+                "pt": events.PFcand.pt,
+                "eta": events.PFcand.eta,
+                "phi": events.PFcand.phi,
+                "mass": events.PFcand.mass
+            }, with_name="Momentum4D")
+            cut = (events.PFcand.pt >= 0.7) & \
+                     (abs(events.PFcand.eta) <= 2.5) 
+            Cleaned_cands = Cands[cut]
+            tracks =  ak.packed(Cleaned_cands)
+        else:
+            Cands = ak.zip({
+                "pt": events.PFCands.trkPt,
+                "eta": events.PFCands.trkEta,
+                "phi": events.PFCands.trkPhi,
+                "mass": events.PFCands.mass
+            }, with_name="Momentum4D")
+            cut = (events.PFCands.fromPV > 1) & \
+                     (events.PFCands.trkPt >= 0.7) & \
+                     (abs(events.PFCands.trkEta) <= 2.5) & \
+                     (abs(events.PFCands.dz) < 10) & \
+                     (events.PFCands.dzErr < 0.05)
+            Cleaned_cands = Cands[cut]
+            Cleaned_cands = ak.packed(Cleaned_cands)
 
-        #Prepare the Lost Track collection
-        LostTracks = ak.zip({
-            "pt": events.lostTracks.pt,
-            "eta": events.lostTracks.eta,
-            "phi": events.lostTracks.phi,
-            "mass": 0.0
-        }, with_name="Momentum4D")
-        cut = (events.lostTracks.fromPV > 1) & \
-            (events.lostTracks.pt >= 0.7) & \
-            (abs(events.lostTracks.eta) <= 1.0) & \
-            (abs(events.lostTracks.dz) < 10) & \
-            (events.lostTracks.dzErr < 0.05)
-        Lost_Tracks_cands = LostTracks[cut]
-        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-    
-        # select which tracks to use in the script
-        # dimensions of tracks = events x tracks in event x 4 momenta
-        tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
+
+      
+            #Prepare the Lost Track collection
+            LostTracks = ak.zip({
+                "pt": events.lostTracks.pt,
+                "eta": events.lostTracks.eta,
+                "phi": events.lostTracks.phi,
+                "mass": 0.0
+            }, with_name="Momentum4D")
+            cut = (events.lostTracks.fromPV > 1) & \
+                (events.lostTracks.pt >= 0.7) & \
+                (abs(events.lostTracks.eta) <= 1.0) & \
+                (abs(events.lostTracks.dz) < 10) & \
+                (events.lostTracks.dzErr < 0.05)
+            Lost_Tracks_cands = LostTracks[cut]
+            Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
+
+            # select which tracks to use in the script
+            # dimensions of tracks = events x tracks in event x 4 momenta
+            tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
         
         #####################################################################################
         # ---- FastJet reclustering
@@ -150,10 +178,14 @@ class SUEP_cluster(processor.ProcessorABC):
         # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
         # jetId==2 means: pass tight ID, fail tightLepVeto
         # jetId==6 means: pass tight and tightLepVeto ID. 
-        tightJetId = (ak4jets.jetId > 2)
-        tight_ak4jets = ak4jets[tightJetId]
-        looseJetId = (ak4jets.jetId >= 2)
-        loose_ak4jets = ak4jets[looseJetId]
+        if self.scouting == 1:
+            tight_ak4jets = ak4jets
+            loose_ak4jets = ak4jets
+        else:
+            tightJetId = (ak4jets.jetId > 2)
+            tight_ak4jets = ak4jets[tightJetId]
+            looseJetId = (ak4jets.jetId >= 2)
+            loose_ak4jets = ak4jets[looseJetId]
         
         # tracker jets
         trackerCut = abs(ak4jets.eta) < 2.4
@@ -164,9 +196,9 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ntracks"] = ak.num(tracks).to_list()
         out_vars["ngood_fastjets"] = ak.num(ak_inclusive_jets).to_list()
         out_vars["ht"] = ak.sum(ak4jets.pt,axis=-1).to_list()
-        if self.era == 2016:
+        if self.era == 2016 and self.scouting == 0:
             out_vars["HLT_PFHT900"] = events.HLT.PFHT900
-        else:
+        elif self.scouting == 0:
             out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050
         # store first n jets infos per event
         for i in range(10):
@@ -180,9 +212,13 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tracker"] = ak.sum(tracker_ak4jets.pt,axis=-1).to_list()
-        if self.isMC: out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt
-        out_vars["PV_npvs"] = events.PV.npvs
-        out_vars["PV_npvsGood"] = events.PV.npvsGood
+
+        if self.scouting == 1:
+            out_vars["PV_npvs"] = ak.num(events.Vertex.x)
+        else:
+            if self.isMC: out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt
+            out_vars["PV_npvs"] = events.PV.npvs
+            out_vars["PV_npvsGood"] = events.PV.npvsGood
 
         # indices of events in tracks, used to keep track which events pass selections
         indices = np.arange(0,len(tracks))
@@ -416,7 +452,6 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
         
         save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
-        
         return output
 
     def postprocess(self, accumulator):
