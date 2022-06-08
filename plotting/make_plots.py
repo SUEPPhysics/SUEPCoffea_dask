@@ -326,6 +326,7 @@ def create_output_file(label, abcd):
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
+            r+"ngood_rtacker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= '# ak4jets in Event ($\abs{\eta} < 2.4$)').Weight(),
         })
         # for i in range(10):
         #     output.update({
