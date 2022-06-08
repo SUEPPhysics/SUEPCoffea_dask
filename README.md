@@ -46,3 +46,20 @@ To automatically resubmit your jobs multiple times, we can use the resubmit.py f
 python resubmit.py --tag=<tag name> --resubmits=10 --hours=1
 ```
 This will call monitor.py 10 times, resubmitting the files each time (i.e., -r=1) and waiting 1 hour between each call. N.B.: all jobs that are still running after the number of hours specified will be removed.
+  
+  
+### SUEP Coffea Scouting
+ 
+The setup for the scouting analysis is similar to the offline analysis. We must simply run the scouting uproot job through the following (Note you must be in the singularity).
+  
+```bash
+python3 condor_Scouting.py --isMC=0/1 --era=201X --dataset=<dataset> --infile=XXX.root
+```
+  
+Here the "PFcand" has been added to be recognized by the coffea NanoAODSchema. Additionally root_rewrite.py is used to rewrite branches with "m" to "mass" until vector is implemented in the methods of coffea. Like in the offline analysis, condor jobs can be run on the jobs stored through the Kraken system:
+  
+```
+python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --scout=1 --input=filelist/list_2018_scout_MC.txt 
+```
+ 
+All other commands listed above in the offline section will work similarly.
