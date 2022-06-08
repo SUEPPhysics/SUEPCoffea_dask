@@ -1,6 +1,9 @@
 import uproot
 import awkward as ak
 
+#mass is expected as an input in NanoAODSchema methods. Must rewrite "m" to "mass" in order to catch the 4-vector until vector is implemented in coffea
+#See here:
+#https://github.com/CoffeaTeam/coffea/blob/master/coffea/nanoevents/methods/vector.py#L753
 
 def rewrite(infile):
 
