@@ -175,6 +175,7 @@ class SUEP_cluster(processor.ProcessorABC):
             out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
             out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
         out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
+        out_vars["ngood_tracker_ak4jets"] = ak.num(tracker_ak4jets).to_list()
         out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
         out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
