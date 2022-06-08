@@ -411,6 +411,96 @@ class SUEP_cluster(processor.ProcessorABC):
             out_vars.loc[indices_CL, "ISR_eta_CL"] = ISR_cand.eta
             out_vars.loc[indices_CL, "ISR_phi_CL"] = ISR_cand.phi
             out_vars.loc[indices_CL, "ISR_mass_CL"] = ISR_cand.mass
+            
+        #####################################################################################
+        # ---- Cone Method (CO)
+        # In this method, all tracks outside a cone of abs(deltaR) of 1.6 (in lab frame)
+        # are the SUEP tracks, those inside the cone are ISR tracks.
+        #####################################################################################
+        
+        ISR_cand_CO = ISR_cand
+        
+        SUEP_tracks_CO = tracks[abs(tracks.deltaR(ISR_cand_CO)) > 1.6]
+        ISR_tracks_CO = tracks[abs(tracks.deltaR(ISR_cand_CO)) <= 1.6]
+        
+        SUEP_cand_CO = ak.zip({
+            "px": ak.sum(SUEP_tracks_CO.px, axis=-1),
+            "py": ak.sum(SUEP_tracks_CO.py, axis=-1),
+            "pz": ak.sum(SUEP_tracks_CO.pz, axis=-1),
+            "energy": ak.sum(SUEP_tracks_CO.energy, axis=-1),
+        }, with_name="Momentum4D")
+                
+        # boost into frame of SUEP
+        boost_SUEP = ak.zip({
+            "px": SUEP_cand_CO.px*-1,
+            "py": SUEP_cand_CO.py*-1,
+            "pz": SUEP_cand_CO.pz*-1,
+            "mass": SUEP_cand_CO.mass
+        }, with_name="Momentum4D")        
+        
+        SUEP_tracks_b_CO = SUEP_tracks_CO.boost_p4(boost_SUEP)
+        
+        if self.isMC: 
+            ISR_cand_CO = ak.zip({
+                "px": ak.sum(ISR_tracks_CO.px, axis=-1),
+                "py": ak.sum(ISR_tracks_CO.py, axis=-1),
+                "pz": ak.sum(ISR_tracks_CO.pz, axis=-1),
+                "energy": ak.sum(ISR_tracks_CO.energy, axis=-1),
+            }, with_name="Momentum4D")
+            
+            boost_ISR = ak.zip({
+                "px": ISR_cand_CO.px*-1,
+                "py": ISR_cand_CO.py*-1,
+                "pz": ISR_cand_CO.pz*-1,
+                "mass": ISR_cand_CO.mass
+            }, with_name="Momentum4D")   
+            
+            ISR_tracks_b_CO = ISR_tracks_CO.boost_p4(boost_ISR)
+        
+        # no cut needed, but still define new variables for this method
+        # so we don't mix things up
+        indices_CO = indices
+        
+        # SUEP jet variables
+        eigs = sphericity(self, SUEP_tracks_b_CO,1.0) #Set r=1.0 for IRC safe
+        out_vars.loc[indices_CO, "SUEP_nconst_CO"] = ak.num(SUEP_tracks_b_CO)
+        out_vars.loc[indices_CO, "SUEP_pt_avg_b_CO"] = ak.mean(SUEP_tracks_b_CO.pt, axis=-1)
+        out_vars.loc[indices_CO, "SUEP_pt_mean_scaled_CO"] = ak.mean(SUEP_tracks_b_CO.pt, axis=-1)/ak.max(SUEP_tracks_b_CO.pt, axis=-1)
+        out_vars.loc[indices_CO, "SUEP_S1_CO"] = 1.5 * (eigs[:,1]+eigs[:,0])
+        
+        # ISR jet variables
+        if self.isMC:
+            eigs = sphericity(self, ISR_tracks_b_CO,1.0) #Set r=1.0 for IRC safe
+            out_vars.loc[indices_CO, "ISR_nconst_CO"] = ak.num(ISR_tracks_b_CO)
+            out_vars.loc[indices_CO, "ISR_pt_avg_b_CO"] = ak.mean(ISR_tracks_b_CO.pt, axis=-1)
+            out_vars.loc[indices_CO, "ISR_pt_mean_scaled_CO"] = ak.mean(ISR_tracks_b_CO.pt, axis=-1)/ak.max(ISR_tracks_b_CO.pt, axis=-1)
+            out_vars.loc[indices_CO, "ISR_S1_CO"] = 1.5 * (eigs[:,1]+eigs[:,0])
+       
+        # unboost for these
+        SUEP_tracks_CO = SUEP_tracks_b_CO.boost_p4(SUEP_cand_CO)
+        out_vars.loc[indices_CO, "SUEP_pt_avg_CO"] = ak.mean(SUEP_tracks_CO.pt, axis=-1)
+        deltaR = SUEP_tracks_CO.deltaR(SUEP_cand_CO)
+        out_vars.loc[indices_CO, "SUEP_rho0_CO"] = rho(self, 0, SUEP_cand_CO, SUEP_tracks_CO, deltaR)
+        out_vars.loc[indices_CO, "SUEP_rho1_CO"] = rho(self, 1, SUEP_cand_CO, SUEP_tracks_CO, deltaR)
+        
+        if self.isMC:
+            ISR_tracks_CO = ISR_tracks_b_CO.boost_p4(ISR_cand_CO)
+            out_vars.loc[indices_CO, "ISR_pt_avg_CO"] = ak.mean(ISR_tracks_CO.pt, axis=-1)
+            deltaR = ISR_tracks_CO.deltaR(ISR_cand_CO)
+            out_vars.loc[indices_CO, "ISR_rho0_CO"] = rho(self, 0, ISR_cand_CO, ISR_tracks_CO, deltaR)
+            out_vars.loc[indices_CO, "ISR_rho1_CO"] = rho(self, 1, ISR_cand_CO, ISR_tracks_CO, deltaR)
+
+        out_vars.loc[indices_CO, "SUEP_pt_CO"] = SUEP_cand_CO.pt
+        out_vars.loc[indices_CO, "SUEP_eta_CO"] = SUEP_cand_CO.eta
+        out_vars.loc[indices_CO, "SUEP_phi_CO"] = SUEP_cand_CO.phi
+        out_vars.loc[indices_CO, "SUEP_mass_CO"] = SUEP_cand_CO.mass
+        
+        if self.isMC:
+            out_vars.loc[indices_CO, "ISR_pt_CO"] = ISR_cand_CO.pt
+            out_vars.loc[indices_CO, "ISR_eta_CO"] = ISR_cand_CO.eta
+            out_vars.loc[indices_CO, "ISR_phi_CO"] = ISR_cand_CO.phi
+            out_vars.loc[indices_CO, "ISR_mass_CO"] = ISR_cand_CO.mass
+        
         
         #####################################################################################
         # ---- Save outputs
