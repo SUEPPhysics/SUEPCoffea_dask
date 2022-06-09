@@ -52,6 +52,11 @@ abcd_ML = {
     'ntracks': [0, 100, 1000],
     'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]]
 }
+abcd_CO = {
+    'SUEP_S1_CO' : [0.35, 0.4, 0.5, 1.0],
+    'SUEP_nconst_CO' : [20, 40, 80, 1000],
+    'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]]
+}
 
 # selections
 base = [['ht_tracker', '>', 1200], ['ntracks','>',0]]
@@ -72,7 +77,7 @@ selections_ML = base
 selections_IRM = S1_ntracks_ABCD_IRM + base
 selections_CL = S1_ntracks_ABCD_CL + base
 selections_CLi = S1_ntracks_ABCD_CLi + base
-
+selections_CO = base
 
 #############################################################################################################
 
@@ -192,7 +197,8 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
         'CL' : 'SUEP_pt_CL',
         'CLi' : 'SUEP_pt_CL',
         'IRM' : 'SUEP_pt_IRM',
-        'ML' : 'resnet_SUEP_pred_ML'
+        'ML' : 'resnet_SUEP_pred_ML',
+        'CO' : 'SUEP_pt_CO'
     }
     df = df[~df[event_selector[label]].isnull()]
 
@@ -300,10 +306,14 @@ if options.isMC:
         except:
             print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
 
-# get weights
-w = np.load('nconst_weights.npy', allow_pickle=True)
-weights = defaultdict(lambda: np.zeros(2))
-weights.update(w.item())
+# pileup weights
+puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
+
+# custom per region weights
+if options.weights:
+    w = np.load('weights.npy', allow_pickle=True)
+    weights = defaultdict(lambda: np.zeros(2))
+    weights.update(w.item())
 
 # output histos
 def create_output_file(label, abcd):
@@ -341,7 +351,7 @@ def create_output_file(label, abcd):
         #         r+"pt_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $p_T$").Weight(),
         #     })
             
-    if label == 'IRM' or label == 'CL':
+    if label == 'IRM' or label == 'CL' or label=='CO':
         output.update({
             # 2D histograms
             "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
@@ -421,11 +431,10 @@ weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 size_dict = nested_dict(2, float)
 output = {}
-for label, abcd in zip(['IRM','ML','CL','CLi'], [abcd_IRM, abcd_ML, abcd_CL, abcd_CLi]):  
+for label, abcd in zip(['IRM','ML','CL','CLi','CO'], [abcd_IRM, abcd_ML, abcd_CL, abcd_CLi, abcd_CO]):  
     output.update(create_output_file(label, abcd))
 
 ### Plotting loop #######################################################################
-puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 for ifile in tqdm(files):
     
     #####################################################################################
@@ -563,6 +572,14 @@ for ifile in tqdm(files):
                                  selections_ML, abcd_ML, 
                                  label='ML', label_out='ML', 
                                  vars2d=vars2d)
+        
+    # Cone Method plots
+    vars2d = [
+    ]
+    output, size_dict = plot(df.copy(), size_dict, output,
+                             selections_CO, abcd_CO, 
+                             label='CO', label_out='CO', 
+                             vars2d=vars2d)
         
     #####################################################################################
     # ---- End
