@@ -72,12 +72,16 @@ S1_ntracks_ABCD_CLi = [
     ['ntracks','>', 10],
     ["ISR_S1_CL", ">=", 0.35],
 ]
+S1_ntracks_ABCD_CO = [
+    ['ntracks','>', 10],
+    ["SUEP_S1_CO", ">=", 0.35],
+]
 # pick selections to be used for different methods
 selections_ML = base
 selections_IRM = S1_ntracks_ABCD_IRM + base
 selections_CL = S1_ntracks_ABCD_CL + base
 selections_CLi = S1_ntracks_ABCD_CLi + base
-selections_CO = base
+selections_CO = S1_ntracks_ABCD_CO + base
 
 #############################################################################################################
 
@@ -186,6 +190,8 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
            3a. Event wide variables
            3b. CL variables
     """
+
+    output.update(create_output_file(label_out, abcd))
 
     #####################################################################################
     # ---- Event Selection
@@ -336,7 +342,7 @@ def create_output_file(label, abcd):
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
-            r+"ngood_rtacker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= '# ak4jets in Event ($\abs{\eta} < 2.4$)').Weight(),
+            r+"ngood_tracker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= '# ak4jets in Event ($\abs{\eta} < 2.4$)').Weight(),
         })
         # for i in range(10):
         #     output.update({
@@ -431,8 +437,6 @@ weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 size_dict = nested_dict(2, float)
 output = {}
-for label, abcd in zip(['IRM','ML','CL','CLi','CO'], [abcd_IRM, abcd_ML, abcd_CL, abcd_CLi, abcd_CO]):  
-    output.update(create_output_file(label, abcd))
 
 ### Plotting loop #######################################################################
 for ifile in tqdm(files):
@@ -462,12 +466,15 @@ for ifile in tqdm(files):
     if df.shape[0] == 0: continue    
 
     #####################################################################################
-    # ---- Additional weights [pileup_weight]
+    # ---- Additional weights
+    # Currently applies pileup weights through nTrueInt
+    # and optionally (options.weights) scaling weights that are derived to force
+    # MC to agree with data in one variable. Usage:
+    # df['event_weight'] *= another event weight, etc
     #####################################################################################
     event_weight = np.ones(df.shape[0])
     df['event_weight'] = event_weight
-    #event_weight *= another event weight, etc
-
+    
     # pileup weights
     if options.isMC == 1:
         Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
@@ -512,8 +519,6 @@ for ifile in tqdm(files):
                 
                 iRegion += 1
     
-    #df['event_weight'] = event_weight
-
     #####################################################################################
     # ---- Make plots
     #####################################################################################
