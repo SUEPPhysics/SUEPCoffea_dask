@@ -9,7 +9,7 @@ import time
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="Production tag", required=True)
 parser.add_argument("-o"   , "--output"   , type=str, default="IronMan"  , help="Output tag", required=False)
-parser.add_argument('--weights', type=int, default=0, help="Apply binned weights (default=False)")
+parser.add_argument('--weights', type=str, default=None, help="Pass the filename of the weights, e.g. --weights weights.npy")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 

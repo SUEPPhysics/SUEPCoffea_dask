@@ -418,10 +418,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # are the SUEP tracks, those inside the cone are ISR tracks.
         #####################################################################################
         
+        # SUEP tracks are all tracks outside a deltaR cone around ISR
         ISR_cand_CO = ISR_cand
-        
-        SUEP_tracks_CO = tracks[abs(tracks.deltaR(ISR_cand_CO)) > 1.6]
-        ISR_tracks_CO = tracks[abs(tracks.deltaR(ISR_cand_CO)) <= 1.6]
+        SUEP_tracks_CO = tracks[abs(tracks.deltaR(ISR_cand_CO)) > 2.0]
+        ISR_tracks_CO = tracks[abs(tracks.deltaR(ISR_cand_CO)) <= 2.0]
         
         SUEP_cand_CO = ak.zip({
             "px": ak.sum(SUEP_tracks_CO.px, axis=-1),

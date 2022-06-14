@@ -18,7 +18,7 @@ default_colors = {
     'SUEP-m125-darkPho': 'cyan',
     'SUEP-m125-darkPhoHad': 'cyan',
     'SUEP-m125-generic': 'cyan',
-        
+    'SUEP-m125-generic-htcut' : 'magenta'
 }
 
 lumis = {

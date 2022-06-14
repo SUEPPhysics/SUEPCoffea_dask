@@ -22,7 +22,7 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--weights', type=int, default=0, help="Apply binned weights (default=False)")
+parser.add_argument('--weights', type=str, default=None, help="Pass the filename of the weights, e.g. --weights weights.npy")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
@@ -316,8 +316,8 @@ if options.isMC:
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 
 # custom per region weights
-if options.weights:
-    w = np.load('weights.npy', allow_pickle=True)
+if options.weights is not None:
+    w = np.load(options.weights, allow_pickle=True)
     weights = defaultdict(lambda: np.zeros(2))
     weights.update(w.item())
 
@@ -342,7 +342,7 @@ def create_output_file(label, abcd):
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
-            r+"ngood_tracker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= '# ak4jets in Event ($\abs{\eta} < 2.4$)').Weight(),
+            r+"ngood_tracker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= r'# ak4jets in Event ($|\eta| < 2.4$)').Weight(),
         })
         # for i in range(10):
         #     output.update({
@@ -485,24 +485,24 @@ for ifile in tqdm(files):
     if options.isMC == 1 and options.weights:
         
         regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        x_var = list(abcd.keys())[0]
-        y_var = list(abcd.keys())[1]
+        x_var = list(abcd_CL.keys())[0]
+        y_var = list(abcd_CL.keys())[1]
         iRegion = 0
         
         # S1 regions
-        for i in range(len(abcd[x_var])-1):
-            x_val_lo = abcd[x_var][i]
-            x_val_hi = abcd[x_var][i+1]
+        for i in range(len(abcd_CL[x_var])-1):
+            x_val_lo = abcd_CL[x_var][i]
+            x_val_hi = abcd_CL[x_var][i+1]
 
             # nconst regions
-            for j in range(len(abcd[y_var])-1):
-                y_val_lo = abcd[y_var][j]
-                y_val_hi = abcd[y_var][j+1]
+            for j in range(len(abcd_CL[y_var])-1):
+                y_val_lo = abcd_CL[y_var][j]
+                y_val_hi = abcd_CL[y_var][j+1]
                 
                 r = regions[iRegion]
                 
                 # from the weights
-                bins = weights[r]['bins']
+                bins = weights[r]['ht_bins']
                 ratios = weights[r]['ratios']
                 
                 # nconst bins
