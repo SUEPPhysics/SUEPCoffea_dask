@@ -22,7 +22,7 @@ parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", r
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--weights', type=str, default=None, help="Pass the filename of the weights, e.g. --weights weights.npy")
+parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
@@ -58,7 +58,7 @@ abcd_CO = {
     'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]]
 }
 
-# selections
+# event selections
 base = [['ht_tracker', '>', 1200], ['ntracks','>',0]]
 S1_ntracks_ABCD_IRM = [
     ['ntracks','>', 10],
@@ -316,13 +316,18 @@ if options.isMC:
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 
 # custom per region weights
-if options.weights is not None:
+weights = None
+if options.weights != "None":
     w = np.load(options.weights, allow_pickle=True)
     weights = defaultdict(lambda: np.zeros(2))
     weights.update(w.item())
 
 # output histos
 def create_output_file(label, abcd):
+
+    # don't recreate histograms if called multiple times with the same output label
+    if label in output["labels"]: return output
+    else: output["labels"].append(label)
     
     x_var = list(abcd.keys())[0]
     y_var = list(abcd.keys())[1]
@@ -343,6 +348,8 @@ def create_output_file(label, abcd):
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
             r+"ngood_tracker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= r'# ak4jets in Event ($|\eta| < 2.4$)').Weight(),
+            r+"FNR_" + label : Hist.new.Reg(50,0, 1, name=r+"FNR_"+label, label= r'# SUEP Tracks in ISR / # SUEP Tracks').Weight(),
+            r+"ISR_contamination_" + label : Hist.new.Reg(50,0, 1, name=r+"ISR_contamination_"+label, label= r'# SUEP Tracks in ISR / # ISR Tracks').Weight(),
         })
         # for i in range(10):
         #     output.update({
@@ -436,7 +443,7 @@ nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 size_dict = nested_dict(2, float)
-output = {}
+output = {"labels":[]}
 
 ### Plotting loop #######################################################################
 for ifile in tqdm(files):
@@ -482,7 +489,7 @@ for ifile in tqdm(files):
         df['event_weight'] *= pu
     
     # scaling weights
-    if options.isMC == 1 and options.weights:
+    if options.isMC == 1 and weights is not None:
         
         regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         x_var = list(abcd_CL.keys())[0]
@@ -505,13 +512,13 @@ for ifile in tqdm(files):
                 bins = weights[r]['ht_bins']
                 ratios = weights[r]['ratios']
                 
-                # nconst bins
+                # ht bins
                 for k in range(len(bins)-1):
                     z_val_lo = bins[k]
                     z_val_hi = bins[k+1]
                     ratio = ratios[k]
                 
-                    zslice = (df['SUEP_nconst_CL'] >= z_val_lo) & (df['SUEP_nconst_CL'] < z_val_hi)
+                    zslice = (df['ht'] >= z_val_lo) & (df['ht'] < z_val_hi)
                     yslice = (df['SUEP_nconst_CL'] >= y_val_lo) & (df['SUEP_nconst_CL'] < y_val_hi)
                     xslice = (df['SUEP_S1_CL'] >= x_val_lo) & (df['SUEP_S1_CL'] < x_val_hi)
                                         
@@ -579,12 +586,12 @@ for ifile in tqdm(files):
                                  vars2d=vars2d)
         
     # Cone Method plots
-    vars2d = [
-    ]
-    output, size_dict = plot(df.copy(), size_dict, output,
-                             selections_CO, abcd_CO, 
-                             label='CO', label_out='CO', 
-                             vars2d=vars2d)
+    # vars2d = [
+    # ]
+    # output, size_dict = plot(df.copy(), size_dict, output,
+    #                          selections_CO, abcd_CO, 
+    #                          label='CO', label_out='CO', 
+    #                          vars2d=vars2d)
         
     #####################################################################################
     # ---- End
@@ -596,6 +603,7 @@ for ifile in tqdm(files):
 ### End plotting loop ###################################################################
     
 # apply normalization
+output.pop("labels")
 if options.isMC:
     if weight > 0.0:
         for plot in list(output.keys()): output[plot] = output[plot]*xsection/weight
