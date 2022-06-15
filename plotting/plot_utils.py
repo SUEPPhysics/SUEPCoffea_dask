@@ -18,7 +18,7 @@ default_colors = {
     'SUEP-m125-darkPho': 'cyan',
     'SUEP-m125-darkPhoHad': 'cyan',
     'SUEP-m125-generic': 'cyan',
-        
+    'SUEP-m125-generic-htcut' : 'magenta'
 }
 
 lumis = {
@@ -202,8 +202,6 @@ def plot_ratio(h1, h2,
     ax1.set_ylabel("Events", y=1, ha='right')
     ax1.legend()
 
-    # ax2 = fig.subplot2grid((4,1), (2,0), sharex=ax1)
-    # fig.setp(ax1.get_xticklabels(), visible=False)
     ax2 = plt.subplot2grid((4,1), (2,0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
     
@@ -225,6 +223,94 @@ def plot_ratio(h1, h2,
     residuals_errs = ratio_errs
     
     return fig, (ax1, ax2), (residuals, residuals_errs)
+
+def plot_ratio_regions(plots, plot_label, 
+               sample1, sample2, 
+               regions,
+               rebin=-1, 
+               lumi1=1, lumi2=1, 
+               xlim='default', 
+               log=True):
+
+    fig = plt.figure(figsize=(20,7))
+    ax1 = plt.subplot2grid((4,1),(0,0), rowspan=2)
+    ax2 = plt.subplot2grid((4,1),(2,0), sharex=ax1)
+    _ = plt.setp(ax1.get_xticklabels(), visible=False)
+    ax2 = plt.subplot2grid((4,1), (2,0), sharex=ax1)
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    
+    offset = 0
+    mids = []
+    for i,r in enumerate(regions):
+        h1 = plots[sample1][plot_label.replace("A_", r+"_")]
+        h2 = plots[sample2][plot_label.replace("A_", r+"_")]
+        
+        y1, x1 = h1.to_numpy()
+        x1 = x1[:-1]
+        y2, x2 = h2.to_numpy()
+        x2 = x2[:-1]
+                
+        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [0]
+        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [0]
+        xmax1 = np.argwhere(y1>0)[-1] if any(y1>0) else [0]
+        xmax2 = np.argwhere(y2>0)[-1] if any(y2>0) else [0]
+        xmin = max(np.concatenate((xmin1, xmin2)))
+        xmax = max(np.concatenate((xmax2, xmax2)))
+        x1 = x1[xmin:xmax+1]
+        x2 = x2[xmin:xmax+1]
+        y1 = y1[xmin:xmax+1]
+        y2 = y2[xmin:xmax+1]
+        
+        x1 = x1 - x1[0]
+        x2 = x2 - x2[0]
+        
+        this_offset = x1[-1]-x1[0]
+        x1 = x1 + offset
+        x2 = x2 + offset
+        offset += this_offset
+        
+        mids.append((x1[-1]+x1[0])/2)
+        
+        y1_errs = np.sqrt(h1.variances())*lumi1
+        y1_errs = y1_errs[xmin:xmax+1]
+        if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
+        if i == 0: ax1.step(x1, y1, color='maroon',label=sample1, where='mid')
+        else: ax1.step(x1, y1, color='maroon', where='mid')
+        ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
+
+        y2_errs = np.sqrt(h2.variances())*lumi2
+        y2_errs = y2_errs[xmin:xmax+1]
+        if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
+        if i == 0: ax1.step(x2, y2, color='blue',label=sample2, where= 'mid')
+        else: ax1.step(x2, y2, color='blue', where= 'mid')
+        ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
+        
+        ax1.axvline(x2[0], ls="--", color='black')
+        ax2.axvline(x2[0], ls="--", color='black')
+        
+        # calculate the upper and lower errors
+        # suppress errors where the denonminator is 0
+        y1 = np.where(y1>0, y1, -1)
+        yerrors_up = np.where(y1>0, y2/y1 - (y2-y2_errs)/(y1+y1_errs), np.nan)
+        yerrors_low = np.where(y1>0, (y2+y2_errs)/(y1-y1_errs) - y2/y1, np.nan)
+        ratio_errs = [yerrors_up, yerrors_low]
+        ratios = np.where((y2>0) & (y1>0), y2/y1, 1)
+        ax2.errorbar(x1, ratios, yerr=ratio_errs, color="black", fmt="", drawstyle='steps-mid')
+    
+    if log: ax1.set_yscale("log")
+ 
+    ax1.set_xticks(mids)
+    ax1.set_xticklabels(list(regions))
+    
+    ax1.set_ylabel("Events", y=1, ha='right')
+    ax1.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+    
+    ax2.axhline(1, ls="--", color='gray')
+    ax2.set_ylim(0.4,1.6)
+    ax2.set_ylabel("Ratio", y=1, ha='right')
+    ax2.set_xlabel(h1.axes[0].label, y=1)
+        
+    return fig, (ax1, ax2)
     
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
