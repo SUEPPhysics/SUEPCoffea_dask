@@ -32,132 +32,78 @@ redirector = "root://t3serv017.mit.edu/"
 
 # ABCD methods
 # include lower and upper bounds for ALL regions
-abcd_IRM = {
-    'SUEP_S1_IRM' : [0.35, 0.4, 0.5, 1.0],
-    'SUEP_nconst_IRM' : [10, 20, 40, 1000],
-    'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]]
+config = {
+    'IRM' : {
+        'input_method' : 'IRM',
+        'xvar' : 'SUEP_S1_IRM',
+        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+        'yvar' : 'SUEP_nconst_IRM',
+        'yvar_regions' : [10, 20, 40, 1000],
+        'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_IRM", ">=", 0.35]]
+    },
+    
+    'CL' : {
+        'input_method' : 'CL',
+        'label_out' : 'CL',
+        'xvar' :'SUEP_S1_CL',
+        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+        'yvar' : 'SUEP_nconst_CL',
+        'yvar_regions' : [20, 40, 80, 1000],
+        'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CL", ">=", 0.35]]
+    },
+    
+    'CLi' : {
+        'input_method' : 'CL',
+        'xvar' : 'ISR_S1_CL',
+        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+        'yvar' : 'ISR_nconst_CL',
+        'yvar_regions' : [20, 40, 80, 1000],
+        'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
+    },
+    
+    'ML' : {
+        'input_method' : 'ML',
+        'label_out' : 'ML',
+        'xvar' : 'resnet_SUEP_pred_ML',
+        'xvar_regions' : [0.0, 0.5, 1.0],
+        'yvar' : 'ntracks',
+        'yvar_regions' : [0, 100, 1000],
+        'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]]
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>',0]]
+    },
+    
+    'CO' : {
+    'input_method' : 'CO',
+    'xvar' : 'SUEP_S1_CO',
+    'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+    'yvar' : 'SUEP_nconst_CO',
+    'yvar_regions' : [20, 40, 80, 1000],
+    'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]],
+    'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
+    } 
 }
-abcd_CL = {
-    'SUEP_S1_CL' : [0.35, 0.4, 0.5, 1.0],
-    'SUEP_nconst_CL' : [20, 40, 80, 1000],
-    'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]]
-}
-abcd_CLi= {
-    'ISR_S1_CL' : [0.35, 0.4, 0.5, 1.0],
-    'ISR_nconst_CL' : [20, 40, 80, 1000],
-    'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]]
-}
-abcd_ML = {
-    'resnet_SUEP_pred_ML' : [0.0, 0.5, 1.0],
-    'ntracks': [0, 100, 1000],
-    'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]]
-}
-abcd_CO = {
-    'SUEP_S1_CO' : [0.35, 0.4, 0.5, 1.0],
-    'SUEP_nconst_CO' : [20, 40, 80, 1000],
-    'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]]
-}
-
-# event selections
-base = [['ht_tracker', '>', 1200], ['ntracks','>',0]]
-S1_ntracks_ABCD_IRM = [
-    ['ntracks','>', 10],
-    ["SUEP_S1_IRM", ">=", 0.35],
-]
-S1_ntracks_ABCD_CL = [
-    ['ntracks','>', 10],
-    ["SUEP_S1_CL", ">=", 0.35],
-]
-S1_ntracks_ABCD_CLi = [
-    ['ntracks','>', 10],
-    ["ISR_S1_CL", ">=", 0.35],
-]
-S1_ntracks_ABCD_CO = [
-    ['ntracks','>', 10],
-    ["SUEP_S1_CO", ">=", 0.35],
-]
-# pick selections to be used for different methods
-selections_ML = base
-selections_IRM = S1_ntracks_ABCD_IRM + base
-selections_CL = S1_ntracks_ABCD_CL + base
-selections_CLi = S1_ntracks_ABCD_CLi + base
-selections_CO = S1_ntracks_ABCD_CO + base
 
 #############################################################################################################
-
-def make_selection(df, variable, operator, value, apply=True):
-    """
-    Apply a selection on DataFrame df based on on the df column'variable'
-    using the 'operator' and 'value' passed as arguments to the function.
-    Returns the resulting DataFrame after the operation is applied.
     
-    df: input dataframe.
-    variable: df column.
-    operator: see code below.
-    value: value to cut variable on using operator.
-    apply: toggles whether the selection is applied to the dataframe, or
-    whether a list of booleans is returned matching the indices that
-    passed and failed the selection.
-    """
-    if operator in ["greater than","gt",">"]:
-        if apply: return df.loc[(df[variable] > value)]
-        else: return (df[variable] > value)
-    if operator in ["greater than or equal to", ">="]:
-        if apply: return df.loc[(df[variable] >= value)]
-        else: return (df[variable] >= value)
-    elif operator in ["less than", "lt", "<"]:
-        if apply: return df.loc[(df[variable] < value)]
-        else: return (df[variable] < value)
-    elif operator in ["less than or equal to", "<="]:
-        if apply: return df.loc[(df[variable] <= value)]
-        else: return (df[variable] <= value)
-    elif operator in ["equal to", "eq", "=="]:
-        if apply: return df.loc[(df[variable] == value)]
-        else: return (df[variable] == value)
-    else:
-        sys.exit("Couldn't find operator requested " + operator)
-        
-def nested_dict(n, type):
-    if n == 1:
-        return defaultdict(type)
-    else:
-        return defaultdict(lambda: nested_dict(n-1, type))
-
-# load hdf5 with pandas
-def h5load(ifile, label):
-    try:
-        with pd.HDFStore(ifile, 'r') as store:
-            try:
-                data = store[label] 
-                metadata = store.get_storer(label).attrs.metadata
-                return data, metadata
-        
-            except KeyError:
-                print("No key",label,ifile)
-                return 0, 0
-    except:
-        print("Some error occurred", ifile)
-        return 0, 0
-    
-def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML', vars2d = []):
+def plot(df, output, abcd, label_out):
     """
     INPUTS:
-        df_in: input DataFrame.
-        size_dict: dictionary which holds count of events in each region for each method.
+        df: input DataFrame.
         output: dictionary of histograms.
+        label_out: output tag.
         
-        selections: selections to be applied to df_in for a method.
-        abcd: definitions of ABCD regions, signal region.
+        abcd: definitions of ABCD regions, signal region, event selections.
         
-        label: label associated with the method (e.g. "CL") as used in df_in.
+        input_method: label associated with the method (e.g. "CL") as used in df.
         label_out: label associated with the output method (e.g. "Cli") as used in the
                    output dictionary, the selections, and the abcd dict. i.e., multiple
                    label_out's can be defined for the same input label, as different
                    selections and ABCD methods can be applied to the same input method.
-        vars2d: list of pairs of variables that you want to plot against each other in 2D.
         
     OUTPUTS: 
-        size_dict: now updated with this file's counts.
         output: now with updated histograms.
         
     EXPLANATION:
@@ -191,26 +137,18 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
            3b. CL variables
     """
 
-    output.update(create_output_file(label_out, abcd))
+    input_method = abcd['input_method']
 
     #####################################################################################
     # ---- Event Selection
     #####################################################################################
     
     # 1. keep only events that passed this method
-    df = df_in.copy()
-    event_selector = {
-        'CL' : 'SUEP_pt_CL',
-        'CLi' : 'SUEP_pt_CL',
-        'IRM' : 'SUEP_pt_IRM',
-        'ML' : 'resnet_SUEP_pred_ML',
-        'CO' : 'SUEP_pt_CO'
-    }
-    df = df[~df[event_selector[label]].isnull()]
+    df = df[~df[abcd['xvar']].isnull()]
 
     # 2. keep event wide variables and variables for this method only
     all_labels = ['CL', 'IRM', 'ML']
-    exclude_labels = [l for l in all_labels if l != label]
+    exclude_labels = [l for l in all_labels if l != input_method]
     df = df[[c for c in df.keys() if all([l not in c for l in exclude_labels])]]
         
     # 3. blind
@@ -220,7 +158,7 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
         df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
         
     # 4. apply selections
-    for sel in selections: 
+    for sel in abcd['selections']: 
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
         
     #####################################################################################
@@ -232,24 +170,17 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
     plot_labels = [key for key in df.keys() if key+"_"+label_out in list(output.keys())]  
     for plot in plot_labels: output[plot+"_"+label_out].fill(df[plot], weight=df['event_weight']) 
     # 1b. Plot method variables
-    plot_labels = [key for key in df.keys() if key.replace(label, label_out) in list(output.keys())]
-    for plot in plot_labels: output[plot.replace(label, label_out)].fill(df[plot], weight=df['event_weight'])  
+    plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys())]
+    for plot in plot_labels: output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
     
     # 2. fill some 2D distributions  
     keys = list(output.keys())
-    for pair in vars2d:
-        x_in = pair[0]
-        x_out = pair[0].replace("_"+label, "")
-        y_in = pair[1]
-        y_out = pair[1].replace("_"+label, "")
-        
-        plot = "2D_" + x_out + "_" + y_out +"_" +label_out
-        plot_inv = "2D_" + y_out + "_" + x_out +"_" +label_out
-        if plot in keys: output[plot].fill(df[x_in], df[y_in], weight=df['event_weight'])
-        elif plot_inv in keys: output[plot_inv].fill(df[y_in], df[x_in], weight=df['event_weight'])
-        else:
-            print("Didn't find histogram for", pair)
-            continue
+    keys_2Dhists = [k for k in keys if '2D' in k]
+    for key in keys_2Dhists:
+        key = key[len("2D")+1:len(label_out)] # cut out "2D_" and output label
+        var1 = key.split("_vs_")[0]
+        var2 = key.split("_vs_")[1][4:]
+        output[key].fill(df[var1], df[var2], weight=df['event_weight'])
 
     # 3. divide the dfs by region
     regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -269,7 +200,6 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
             df_r = df.loc[(x_cut & y_cut)]
                   
             r = regions[iRegion] + "_"
-            size_dict[label_out][regions[iRegion]] += df_r.shape[0]
             iRegion += 1
             
             # double check blinding
@@ -282,9 +212,9 @@ def plot(df_in, size_dict, output, selections, abcd, label='ML', label_out='ML',
             for plot in plot_labels: output[r+plot+"_"+label_out].fill(df_r[plot], weight=df_r['event_weight']) 
             # 3b. Plot method variables
             plot_labels = [key for key in df_r.keys() if r+key.replace(label, label_out) in list(output.keys())]  # method vars
-            for plot in plot_labels: output[r+plot.replace(label, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
+            for plot in plot_labels: output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
            
-    return output, size_dict
+    return output
         
 #############################################################################################################
 
@@ -367,17 +297,17 @@ def create_output_file(label, abcd):
     if label == 'IRM' or label == 'CL' or label=='CO':
         output.update({
             # 2D histograms
-            "2D_SUEP_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
-            "2D_SUEP_S1_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            "2D_SUEP_S1_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),
-            "2D_SUEP_nconst_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(), 
-            "2D_ntracks_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),  
-            "2D_SUEP_S1_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),
-            "2D_ntracks_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),  
-            "2D_SUEP_nconst_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(), 
-            "2D_SUEP_S1_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),
-            "2D_ntracks_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
-            "2D_SUEP_nconst_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
+            "2D_SUEP_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_SUEP_S1_vs_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
+            "2D_SUEP_S1_vs_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),
+            "2D_SUEP_nconst_vs_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(), 
+            "2D_ntracks_vs_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),  
+            "2D_SUEP_S1_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),
+            "2D_ntracks_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),  
+            "2D_SUEP_nconst_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(), 
+            "2D_SUEP_S1_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),
+            "2D_ntracks_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
+            "2D_SUEP_nconst_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
@@ -399,17 +329,17 @@ def create_output_file(label, abcd):
     if label == 'CLi':
         output.update({
             # 2D histograms
-            "2D_ISR_S1_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
-            "2D_ISR_S1_ISR_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            "2D_ISR_S1_ISR_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),
-            "2D_ISR_nconst_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(), 
-            "2D_ntracks_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),  
-            "2D_ISR_S1_ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),
-            "2D_ntracks_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),  
-            "2D_ISR_nconst_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(), 
-            "2D_ISR_S1_ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="ISR_S1_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),
-            "2D_ntracks_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
-            "2D_ISR_nconst_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
+            "2D_ISR_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
+            "2D_ISR_S1_vs_ISR_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
+            "2D_ISR_S1_vs_ISR_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),
+            "2D_ISR_nconst_vs_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(), 
+            "2D_ntracks_vs_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),  
+            "2D_ISR_S1_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),
+            "2D_ntracks_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),  
+            "2D_ISR_nconst_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(), 
+            "2D_ISR_S1_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="ISR_S1_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),
+            "2D_ntracks_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
+            "2D_ISR_nconst_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
             
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
@@ -442,7 +372,6 @@ def create_output_file(label, abcd):
 nfailed = 0
 weight = 0
 fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
-size_dict = nested_dict(2, float)
 output = {"labels":[]}
 
 ### Plotting loop #######################################################################
@@ -530,68 +459,9 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     
-    # ISR Removal Method plots
-    vars2d = [
-        ['SUEP_S1_IRM', 'ntracks'],
-        ['SUEP_pt_avg_b_IRM', 'ntracks'],
-        ['SUEP_pt_mean_scaled_IRM', 'ntracks'],
-        ['SUEP_S1_IRM', 'SUEP_nconst_IRM'],
-        ['SUEP_pt_avg_b_IRM', 'SUEP_nconst_IRM'],
-        ['SUEP_pt_mean_scaled_IRM', 'SUEP_nconst_IRM'],
-        ['SUEP_S1_IRM', 'SUEP_pt_mean_scaled_IRM'],
-    ]
-    output, size_dict = plot(df, size_dict, output,
-                         selections_IRM, abcd_IRM, 
-                         label='IRM', label_out='IRM', 
-                         vars2d=vars2d)
-    
-    # Cluster Method plots
-    vars2d = [
-        ['SUEP_S1_CL', 'ntracks'],
-        ['SUEP_pt_avg_b_CL', 'ntracks'],
-        ['SUEP_pt_mean_scaled_CL', 'ntracks'],
-        ['SUEP_S1_CL', 'SUEP_nconst_CL'],
-        ['SUEP_pt_avg_b_CL', 'SUEP_nconst_CL'],
-        ['SUEP_pt_mean_scaled_CL', 'SUEP_nconst_CL'],
-        ['SUEP_S1_CL', 'SUEP_pt_mean_scaled_CL'],
-    ]
-    output, size_dict = plot(df.copy(), size_dict, output,
-                             selections_CL, abcd_CL, 
-                             label='CL', label_out='CL', 
-                             vars2d=vars2d)
-    
-    # Inverted Cluster Method plots
-    if options.isMC:
-        vars2d = [
-            ['ISR_S1_CL', 'ntracks'],
-            ['ISR_pt_avg_b_CL', 'ntracks'],
-            ['ISR_pt_mean_scaled_CL', 'ntracks'],
-            ['ISR_S1_CL', 'ISR_nconst_CL'],
-            ['ISR_pt_avg_b_CL', 'ISR_nconst_CL'],
-            ['ISR_pt_mean_scaled_CL', 'ISR_nconst_CL'],
-            ['ISR_S1_CL', 'ISR_pt_mean_scaled_CL'],
-        ]
-        output, size_dict = plot(df.copy(), size_dict, output,
-                                 selections_CLi, abcd_CLi, 
-                                 label='CL', label_out='CLi', 
-                                 vars2d=vars2d)
-    
-    # ML Method plots
-    if False:
-        vars2d = [
-        ]
-        output, size_dict = plot(df.copy(), size_dict, output,
-                                 selections_ML, abcd_ML, 
-                                 label='ML', label_out='ML', 
-                                 vars2d=vars2d)
-        
-    # Cone Method plots
-    # vars2d = [
-    # ]
-    # output, size_dict = plot(df.copy(), size_dict, output,
-    #                          selections_CO, abcd_CO, 
-    #                          label='CO', label_out='CO', 
-    #                          vars2d=vars2d)
+    for label_out, abcd in config.items()
+        output.update(create_output_file(label_out, abcd))
+        output = plot(df.copy(), output, abcd, label_out)
         
     #####################################################################################
     # ---- End
