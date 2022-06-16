@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import pickle
 import boost_histogram as bh
+import pandas as pd
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -27,6 +28,54 @@ lumis = {
     '2017': 41.5*1000,
     '2018': 61000
 }
+
+# load hdf5 with pandas
+def h5load(ifile, label):
+    try:
+        with pd.HDFStore(ifile, 'r') as store:
+            try:
+                data = store[label] 
+                metadata = store.get_storer(label).attrs.metadata
+                return data, metadata
+
+            except KeyError:
+                print("No key",label,ifile)
+                return 0, 0
+    except:
+        print("Some error occurred", ifile)
+        return 0, 0
+    
+def make_selection(df, variable, operator, value, apply=True):
+    """
+    Apply a selection on DataFrame df based on on the df column'variable'
+    using the 'operator' and 'value' passed as arguments to the function.
+    Returns the resulting DataFrame after the operation is applied.
+    
+    df: input dataframe.
+    variable: df column.
+    operator: see code below.
+    value: value to cut variable on using operator.
+    apply: toggles whether the selection is applied to the dataframe, or
+    whether a list of booleans is returned matching the indices that
+    passed and failed the selection.
+    """
+    if operator in ["greater than","gt",">"]:
+        if apply: return df.loc[(df[variable] > value)]
+        else: return (df[variable] > value)
+    if operator in ["greater than or equal to", ">="]:
+        if apply: return df.loc[(df[variable] >= value)]
+        else: return (df[variable] >= value)
+    elif operator in ["less than", "lt", "<"]:
+        if apply: return df.loc[(df[variable] < value)]
+        else: return (df[variable] < value)
+    elif operator in ["less than or equal to", "<="]:
+        if apply: return df.loc[(df[variable] <= value)]
+        else: return (df[variable] <= value)
+    elif operator in ["equal to", "eq", "=="]:
+        if apply: return df.loc[(df[variable] == value)]
+        else: return (df[variable] == value)
+    else:
+        sys.exit("Couldn't find operator requested " + operator)
 
 # function to load files from pickle
 def openpkl(infile_name):

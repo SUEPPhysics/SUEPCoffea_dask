@@ -96,13 +96,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Track selection
         #####################################################################################
 
-        #Prepare the clean PFCand matched to tracks collection
-        #Cands = ak.zip({
-        #    "pt": events.PFCands.trkPt,
-        #    "eta": events.PFCands.trkEta,
-        #    "phi": events.PFCands.trkPhi,
-        #    "mass": events.PFCands.mass
-        #}, with_name="Momentum4D")        
+        #Prepare the clean PFCand matched to tracks collection      
         if self.scouting == 1:
             Cands = ak.zip({
                 "pt": events.PFcand.pt,
@@ -114,6 +108,7 @@ class SUEP_cluster(processor.ProcessorABC):
                      (abs(events.PFcand.eta) <= 2.5) 
             Cleaned_cands = Cands[cut]
             tracks =  ak.packed(Cleaned_cands)
+            
         else:
             Cands = ak.zip({
                 "pt": events.PFCands.trkPt,
@@ -128,9 +123,7 @@ class SUEP_cluster(processor.ProcessorABC):
                      (events.PFCands.dzErr < 0.05)
             Cleaned_cands = Cands[cut]
             Cleaned_cands = ak.packed(Cleaned_cands)
-
-
-      
+            
             #Prepare the Lost Track collection
             LostTracks = ak.zip({
                 "pt": events.lostTracks.pt,
@@ -213,7 +206,6 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
         out_vars["ht_tracker"] = ak.sum(tracker_ak4jets.pt,axis=-1).to_list()
-
         if self.scouting == 1:
             out_vars["PV_npvs"] = ak.num(events.Vertex.x)
         else:
