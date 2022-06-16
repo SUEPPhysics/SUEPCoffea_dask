@@ -47,7 +47,7 @@ config = {
         'yvar' : 'SUEP_nconst_IRM',
         'yvar_regions' : [10, 20, 40, 1000],
         'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
-        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_IRM", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_IRM", ">=", 0.35]]
     },
     
     'Cluster' : {
@@ -58,7 +58,7 @@ config = {
         'yvar' : 'SUEP_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CL", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_CL", ">=", 0.35]]
     },
     
     'ClusterInverted' : {
@@ -68,7 +68,7 @@ config = {
         'yvar' : 'ISR_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
     },
     
     'ResNet' : {
@@ -79,7 +79,7 @@ config = {
         'yvar' : 'ntracks',
         'yvar_regions' : [0, 100, 1000],
         'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]],
-        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>',0]]
+        'selections' : [['ht_tracker', '>', 600], ['ntracks','>',0]]
     },
     
     'Cone' : {
@@ -89,7 +89,7 @@ config = {
         'yvar' : 'SUEP_nconst_CO',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
     } 
 }
 
@@ -178,7 +178,7 @@ def plot(df, output, abcd, label_out):
     keys = list(output.keys())
     keys_2Dhists = [k for k in keys if '2D' in k]
     for key in keys_2Dhists:
-        if label_out not in key: continue
+        if not key.endswith(label_out): continue
         string = key[len("2D")+1:-(len(label_out)+1)] # cut out "2D_" and output label
         var1 = string.split("_vs_")[0]
         var2 = string.split("_vs_")[1]
