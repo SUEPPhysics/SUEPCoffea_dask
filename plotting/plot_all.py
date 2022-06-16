@@ -22,6 +22,12 @@ def call_makeplots(cmd):
 
 pool = ThreadPool(multiprocessing.cpu_count())
 
+def read_filelist(file):
+    with open(file,'r') as f:
+        lines = f.readlines()
+        lines = [l.split('/')[-1].strip('\n') for l in lines]
+    return lines
+
 SUEP = [
            "SUEP-m1000-darkPho+RunIIAutumn18-private+MINIAODSIM",
            "SUEP-m1000-darkPhoHad+RunIIAutumn18-private+MINIAODSIM",
@@ -56,6 +62,8 @@ QCD_2018 = [
     "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",           
     "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
 ]
+
+QCD_HT_2018_scout = read_filelist('../filelist/list_2018_scout_MC.txt')
 
 QCD_HT_2018 = [
    "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM",
@@ -183,6 +191,9 @@ start = time.time()
 # for sample in QCD_HT_2018:
 #     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, options.weights, 2018)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+for sample in QCD_HT_2018_scout:
+    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, options.weights, 2018)
+    results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_Pt_2017:
 #      cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=1 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2017)
 #      results.append(pool.apply_async(call_makeplots, (cmd,)))
@@ -201,9 +212,9 @@ start = time.time()
 #for sample in data_2016:
 #     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --isMC=0 --era={}'.format(options.tag, options.output, sample, options.xrootd, 2016)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
-for sample in SUEP:
-    cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC=1'.format(options.tag, options.output, sample, options.xrootd, options.weights)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in SUEP:
+#     cmd = 'python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC=1'.format(options.tag, options.output, sample, options.xrootd, options.weights)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 
 # Close the pool and wait for each running task to complete
 pool.close()

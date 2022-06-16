@@ -22,6 +22,7 @@ parser.add_argument("-o"   , "--output"   , type=str, default="IronMan"  , help=
 parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
 parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
+parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
 parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
@@ -33,8 +34,8 @@ redirector = "root://t3serv017.mit.edu/"
 
 """
 Define output plotting methods, each draws from an input_method (outputs of SUEPCoffea),
-and can have its own selections, ABCD regions, and signal regions.
-Multiple label_out's can be defined for the same input method, as different
+and can have its own selections, ABCD regions, and signal region.
+Multiple plotting methods can be defined for the same input method, as different
 selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
@@ -77,18 +78,18 @@ config = {
         'xvar_regions' : [0.0, 0.5, 1.0],
         'yvar' : 'ntracks',
         'yvar_regions' : [0, 100, 1000],
-        'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]]
+        'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]],
         'selections' : [['ht_tracker', '>', 1200], ['ntracks','>',0]]
     },
     
     'Cone' : {
-    'input_method' : 'CO',
-    'xvar' : 'SUEP_S1_CO',
-    'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-    'yvar' : 'SUEP_nconst_CO',
-    'yvar_regions' : [20, 40, 80, 1000],
-    'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]],
-    'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
+        'input_method' : 'CO',
+        'xvar' : 'SUEP_S1_CO',
+        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+        'yvar' : 'SUEP_nconst_CO',
+        'yvar_regions' : [20, 40, 80, 1000],
+        'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]],
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
     } 
 }
 
@@ -97,8 +98,8 @@ config = {
 def plot(df, output, abcd, label_out):
     """
     INPUTS:
-        df: input DataFrame.
-        output: dictionary of histograms.
+        df: input file DataFrame.
+        output: dictionary of histograms to be filled.
         abcd: definitions of ABCD regions, signal region, event selections.
         label_out: label associated with the output (e.g. "ISRRemoval"), as keys in 
                    the config dictionary.
@@ -171,38 +172,44 @@ def plot(df, output, abcd, label_out):
     # 1b. Plot method variables
     plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys())]
     for plot in plot_labels: output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
+    # FIXME: plot ABCD 2d
     
     # 2. fill some 2D distributions  
     keys = list(output.keys())
     keys_2Dhists = [k for k in keys if '2D' in k]
     for key in keys_2Dhists:
-        key = key[len("2D")+1:len(label_out)] # cut out "2D_" and output label
-        var1 = key.split("_vs_")[0]
-        var2 = key.split("_vs_")[1][4:]
+        if label_out not in key: continue
+        string = key[len("2D")+1:-(len(label_out)+1)] # cut out "2D_" and output label
+        var1 = string.split("_vs_")[0]
+        var2 = string.split("_vs_")[1]
+        if var1 not in list(df.keys()): var1 += "_" + input_method
+        if var2 not in list(df.keys()): var2 += "_" + input_method
         output[key].fill(df[var1], df[var2], weight=df['event_weight'])
 
     # 3. divide the dfs by region
     regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    x_var = list(abcd.keys())[0]
-    y_var = list(abcd.keys())[1]
+    xvar = abcd['xvar']
+    yvar = abcd['yvar']
+    xvar_regions = abcd['xvar_regions']
+    yvar_regions = abcd['yvar_regions']
     iRegion = 0
-    for i in range(len(abcd[x_var])-1):
-        x_val_lo = abcd[x_var][i]
-        x_val_hi = abcd[x_var][i+1]
+    for i in range(len(xvar_regions)-1):
+        x_val_lo = xvar_regions[i]
+        x_val_hi = xvar_regions[i+1]
         
-        for j in range(len(abcd[y_var])-1):
-            y_val_lo = abcd[y_var][j]
-            y_val_hi = abcd[y_var][j+1]
+        for j in range(len(yvar_regions)-1):
+            y_val_lo = yvar_regions[j]
+            y_val_hi = yvar_regions[j+1]
             
-            x_cut = (make_selection(df, x_var, '>=', x_val_lo, False) & make_selection(df, x_var, '<', x_val_hi, False))
-            y_cut = (make_selection(df, y_var, '>=', y_val_lo, False) & make_selection(df, y_var, '<', y_val_hi, False))
+            x_cut = (make_selection(df, xvar, '>=', x_val_lo, False) & make_selection(df, xvar, '<', x_val_hi, False))
+            y_cut = (make_selection(df, yvar, '>=', y_val_lo, False) & make_selection(df, yvar, '<', y_val_hi, False))
             df_r = df.loc[(x_cut & y_cut)]
                   
             r = regions[iRegion] + "_"
             iRegion += 1
             
             # double check blinding
-            if iRegion == (len(abcd[x_var])-1)*(len(abcd[y_var])-1) and not options.isMC:
+            if iRegion == (len(xvar_regions)-1)*(len(yvar_regions)-1) and not options.isMC:
                 if df_r.shape[0] > 0: 
                     sys.exit(label_out+": You are not blinding correctly! Exiting.")
         
@@ -210,7 +217,7 @@ def plot(df, output, abcd, label_out):
             plot_labels = [key for key in df_r.keys() if r+key+"_"+label_out in list(output.keys())]   # event wide variables
             for plot in plot_labels: output[r+plot+"_"+label_out].fill(df_r[plot], weight=df_r['event_weight']) 
             # 3b. Plot method variables
-            plot_labels = [key for key in df_r.keys() if r+key.replace(label, label_out) in list(output.keys())]  # method vars
+            plot_labels = [key for key in df_r.keys() if r+key.replace(input_method, label_out) in list(output.keys())]  # method vars
             for plot in plot_labels: output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
            
     return output
@@ -258,12 +265,14 @@ def create_output_file(label, abcd):
     if label in output["labels"]: return output
     else: output["labels"].append(label)
     
-    x_var = list(abcd.keys())[0]
-    y_var = list(abcd.keys())[1]
-    output.update({"ABCDvars_2D_"+label : Hist.new.Reg(100, 0, abcd[x_var][-1], name=x_var).Reg(100, 0, abcd[y_var][-1], name=y_var).Weight()})
+    xvar = abcd['xvar']
+    yvar = abcd['yvar']
+    xvar_regions = abcd['xvar_regions']
+    yvar_regions = abcd['yvar_regions']
+    output.update({"ABCDvars_"+label : Hist.new.Reg(100, 0, yvar_regions[-1], name=xvar).Reg(100, 0, xvar_regions[-1], name=yvar).Weight()})
  
     regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    n_regions = (len(abcd[x_var]) - 1) * (len(abcd[y_var]) - 1)
+    n_regions = ((len(xvar_regions) - 1) * (len(yvar_regions) - 1))
     regions_list =  [""] + [regions[i]+"_" for i in range(n_regions)]
     
     # variables from the dataframe for all the events, and those in A, B, C regions
@@ -402,7 +411,7 @@ for ifile in tqdm(files):
     df['event_weight'] = event_weight
     
     # pileup weights
-    if options.isMC == 1:
+    if options.isMC == 1 and options.scouting != 1:
         Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
         pu = puweights[Pileup_nTrueInt]
         df['event_weight'] *= pu
@@ -411,19 +420,22 @@ for ifile in tqdm(files):
     if options.isMC == 1 and weights is not None:
         
         regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        x_var = list(abcd_CL.keys())[0]
-        y_var = list(abcd_CL.keys())[1]
+        x_var = 'SUEP_S1_CL'
+        y_var = 'SUEP_nconst_CL'
+        z_var = 'ht'
+        x_var_regions = []
+        y_var_regions = []
         iRegion = 0
         
         # S1 regions
-        for i in range(len(abcd_CL[x_var])-1):
-            x_val_lo = abcd_CL[x_var][i]
-            x_val_hi = abcd_CL[x_var][i+1]
+        for i in range(len(x_var_regions)-1):
+            x_val_lo = x_var_regions[i]
+            x_val_hi = x_var_regions[i+1]
 
             # nconst regions
-            for j in range(len(abcd_CL[y_var])-1):
-                y_val_lo = abcd_CL[y_var][j]
-                y_val_hi = abcd_CL[y_var][j+1]
+            for j in range(len(y_var_regions)-1):
+                y_val_lo = y_var_regions[j]
+                y_val_hi = y_var_regions[j+1]
                 
                 r = regions[iRegion]
                 
@@ -437,9 +449,9 @@ for ifile in tqdm(files):
                     z_val_hi = bins[k+1]
                     ratio = ratios[k]
                 
-                    zslice = (df['ht'] >= z_val_lo) & (df['ht'] < z_val_hi)
-                    yslice = (df['SUEP_nconst_CL'] >= y_val_lo) & (df['SUEP_nconst_CL'] < y_val_hi)
-                    xslice = (df['SUEP_S1_CL'] >= x_val_lo) & (df['SUEP_S1_CL'] < x_val_hi)
+                    zslice = (df[z_var] >= z_val_lo) & (df[z_var] < z_val_hi)
+                    yslice = (df[y_var] >= y_val_lo) & (df[y_var] < y_val_hi)
+                    xslice = (df[x_var] >= x_val_lo) & (df[x_var] < x_val_hi)
                                         
                     df.loc[xslice & yslice & zslice, 'event_weight'] *= ratio
                 
@@ -449,7 +461,7 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     
-    for label_out, config_out in config.items()
+    for label_out, config_out in config.items():
         output.update(create_output_file(label_out, config_out))
         output = plot(df.copy(), output, config_out, label_out)
         
