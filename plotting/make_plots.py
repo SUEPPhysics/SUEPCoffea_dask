@@ -33,7 +33,7 @@ redirector = "root://t3serv017.mit.edu/"
 # ABCD methods
 # include lower and upper bounds for ALL regions
 config = {
-    'IRM' : {
+    'ISRRemoval' : {
         'input_method' : 'IRM',
         'xvar' : 'SUEP_S1_IRM',
         'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
@@ -43,7 +43,7 @@ config = {
         'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_IRM", ">=", 0.35]]
     },
     
-    'CL' : {
+    'Cluster' : {
         'input_method' : 'CL',
         'label_out' : 'CL',
         'xvar' :'SUEP_S1_CL',
@@ -54,7 +54,7 @@ config = {
         'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["SUEP_S1_CL", ">=", 0.35]]
     },
     
-    'CLi' : {
+    'ClusterInverted' : {
         'input_method' : 'CL',
         'xvar' : 'ISR_S1_CL',
         'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
@@ -64,7 +64,7 @@ config = {
         'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
     },
     
-    'ML' : {
+    'ResNet' : {
         'input_method' : 'ML',
         'label_out' : 'ML',
         'xvar' : 'resnet_SUEP_pred_ML',
@@ -75,7 +75,7 @@ config = {
         'selections' : [['ht_tracker', '>', 1200], ['ntracks','>',0]]
     },
     
-    'CO' : {
+    'Cone' : {
     'input_method' : 'CO',
     'xvar' : 'SUEP_S1_CO',
     'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
@@ -93,12 +93,10 @@ def plot(df, output, abcd, label_out):
     INPUTS:
         df: input DataFrame.
         output: dictionary of histograms.
-        label_out: output tag.
         
         abcd: definitions of ABCD regions, signal region, event selections.
         
-        input_method: label associated with the method (e.g. "CL") as used in df.
-        label_out: label associated with the output method (e.g. "Cli") as used in the
+        label_out: label associated with the output method (e.g. "ISRRemoval") as used in the
                    output dictionary, the selections, and the abcd dict. i.e., multiple
                    label_out's can be defined for the same input label, as different
                    selections and ABCD methods can be applied to the same input method.
@@ -113,28 +111,32 @@ def plot(df, output, abcd, label_out):
           1                                 NaN                 1          ...
           2                                 NaN                 NaN        ...
           3                                 1                   2          ...
-    The event vars are always filled, while the vars for each method are filled only
-    if the event passes the method's selections.
+    (The event vars are always filled, while the vars for each method are filled only
+    if the event passes the method's selections, hence the NaNs).
     
-    N.B.: Histograms are filled only if they already exist in the output dictionary.
-    Each input method ('label') is processed using different selections, and
-    ABCD regions, and is then outputted to a specific ('label_out').
+    This function will plot, for each 'label_out':
+        1. All event variables, e.g. output histogram = ht_label_out
+        2. All columns from 'input_method', e.g. SUEP_S1_IRM column will be
+           plotted to histogram SUEP_S1_ISRRemoval.
+        3. 2D variables are automatically plotted, as long as hstogram is
+           initialized in the output dict as "2D_var2_vs_var2"
+    
+    N.B.: Histograms are filled only if they are initialized in the output dictionary.
 
     e.g. We want to plot CL. 
     Event Selection:
         1. Grab only events that don't have NaN for CL variables.
-        2. Grab the event_variables and CL_vars columns.
-        3. Blind for data! Use abcd_CL['SR'] to define signal regions and cut it out of df.
-        4. Apply selections as defined in selections_CL.
+        2. Blind for data! Use SR to define signal regions and cut it out of df.
+        3. Apply selections as defined in the 'selections' in the dict.
 
     Fill Histograms:
         1. Plot variables from the DataFrame. 
            1a. Event wide variables
-           1b. CL variables
-        2. Plot 2D variables from the vars2d list.
+           1b. Cluster method variables
+        2. Plot 2D variables.
         3. Plot variables from the different ABCD regions as defined in the abcd dict.
            3a. Event wide variables
-           3b. CL variables
+           3b. Cluster method variables
     """
 
     input_method = abcd['input_method']
@@ -145,19 +147,14 @@ def plot(df, output, abcd, label_out):
     
     # 1. keep only events that passed this method
     df = df[~df[abcd['xvar']].isnull()]
-
-    # 2. keep event wide variables and variables for this method only
-    all_labels = ['CL', 'IRM', 'ML']
-    exclude_labels = [l for l in all_labels if l != input_method]
-    df = df[[c for c in df.keys() if all([l not in c for l in exclude_labels])]]
         
-    # 3. blind
+    # 2. blind
     if options.blind and not options.isMC:       
         SR = abcd['SR']
         if len(SR) != 2: sys.exit(label_out + ": Make sure you have correctly defined your signal region. Exiting.")
         df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
         
-    # 4. apply selections
+    # 3. apply selections
     for sel in abcd['selections']: 
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
         
@@ -293,22 +290,18 @@ def create_output_file(label, abcd):
         #         r+"phi_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"phi_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $\phi$").Weight(),
         #         r+"pt_ak4jets"+str(i)+"_4jets_"+label : Hist.new.Reg(100, 0, 2000, name=r+"pt_ak4jets"+str(i)+"_4jets_"+label, label=r"ak4jets"+str(i)+" (4 jets) $p_T$").Weight(),
         #     })
-            
-    if label == 'IRM' or label == 'CL' or label=='CO':
+    
+    if label == 'ISRRemoval' or label == 'Cluster' or label=='Cone':
+        # 2D histograms
         output.update({
-            # 2D histograms
             "2D_SUEP_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_vs_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            "2D_SUEP_S1_vs_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),
             "2D_SUEP_nconst_vs_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(), 
-            "2D_ntracks_vs_SUEP_pt_avg_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(),  
-            "2D_SUEP_S1_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),
-            "2D_ntracks_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(),  
             "2D_SUEP_nconst_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(), 
-            "2D_SUEP_S1_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),
-            "2D_ntracks_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
+            "2D_SUEP_S1_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(), 
             "2D_SUEP_nconst_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
         })
+        
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
             output.update({
@@ -326,19 +319,14 @@ def create_output_file(label, abcd):
                 r+"SUEP_rho1_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             })
     
-    if label == 'CLi':
+    if label == 'ClusterInverted':
         output.update({
             # 2D histograms
             "2D_ISR_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_ISR_S1_vs_ISR_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
-            "2D_ISR_S1_vs_ISR_pt_avg_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),
             "2D_ISR_nconst_vs_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(), 
-            "2D_ntracks_vs_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(),  
-            "2D_ISR_S1_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),
-            "2D_ntracks_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),  
             "2D_ISR_nconst_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(), 
             "2D_ISR_S1_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="ISR_S1_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),
-            "2D_ntracks_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ntracks_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
             "2D_ISR_nconst_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
             
         })
@@ -359,7 +347,7 @@ def create_output_file(label, abcd):
                 r+"ISR_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho1_"+label, label=r"ISR $\rho_1$").Weight(),
             })
     
-    if label == 'ML':
+    if label == 'ResNet':
         for r in regions_list:
             output.update({
                 r+"resnet_SUEP_pred_"+label : Hist.new.Reg(100, 0, 1, name=r+"resnet_SUEP_pred_"+label, label="Resnet Output").Weight(),
