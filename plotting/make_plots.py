@@ -1,4 +1,4 @@
-#Make plots for SUEP analysis. Reads in hdf5 files and outputs to pickle and root files
+# Make plots for SUEP analysis. Reads in hdf5 files and outputs to pickle and root files
 import os, sys, subprocess
 import pandas as pd 
 import numpy as np
@@ -13,6 +13,7 @@ from collections import defaultdict
 
 #Import our own functions
 import pileup_weight
+from plot_utils import *
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
@@ -30,8 +31,13 @@ options = parser.parse_args()
 output_label = options.output
 redirector = "root://t3serv017.mit.edu/"
 
-# ABCD methods
-# include lower and upper bounds for ALL regions
+"""
+Define output plotting methods, each draws from an input_method (outputs of SUEPCoffea),
+and can have its own selections, ABCD regions, and signal regions.
+Multiple label_out's can be defined for the same input method, as different
+selections and ABCD methods can be applied.
+N.B.: Include lower and upper bounds for all ABCD regions.
+"""
 config = {
     'ISRRemoval' : {
         'input_method' : 'IRM',
@@ -93,13 +99,9 @@ def plot(df, output, abcd, label_out):
     INPUTS:
         df: input DataFrame.
         output: dictionary of histograms.
-        
         abcd: definitions of ABCD regions, signal region, event selections.
-        
-        label_out: label associated with the output method (e.g. "ISRRemoval") as used in the
-                   output dictionary, the selections, and the abcd dict. i.e., multiple
-                   label_out's can be defined for the same input label, as different
-                   selections and ABCD methods can be applied to the same input method.
+        label_out: label associated with the output (e.g. "ISRRemoval"), as keys in 
+                   the config dictionary.
         
     OUTPUTS: 
         output: now with updated histograms.
@@ -447,9 +449,9 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     
-    for label_out, abcd in config.items()
-        output.update(create_output_file(label_out, abcd))
-        output = plot(df.copy(), output, abcd, label_out)
+    for label_out, config_out in config.items()
+        output.update(create_output_file(label_out, config_out))
+        output = plot(df.copy(), output, config_out, label_out)
         
     #####################################################################################
     # ---- End
