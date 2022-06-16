@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import pickle
 import boost_histogram as bh
+import pandas as pd
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -36,7 +37,7 @@ def h5load(ifile, label):
                 data = store[label] 
                 metadata = store.get_storer(label).attrs.metadata
                 return data, metadata
-        
+
             except KeyError:
                 print("No key",label,ifile)
                 return 0, 0
