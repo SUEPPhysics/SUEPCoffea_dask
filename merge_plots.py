@@ -32,7 +32,7 @@ tag = options.tag
 dataset = options.dataset
 redirector = "root://t3serv017.mit.edu/"
 dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,tag,dataset)
-outDir = dataDir + "/merged/"
+outDir = dataDir + "/merged2/"
 
 # create output dir
 subprocess.run(["xrdfs",redirector,"mkdir",outDir])
@@ -57,10 +57,10 @@ def move(infile, outfile):
     result = subprocess.run(["xrdcp","-s",infile,outfile,'-f'])
     return result 
 
-def time_limited_move(infile, outfile, time_limit, max_attempts=5):
+def time_limited_move(infile, outfile, time_limit=60, max_attempts=5):
     # Make max_attempts to move a file, each attempt within a time_limit
     attempt = 0
-    while attempts < max_attempts:
+    while attempt < max_attempts:
         q = multiprocessing.Queue()
         p = multiprocessing.Process(target=move, name="move_"+file, args=(infile, outfile))
         p.start()
@@ -93,9 +93,9 @@ for ifile, file in enumerate(tqdm(files)):
     if os.path.exists(dataset+'.hdf5'): subprocess.run(['rm',dataset+'.hdf5'])
     xrd_file = redirector + file
     
-    # FIXME: sometimes, if this script is running for a while,
-    # xrdcp starts to hang for too long, so we limit it
-    result = time_limited_move(xrd_file, dataset+'.hdf5', time_limit=60, attempts=5)
+    # If this script is running for a while, some xrdcp start to hang for too long, 
+    # so we re-attempt it a couple times before quitting
+    result = time_limited_move(xrd_file, dataset+'.hdf5', time_limit=60, max_attempts=5)
     if result==0: sys.exit("Something messed up with file "+xrd_file)
 
     df, metadata = h5load(dataset+'.hdf5', 'vars') 
@@ -126,9 +126,8 @@ for ifile, file in enumerate(tqdm(files)):
         save_dfs(df_tot, output_file)
         print("xrdcp {} {}".format(output_file, redirector+outDir))
         
-        # allow a couple resubmissions: found that sometimes, for these large files,
-        # some failures can happen.
-        result = time_limited_move(output_file, redirector+outDir, time_limit=1e5, attempts=3)
+        # Allow a couple resubmissions in case of xrootd failures
+        result = time_limited_move(output_file, redirector+outDir, time_limit=600, max_attempts=3)
         if result==0: print("Something messed up with file "+xrd_file)
         else: subprocess.run(['rm',output_file])
         i_out += 1
@@ -139,6 +138,7 @@ for ifile, file in enumerate(tqdm(files)):
 output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
 save_dfs(df_tot, output_file)
 print("xrdcp {} {}".format(output_file, redirector+outDir))
-result = time_limited_move(output_file, redirector+outDir, time_limit=1e5, attempts=3)
+# Allow a couple resubmissions in case of xrootd failures
+result = time_limited_move(output_file, redirector+outDir, time_limit=600, max_attempts=3)
 if result==0: print("Something messed up with file "+xrd_file)
 else: subprocess.run(['rm',output_file])

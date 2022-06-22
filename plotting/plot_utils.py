@@ -278,6 +278,7 @@ def plot_ratio_regions(plots, plot_label,
                regions,
                rebin=-1, 
                lumi1=1, lumi2=1, 
+               density=False,
                xlim='default', 
                log=True):
 
@@ -293,6 +294,10 @@ def plot_ratio_regions(plots, plot_label,
     for i,r in enumerate(regions):
         h1 = plots[sample1][plot_label.replace("A_", r+"_")]
         h2 = plots[sample2][plot_label.replace("A_", r+"_")]
+        
+        if density:
+            h1 /= h1.sum().value
+            h2 /= h2.sum().value
         
         y1, x1 = h1.to_numpy()
         x1 = x1[:-1]
