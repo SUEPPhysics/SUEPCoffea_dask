@@ -30,17 +30,18 @@ def read_filelist(file):
         lines = [l.split('/')[-1].strip('\n') for l in lines]
     return lines
 
-QCD_HT_2018_scout = read_filelist('../filelist/list_2018_scout_MC.txt')
-SUEP = [f for f in read_filelist('../filelist/list_2018_MC_A01.txt') if 'SUEP' in f]
-QCD_HT_2018 = [f for f in read_filelist('../filelist/list_2018_MC_A01.txt') if 'QCD_HT' in f]
-QCD_HT_2017 = [f for f in read_filelist('../filelist/list_2017_MC_A01.txt') if 'QCD_HT' in f]
-QCD_HT_2016 = [f for f in read_filelist('../filelist/list_2016_MC_A01.txt') if 'QCD_HT' in f]
-QCD_Pt_2018 = [f for f in read_filelist('../filelist/list_2018_MC_A01.txt') if 'QCD_Pt' in f]
-QCD_Pt_2017 = [f for f in read_filelist('../filelist/list_2017_MC_A01.txt') if 'QCD_Pt' in f]
-QCD_Pt_2016 = [f for f in read_filelist('../filelist/list_2016_MC_A01.txt') if 'QCD_Pt' in f]
-data_2018 = read_filelist('../filelist/list_2018_data_A01.txt')
-data_2017 = read_filelist('../filelist/list_2017_data_A01.txt')
-data_2016 = read_filelist('../filelist/list_2016_data_A01.txt')
+QCD_HT_2018_scout = read_filelist('filelist/list_2018_scout_MC.txt')
+data_2018_scout = read_filelist('filelist/list_2018_scout_data.txt')
+SUEP = [f for f in read_filelist('filelist/list_2018_MC_A01.txt') if 'SUEP' in f]
+QCD_HT_2018 = [f for f in read_filelist('filelist/list_2018_MC_A01.txt') if 'QCD_HT' in f]
+QCD_HT_2017 = [f for f in read_filelist('filelist/list_2017_MC_A01.txt') if 'QCD_HT' in f]
+QCD_HT_2016 = [f for f in read_filelist('filelist/list_2016_MC_A01.txt') if 'QCD_HT' in f]
+QCD_Pt_2018 = [f for f in read_filelist('filelist/list_2018_MC_A01.txt') if 'QCD_Pt' in f]
+QCD_Pt_2017 = [f for f in read_filelist('filelist/list_2017_MC_A01.txt') if 'QCD_Pt' in f]
+QCD_Pt_2016 = [f for f in read_filelist('filelist/list_2016_MC_A01.txt') if 'QCD_Pt' in f]
+data_2018 = read_filelist('filelist/list_2018_data_A01.txt')
+data_2017 = read_filelist('filelist/list_2017_data_A01.txt')
+data_2016 = read_filelist('filelist/list_2016_data_A01.txt')
 
 results = []
 start = time.time()
@@ -48,15 +49,18 @@ start = time.time()
 # for sample in data_2018:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 0)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
+for sample in data_2018_scout:
+    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 0)
+    results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_2018:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
 #     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_HT_2018:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
 #     results.append(pool.apply_async(call_makeplots, (cmd,)))
-for sample in QCD_HT_2018_scout:
-    cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
-    results.append(pool.apply_async(call_makeplots, (cmd,))) 
+# for sample in QCD_HT_2018_scout:
+#     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
+#     results.append(pool.apply_async(call_makeplots, (cmd,))) 
 # for sample in QCD_HT_2017:
 #     cmd = 'python3 merge_plots.py --tag={} --dataset={} --isMC={}'.format(options.tag, sample, 1)
 #     results.append(pool.apply_async(call_makeplots, (cmd,)))
