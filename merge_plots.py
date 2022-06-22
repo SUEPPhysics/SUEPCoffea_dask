@@ -1,5 +1,6 @@
 import pandas as pd
 import sys, os, glob
+import multiprocessing
 import subprocess
 import getpass
 import argparse
@@ -51,7 +52,38 @@ def save_dfs(df_tot, output):
     store.put('vars', df_tot)
     store.get_storer('vars').attrs.metadata = metadata_tot
     store.close()
-    
+
+def move(infile, outfile):
+    result = subprocess.run(["xrdcp","-s",infile,outfile,'-f'])
+    return result 
+
+def time_limited_move(infile, outfile, time_limit, max_attempts=5):
+    # Make max_attempts to move a file, each attempt within a time_limit
+    attempt = 0
+    while attempts < max_attempts:
+        q = multiprocessing.Queue()
+        p = multiprocessing.Process(target=move, name="move_"+file, args=(infile, outfile))
+        p.start()
+        # Wait a maximum of time_limit seconds for foo
+        # Usage: join([timeout in seconds])
+        p.join(time_limit)
+        # If thread is active
+        if p.is_alive():
+            print("TIME ERROR", file, "taking too long to be transferred")
+            p.terminate()
+            p.join()
+            attempt += 1  
+        # thread finished
+        else:
+            returncode = q.get()
+            # something failed in the transfer
+            if returncode != 0:
+                print("XRootD ERROR:", returncode, "for file", infile, "to", outfile)
+                attempt += 1  
+            # thread finished and everything worked
+            else:
+                return 1
+    return 0
 
 df_tot = 0
 metadata_tot = 0
@@ -60,8 +92,12 @@ for ifile, file in enumerate(tqdm(files)):
             
     if os.path.exists(dataset+'.hdf5'): subprocess.run(['rm',dataset+'.hdf5'])
     xrd_file = redirector + file
-    subprocess.run(["xrdcp","-s",xrd_file,dataset+".hdf5"])
     
+    # FIXME: sometimes, if this script is running for a while,
+    # xrdcp starts to hang for too long, so we limit it
+    result = time_limited_move(xrd_file, dataset+'.hdf5', time_limit=60, attempts=5)
+    if result==0: sys.exit("Something messed up with file "+xrd_file)
+
     df, metadata = h5load(dataset+'.hdf5', 'vars') 
     
     # no need to add empty ones
@@ -89,8 +125,12 @@ for ifile, file in enumerate(tqdm(files)):
         output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
         save_dfs(df_tot, output_file)
         print("xrdcp {} {}".format(output_file, redirector+outDir))
-        os.system("xrdcp {} {}".format(output_file, redirector+outDir))
-        subprocess.run(['rm',output_file])
+        
+        # allow a couple resubmissions: found that sometimes, for these large files,
+        # some failures can happen.
+        result = time_limited_move(output_file, redirector+outDir, time_limit=1e5, attempts=3)
+        if result==0: print("Something messed up with file "+xrd_file)
+        else: subprocess.run(['rm',output_file])
         i_out += 1
         df_tot = 0
         metadata_tot = 0
@@ -99,5 +139,6 @@ for ifile, file in enumerate(tqdm(files)):
 output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
 save_dfs(df_tot, output_file)
 print("xrdcp {} {}".format(output_file, redirector+outDir))
-os.system("xrdcp {} {}".format(output_file, redirector+outDir))
-subprocess.run(['rm',output_file])
+result = time_limited_move(output_file, redirector+outDir, time_limit=1e5, attempts=3)
+if result==0: print("Something messed up with file "+xrd_file)
+else: subprocess.run(['rm',output_file])
