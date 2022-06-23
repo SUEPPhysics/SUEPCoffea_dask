@@ -32,7 +32,7 @@ tag = options.tag
 dataset = options.dataset
 redirector = "root://t3serv017.mit.edu/"
 dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,tag,dataset)
-outDir = dataDir + "/merged2/"
+outDir = dataDir + "/merged/"
 
 # create output dir
 subprocess.run(["xrdfs",redirector,"mkdir",outDir])
