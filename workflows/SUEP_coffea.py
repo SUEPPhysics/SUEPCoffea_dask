@@ -264,7 +264,9 @@ class SUEP_cluster(processor.ProcessorABC):
         ]
         columns_CL = [c.replace("IRM", "CL") for c in columns_IRM]
         if self.isMC: columns_CL += [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in columns_IRM]
-        columns = columns_IRM + columns_CL
+        columns_CO = [c.replace("IRM", "CO") for c in columns_IRM]
+        if self.isMC: columns_CO += [c.replace("IRM", "CO".replace("SUEP", "ISR")) for c in columns_IRM]
+        columns = columns_IRM + columns_CL + columns_CO
                 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
@@ -279,7 +281,7 @@ class SUEP_cluster(processor.ProcessorABC):
             for c in columns: out_vars[c] = np.nan
             save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
-
+        
         # order the reclustered jets by pT (will take top 2 for ISR removal method)
         highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
         jets_pTsorted = ak_inclusive_jets[highpt_jet]
@@ -329,44 +331,44 @@ class SUEP_cluster(processor.ProcessorABC):
         if not any(oneIRMtrackCut):
             print("No events in ISR Removal Method, oneIRMtrackCut.")
             for c in columns_IRM: out_vars[c] = np.nan
-            save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
-            return output
-        
-        #remove the events left with one track
-        SUEP_tracks_b_IRM = SUEP_tracks_b[oneIRMtrackCut]
-        ISR_tracks_b_IRM = ISR_tracks_b[oneIRMtrackCut]
-        SUEP_cand_IRM = SUEP_cand[oneIRMtrackCut]
-        ISR_cand_IRM = ISR_cand[oneIRMtrackCut]        
-        tracks_IRM = tracks[oneIRMtrackCut]
-        indices_IRM = indices[oneIRMtrackCut]
+            # save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            # return output
+        else:
+            #remove the events left with one track
+            SUEP_tracks_b_IRM = SUEP_tracks_b[oneIRMtrackCut]
+            ISR_tracks_b_IRM = ISR_tracks_b[oneIRMtrackCut]
+            SUEP_cand_IRM = SUEP_cand[oneIRMtrackCut]
+            ISR_cand_IRM = ISR_cand[oneIRMtrackCut]        
+            tracks_IRM = tracks[oneIRMtrackCut]
+            indices_IRM = indices[oneIRMtrackCut]
 
-        out_vars.loc[indices_IRM, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand_IRM.deltaphi(ISR_cand_IRM)), axis=-1)
-        
-        # SUEP jet variables
-        eigs = sphericity(self, SUEP_tracks_b_IRM,1.0) #Set r=1.0 for IRC safe
-        out_vars.loc[indices_IRM, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b_IRM)
-        out_vars.loc[indices_IRM, "SUEP_pt_avg_b_IRM"] = ak.mean(SUEP_tracks_b_IRM.pt, axis=-1)
-        out_vars.loc[indices_IRM, "SUEP_pt_mean_scaled_IRM"] = ak.mean(SUEP_tracks_b_IRM.pt, axis=-1)/ak.max(SUEP_tracks_b_IRM.pt, axis=-1)
-        out_vars.loc[indices_IRM, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
-       
-        # unboost for these
-        SUEP_tracks_IRM = SUEP_tracks_b_IRM.boost_p4(SUEP_cand_IRM)
-        out_vars.loc[indices_IRM, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks_IRM.pt, axis=-1)
-        deltaR = SUEP_tracks_IRM.deltaR(SUEP_cand_IRM)
-        out_vars.loc[indices_IRM, "SUEP_rho0_IRM"] = rho(self, 0, SUEP_cand_IRM, SUEP_tracks_IRM, deltaR)
-        out_vars.loc[indices_IRM, "SUEP_rho1_IRM"] = rho(self, 1, SUEP_cand_IRM, SUEP_tracks_IRM, deltaR)
-        
-        # redefine the jets using the tracks as selected by IRM
-        SUEP = ak.zip({
-            "px": ak.sum(SUEP_tracks_IRM.px, axis=-1),
-            "py": ak.sum(SUEP_tracks_IRM.py, axis=-1),
-            "pz": ak.sum(SUEP_tracks_IRM.pz, axis=-1),
-            "energy": ak.sum(SUEP_tracks_IRM.energy, axis=-1),
-        }, with_name="Momentum4D")
-        out_vars.loc[indices_IRM, "SUEP_pt_IRM"] = SUEP.pt
-        out_vars.loc[indices_IRM, "SUEP_eta_IRM"] = SUEP.eta
-        out_vars.loc[indices_IRM, "SUEP_phi_IRM"] = SUEP.phi
-        out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEP.mass
+            out_vars.loc[indices_IRM, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand_IRM.deltaphi(ISR_cand_IRM)), axis=-1)
+
+            # SUEP jet variables
+            eigs = sphericity(self, SUEP_tracks_b_IRM,1.0) #Set r=1.0 for IRC safe
+            out_vars.loc[indices_IRM, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b_IRM)
+            out_vars.loc[indices_IRM, "SUEP_pt_avg_b_IRM"] = ak.mean(SUEP_tracks_b_IRM.pt, axis=-1)
+            out_vars.loc[indices_IRM, "SUEP_pt_mean_scaled_IRM"] = ak.mean(SUEP_tracks_b_IRM.pt, axis=-1)/ak.max(SUEP_tracks_b_IRM.pt, axis=-1)
+            out_vars.loc[indices_IRM, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
+
+            # unboost for these
+            SUEP_tracks_IRM = SUEP_tracks_b_IRM.boost_p4(SUEP_cand_IRM)
+            out_vars.loc[indices_IRM, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks_IRM.pt, axis=-1)
+            deltaR = SUEP_tracks_IRM.deltaR(SUEP_cand_IRM)
+            out_vars.loc[indices_IRM, "SUEP_rho0_IRM"] = rho(self, 0, SUEP_cand_IRM, SUEP_tracks_IRM, deltaR)
+            out_vars.loc[indices_IRM, "SUEP_rho1_IRM"] = rho(self, 1, SUEP_cand_IRM, SUEP_tracks_IRM, deltaR)
+
+            # redefine the jets using the tracks as selected by IRM
+            SUEP = ak.zip({
+                "px": ak.sum(SUEP_tracks_IRM.px, axis=-1),
+                "py": ak.sum(SUEP_tracks_IRM.py, axis=-1),
+                "pz": ak.sum(SUEP_tracks_IRM.pz, axis=-1),
+                "energy": ak.sum(SUEP_tracks_IRM.energy, axis=-1),
+            }, with_name="Momentum4D")
+            out_vars.loc[indices_IRM, "SUEP_pt_IRM"] = SUEP.pt
+            out_vars.loc[indices_IRM, "SUEP_eta_IRM"] = SUEP.eta
+            out_vars.loc[indices_IRM, "SUEP_phi_IRM"] = SUEP.phi
+            out_vars.loc[indices_IRM, "SUEP_mass_IRM"] = SUEP.mass
         
         #####################################################################################
         # ---- Cluster Method (CL)
