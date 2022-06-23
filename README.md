@@ -48,6 +48,34 @@ python resubmit.py --tag=<tag name> --resubmits=10 --hours=1
 This will call monitor.py 10 times, resubmitting the files each time (i.e., -r=1) and waiting 1 hour between each call. N.B.: all jobs that are still running after the number of hours specified will be removed.
   
   
+### (Optional) Merge hdf5 files
+Once you have produced the ntuples, your next step it to head to `plotting/` and make plots. However, since there are many hdf5 files for each dataset, reading in a large amount of files can be slow; we can thus merge these hdf5 files together into larger ones to reduce the amount of files to read in. This can be done using `merge_plots.py`, which is ran on one dataset, and `merge_all.py`, a wrapper for `merge_plots.py` to run it over many datasets. The syntax for this is
+```
+python merge_plots.py --dataset=<dataset> --tag=<tag> --isMC=<isMC>
+```
+N.B.: this is only set up to grab files from remote using XRootD, for now.
+And the wrapper,
+```
+python merge_all.py --tag=<tag>
+```
+N.B.: in the wrapper, you have to decide which sets of datasets you want to run by uncommenting the for loops.
+  
+### Example Workflow
+Explained here is an example workflow. Each of these scripts should have more descriptions in the README's throughout this repo, but this guide should better explain how they fit together. 
+  
+**Produce NTuples**
+1. Find datasets to run (specified in a .txt file in `filelist/`), and lists of the .root files for the datasets (usually in `/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00` as specified in `kraken_run.py`).
+2. Run `kraken_run.py` to submit these jobs to HTCondor. Make sure to set the correct output and log directories in the python script.
+3. These usually take a couple hours, which you can monitor using HTCondor. We don't expect perfect efficiency here, as normal in batch submission systems, but 80-90% is typical: if it's much less, the errors need to be investigated using the logs produced (found in `logdir`, specified in step 2). You can check how many of them have successfully finished using `python monitor.py -r=0`. Once a good amount of them have finished running (succesfully or not), usually after a couple hours, kill the currently running jobs, and resubmit using `python monitor.py -r=1`.
+4. Repeat step 3. until you have achieved desired completion rate (suggested: >95% for MC, >99% for data).
+  
+**(Optional) Merge and Move NTuples**
+5. Merge the hdf5 files for faster plotting, see section above.
+6. Depending the way you have set it up, the output is on a remote filesystem, so move the hdf5 files (and/or the merged ones if you went through step 5), to a local filesystem for faster reading.
+  
+** Plotting **
+7. Run `plot_all.py` over all the desired datasets to produce histograms, and `plot.ipynb` to display them.
+  
 ### SUEP Coffea Scouting
  
 The setup for the scouting analysis is similar to the offline analysis. We must simply run the scouting uproot job through the following (Note you must be in the singularity).
