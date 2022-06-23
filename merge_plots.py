@@ -30,7 +30,7 @@ options = parser.parse_args()
 username = getpass.getuser()
 tag = options.tag
 dataset = options.dataset
-redirector = "root://t3serv017.mit.edu/"
+redirector = "root://t3btch065.mit.edu/"
 dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,tag,dataset)
 outDir = dataDir + "/merged/"
 
@@ -104,8 +104,15 @@ for ifile, file in enumerate(tqdm(files)):
     
     df, metadata = h5load(dataset+'.hdf5', 'vars')
     
-    # no need to add empty ones
+    # corrupted
     if type(df) == int: continue
+    
+    ### MERGE METADATA
+    if options.isMC:
+        if type(metadata_tot) == int: metadata_tot = metadata
+        else: metadata_tot['gensumweight'] += metadata['gensumweight']
+        
+    # don't need to add empty ones
     if 'empty' in list(df.keys()): 
         subprocess.run(['rm',dataset+'.hdf5'])    
         continue
@@ -116,11 +123,6 @@ for ifile, file in enumerate(tqdm(files)):
     ### MERGE DF VARS
     if type(df_tot) == int: df_tot = df
     else: df_tot = pd.concat((df_tot, df))
-    
-    ### MERGE METADATA
-    if options.isMC:
-        if type(metadata_tot) == int: metadata_tot = metadata
-        else: metadata_tot['gensumweight'] += metadata['gensumweight']
     
     subprocess.run(['rm',dataset+'.hdf5'])   
     
