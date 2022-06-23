@@ -73,7 +73,7 @@ Explained here is an example workflow. Each of these scripts should have more de
 5. Merge the hdf5 files for faster plotting, see section above.
 6. Depending the way you have set it up, the output is on a remote filesystem, so move the hdf5 files (and/or the merged ones if you went through step 5), to a local filesystem for faster reading.
   
-** Plotting **
+**Plotting**
 7. Run `plot_all.py` over all the desired datasets to produce histograms, and `plot.ipynb` to display them.
   
 ### SUEP Coffea Scouting
