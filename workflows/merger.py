@@ -43,16 +43,16 @@ def merge(options):
             print("Something screwed up.")
             sys.exit()
             
+        ### MERGE METADATA
+        if metadata_tot is None: metadata_tot = metadata
+        elif options.isMC: metadata_tot['gensumweight'] += metadata['gensumweight']
+            
         # no need to add empty ones
         if 'empty' in list(df.keys()): continue
         
         ### MERGE DF
         if df_tot is None: df_tot = df
-        else: df_tot = pd.concat((df_tot, df))
-        
-        ### MERGE METADATA
-        if metadata_tot is None: metadata_tot = metadata
-        elif options.isMC: metadata_tot['gensumweight'] += metadata['gensumweight']
+        else: df_tot = pd.concat((df_tot, df))   
         
     # SAVE OUTPUTS
     if df_tot is None: 
