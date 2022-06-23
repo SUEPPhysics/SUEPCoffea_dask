@@ -53,16 +53,20 @@ def save_dfs(df_tot, output):
     store.get_storer('vars').attrs.metadata = metadata_tot
     store.close()
 
-def move(infile, outfile):
+def move(q, infile, outfile):
+    returncode = q.get()
     result = subprocess.run(["xrdcp","-s",infile,outfile,'-f'])
-    return result 
+    q.put(result.returncode)
+    #return result 
 
 def time_limited_move(infile, outfile, time_limit=60, max_attempts=5):
     # Make max_attempts to move a file, each attempt within a time_limit
     attempt = 0
     while attempt < max_attempts:
-        q = multiprocessing.Queue()
-        p = multiprocessing.Process(target=move, name="move_"+file, args=(infile, outfile))
+        returncode = -1
+        q = multiprocessing.Manager().Queue()
+        q.put(returncode)
+        p = multiprocessing.Process(target=move, name="move_"+file, args=(q, infile, outfile))
         p.start()
         # Wait a maximum of time_limit seconds for foo
         # Usage: join([timeout in seconds])
@@ -92,13 +96,13 @@ for ifile, file in enumerate(tqdm(files)):
             
     if os.path.exists(dataset+'.hdf5'): subprocess.run(['rm',dataset+'.hdf5'])
     xrd_file = redirector + file
-    
+        
     # If this script is running for a while, some xrdcp start to hang for too long, 
     # so we re-attempt it a couple times before quitting
-    result = time_limited_move(xrd_file, dataset+'.hdf5', time_limit=60, max_attempts=5)
+    result = time_limited_move(xrd_file, dataset+'.hdf5', time_limit=120, max_attempts=3)
     if result==0: sys.exit("Something messed up with file "+xrd_file)
-
-    df, metadata = h5load(dataset+'.hdf5', 'vars') 
+    
+    df, metadata = h5load(dataset+'.hdf5', 'vars')
     
     # no need to add empty ones
     if type(df) == int: continue
