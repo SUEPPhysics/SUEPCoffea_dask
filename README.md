@@ -2,7 +2,7 @@
 
 This code runs the SUEP analysis using the coffea framework. We use fastjet with awkward array inputs for jet clustering.
 
-## to run the producer
+## Run the Producer
 
 ```bash
 python3 condor_SUEP_WS.py --isMC=0/1 --era=201X --dataset=<dataset> --infile=XXX.root
@@ -27,7 +27,7 @@ The kraken_run.py file which will submit Condor jobs for all the files in specif
 ```
 python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --input=filelist/list_2018_MC_A01.txt 
 ```
-The submission will name a directory in the output directory after the tage name you input. If the tag already exists use the ```--force``` option if you are trying to resubmit/overwrite.
+The submission will name a directory in the output directory after the tag name you input. If the tag already exists use the ```--force``` option if you are trying to resubmit/overwrite. You will need to define the output and log directories in the script itself.
 
 Note that this submission will look for the dataset xsec in xsections_<era>.yaml.
   
