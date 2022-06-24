@@ -199,16 +199,14 @@ def plot2d(h, ax, log=False, cmap='RdYlBu'):
 #     return ax1, ax2
 
 def plot_ratio(h1, h2, 
-               plot_label, label1, label2, 
+               plot_label=None, 
+               label1=None, label2=None, 
                rebin=-1, 
                lumi1=1, lumi2=1, 
                xlim='default', 
                log=True):
 
     #Set up variables for the stacked histogram
-    # plt.figure(figsize=(12,10))
-    # plt.gcf().subplots_adjust(bottom=0.15, left=0.17)
-    # ax1 = plt.subplot2grid((4,1), (0,0),rowspan=2)
     fig = plt.figure(figsize=(12,10))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4,1), (0,0),rowspan=2)
@@ -249,7 +247,6 @@ def plot_ratio(h1, h2,
         ax1.set_xlim([xmin - x_range*0.25, xmax + x_range*0.25])
  
     ax1.set_ylabel("Events", y=1, ha='right')
-    ax1.legend()
 
     ax2 = plt.subplot2grid((4,1), (2,0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
@@ -266,6 +263,8 @@ def plot_ratio(h1, h2,
     ax2.axhline(1, ls="--", color='gray')
     ax2.set_ylim(0.4,1.6)
     ax2.set_ylabel("Ratio", y=1, ha='right')
+    
+    if plot_label is None: plot_label = h1.axes[0].label
     ax2.set_xlabel(plot_label, y=1)
     
     residuals = ratios - 1
