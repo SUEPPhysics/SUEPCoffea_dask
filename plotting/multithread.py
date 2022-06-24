@@ -2,6 +2,7 @@ import os
 import subprocess
 import shlex
 import argparse
+import getpass
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 import time
@@ -18,10 +19,16 @@ parser.add_argument('--weights', type=str, default='None', help="Pass the filena
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 options = parser.parse_args()
 
+
+working_directory = '/work/submit/{}/dummy_directory321'.format(getpass.getuser())
+os.system('mkdir {}'.format(working_directory))
+os.system('cp * {}/.'.format(working_directory))
+
+
 def call_process(cmd):
     """ This runs in a separate thread. """
     print("----[%] :", cmd)
-    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory)
     out, err = p.communicate()
     return (out, err)
 
@@ -62,3 +69,4 @@ for result in results:
         print() 
 end = time.time()
 print("All done! merge_all.py took",round(end - start),"seconds to run.")
+os.system('rm -rf {}'.format(working_directory))
