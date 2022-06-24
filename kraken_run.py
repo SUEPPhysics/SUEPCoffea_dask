@@ -1,7 +1,6 @@
 import os, sys
 import argparse
 import logging
-import pwd
 import subprocess
 import shutil
 import getpass

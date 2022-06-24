@@ -130,73 +130,6 @@ def plot2d(h, ax, log=False, cmap='RdYlBu'):
     ax.set_ylabel(h.axes[1].label)
     fig.colorbar(mesh)
     
-# def plot_ratio(h1, h2, 
-#                plot_label, label1, label2, 
-#                rebin=-1, 
-#                lumi1=1, lumi2=1, 
-#                xlim='default', 
-#                log=True):
-
-#     #Set up variables for the stacked histogram
-#     plt.figure(figsize=(12,10))
-#     plt.gcf().subplots_adjust(bottom=0.15, left=0.17)
-#     ax1 = plt.subplot2grid((4,1), (0,0),rowspan=2)
-
-#     y1, x1 = h1.to_numpy()
-#     y1 = y1*lumi1
-#     x1 = x1[:-1]
-#     y1_errs = np.sqrt(h1.variances())*lumi1
-#     if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
-#     ax1.step(x1, y1, color='maroon',label=label1, where='mid')
-#     ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
-
-#     y2, x2 = h2.to_numpy()
-#     y2 = y2*lumi2
-#     x2 = x2[:-1]
-#     y2_errs = np.sqrt(h2.variances())*lumi2
-#     if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
-#     ax1.step(x2, y2, color='blue',label=label2, where= 'mid')
-#     ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
-    
-#     #Set parameters that will be used to make the plots prettier
-#     if log: ax1.set_yscale("log")
-#     ymax = max([max(y1), max(y2)])*1.5
-#     ymin = min([min(y1), min(y2)])*0.5
-#     ax1.set_ylim([ymin, ymax])
-#     if type(xlim) is not str:
-#         xmin = xlim[0]
-#         xmax = xlim[1]
-#         ax1.set_xlim([xmin,xmax])
-#     else:
-#         xmin1 = min(x1[y1>0]) if len(x1[y1>0]) else 0
-#         xmin2 = min(x2[y2>0]) if len(x2[y2>0]) else 0
-#         xmax1 = max(x1[y1>0]) if len(x1[y1>0]) else 0
-#         xmax2 = max(x2[y2>0]) if len(x2[y2>0]) else 0
-#         xmin = max([xmin1, xmin2])
-#         xmax = max([xmax1, xmax2])
-#         x_range = xmax - xmin
-#         ax1.set_xlim([xmin - x_range*0.25, xmax + x_range*0.25])
- 
-#     ax1.set_ylabel("Events", y=1, ha='right')
-#     ax1.legend()
-
-#     ax2 = plt.subplot2grid((4,1), (2,0), sharex=ax1)
-#     plt.setp(ax1.get_xticklabels(), visible=False)
-    
-#     # calculate the upper and lower errors
-#     # suppress errors where the denonminator is 0
-#     y1 = np.where(y1>0, y1, -1)
-#     yerrors_up = np.where(y1>0, y2/y1 - (y2-y2_errs)/(y1+y1_errs), np.nan)
-#     yerrors_low = np.where(y1>0, (y2+y2_errs)/(y1-y1_errs) - y2/y1, np.nan)
-#     yerrors = [yerrors_up, yerrors_low]
-
-#     ax2.errorbar(x1,np.where((y2>0) & (y1>0),y2/y1,1),yerr=yerrors, color="black", fmt="", drawstyle='steps-mid')
-#     ax2.axhline(1, ls="--", color='gray')
-#     ax2.set_ylim(0.4,1.6)
-#     ax2.set_ylabel("Ratio", y=1, ha='right')
-#     ax2.set_xlabel(plot_label, y=1)
-    
-#     return ax1, ax2
 
 def plot_ratio(h1, h2, 
                plot_label, label1, label2, 
@@ -278,6 +211,7 @@ def plot_ratio_regions(plots, plot_label,
                regions,
                rebin=-1, 
                lumi1=1, lumi2=1, 
+               density=False,
                xlim='default', 
                log=True):
 
@@ -293,6 +227,10 @@ def plot_ratio_regions(plots, plot_label,
     for i,r in enumerate(regions):
         h1 = plots[sample1][plot_label.replace("A_", r+"_")]
         h2 = plots[sample2][plot_label.replace("A_", r+"_")]
+        
+        if density:
+            h1 /= h1.sum().value
+            h2 /= h2.sum().value
         
         y1, x1 = h1.to_numpy()
         x1 = x1[:-1]
