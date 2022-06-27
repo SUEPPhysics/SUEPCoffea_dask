@@ -370,7 +370,7 @@ def create_output_file(label, abcd):
 # fill ABCD hists with dfs from hdf5 files
 nfailed = 0
 weight = 0
-fpickle =  open("outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
+fpickle =  open("/data/submit/bthornbe/outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {"labels":[]}
 
 ### Plotting loop #######################################################################
@@ -487,6 +487,6 @@ pickle.dump(output, fpickle)
 print("Number of files that failed to be read:", nfailed)
 
 # save to root
-with uproot.recreate("outputs/" + options.dataset+ "_" + output_label + '.root') as froot:
+with uproot.recreate("/data/submit/bthornbe/outputs/" + options.dataset+ "_" + output_label + '.root') as froot:
     for h, hist in output.items():
         froot[h] = hist
