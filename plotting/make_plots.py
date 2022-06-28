@@ -487,6 +487,6 @@ pickle.dump(output, fpickle)
 print("Number of files that failed to be read:", nfailed)
 
 # save to root
-with uproot.recreate("/data/submit/bthornbe/outputs/" + options.dataset+ "_" + output_label + '.root') as froot:
+with uproot.recreate("/data/submit/{}/outputs/{}_{}.root".format(username, options.dataset, output_label)) as froot:
     for h, hist in output.items():
         froot[h] = hist
