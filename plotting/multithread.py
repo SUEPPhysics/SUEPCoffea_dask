@@ -6,6 +6,8 @@ import getpass
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 import time
+import numpy as np
+from plot_utils import check_proxy
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-i"   , "--inputList" , type=str, default="data.txt" , help="input datasets", required=True)
@@ -20,7 +22,7 @@ parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp f
 options = parser.parse_args()
 
 
-working_directory = '/work/submit/{}/dummy_directory321'.format(getpass.getuser())
+working_directory = '/work/submit/{}/dummy_directory{}'.format(getpass.getuser(), np.random.randint(0,10000))
 os.system('mkdir {}'.format(working_directory))
 os.system('cp * {}/.'.format(working_directory))
 
@@ -43,6 +45,11 @@ with open(options.inputList, 'r') as f:
 
 results = []
 start = time.time()
+
+# Making sure that the proxy is good
+if options.xrootd: 
+    lifetime = check_proxy(time_min=10)
+    print("--- proxy lifetime is {} hours".format(round(lifetime,1)))
 
 for sample in input_list:
 

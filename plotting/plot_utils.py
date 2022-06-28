@@ -1,3 +1,5 @@
+import os
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -44,6 +46,41 @@ def h5load(ifile, label):
     except:
         print("Some error occurred", ifile)
         return 0, 0
+ 
+def check_proxy(time_min=100):
+    """
+    Checks for existance of proxy with at least time_min
+    left on it.
+    If it's inactive or below time_min, it will regenerate
+    it with 140 hours.
+    """
+    home_base  = os.environ['HOME']
+    proxy_base = 'x509up_u{}'.format(os.getuid())
+    proxy_copy = os.path.join(home_base,proxy_base)
+    regenerate_proxy = False
+    if not os.path.isfile(proxy_copy):
+        logging.warning('--- proxy file does not exist')
+        regenerate_proxy = True
+    else:
+        lifetime = subprocess.check_output(
+            ['voms-proxy-info', '--file', proxy_copy, '--timeleft']
+        )
+        lifetime = float(lifetime)
+        lifetime = lifetime / (60*60)
+        if lifetime < time_min:
+            logging.warning("--- proxy has expired !")
+            regenerate_proxy = True
+
+    if regenerate_proxy:
+        redone_proxy = False
+        while not redone_proxy:
+            status = os.system('voms-proxy-init -voms cms --hours=140')
+            lifetime = 140
+            if os.WEXITSTATUS(status) == 0:
+                redone_proxy = True
+        shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
+        
+    return lifetime
     
 def make_selection(df, variable, operator, value, apply=True):
     """
@@ -129,74 +166,6 @@ def plot2d(h, ax, log=False, cmap='RdYlBu'):
     ax.set_xlabel(h.axes[0].label)
     ax.set_ylabel(h.axes[1].label)
     fig.colorbar(mesh)
-    
-# def plot_ratio(h1, h2, 
-#                plot_label, label1, label2, 
-#                rebin=-1, 
-#                lumi1=1, lumi2=1, 
-#                xlim='default', 
-#                log=True):
-
-#     #Set up variables for the stacked histogram
-#     plt.figure(figsize=(12,10))
-#     plt.gcf().subplots_adjust(bottom=0.15, left=0.17)
-#     ax1 = plt.subplot2grid((4,1), (0,0),rowspan=2)
-
-#     y1, x1 = h1.to_numpy()
-#     y1 = y1*lumi1
-#     x1 = x1[:-1]
-#     y1_errs = np.sqrt(h1.variances())*lumi1
-#     if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
-#     ax1.step(x1, y1, color='maroon',label=label1, where='mid')
-#     ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
-
-#     y2, x2 = h2.to_numpy()
-#     y2 = y2*lumi2
-#     x2 = x2[:-1]
-#     y2_errs = np.sqrt(h2.variances())*lumi2
-#     if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
-#     ax1.step(x2, y2, color='blue',label=label2, where= 'mid')
-#     ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
-    
-#     #Set parameters that will be used to make the plots prettier
-#     if log: ax1.set_yscale("log")
-#     ymax = max([max(y1), max(y2)])*1.5
-#     ymin = min([min(y1), min(y2)])*0.5
-#     ax1.set_ylim([ymin, ymax])
-#     if type(xlim) is not str:
-#         xmin = xlim[0]
-#         xmax = xlim[1]
-#         ax1.set_xlim([xmin,xmax])
-#     else:
-#         xmin1 = min(x1[y1>0]) if len(x1[y1>0]) else 0
-#         xmin2 = min(x2[y2>0]) if len(x2[y2>0]) else 0
-#         xmax1 = max(x1[y1>0]) if len(x1[y1>0]) else 0
-#         xmax2 = max(x2[y2>0]) if len(x2[y2>0]) else 0
-#         xmin = max([xmin1, xmin2])
-#         xmax = max([xmax1, xmax2])
-#         x_range = xmax - xmin
-#         ax1.set_xlim([xmin - x_range*0.25, xmax + x_range*0.25])
- 
-#     ax1.set_ylabel("Events", y=1, ha='right')
-#     ax1.legend()
-
-#     ax2 = plt.subplot2grid((4,1), (2,0), sharex=ax1)
-#     plt.setp(ax1.get_xticklabels(), visible=False)
-    
-#     # calculate the upper and lower errors
-#     # suppress errors where the denonminator is 0
-#     y1 = np.where(y1>0, y1, -1)
-#     yerrors_up = np.where(y1>0, y2/y1 - (y2-y2_errs)/(y1+y1_errs), np.nan)
-#     yerrors_low = np.where(y1>0, (y2+y2_errs)/(y1-y1_errs) - y2/y1, np.nan)
-#     yerrors = [yerrors_up, yerrors_low]
-
-#     ax2.errorbar(x1,np.where((y2>0) & (y1>0),y2/y1,1),yerr=yerrors, color="black", fmt="", drawstyle='steps-mid')
-#     ax2.axhline(1, ls="--", color='gray')
-#     ax2.set_ylim(0.4,1.6)
-#     ax2.set_ylabel("Ratio", y=1, ha='right')
-#     ax2.set_xlabel(plot_label, y=1)
-    
-#     return ax1, ax2
 
 def plot_ratio(h1, h2, 
                plot_label=None, 
