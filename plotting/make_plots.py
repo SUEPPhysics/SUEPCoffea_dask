@@ -370,7 +370,7 @@ def create_output_file(label, abcd):
 # fill ABCD hists with dfs from hdf5 files
 nfailed = 0
 weight = 0
-fpickle =  open("/data/submit/bthornbe/outputs/" + options.dataset+ "_" + output_label + '.pkl', "wb")
+fpickle =  open("/data/submit/{}/outputs/{}_{}.pkl".format(username, options.dataset, output_label), "wb")
 output = {"labels":[]}
 
 ### Plotting loop #######################################################################
