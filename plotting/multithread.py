@@ -14,7 +14,7 @@ parser.add_argument("-i"   , "--inputList" , type=str, default="data.txt" , help
 parser.add_argument("-c"   , "--code" , type=str, default="None" , help="Which code to multithread", required=True)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="Production tag", required=True)
 parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
-parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
+parser.add_argument("-e"   , "--era"   , type=str, default="2018"     , help="")
 parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="")
 parser.add_argument("-o"   , "--output"   , type=str, default="IronMan"  , help="Output tag", required=False)
 parser.add_argument('--weights', type=str, default='None', help="Pass the filename of the weights, e.g. --weights weights.npy")
@@ -24,13 +24,13 @@ options = parser.parse_args()
 
 working_directory = '/work/submit/{}/dummy_directory{}'.format(getpass.getuser(), np.random.randint(0,10000))
 os.system('mkdir {}'.format(working_directory))
-os.system('cp * {}/.'.format(working_directory))
+os.system('cp -R ../* {}/.'.format(working_directory))
 
 
 def call_process(cmd):
     """ This runs in a separate thread. """
     print("----[%] :", cmd)
-    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory)
+    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory+'/plotting')
     out, err = p.communicate()
     return (out, err)
 
@@ -75,5 +75,6 @@ for result in results:
         print(" ----------------- ")
         print() 
 end = time.time()
-print("All done! merge_all.py took",round(end - start),"seconds to run.")
+
+print("All done! multithread.py took",round(end - start),"seconds to run.")
 os.system('rm -rf {}'.format(working_directory))
