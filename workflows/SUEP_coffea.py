@@ -477,7 +477,8 @@ class SUEP_cluster(processor.ProcessorABC):
         if not any(oneCOtrackCut):
             print("No events in Cone Method, oneCOtrackCut.")
             for c in columns_CO: out_vars[c] = np.nan
-            if self.isMC: for c in columns_CO_ISR: out_vars[c] = np.nan
+            if self.isMC: 
+                for c in columns_CO_ISR: out_vars[c] = np.nan
         else:
             #remove the events left with one track
             SUEP_tracks_CO = SUEP_tracks_CO[oneCOtrackCut]
