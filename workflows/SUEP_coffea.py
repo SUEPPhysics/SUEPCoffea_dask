@@ -104,7 +104,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "phi": events.PFcand.phi,
                 "mass": events.PFcand.mass
             }, with_name="Momentum4D")
-            cut = (events.PFcand.pt >= 0.7) & \
+            cut = (events.PFcand.pt >= 0.75) & \
                     (abs(events.PFcand.eta) <= 2.5) & \
                     (events.PFcand.vertex == 0) & \
                     (events.PFcand.q != 0)
