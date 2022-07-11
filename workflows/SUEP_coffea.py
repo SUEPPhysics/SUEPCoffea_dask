@@ -50,7 +50,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        if self.isMC and self.scouting==1: self.gensumweight = ak.count(events.PFcand.pt)
+        if self.isMC and self.scouting==1: self.gensumweight = ak.num(events.PFcand.pt,axis=0)
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # cut based on ak4 jets to replicate the trigger
