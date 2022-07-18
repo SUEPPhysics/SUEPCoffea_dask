@@ -220,36 +220,39 @@ class SUEP_cluster(processor.ProcessorABC):
  
         #####################################################################################
         # ---- ML Analysis
-        # Each event is converted into an input for the ML model. Using ONNX, we run
+        # Each event is converted into an input for the ML models. Using ONNX, we run
         # inference on each event to obtain a prediction of the class (SUEP or QCD).
         #####################################################################################
         
         #These lines control the inference from ML models. Conversion is done elsewhere
         #The inference skips the lost tracks for now. 
         inf_cands = Cleaned_cands
+        pred_dict = {}
+        models = ['model125']#Add to this list. There will be an output for each prediction in this list
+        for model in models:
+             pred_dict.update({model: np.ones(len(inf_cands))*np.nan})
         SUEP_pred = np.ones(len(inf_cands))*np.nan
+        ort_infs = {}
         if self.do_inf:    
-            ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
             options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
-            
-            # convert events to images and run inference in batches
-            # in order to avoid memory issues
+            for model in models:
+                  ort_infs.update({model: ort.InferenceSession('data/onnx_models/resnet_{}_{}.onnx'.format(model,self.era))})
+            # In order to avoid memory issues convert events to images and run inference in batches
             # also exploits the numba-compiled convert_to_images function
             batch_size = 100
             for i in range(0, len(inf_cands), batch_size):
-
                 if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
                 batch = inf_cands[i:i+batch_size]
                 imgs = convert_to_images(self, batch)
-                batch_resnet_jets = run_inference(self, imgs, ort_sess)
-                if i == 0: resnet_jets = batch_resnet_jets
-                else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
+                for model in models:
+                    batch_resnet_jets = run_inference(self, imgs, ort_infs[model])
+                    if i == 0: resnet_jets = batch_resnet_jets
+                    else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
+                    pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
 
-            # highest SUEP prediction per event
-            SUEP_pred = resnet_jets[:,1]
-                
-        out_vars["resnet_SUEP_pred_ML"] = SUEP_pred
+        for model in models:   
+            out_vars["resnet_SUEP_pred_{}".format(model)] = pred_dict[model]
                 
         #####################################################################################
         # ---- Cut Based Analysis
