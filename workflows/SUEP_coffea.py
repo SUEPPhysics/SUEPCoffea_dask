@@ -40,6 +40,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.phi_span = (-np.pi, np.pi)
         self.eta_scale = self.eta_pix/(self.eta_span[1]-self.eta_span[0])
         self.phi_scale = self.phi_pix/(self.phi_span[1]-self.phi_span[0])
+        self.models = ['model125']#Add to this list. There will be an output for each prediction in this list
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
@@ -228,14 +229,13 @@ class SUEP_cluster(processor.ProcessorABC):
         #The inference skips the lost tracks for now. 
         inf_cands = Cleaned_cands
         pred_dict = {}
-        models = ['model125']#Add to this list. There will be an output for each prediction in this list
-        for model in models:
+        for model in self.models:
              pred_dict.update({model: np.ones(len(inf_cands))*np.nan})
         ort_infs = {}
         if self.do_inf:    
             options = ort.SessionOptions() 
             options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
-            for model in models:
+            for model in self.models:
                   ort_infs.update({model: ort.InferenceSession('data/onnx_models/resnet_{}_{}.onnx'.format(model,self.era))})
             # In order to avoid memory issues convert events to images and run inference in batches
             # also exploits the numba-compiled convert_to_images function
@@ -244,13 +244,13 @@ class SUEP_cluster(processor.ProcessorABC):
                 if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
                 batch = inf_cands[i:i+batch_size]
                 imgs = convert_to_images(self, batch)
-                for model in models:
+                for model in self.models:
                     batch_resnet_jets = run_inference(self, imgs, ort_infs[model])
                     if i == 0: resnet_jets = batch_resnet_jets
                     else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
                     pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
 
-        for model in models:   
+        for model in self.models:   
             out_vars["resnet_SUEP_pred_{}".format(model)] = pred_dict[model]
                 
         #####################################################################################
