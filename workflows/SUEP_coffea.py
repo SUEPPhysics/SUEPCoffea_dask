@@ -231,7 +231,6 @@ class SUEP_cluster(processor.ProcessorABC):
         models = ['model125']#Add to this list. There will be an output for each prediction in this list
         for model in models:
              pred_dict.update({model: np.ones(len(inf_cands))*np.nan})
-        SUEP_pred = np.ones(len(inf_cands))*np.nan
         ort_infs = {}
         if self.do_inf:    
             options = ort.SessionOptions() 
