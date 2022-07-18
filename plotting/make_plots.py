@@ -49,7 +49,7 @@ config = {
         'yvar' : 'SUEP_nconst_IRM',
         'yvar_regions' : [10, 20, 40, 1000],
         'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
     },
     
     'Cluster' : {
@@ -60,18 +60,18 @@ config = {
         'yvar' : 'SUEP_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
-#     'ClusterInverted' : {
-#         'input_method' : 'CL',
-#         'xvar' : 'ISR_S1_CL',
-#         'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-#         'yvar' : 'ISR_nconst_CL',
-#         'yvar_regions' : [20, 40, 80, 1000],
-#         'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
-#         'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
-#     },
+    'ClusterInverted' : {
+        'input_method' : 'CL',
+        'xvar' : 'ISR_S1_CL',
+        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+        'yvar' : 'ISR_nconst_CL',
+        'yvar_regions' : [20, 40, 80, 1000],
+        'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
+    },
     
 #     'ResNet' : {
 #         'input_method' : 'ML',

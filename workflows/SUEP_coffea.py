@@ -4,7 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
-from coffea import hist, processor
+from coffea import processor
 from typing import List, Optional
 import awkward as ak
 import pandas as pd
@@ -50,7 +50,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        if self.isMC and self.scouting==1: self.gensumweight = ak.count(events.PFcand.pt)
+        if self.isMC and self.scouting==1: self.gensumweight = ak.num(events.PFcand.pt,axis=0)
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # cut based on ak4 jets to replicate the trigger
@@ -417,7 +417,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars.loc[indices_CL, "SUEP_mass_CL"] = SUEP_cand_CL.mass
         
         # inverted selection
-        if self.isMC:
+        if True:
 
             boost_ISR = ak.zip({
                 "px": ISR_cand_CL.px*-1,

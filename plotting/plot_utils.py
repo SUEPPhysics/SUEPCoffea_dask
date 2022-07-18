@@ -6,6 +6,8 @@ from collections import defaultdict
 import pickle
 import boost_histogram as bh
 import pandas as pd
+import logging
+import shutil
 
 default_colors = {
     'QCD': 'midnightblue',
