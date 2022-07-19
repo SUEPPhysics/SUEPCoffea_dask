@@ -55,7 +55,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.isMC and self.scouting==1: self.gensumweight = ak.num(events.PFcand.pt,axis=0)
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
-        if not self.isMC:
+        if not self.isMC and self.scouting!=1:
             if self.era == 2016:
                 LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt')
             elif self.era == 2017:
@@ -89,8 +89,8 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # apply trigger selection
         if self.scouting == 1:
-            events = events[(ht > 500)]
-            ak4jets = ak4jets[(ht > 500)]
+            events = events[(ht > 600)]
+            ak4jets = ak4jets[(ht > 600)]
         else:
             if self.era == 2016:
                 trigger = (events.HLT.PFHT900 == 1)
