@@ -432,7 +432,7 @@ class SUEP_cluster(processor.ProcessorABC):
         out_vars.loc[indices_CL, "SUEP_mass_CL"] = SUEP_cand_CL.mass
         
         # inverted selection
-        if self.isMC:
+        if True:
 
             boost_ISR = ak.zip({
                 "px": ISR_cand_CL.px*-1,

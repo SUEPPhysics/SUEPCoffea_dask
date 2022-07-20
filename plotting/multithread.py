@@ -26,11 +26,10 @@ working_directory = '/work/submit/{}/dummy_directory{}'.format(getpass.getuser()
 os.system('mkdir {}'.format(working_directory))
 os.system('cp -R ../* {}/.'.format(working_directory))
 
-
 def call_process(cmd):
     """ This runs in a separate thread. """
     print("----[%] :", cmd)
-    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory+'/plotting')
+    p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=working_directory+'/plotting/')
     out, err = p.communicate()
     return (out, err)
 

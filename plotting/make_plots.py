@@ -3,6 +3,7 @@ import os, sys, subprocess
 import pandas as pd 
 import numpy as np
 import argparse
+import getpass
 import uproot
 import getpass
 import pickle
@@ -30,6 +31,7 @@ options = parser.parse_args()
 
 # parameters for script
 output_label = options.output
+outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
 redirector = "root://t3serv017.mit.edu/"
 
 """
@@ -47,7 +49,7 @@ config = {
         'yvar' : 'SUEP_nconst_IRM',
         'yvar_regions' : [10, 20, 40, 1000],
         'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_IRM", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
     },
     
     'Cluster' : {
@@ -58,7 +60,7 @@ config = {
         'yvar' : 'SUEP_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_CL", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
     'ClusterInverted' : {
@@ -68,29 +70,29 @@ config = {
         'yvar' : 'ISR_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
+        'selections' : [['ht_tracker', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.35]]
     },
     
-    'ResNet' : {
-        'input_method' : 'ML',
-        'label_out' : 'ML',
-        'xvar' : 'resnet_SUEP_pred_ML',
-        'xvar_regions' : [0.0, 0.5, 1.0],
-        'yvar' : 'ntracks',
-        'yvar_regions' : [0, 100, 1000],
-        'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>',0]]
-    },
+#     'ResNet' : {
+#         'input_method' : 'ML',
+#         'label_out' : 'ML',
+#         'xvar' : 'resnet_SUEP_pred_ML',
+#         'xvar_regions' : [0.0, 0.5, 1.0],
+#         'yvar' : 'ntracks',
+#         'yvar_regions' : [0, 100, 1000],
+#         'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]],
+#         'selections' : [['ht_tracker', '>', 600], ['ntracks','>',0]]
+#     },
     
-    'Cone' : {
-        'input_method' : 'CO',
-        'xvar' : 'SUEP_S1_CO',
-        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-        'yvar' : 'SUEP_nconst_CO',
-        'yvar_regions' : [20, 40, 80, 1000],
-        'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]],
-        'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
-    } 
+#     'Cone' : {
+#         'input_method' : 'CO',
+#         'xvar' : 'SUEP_S1_CO',
+#         'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+#         'yvar' : 'SUEP_nconst_CO',
+#         'yvar_regions' : [20, 40, 80, 1000],
+#         'SR' : [['SUEP_S1_CO', '>=', 0.5], ['SUEP_nconst_CO', '>=', 80]],
+#         'selections' : [['ht_tracker', '>', 600], ['ntracks','>', 10], ["SUEP_S1_CO", ">=", 0.35]]
+#     } 
 }
 
 #############################################################################################################
@@ -370,7 +372,7 @@ def create_output_file(label, abcd):
 # fill ABCD hists with dfs from hdf5 files
 nfailed = 0
 weight = 0
-fpickle =  open("/data/submit/{}/outputs/{}_{}.pkl".format(username, options.dataset, output_label), "wb")
+fpickle =  open(outDir + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {"labels":[]}
 
 ### Plotting loop #######################################################################
@@ -411,7 +413,7 @@ for ifile in tqdm(files):
     df['event_weight'] = event_weight
     
     # pileup weights
-    if options.isMC == 1 and options.scouting != 1:
+    if options.isMC == 1 and options.scouting != 1 and False:
         Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
         pu = puweights[Pileup_nTrueInt]
         df['event_weight'] *= pu
@@ -487,6 +489,6 @@ pickle.dump(output, fpickle)
 print("Number of files that failed to be read:", nfailed)
 
 # save to root
-with uproot.recreate("/data/submit/{}/outputs/{}_{}.root".format(username, options.dataset, output_label)) as froot:
+with uproot.recreate(outDir + options.dataset+ "_" + output_label + '.root') as froot:
     for h, hist in output.items():
         froot[h] = hist

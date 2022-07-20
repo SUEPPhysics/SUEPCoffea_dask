@@ -6,6 +6,8 @@ from collections import defaultdict
 import pickle
 import boost_histogram as bh
 import pandas as pd
+import logging
+import shutil
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -30,6 +32,83 @@ lumis = {
     '2017': 41.5*1000,
     '2018': 61000
 }
+
+# load file(s)
+def loader(infile_names):
+    plots = {}
+    for infile_name in infile_names:
+        if not os.path.isfile(infile_name): 
+            print("WARNING:",infile_name,"doesn't exist")
+            continue
+        elif ".pkl" not in infile_name: continue
+        elif "QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-pilot" in infile_name: continue
+
+        # sets the lumi based on year
+        lumi = 1
+        if ('20UL16MiniAODv2' in infile_name):
+            lumi = lumis['2016']
+        if ('20UL17MiniAODv2' in infile_name):
+            lumi = lumis['2017']
+        if ('20UL16MiniAODAPVv2' in infile_name):
+            lumi = lumis['2016_apv']
+        if ('20UL18' in infile_name):
+            lumi = lumis['2018']
+        if 'SUEP-m' in infile_name:
+            lumi = lumis['2018']
+        if 'JetHT+Run' in infile_name:
+            lumi = 1
+
+        # exclude low bins
+        if '50to100' in infile_name: continue
+        # if '100to200' in infile_name: continue
+        # if '200to300' in infile_name: continue
+        # if '300to500' in infile_name: continue
+        # if '500to700' in infile_name: continue
+        # if '700to1000' in infile_name: continue
+
+        # if '15to30' in infile_name: continue
+        # if '30to50' in infile_name: continue
+        # if '50to80' in infile_name: continue
+        # if '80to120' in infile_name: continue
+        # if '120to170' in infile_name: continue
+        # if '170to300' in infile_name: continue
+
+        # plots[sample] sample is filled here
+        if 'QCD_Pt' in infile_name:
+            sample = 'QCD_Pt'
+
+            # include this block to import the QCD bins individually
+            temp_sample = infile_name.split('/')[-1].split('.pkl')[0]
+            plots[temp_sample] = openpkl(infile_name)
+            for plot in list(plots[temp_sample].keys()):
+                plots[temp_sample][plot] = plots[temp_sample][plot]*lumi
+
+        elif 'QCD_HT' in infile_name:
+            sample = 'QCD_HT'
+
+            # include this block to import the QCD bins individually
+            temp_sample = infile_name.split('/')[-1].split('.pkl')[0]    
+            temp_sample =  temp_sample.split('QCD_HT')[1].split('_Tune')[0]
+            plots[temp_sample] = openpkl(infile_name)
+            for plot in list(plots[temp_sample].keys()):
+                plots[temp_sample][plot] = plots[temp_sample][plot]*lumi
+
+        elif 'JetHT+Run' in infile_name or 'ScoutingPFHT' in infile_name: 
+            sample = 'data'
+
+        elif 'SUEP-m' in infile_name:
+            sample = infile_name.split('/')[-1].split('+')[0]
+
+        if sample not in list(plots.keys()): 
+            plots[sample] = openpkl(infile_name)
+            for plot in list(plots[sample].keys()):
+                plots[sample][plot] = plots[sample][plot]*lumi
+        else:
+            plotsToAdd = openpkl(infile_name) 
+            for plot in list(plotsToAdd.keys()):
+                plots[sample][plot]  = plots[sample][plot] + plotsToAdd[plot]*lumi
+                
+    return plots
 
 # load hdf5 with pandas
 def h5load(ifile, label):
