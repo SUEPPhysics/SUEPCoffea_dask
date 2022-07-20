@@ -30,7 +30,7 @@ options = parser.parse_args()
 username = getpass.getuser()
 tag = options.tag
 dataset = options.dataset
-redirector = "root://t3btch065.mit.edu/"
+redirector = "root://t3serv017.mit.edu/"
 dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,tag,dataset)
 outDir = dataDir + "/merged/"
 
