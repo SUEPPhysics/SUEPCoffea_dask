@@ -65,7 +65,7 @@ class SUEP_cluster(processor.ProcessorABC):
             else:
                 print('No era is defined. Please specify the year')
 
-        events = events[LumiJSON(events.run, events.luminosityBlock)]
+            events = events[LumiJSON(events.run, events.luminosityBlock)]
 
         # cut based on ak4 jets to replicate the trigger
         if self.scouting == 1:
@@ -210,11 +210,11 @@ class SUEP_cluster(processor.ProcessorABC):
         elif self.scouting == 0:
             out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050
         # store first n jets infos per event
-        for i in range(10):
-            iAk4jet = (ak.num(ak4jets) > i)  
-            out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
-            out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
-            out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
+        # for i in range(10):
+        #     iAk4jet = (ak.num(ak4jets) > i)  
+        #     out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
+        #     out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
+        #     out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
         out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
         out_vars["ngood_tracker_ak4jets"] = ak.num(tracker_ak4jets).to_list()
         out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
