@@ -4,7 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
-from coffea import processor
+from coffea import hist, processor, lumi_tools
 from typing import List, Optional
 import awkward as ak
 import pandas as pd
@@ -40,6 +40,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.phi_span = (-np.pi, np.pi)
         self.eta_scale = self.eta_pix/(self.eta_span[1]-self.eta_span[0])
         self.phi_scale = self.phi_pix/(self.phi_span[1]-self.phi_span[0])
+        self.models = ['model125']#Add to this list. There will be an output for each prediction in this list
 
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
@@ -50,9 +51,22 @@ class SUEP_cluster(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
+
         if self.isMC and self.scouting==1: self.gensumweight = ak.num(events.PFcand.pt,axis=0)
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
+        if not self.isMC and self.scouting!=1:
+            if self.era == 2016:
+                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt')
+            elif self.era == 2017:
+                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt')
+            elif self.era == 2018:
+                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt')
+            else:
+                print('No era is defined. Please specify the year')
+
+        events = events[LumiJSON(events.run, events.luminosityBlock)]
+
         # cut based on ak4 jets to replicate the trigger
         if self.scouting == 1:
             Jets = ak.zip({
@@ -75,8 +89,8 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # apply trigger selection
         if self.scouting == 1:
-            events = events[(ht > 500)]
-            ak4jets = ak4jets[(ht > 500)]
+            events = events[(ht > 600)]
+            ak4jets = ak4jets[(ht > 600)]
         else:
             if self.era == 2016:
                 trigger = (events.HLT.PFHT900 == 1)
@@ -220,36 +234,37 @@ class SUEP_cluster(processor.ProcessorABC):
  
         #####################################################################################
         # ---- ML Analysis
-        # Each event is converted into an input for the ML model. Using ONNX, we run
+        # Each event is converted into an input for the ML models. Using ONNX, we run
         # inference on each event to obtain a prediction of the class (SUEP or QCD).
         #####################################################################################
         
         #These lines control the inference from ML models. Conversion is done elsewhere
         #The inference skips the lost tracks for now. 
         inf_cands = Cleaned_cands
-        SUEP_pred = np.ones(len(inf_cands))*np.nan
+        pred_dict = {}
+        for model in self.models:
+             pred_dict.update({model: np.ones(len(inf_cands))*np.nan})
+        ort_infs = {}
         if self.do_inf:    
-            ort_sess = ort.InferenceSession('data/resnet.onnx')
             options = ort.SessionOptions() 
             options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
-            
-            # convert events to images and run inference in batches
-            # in order to avoid memory issues
+            for model in self.models:
+                  ort_infs.update({model: ort.InferenceSession('data/onnx_models/resnet_{}_{}.onnx'.format(model,self.era))})
+            # In order to avoid memory issues convert events to images and run inference in batches
             # also exploits the numba-compiled convert_to_images function
             batch_size = 100
             for i in range(0, len(inf_cands), batch_size):
-
                 if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
                 batch = inf_cands[i:i+batch_size]
                 imgs = convert_to_images(self, batch)
-                batch_resnet_jets = run_inference(self, imgs, ort_sess)
-                if i == 0: resnet_jets = batch_resnet_jets
-                else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
+                for model in self.models:
+                    batch_resnet_jets = run_inference(self, imgs, ort_infs[model])
+                    if i == 0: resnet_jets = batch_resnet_jets
+                    else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
+                    pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
 
-            # highest SUEP prediction per event
-            SUEP_pred = resnet_jets[:,1]
-                
-        out_vars["resnet_SUEP_pred_ML"] = SUEP_pred
+        for model in self.models:   
+            out_vars["resnet_SUEP_pred_{}".format(model)] = pred_dict[model]
                 
         #####################################################################################
         # ---- Cut Based Analysis
