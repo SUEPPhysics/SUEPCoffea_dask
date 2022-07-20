@@ -68,8 +68,8 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # apply trigger selection
         if self.scouting == 1:
-            events = events[(ht > 500)]
-            ak4jets = ak4jets[(ht > 500)]
+            events = events[(ht > 600)]
+            ak4jets = ak4jets[(ht > 600)]
         else:
             if self.era == 2016:
                 trigger = (events.HLT.PFHT900 == 1)
