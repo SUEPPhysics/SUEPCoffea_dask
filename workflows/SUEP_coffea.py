@@ -109,7 +109,7 @@ class SUEP_cluster(processor.ProcessorABC):
             # avoids leaving this chunk without these columns
             if not any(oneISRtrackCut):
                 print("No events in Inverted CL Removal Method, oneISRtrackCut.")
-                for c in columns_CL_ISR: self.out_vars[c] = np.nan
+                for c in self.columns_CL_ISR: self.out_vars[c] = np.nan
             else:
                 # remove events with only one track in ISR
                 indices = indices[oneISRtrackCut]
@@ -164,7 +164,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # avoids leaving this chunk without these columns
         if not any(oneIRMtrackCut):
             print("No events in ISR Removal Method, oneIRMtrackCut.")
-            for c in columns_IRM: self.out_vars[c] = np.nan
+            for c in self.columns_IRM: self.out_vars[c] = np.nan
         else:
             #remove the events left with one track
             SUEP_tracks_b = SUEP_tracks_b[oneIRMtrackCut]
@@ -220,9 +220,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # avoids leaving this chunk without these columns
         if not any(oneCOtrackCut):
             print("No events in Cone Method, oneCOtrackCut.")
-            for c in columns_CO: self.out_vars[c] = np.nan
+            for c in self.columns_CO: self.out_vars[c] = np.nan
             if do_inverted: 
-                for c in columns_CO_ISR: self.out_vars[c] = np.nan
+                for c in self.columns_CO_ISR: self.out_vars[c] = np.nan
         else:
             #remove the events left with one track
             SUEP_tracks = SUEP_tracks[oneCOtrackCut]
@@ -259,8 +259,8 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars.loc[indices, "SUEP_pt_avg_CO"] = ak.mean(SUEP_tracks.pt, axis=-1)
             deltaR = SUEP_tracks.deltaR(SUEP_cand)
             self.out_vars.loc[indices, "SUEP_rho0_CO"] = rho(self, 0, SUEP_cand, SUEP_tracks, deltaR)
-            self.out_vars.loc[indices, "SUEP_rho1_CO"] = rho(self, 1, SUEP_cand, SUEP_tracks, deltaR)                
-
+            self.out_vars.loc[indices, "SUEP_rho1_CO"] = rho(self, 1, SUEP_cand, SUEP_tracks, deltaR)               
+            
             self.out_vars.loc[indices, "SUEP_pt_CO"] = SUEP_cand.pt
             self.out_vars.loc[indices, "SUEP_eta_CO"] = SUEP_cand.eta
             self.out_vars.loc[indices, "SUEP_phi_CO"] = SUEP_cand.phi
@@ -275,7 +275,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 # avoids leaving this chunk without these columns
                 if not any(oneCOISRtrackCut):
                     print("No events in Inverted CO Removal Method, oneCOISRtrackCut.")
-                    for c in columns_CO_ISR: self.out_vars[c] = np.nan
+                    for c in self.columns_CO_ISR: self.out_vars[c] = np.nan
                 else:
 
                     # remove events with one ISR track
@@ -316,25 +316,79 @@ class SUEP_cluster(processor.ProcessorABC):
                     self.out_vars.loc[indices, "ISR_eta_CO"] = ISR_cand.eta
                     self.out_vars.loc[indices, "ISR_phi_CO"] = ISR_cand.phi
                     self.out_vars.loc[indices, "ISR_mass_CO"] = ISR_cand.mass
+  
+    def MLAnalysis(self, indices, inf_cands):
+        #####################################################################################
+        # ---- ML Analysis
+        # Each event is converted into an input for the ML models. Using ONNX, we run
+        # inference on each event to obtain a prediction of the class (SUEP or QCD).
+        # N.B.: Conversion is done elsewhere.
+        # N.B.: The inference skips the lost tracks for now.
+        #####################################################################################
+         
+        if self.do_inf:    
+            
+            pred_dict = {}
+            ort_infs = {}
+            options = ort.SessionOptions() 
+            options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
+            for model in self.models:
+                  ort_infs.update({model: ort.InferenceSession('data/onnx_models/resnet_{}_{}.onnx'.format(model,self.era))})
+            # In order to avoid memory issues convert events to images and run inference in batches
+            # also exploits the numba-compiled convert_to_images function
+            batch_size = 100
+            for i in range(0, len(inf_cands), batch_size):
+                if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
+                batch = inf_cands[i:i+batch_size]
+                imgs = convert_to_images(self, batch)
+                for model in self.models:
+                    batch_resnet_jets = run_inference(self, imgs, ort_infs[model])
+                    if i == 0: resnet_jets = batch_resnet_jets
+                    else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
+                    pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
+
+        else:
+            for c in self.columns_ML: self.out_vars[c] = np.nan
+            
+    def initializeColumns(self):
+        # need to add these to dataframe when no events pass to make the merging work
+        # for some reason, initializing these as empty and then trying to fill them doesn't work
+        self.columns_IRM = [
+                "SUEP_nconst_IRM", "SUEP_ntracks_IRM", 
+                "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM", "SUEP_pt_mean_scaled",
+                "SUEP_S1_IRM", "SUEP_rho0_IRM", "SUEP_rho1_IRM", 
+                "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM",
+                "dphi_SUEP_ISR_IRM"
+        ]
+        self.columns_CL = [c.replace("IRM", "CL") for c in self.columns_IRM]
+        self.columns_CL_ISR = [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in self.columns_IRM]
+        self.columns_ML = ["resnet_pred_{}".format(m) for m in self.models] 
+        self.columns = self.columns_IRM + self.columns_CL + self.columns_CL_ISR
+                
+    def applyGoldenJSON(self, events):
+        if self.era == 2016:
+                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt')
+        elif self.era == 2017:
+            LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt')
+        elif self.era == 2018:
+            LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt')
+        else:
+            print('No era is defined. Please specify the year')
+
+        events = events[LumiJSON(events.run, events.luminosityBlock)]
+        
+        return events
 
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
 
+        # gen weights
         if self.isMC and self.scouting==1: self.gensumweight = ak.num(events.PFcand.pt,axis=0)
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
-        if not self.isMC and self.scouting!=1:
-            if self.era == 2016:
-                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt')
-            elif self.era == 2017:
-                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt')
-            elif self.era == 2018:
-                LumiJSON = lumi_tools.LumiMask('data/GoldenJSON/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt')
-            else:
-                print('No era is defined. Please specify the year')
-
-            events = events[LumiJSON(events.run, events.luminosityBlock)]
+        # golden jsons for offline data
+        if not self.isMC and self.scouting!=1: events = self.applyGoldenJSON(events)
 
         #####################################################################################
         # ---- Trigger event selection
@@ -356,10 +410,8 @@ class SUEP_cluster(processor.ProcessorABC):
                 "mass": events.Jet.mass,
                 "jetId": events.Jet.jetId
             })
-        jetCut = (Jets.pt > 30) & (abs(Jets.eta)<4.7)
+        jetCut = (Jets.pt > 30) & (abs(Jets.eta)<2.4)
         ak4jets = Jets[jetCut]
-        trackerCut = abs(ak4jets.eta) < 2.4
-        ak4jets = ak4jets[trackerCut]
         ht = ak.sum(ak4jets.pt,axis=-1)
         
         # apply trigger selection
@@ -499,62 +551,21 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # indices of events in tracks, used to keep track which events pass selections
         indices = np.arange(0,len(tracks))
+        
+        # initialize the columns with all the variables that you want to fill
+        self.initializeColumns()
  
         #####################################################################################
         # ---- ML Analysis
-        # Each event is converted into an input for the ML models. Using ONNX, we run
-        # inference on each event to obtain a prediction of the class (SUEP or QCD).
         #####################################################################################
         
-        #These lines control the inference from ML models. Conversion is done elsewhere
-        #The inference skips the lost tracks for now. 
-        inf_cands = Cleaned_cands
-        pred_dict = {}
-        for model in self.models:
-             pred_dict.update({model: np.ones(len(inf_cands))*np.nan})
-        ort_infs = {}
-        if self.do_inf:    
-            options = ort.SessionOptions() 
-            options.inter_op_num_threads = 1 # number of threads used to parallelize the execution of the graph (across nodes). Default is 0 to let onnxruntime choose.
-            for model in self.models:
-                  ort_infs.update({model: ort.InferenceSession('data/onnx_models/resnet_{}_{}.onnx'.format(model,self.era))})
-            # In order to avoid memory issues convert events to images and run inference in batches
-            # also exploits the numba-compiled convert_to_images function
-            batch_size = 100
-            for i in range(0, len(inf_cands), batch_size):
-                if i + batch_size > len(inf_cands): batch_size = len(inf_cands) - i
-                batch = inf_cands[i:i+batch_size]
-                imgs = convert_to_images(self, batch)
-                for model in self.models:
-                    batch_resnet_jets = run_inference(self, imgs, ort_infs[model])
-                    if i == 0: resnet_jets = batch_resnet_jets
-                    else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
-                    pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
-
-        for model in self.models:   
-            self.out_vars["resnet_SUEP_pred_{}".format(model)] = pred_dict[model]
+        indices_ML = indices
+        self.MLAnalysis(indices_ML, Cleaned_cands)
                 
         #####################################################################################
         # ---- Cut Based Analysis
         #####################################################################################
         
-        # need to add these to dataframe when no events pass to make the merging work
-        # for some reason, initializing these as empty and then trying to fill them doesn't work
-        columns_IRM = [
-                "SUEP_nconst_IRM", "SUEP_ntracks_IRM", 
-                "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM", "SUEP_pt_mean_scaled",
-                "SUEP_S1_IRM", "SUEP_rho0_IRM", "SUEP_rho1_IRM", 
-                "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM",
-                "dphi_SUEP_ISR_IRM"
-        ]
-        columns_CL = [c.replace("IRM", "CL") for c in columns_IRM]
-        columns_CL_ISR = [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in columns_IRM]
-        columns_CO = [c.replace("IRM", "CO") for c in columns_IRM]
-        columns = columns_IRM + columns_CL + columns_CO + columns_CL_ISR
-        if self.isMC: 
-            columns_CO_ISR = [c.replace("IRM", "CO".replace("SUEP", "ISR")) for c in columns_IRM]
-            columns +=  columns_CO_ISR
-                
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = (ak.num(ak_inclusive_jets, axis=1)>1)
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
@@ -565,7 +576,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass clusterCut.")
-            for c in columns: self.out_vars[c] = np.nan
+            for c in self.columns: self.out_vars[c] = np.nan
             save_dfs(self, [self.out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
