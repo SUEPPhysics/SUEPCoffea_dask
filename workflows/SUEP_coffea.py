@@ -350,6 +350,173 @@ class SUEP_cluster(processor.ProcessorABC):
         else:
             for c in self.columns_ML: self.out_vars[c] = np.nan
             
+    def eventSelection(self, events):
+        if self.scouting == 1:
+            Jets = ak.zip({
+                "pt": events.Jet.pt,
+                "eta": events.Jet.eta,
+                "phi": events.Jet.phi,
+                "mass": events.Jet.mass,
+            })
+        else:
+            Jets = ak.zip({
+                "pt": events.Jet.pt,
+                "eta": events.Jet.eta,
+                "phi": events.Jet.phi,
+                "mass": events.Jet.mass,
+                "jetId": events.Jet.jetId
+            })
+        jetCut = (Jets.pt > 30) & (abs(Jets.eta)<2.4)
+        ak4jets = Jets[jetCut]
+        ht = ak.sum(ak4jets.pt,axis=-1)
+        
+        # apply trigger selection
+        if self.scouting == 1:
+            events = events[(ht > 600)]
+            ak4jets = ak4jets[(ht > 600)]
+        else:
+            if self.era == 2016:
+                trigger = (events.HLT.PFHT900 == 1)
+            else:
+                trigger = (events.HLT.PFHT1050 == 1)
+            events = events[(trigger & (ht > 1200))]
+            ak4jets = ak4jets[(trigger & (ht > 1200))]
+            
+        return events, ak4jets
+    
+    def getTracks(self, events):
+        Cands = ak.zip({
+            "pt": events.PFCands.trkPt,
+            "eta": events.PFCands.trkEta,
+            "phi": events.PFCands.trkPhi,
+            "mass": events.PFCands.mass
+        }, with_name="Momentum4D")
+        cut = (events.PFCands.fromPV > 1) & \
+                 (events.PFCands.trkPt >= 0.7) & \
+                 (abs(events.PFCands.trkEta) <= 2.5) & \
+                 (abs(events.PFCands.dz) < 10) & \
+                 (events.PFCands.dzErr < 0.05)
+        Cleaned_cands = Cands[cut]
+        Cleaned_cands = ak.packed(Cleaned_cands)
+
+        #Prepare the Lost Track collection
+        LostTracks = ak.zip({
+            "pt": events.lostTracks.pt,
+            "eta": events.lostTracks.eta,
+            "phi": events.lostTracks.phi,
+            "mass": 0.0
+        }, with_name="Momentum4D")
+        cut = (events.lostTracks.fromPV > 1) & \
+            (events.lostTracks.pt >= 0.7) & \
+            (abs(events.lostTracks.eta) <= 1.0) & \
+            (abs(events.lostTracks.dz) < 10) & \
+            (events.lostTracks.dzErr < 0.05)
+        Lost_Tracks_cands = LostTracks[cut]
+        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
+
+        # select which tracks to use in the script
+        # dimensions of tracks = events x tracks in event x 4 momenta
+        tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
+        
+        return tracks, Cleaned_cands
+            
+    def getScoutingTracks(self, events):
+        Cands = ak.zip({
+            "pt": events.PFcand.pt,
+            "eta": events.PFcand.eta,
+            "phi": events.PFcand.phi,
+            "mass": events.PFcand.mass
+        }, with_name="Momentum4D")
+        cut = (events.PFcand.pt >= 0.75) & \
+                (abs(events.PFcand.eta) <= 2.5) & \
+                (events.PFcand.vertex == 0) & \
+                (events.PFcand.q != 0)
+        Cleaned_cands = Cands[cut]
+        tracks =  ak.packed(Cleaned_cands)
+        return tracks, Cleaned_cands
+    
+    def storeEventVars(self, events, tracks, ak4jets, ak_inclusive_jets, ak_inclusive_cluster):
+        
+        # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
+        # jetId==2 means: pass tight ID, fail tightLepVeto
+        # jetId==6 means: pass tight and tightLepVeto ID. 
+        if self.scouting == 1:
+            tight_ak4jets = ak4jets
+            loose_ak4jets = ak4jets
+        else:
+            tightJetId = (ak4jets.jetId > 2)
+            tight_ak4jets = ak4jets[tightJetId]
+            looseJetId = (ak4jets.jetId >= 2)
+            loose_ak4jets = ak4jets[looseJetId]
+            
+        # save per event variables to a dataframe
+        self.out_vars["ntracks"] = ak.num(tracks).to_list()
+        self.out_vars["ngood_fastjets"] = ak.num(ak_inclusive_jets).to_list()
+        self.out_vars["ht"] = ak.sum(ak4jets.pt,axis=-1).to_list()
+        if self.era == 2016 and self.scouting == 0:
+            self.out_vars["HLT_PFHT900"] = events.HLT.PFHT900
+        elif self.scouting == 0:
+            self.out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050
+        # store first n jets infos per event
+        # for i in range(10):
+        #     iAk4jet = (ak.num(ak4jets) > i)  
+        #     self.out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
+        #     self.out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
+        #     self.out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
+        self.out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
+        self.out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
+        self.out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
+        self.out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
+        self.out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
+        if self.scouting == 1:
+            self.out_vars["PV_npvs"] = ak.num(events.Vertex.x)
+        else:
+            if self.isMC: self.out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt
+            self.out_vars["PV_npvs"] = events.PV.npvs
+            self.out_vars["PV_npvsGood"] = events.PV.npvsGood
+    
+    def FastJetReclustering(self, tracks, r, minPt):
+        
+        jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, r)        
+        cluster = fastjet.ClusterSequence(tracks, jetdef)
+        
+        # have to set min_pt = 0 and cut later to avoid some memory issues
+        # FIXME: should try to understand this failure
+        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(),"Momentum4D") 
+        ak_inclusive_cluster = ak.with_name(cluster.constituents(),"Momentum4D")
+        
+        # apply minimum pT cut
+        minPtCut = ak_inclusive_jets.pt > minPt
+        ak_inclusive_jets = ak_inclusive_jets[minPtCut]
+        ak_inclusive_cluster = ak_inclusive_cluster[minPtCut]
+        
+        return ak_inclusive_jets, ak_inclusive_cluster
+        
+    def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster):
+        # order the reclustered jets by pT (will take top 2 for ISR removal method)
+        highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
+        jets_pTsorted = ak_inclusive_jets[highpt_jet]
+        clusters_pTsorted = ak_inclusive_cluster[highpt_jet]     
+        
+        # at least 2 tracks in highest pt jet
+        highpt_cands = clusters_pTsorted[:,0]                    # tracks for highest pt jet         
+        singletrackCut = (ak.num(highpt_cands)>1)             
+        jets_pTsorted = jets_pTsorted[singletrackCut]          
+        clusters_pTsorted = clusters_pTsorted[singletrackCut]
+        tracks = tracks[singletrackCut]
+        indices = indices[singletrackCut]
+        
+        # number of constituents per jet, sorted by pT
+        nconst_pTsorted = ak.num(clusters_pTsorted, axis=-1)
+
+        # Top 2 pT jets. If jet1 has fewer tracks than jet2 then swap
+        SUEP_cand = ak.where(nconst_pTsorted[:,1]<=nconst_pTsorted[:,0],jets_pTsorted[:,0],jets_pTsorted[:,1])
+        ISR_cand = ak.where(nconst_pTsorted[:,1]>nconst_pTsorted[:,0],jets_pTsorted[:,0],jets_pTsorted[:,1])
+        SUEP_cluster_tracks = ak.where(nconst_pTsorted[:,1]<=nconst_pTsorted[:,0], clusters_pTsorted[:,0], clusters_pTsorted[:,1])
+        ISR_cluster_tracks = ak.where(nconst_pTsorted[:,1]>nconst_pTsorted[:,0], clusters_pTsorted[:,0], clusters_pTsorted[:,1])
+        
+        return tracks, indices, (SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks)
+    
     def initializeColumns(self):
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
@@ -395,36 +562,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Cut based on ak4 jets to replicate the trigger
         #####################################################################################
         
-        if self.scouting == 1:
-            Jets = ak.zip({
-                "pt": events.Jet.pt,
-                "eta": events.Jet.eta,
-                "phi": events.Jet.phi,
-                "mass": events.Jet.mass,
-            })
-        else:
-            Jets = ak.zip({
-                "pt": events.Jet.pt,
-                "eta": events.Jet.eta,
-                "phi": events.Jet.phi,
-                "mass": events.Jet.mass,
-                "jetId": events.Jet.jetId
-            })
-        jetCut = (Jets.pt > 30) & (abs(Jets.eta)<2.4)
-        ak4jets = Jets[jetCut]
-        ht = ak.sum(ak4jets.pt,axis=-1)
-        
-        # apply trigger selection
-        if self.scouting == 1:
-            events = events[(ht > 600)]
-            ak4jets = ak4jets[(ht > 600)]
-        else:
-            if self.era == 2016:
-                trigger = (events.HLT.PFHT900 == 1)
-            else:
-                trigger = (events.HLT.PFHT1050 == 1)
-            events = events[(trigger & (ht > 1200))]
-            ak4jets = ak4jets[(trigger & (ht > 1200))]
+        events, ak4jets = self.eventSelection(events)
         
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -435,119 +573,24 @@ class SUEP_cluster(processor.ProcessorABC):
         
         #####################################################################################
         # ---- Track selection
+        # Prepare the clean PFCand matched to tracks collection     
         #####################################################################################
 
-        #Prepare the clean PFCand matched to tracks collection      
-        if self.scouting == 1:
-            Cands = ak.zip({
-                "pt": events.PFcand.pt,
-                "eta": events.PFcand.eta,
-                "phi": events.PFcand.phi,
-                "mass": events.PFcand.mass
-            }, with_name="Momentum4D")
-            cut = (events.PFcand.pt >= 0.75) & \
-                    (abs(events.PFcand.eta) <= 2.5) & \
-                    (events.PFcand.vertex == 0) & \
-                    (events.PFcand.q != 0)
-            Cleaned_cands = Cands[cut]
-            tracks =  ak.packed(Cleaned_cands)
-            
-        else:
-            Cands = ak.zip({
-                "pt": events.PFCands.trkPt,
-                "eta": events.PFCands.trkEta,
-                "phi": events.PFCands.trkPhi,
-                "mass": events.PFCands.mass
-            }, with_name="Momentum4D")
-            cut = (events.PFCands.fromPV > 1) & \
-                     (events.PFCands.trkPt >= 0.7) & \
-                     (abs(events.PFCands.trkEta) <= 2.5) & \
-                     (abs(events.PFCands.dz) < 10) & \
-                     (events.PFCands.dzErr < 0.05)
-            Cleaned_cands = Cands[cut]
-            Cleaned_cands = ak.packed(Cleaned_cands)
-            
-            #Prepare the Lost Track collection
-            LostTracks = ak.zip({
-                "pt": events.lostTracks.pt,
-                "eta": events.lostTracks.eta,
-                "phi": events.lostTracks.phi,
-                "mass": 0.0
-            }, with_name="Momentum4D")
-            cut = (events.lostTracks.fromPV > 1) & \
-                (events.lostTracks.pt >= 0.7) & \
-                (abs(events.lostTracks.eta) <= 1.0) & \
-                (abs(events.lostTracks.dz) < 10) & \
-                (events.lostTracks.dzErr < 0.05)
-            Lost_Tracks_cands = LostTracks[cut]
-            Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
-
-            # select which tracks to use in the script
-            # dimensions of tracks = events x tracks in event x 4 momenta
-            tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
+        if self.scouting == 1: tracks, Cleaned_cands = self.getScoutingTracks(events)
+        else: tracks, Cleaned_cands = self.getTracks(events)
         
         #####################################################################################
         # ---- FastJet reclustering
+        # The jet clustering part
         #####################################################################################
         
-        # minimum pT for reclustered jets
-        minPt = 150
-                
-        #The jet clustering part
-        jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, 1.5)        
-        cluster = fastjet.ClusterSequence(tracks, jetdef)
-        
-        # have to set min_pt = 0 and cut later to avoid some memory issues
-        # FIXME: should try to understand this failure
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(),"Momentum4D") 
-        ak_inclusive_cluster = ak.with_name(cluster.constituents(),"Momentum4D")
-        
-        # apply minimum pT cut
-        minPtCut = ak_inclusive_jets.pt > minPt
-        ak_inclusive_jets = ak_inclusive_jets[minPtCut]
-        ak_inclusive_cluster = ak_inclusive_cluster[minPtCut]
+        ak_inclusive_jets, ak_inclusive_cluster = self.FastJetReclustering(tracks, r=1.5, minPt=150)
         
         #####################################################################################
         # ---- Event level information
         #####################################################################################
                 
-        # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
-        # jetId==2 means: pass tight ID, fail tightLepVeto
-        # jetId==6 means: pass tight and tightLepVeto ID. 
-        if self.scouting == 1:
-            tight_ak4jets = ak4jets
-            loose_ak4jets = ak4jets
-        else:
-            tightJetId = (ak4jets.jetId > 2)
-            tight_ak4jets = ak4jets[tightJetId]
-            looseJetId = (ak4jets.jetId >= 2)
-            loose_ak4jets = ak4jets[looseJetId]
-            
-        # save per event variables to a dataframe
-        self.out_vars["ntracks"] = ak.num(tracks).to_list()
-        self.out_vars["ngood_fastjets"] = ak.num(ak_inclusive_jets).to_list()
-        self.out_vars["ht"] = ak.sum(ak4jets.pt,axis=-1).to_list()
-        if self.era == 2016 and self.scouting == 0:
-            self.out_vars["HLT_PFHT900"] = events.HLT.PFHT900
-        elif self.scouting == 0:
-            self.out_vars["HLT_PFHT1050"] = events.HLT.PFHT1050
-        # store first n jets infos per event
-        # for i in range(10):
-        #     iAk4jet = (ak.num(ak4jets) > i)  
-        #     self.out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
-        #     self.out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
-        #     self.out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
-        self.out_vars["ngood_ak4jets"] = ak.num(ak4jets).to_list()
-        self.out_vars["n_loose_ak4jets"] = ak.num(loose_ak4jets).to_list()
-        self.out_vars["n_tight_ak4jets"] = ak.num(tight_ak4jets).to_list()
-        self.out_vars["ht_loose"] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
-        self.out_vars["ht_tight"] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
-        if self.scouting == 1:
-            self.out_vars["PV_npvs"] = ak.num(events.Vertex.x)
-        else:
-            if self.isMC: self.out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt
-            self.out_vars["PV_npvs"] = events.PV.npvs
-            self.out_vars["PV_npvsGood"] = events.PV.npvsGood
+        self.storeEventVars(events, tracks, ak4jets, ak_inclusive_jets, ak_inclusive_cluster)
 
         # indices of events in tracks, used to keep track which events pass selections
         indices = np.arange(0,len(tracks))
@@ -580,27 +623,8 @@ class SUEP_cluster(processor.ProcessorABC):
             save_dfs(self, [self.out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
             return output
         
-        # order the reclustered jets by pT (will take top 2 for ISR removal method)
-        highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
-        jets_pTsorted = ak_inclusive_jets[highpt_jet]
-        clusters_pTsorted = ak_inclusive_cluster[highpt_jet]     
-        
-        # at least 2 tracks in highest pt jet
-        highpt_cands = clusters_pTsorted[:,0]                    # tracks for highest pt jet         
-        singletrackCut = (ak.num(highpt_cands)>1)             
-        jets_pTsorted = jets_pTsorted[singletrackCut]          
-        clusters_pTsorted = clusters_pTsorted[singletrackCut]
-        tracks = tracks[singletrackCut]
-        indices = indices[singletrackCut]
-        
-        # number of constituents per jet, sorted by pT
-        nconst_pTsorted = ak.num(clusters_pTsorted, axis=-1)
-
-        # Top 2 pT jets. If jet1 has fewer tracks than jet2 then swap
-        SUEP_cand = ak.where(nconst_pTsorted[:,1]<=nconst_pTsorted[:,0],jets_pTsorted[:,0],jets_pTsorted[:,1])
-        ISR_cand = ak.where(nconst_pTsorted[:,1]>nconst_pTsorted[:,0],jets_pTsorted[:,0],jets_pTsorted[:,1])
-        SUEP_cluster_tracks = ak.where(nconst_pTsorted[:,1]<=nconst_pTsorted[:,0], clusters_pTsorted[:,0], clusters_pTsorted[:,1])
-        ISR_cluster_tracks = ak.where(nconst_pTsorted[:,1]>nconst_pTsorted[:,0], clusters_pTsorted[:,0], clusters_pTsorted[:,1])
+        tracks, indices, topTwoJets = self.getTopTwoJets(tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
+        SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
         
         self.ISRRemovalMethod(indices, tracks, 
                               SUEP_cand, ISR_cand)
