@@ -166,6 +166,46 @@
       "kr": 1,
       "xsec": 1
    },
+   "SUEP_m125_darkPhoHad": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m400_darkPhoHad": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m750_darkPhoHad": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m1000_darkPhoHad": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m125_darkPho": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m400_darkPho": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m750_darkPho": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
+   "SUEP_m1000_darkPho": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1
+   },
    "QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18DRPremix-102X_upgrade2018_realistic_v15-v1+AODSIM": {
       "br":1,
       "kr":1,

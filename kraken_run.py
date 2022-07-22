@@ -74,99 +74,130 @@ queue jobid, fileid from {jobdir}/inputfiles.dat
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Famous Submitter')
-    parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
-    parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
-    parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
-    parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="")
-    parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
-    parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
-    parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
-    parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
-    parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
-    parser.add_argument("--redo-proxy"     , action="store_true"          , help="redo the voms proxy")
+    parser = argparse.ArgumentParser(description="Famous Submitter")
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        default="data.txt",
+        help="input datasets",
+        required=True,
+    )
+    parser.add_argument(
+        "-t", "--tag", type=str, default="IronMan", help="production tag", required=True
+    )
+    parser.add_argument("-isMC", "--isMC", type=int, default=1, help="")
+    parser.add_argument("-sc", "--scout", type=int, default=0, help="")
+    parser.add_argument("-q", "--queue", type=str, default="espresso", help="")
+    parser.add_argument("-e", "--era", type=str, default="2017", help="")
+    parser.add_argument(
+        "-f", "--force", action="store_true", help="recreate files and jobs"
+    )
+    parser.add_argument("-s", "--submit", action="store_true", help="submit only")
+    parser.add_argument(
+        "-dry", "--dryrun", action="store_true", help="running without submission"
+    )
+    parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
 
     options = parser.parse_args()
 
     # script parameters
     username = getpass.getuser()
-    outdir = '/mnt/T3_US_MIT/hadoop/scratch/'+ username + '/SUEP/{tag}/{sample}/'
-    outdir_condor = '/scratch/'+username+'/SUEP/{tag}/{sample}/'
+    outdir = "/mnt/T3_US_MIT/hadoop/scratch/" + username + "/SUEP/{tag}/{sample}/"
+    outdir_condor = "/scratch/" + username + "/SUEP/{tag}/{sample}/"
     workdir = os.getcwd()
-    logdir = '/work/submit/'+username+'/SUEP/logs/'
-    
+    logdir = "/work/submit/" + username + "/SUEP/logs/"
+
     # Making sure that the proxy is good
     lifetime = check_proxy(time_min=100)
-    logging.info("--- proxy lifetime is {} hours".format(round(lifetime,1)))
-    home_base  = os.environ['HOME']
-    proxy_base = 'x509up_u{}'.format(os.getuid())
-    proxy_copy = os.path.join(home_base,proxy_base)
+    logging.info("--- proxy lifetime is {} hours".format(round(lifetime, 1)))
+    home_base = os.environ["HOME"]
+    proxy_base = "x509up_u{}".format(os.getuid())
+    proxy_copy = os.path.join(home_base, proxy_base)
 
-    with open(options.input, 'r') as stream:
-        
+    with open(options.input, "r") as stream:
+
         # count total number of files to submit
         nJobs = 0
-        for sample in stream.read().split('\n'):
-            if '#' in sample: continue
-            if len(sample.split('/')) <= 1: continue
+        for sample in stream.read().split("\n"):
+            if "#" in sample:
+                continue
+            if len(sample.split("/")) <= 1:
+                continue
             sample_name = sample.split("/")[-1]
             if options.scout == 1:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
+                    sample_name
+                )
             else:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
+                    sample_name
+                )
             Raw_list = open(input_list, "r")
             nJobs += len(Raw_list.readlines())
-        logging.info('-- Submitting a total of ' + str(nJobs) + ' jobs.')
-        
-    with open(options.input, 'r') as stream:
-        
-        for sample in stream.read().split('\n'):  
-            if '#' in sample: continue
-            if len(sample.split('/')) <= 1: continue
+        logging.info("-- Submitting a total of " + str(nJobs) + " jobs.")
+
+    with open(options.input, "r") as stream:
+
+        for sample in stream.read().split("\n"):
+            if "#" in sample:
+                continue
+            if len(sample.split("/")) <= 1:
+                continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join([logdir+"jobs", options.tag, sample_name])
+            jobs_dir = "_".join([logdir + "jobs", options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             if os.path.isdir(jobs_dir):
                 if not options.force:
                     logging.error(" " + jobs_dir + " already exist !")
                     continue
                 else:
-                    logging.warning(" " + jobs_dir + " already exists, forcing its deletion!")
+                    logging.warning(
+                        " " + jobs_dir + " already exists, forcing its deletion!"
+                    )
                     shutil.rmtree(jobs_dir)
                     os.mkdir(jobs_dir)
             else:
                 os.mkdir(jobs_dir)
-            
+
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
                 if options.scout == 1:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
+                        sample_name
+                    )
                 else:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
+                        sample_name
+                    )
                 Raw_list = open(input_list, "r")
-                nfiles=0
-                with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
+                nfiles = 0
+                with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
                     for i in Raw_list:
                         full_file = i.split(" ")[0]
                         just_file = full_file.split("/")[-1]
-                        infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
-                        nfiles+=1
+                        infiles.write(
+                            full_file + "\t" + just_file.split(".root")[0] + "\n"
+                        )
+                        nfiles += 1
                     infiles.close()
-            fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
-            fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
+            fin_outdir = outdir.format(tag=options.tag, sample=sample_name)
+            fin_outdir_condor = outdir_condor.format(
+                tag=options.tag, sample=sample_name
+            )
             os.system("mkdir -p {}".format(fin_outdir))
-  
+
             if options.scout == 1:
                 condor_file = "condor_Scouting.py"
             else:
                 condor_file = "condor_SUEP_WS.py"
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 script = script_TEMPLATE.format(
-                    #home_base=home_base,
+                    # home_base=home_base,
                     proxy=proxy_base,
                     ismc=options.isMC,
                     era=options.era,
-                    outdir=fin_outdir_condor,          
+                    outdir=fin_outdir_condor,
                     dataset=sample_name,
                     condor_file=condor_file,
                 )
@@ -175,37 +206,39 @@ def main():
 
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
-                    transfer_file= ",".join([
-                        workdir + "/condor_SUEP_WS.py",
-                        workdir + "/condor_Scouting.py",
-                        workdir + "/workflows",
-                        workdir + "/data",
-                        proxy_copy
-                    ]),
+                    transfer_file=",".join(
+                        [
+                            workdir + "/condor_SUEP_WS.py",
+                            workdir + "/condor_Scouting.py",
+                            workdir + "/workflows",
+                            workdir + "/data",
+                            proxy_copy,
+                        ]
+                    ),
                     just_file=just_file,
                     jobdir=jobs_dir,
                     proxy=proxy_base,
                     queue=options.queue,
-                    user=username
+                    user=username,
                 )
                 condorfile.write(condor)
                 condorfile.close()
-                
+
             if options.dryrun:
                 continue
- 
+
             htc = subprocess.Popen(
                 "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
-                shell  = True,
-                stdin  = subprocess.PIPE,
-                stdout = subprocess.PIPE,
-                stderr = subprocess.PIPE,
-                close_fds=True
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True,
             )
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
-            
-            
+
+
 if __name__ == "__main__":
     main()
