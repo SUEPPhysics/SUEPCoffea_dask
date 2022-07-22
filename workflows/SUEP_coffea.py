@@ -60,8 +60,63 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        output = self.accumulator.identity()
+        #####################################################################################
+        # ---- Output dict definition section
+        #####################################################################################
         dataset = events.metadata["dataset"]
+        output = {}
+        output[dataset] = {}
+
+        out_vars_keys = [
+            "ntracks",
+            "ngood_fastjets",
+            "ht",
+            "HLT_PFHT900",
+            "HLT_PFHT1050",
+            "ngood_ak4jets",
+            "ngood_tracker_ak4jets",
+            "n_loose_ak4jets",
+            "n_tight_ak4jets",
+            "ht_loose",
+            "ht_tight",
+            "ht_tracker",
+            "Pileup_nTrueInt",
+            "PV_npvs",
+            "PV_npvsGood"
+        ]
+        columns_IRM = [
+            "SUEP_nconst_IRM",
+            "SUEP_ntracks_IRM",
+            "SUEP_pt_avg_IRM",
+            "SUEP_pt_avg_b_IRM",
+            "SUEP_pt_mean_scaled",
+            "SUEP_S1_IRM",
+            "SUEP_rho0_IRM",
+            "SUEP_rho1_IRM",
+            "SUEP_pt_IRM",
+            "SUEP_eta_IRM",
+            "SUEP_phi_IRM",
+            "SUEP_mass_IRM",
+            "dphi_SUEP_ISR_IRM",
+        ]
+        columns_CL = [c.replace("IRM", "CL") for c in columns_IRM]
+        columns_CO = [c.replace("IRM", "CO") for c in columns_IRM]
+        columns = columns_IRM + columns_CL + columns_CO
+        columns_CL_ISR = [
+            c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in columns_IRM
+        ]
+        columns_CO_ISR = [
+            c.replace("IRM", "CO".replace("SUEP", "ISR")) for c in columns_IRM
+        ]
+        columns += columns_CL_ISR + columns_CO_ISR
+        out_vars_keys += columns
+        for key in out_vars_keys:
+            output[dataset][key] = [1, 2, 3, 4, 5]
+
+        
+        #####################################################################################
+        # ---- Initial processing
+        #####################################################################################
 
         if self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
@@ -81,21 +136,20 @@ class SUEP_cluster(processor.ProcessorABC):
         ht = ak.sum(ak4jets.pt, axis=-1)
 
         # apply trigger selection
-        trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
-        events = events[trigger]
-        ak4jets = ak4jets[trigger]
+        events = events[events.HLT.TripleMu_5_3_3_Mass3p8_DZ]
+        ak4jets = ak4jets[events.HLT.TripleMu_5_3_3_Mass3p8_DZ]
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
-            print("No events passed trigger. Saving empty outputs.")
+            print(f"[{dataset}]: No events passed trigger. Saving empty outputs.")
             out_vars = pd.DataFrame(["empty"], columns=["empty"])
-            save_dfs(
-                self,
-                [out_vars],
-                ["vars"],
-                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-                + ".hdf5",
-            )
+            #save_dfs(
+            #    self,
+            #    [out_vars],
+            #    ["vars"],
+            #    events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+            #    + ".hdf5",
+            #)
             return output
 
         #####################################################################################
@@ -212,35 +266,6 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Cut Based Analysis
         #####################################################################################
 
-        # need to add these to dataframe when no events pass to make the merging work
-        # for some reason, initializing these as empty and then trying to fill them doesn't work
-        columns_IRM = [
-            "SUEP_nconst_IRM",
-            "SUEP_ntracks_IRM",
-            "SUEP_pt_avg_IRM",
-            "SUEP_pt_avg_b_IRM",
-            "SUEP_pt_mean_scaled",
-            "SUEP_S1_IRM",
-            "SUEP_rho0_IRM",
-            "SUEP_rho1_IRM",
-            "SUEP_pt_IRM",
-            "SUEP_eta_IRM",
-            "SUEP_phi_IRM",
-            "SUEP_mass_IRM",
-            "dphi_SUEP_ISR_IRM",
-        ]
-        columns_CL = [c.replace("IRM", "CL") for c in columns_IRM]
-        columns_CO = [c.replace("IRM", "CO") for c in columns_IRM]
-        columns = columns_IRM + columns_CL + columns_CO
-        if self.isMC:
-            columns_CL_ISR = [
-                c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in columns_IRM
-            ]
-            columns_CO_ISR = [
-                c.replace("IRM", "CO".replace("SUEP", "ISR")) for c in columns_IRM
-            ]
-            columns += columns_CL_ISR + columns_CO_ISR
-
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
@@ -253,13 +278,13 @@ class SUEP_cluster(processor.ProcessorABC):
             print("No events pass clusterCut.")
             for c in columns:
                 out_vars[c] = np.nan
-            save_dfs(
-                self,
-                [out_vars],
-                ["vars"],
-                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-                + ".hdf5",
-            )
+            #save_dfs(
+            #    self,
+            #    [out_vars],
+            #    ["vars"],
+            #    events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+            #    + ".hdf5",
+            #)
             return output
 
         # order the reclustered jets by pT (will take top 2 for ISR removal method)
@@ -442,7 +467,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # inverted selection
         if True:
-
             boost_ISR = ak.zip(
                 {
                     "px": ISR_cand_CL.px * -1,
@@ -463,7 +487,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 for c in columns_CL_ISR:
                     out_vars[c] = np.nan
             else:
-
                 # remove events with only one track in ISR
                 indices_CL = indices[oneISRtrackCut]
                 ISR_tracks_b_CL = ISR_tracks_b[oneISRtrackCut]
@@ -654,13 +677,13 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Save outputs
         #####################################################################################
 
-        save_dfs(
-            self,
-            [out_vars],
-            ["vars"],
-            events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-            + ".hdf5",
-        )
+        #save_dfs(
+        #    self,
+        #    [out_vars],
+        #    ["vars"],
+        #    events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+        #    + ".hdf5",
+        #)
         return output
 
     def postprocess(self, accumulator):
