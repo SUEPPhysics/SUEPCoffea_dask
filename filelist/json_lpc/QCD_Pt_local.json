@@ -1,0 +1,38 @@
+{
+    "QCD_Pt_1000to1400+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_1000to1400_0.root"
+    ],
+    "QCD_Pt_1400to1800+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_1400to1800_0.root"
+    ],
+    "QCD_Pt_15to30+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_15to30_0.root"
+    ],
+    "QCD_Pt_170to300+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_170to300_0.root"
+    ],
+    "QCD_Pt_1800to2400+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_1800to2400_0.root"
+    ],
+    "QCD_Pt_2400to3200+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_2400to3200_0.root"
+    ],
+    "QCD_Pt_300to470+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_300to470_0.root"
+    ],
+    "QCD_Pt_30to50+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_30to50_0.root"
+    ],
+    "QCD_Pt_3200toInf+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_3200toInf_0.root"
+    ],
+    "QCD_Pt_470to600+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_470to600_0.root"
+    ],
+    "QCD_Pt_600to800+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_600to800_0.root"
+    ],
+    "QCD_Pt_800to1000+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov:1094//store/user/chpapage/QCD_Pt_nano/QCD_Pt_800to1000_0.root"
+    ]
+}
