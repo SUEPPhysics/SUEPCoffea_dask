@@ -351,11 +351,11 @@ def plot_ratio_regions(plots, plot_label,
         y2, x2 = h2.to_numpy()
         x2 = x2[:-1]
                 
-        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [0]
-        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [0]
+        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [1e6]
+        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [1e6]
         xmax1 = np.argwhere(y1>0)[-1] if any(y1>0) else [0]
         xmax2 = np.argwhere(y2>0)[-1] if any(y2>0) else [0]
-        xmin = max(np.concatenate((xmin1, xmin2)))
+        xmin = min(np.concatenate((xmin1, xmin2)))
         xmax = max(np.concatenate((xmax2, xmax2)))
         x1 = x1[xmin:xmax+1]
         x2 = x2[xmin:xmax+1]
@@ -375,15 +375,15 @@ def plot_ratio_regions(plots, plot_label,
         y1_errs = np.sqrt(h1.variances())*lumi1
         y1_errs = y1_errs[xmin:xmax+1]
         if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
-        if i == 0: ax1.step(x1, y1, color='maroon',label=sample1, where='mid')
-        else: ax1.step(x1, y1, color='maroon', where='mid')
+        if i == 0: ax1.step(x1, y1, color='midnightblue',label=sample1, where='mid')
+        else: ax1.step(x1, y1, color='midnightblue', where='mid')
         ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
 
         y2_errs = np.sqrt(h2.variances())*lumi2
         y2_errs = y2_errs[xmin:xmax+1]
         if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
-        if i == 0: ax1.step(x2, y2, color='blue',label=sample2, where= 'mid')
-        else: ax1.step(x2, y2, color='blue', where= 'mid')
+        if i == 0: ax1.step(x2, y2, color='maroon',label=sample2, where= 'mid')
+        else: ax1.step(x2, y2, color='maroon', where= 'mid')
         ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
         
         ax1.axvline(x2[0], ls="--", color='black')
@@ -413,6 +413,77 @@ def plot_ratio_regions(plots, plot_label,
         
     return fig, (ax1, ax2)
     
+def plot_all_regions(plots, samples, plot_label,
+               regions='ABCDEFGH',
+               rebin=-1, 
+               density=False,
+               xlim='default', 
+               log=True):
+
+    fig = plt.figure(figsize=(20,7))
+    ax = fig.subplots()
+    
+    offset = 0
+    mids = []
+    for i,r in enumerate(regions):
+        
+        # get (x, y) for each sample in rhig region
+        hists, ys, xs = [], [], []
+        for samples in samples:
+            h = plots[samples][plot_label.replace("A_", r+"_")]
+            if density: h /= h.sum().value
+            y, x = h.to_numpy()
+            x = x[:-1]
+            hists.append(h)
+            ys.append(y)
+            xs.append(x)
+        
+        # get args for min and max
+        xmins, xmaxs = [], []
+        for x, y in zip(xs, ys):
+            xmin = np.argwhere(y>0)[0] if any(y>0) else [0]
+            xmax = np.argwhere(y>0)[-1] if any(y>0) else [0]
+            xmins.append(xmin)
+            xmaxs.append(xmax)
+        xmin = min(xmins)
+        xmax = max(xmaxs)
+        
+        # get only range that matters
+        Xs, Ys = [], []
+        for x, y in zip(xs, ys):
+            x = x[xmin:xmax+1]
+            y = y[xmin:xmax+1]
+            x = x - x[0]
+            this_offset = x[-1]-x[0]
+            x = x + offset
+            Xs.append(x)
+            Ys.append(y)
+                
+        # total offset
+        offset += this_offset
+        
+        mids.append((Xs[0][-1]+Xs[0][0])/2)
+        
+        for h, x, y, sample in zip(hists, Xs, Ys, samples):
+            y_errs = np.sqrt(h.variances())
+            y_errs = y_errs[xmin:xmax+1]
+            if rebin!=-1: x, y, y_errs = combine_bins(x, y, y_errs, n=rebin)
+            if i == 0: ax.step(x, y, color='maroon',label=sample, where='mid')
+            else: ax.step(x, y, color='maroon', where='mid')
+            ax.errorbar(x, y, yerr=y_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
+     
+        ax.axvline(Xs[0][0], ls="--", color='black')
+        
+    if log: ax.set_yscale("log")
+ 
+    ax.set_xticks(mids)
+    ax.set_xticklabels(list(regions))
+    
+    ax.set_ylabel("Events", y=1, ha='right')
+    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+           
+    return fig, ax
+
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
     return i.value, np.sqrt(i.variance)
