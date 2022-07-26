@@ -416,7 +416,7 @@ def plot_ratio_regions(plots, plot_label,
         
     return fig, (ax1, ax2)
     
-def plot_all_regions(plots, samples, plot_label,
+def plot_all_regions(plots, plot_label, samples, labels,
                regions='ABCDEFGH',
                rebin=-1, 
                density=False,
@@ -432,8 +432,8 @@ def plot_all_regions(plots, samples, plot_label,
         
         # get (x, y) for each sample in rhig region
         hists, ys, xs = [], [], []
-        for samples in samples:
-            h = plots[samples][plot_label.replace("A_", r+"_")]
+        for sample in samples:
+            h = plots[sample][plot_label.replace("A_", r+"_")]
             if density: h /= h.sum().value
             y, x = h.to_numpy()
             x = x[:-1]
@@ -444,13 +444,13 @@ def plot_all_regions(plots, samples, plot_label,
         # get args for min and max
         xmins, xmaxs = [], []
         for x, y in zip(xs, ys):
-            xmin = np.argwhere(y>0)[0] if any(y>0) else [0]
-            xmax = np.argwhere(y>0)[-1] if any(y>0) else [0]
+            xmin = np.argwhere(y>0)[0] if any(y>0) else [1e6]
+            xmax = np.argwhere(y>0)[-1] if any(y>0) else [1e-6]
             xmins.append(xmin)
             xmaxs.append(xmax)
-        xmin = min(xmins)
-        xmax = max(xmaxs)
-        
+        xmin = min(xmins)[0]
+        xmax = max(xmaxs)[0]
+                        
         # get only range that matters
         Xs, Ys = [], []
         for x, y in zip(xs, ys):
@@ -467,13 +467,12 @@ def plot_all_regions(plots, samples, plot_label,
         
         mids.append((Xs[0][-1]+Xs[0][0])/2)
         
-        for h, x, y, sample in zip(hists, Xs, Ys, samples):
+        for h, x, y, sample, label in zip(hists, Xs, Ys, samples, labels):
             y_errs = np.sqrt(h.variances())
             y_errs = y_errs[xmin:xmax+1]
             if rebin!=-1: x, y, y_errs = combine_bins(x, y, y_errs, n=rebin)
-            if i == 0: ax.step(x, y, color='maroon',label=sample, where='mid')
-            else: ax.step(x, y, color='maroon', where='mid')
-            ax.errorbar(x, y, yerr=y_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
+            if i == 0: ax.step(x, y, color=default_colors[sample], label=label, where='mid')
+            else: ax.step(x, y, color=default_colors[sample], where='mid')
      
         ax.axvline(Xs[0][0], ls="--", color='black')
         
