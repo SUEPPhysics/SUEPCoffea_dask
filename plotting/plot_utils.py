@@ -9,6 +9,8 @@ import mplhep as hep
 import pandas as pd
 import logging
 import shutil
+from sympy import symbols, diff, sqrt
+import sympy
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -580,7 +582,7 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var='x'):
     
     return SR, SR_exp
 
-def ABCD_9regions(hist_abcd, xregions, yregions, sum_var='x'):
+def ABCD_9regions(hist_abcd, xregions, yregions, sum_var='x', return_all=False):
     
     if sum_var == 'x':
         A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
@@ -611,7 +613,52 @@ def ABCD_9regions(hist_abcd, xregions, yregions, sum_var='x'):
             * (G.sum().value * F.sum().value / D.sum().value)**-2 \
             * (H.sum().value * C.sum().value / B.sum().value)**-2
         
-    return SR, SR_exp
+    if return_all: return A, B, C, D, E, F, G, H, SR, SR_exp
+    else: return SR, SR_exp
+
+def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var='x'):
+    """
+    Does 9 region ABCD using error propagation of the statistical
+    uncerantities of the regions. We need to scale histogram F or H
+    by some factor 'alpha' (defined in exp). For example, for F,
+    the new variance is:
+    variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance**2
+    """
+    
+    A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(abcd, xregions, yregions, sum_var='x', return_all=True)
+
+    # define the scaling factor function
+    a, b, c, d, e, f, g, h = symbols('A B C D E F G H')
+    if sum_var == 'x': exp = f * h**2 * d**2 * b**2 * g**-1 * c**-1 * a**-1 * e**-4
+    elif sum_var == 'y': exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
+
+    # defines lists of variables (sympy symbols) and accumulators (hist.sum())
+    variables = [a, b, c, d, e, f, g, h]
+    accs = [A.sum(), B.sum(), C.sum(), D.sum(), 
+            E.sum(), F.sum(), G.sum(), H.sum()]
+
+    # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
+    alpha = exp.copy()
+    for var, acc in zip(variables, accs):
+        alpha = alpha.subs(var, acc.value)
+
+    # calculate the error on the scaling factor
+    variance = 0
+    for var, acc in zip(variables, accs):
+        der = diff(exp, var)
+        var = abs(acc.variance)
+        variance += der**2 * var
+    for var, acc in zip(variables, accs):
+        variance = variance.subs(var, acc.value)
+    sigma_alpha = sqrt(variance)
+
+    # define SR_exp and propagate the error on the scaling factor to the bin variances
+    SR_exp = F.copy()
+    new_var = SR_exp.values()**2 * float(sigma_alpha)**2 + float(alpha)**2 * abs(SR_exp.variances())
+    SR_exp.view().variance = new_var
+    SR_exp.view().value = SR_exp.view().value * float(alpha)
+    
+    return SR, SR_exp, alpha, sigma_alpha
 
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
