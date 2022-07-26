@@ -526,6 +526,93 @@ def plot_sliced_hist2d(hist, regions_list, slice_var='y', labels=None):
     
     return fig, ax
 
+def ABCD_4regions(hist_abcd, xregions, yregions, sum_var='x',):
+    
+    if sum_var == 'x':
+        A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+        B = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+        C = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+        SR = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+        SR_exp = B * C.sum().value/A.sum().value
+    elif sum_var == 'y':
+        A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+        B = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+        C = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+        SR = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+        SR_exp = C * B.sum().value/A.sum().value
+        
+    return SR, SR_exp
+
+def ABCD_6regions(hist_abcd, xregions, yregions, sum_var='x'):
+    
+    if sum_var == 'x':
+        if len(xregions) == 3:
+            A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+            B = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+            C = hist_abcd[xregions[0]:xregions[1]:sum,yregions[2]:yregions[3]]
+            D = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+            E = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+            SR = hist_abcd[xregions[1]:xregions[2]:sum,yregions[2]:yregions[3]]
+        elif len(xregions) == 4:
+            A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+            B = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+            C = hist_abcd[xregions[2]:xregions[3]:sum,yregions[0]:yregions[1]]
+            D = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+            E = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+            SR = hist_abcd[xregions[2]:xregions[3]:sum,yregions[1]:yregions[2]]
+        SR_exp = E * E.sum().value * C.sum().value * A.sum().value / (B.sum().value**2 * D.sum().value)
+    elif sum_var == 'y':
+        if len(xregions) == 3:
+            A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+            B = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+            C = hist_abcd[xregions[0]:xregions[1],yregions[2]:yregions[3]:sum]
+            D = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+            E = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+            SR = hist_abcd[xregions[1]:xregions[2],yregions[2]:yregions[3]:sum]
+        elif len(xregions) == 4:
+            A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+            B = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+            C = hist_abcd[xregions[2]:xregions[3],yregions[0]:yregions[1]:sum]
+            D = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+            E = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+            SR = hist_abcd[xregions[2]:xregions[3],yregions[1]:yregions[2]:sum]
+        SR_exp = C * E.sum().value**2 * A.sum().value / (B.sum().value**2 * D.sum().value)
+    
+    return SR, SR_exp
+
+def ABCD_9regions(hist_abcd, xregions, yregions, sum_var='x'):
+    
+    if sum_var == 'x':
+        A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+        B = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+        C = hist_abcd[xregions[0]:xregions[1]:sum,yregions[2]:yregions[3]]
+        D = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+        E = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+        F = hist_abcd[xregions[1]:xregions[2]:sum,yregions[2]:yregions[3]]
+        G = hist_abcd[xregions[2]:xregions[3]:sum,yregions[0]:yregions[1]]
+        H = hist_abcd[xregions[2]:xregions[3]:sum,yregions[1]:yregions[2]]
+        SR = hist_abcd[xregions[2]:xregions[3]:sum,yregions[2]:yregions[3]]
+        SR_exp = F * F.sum().value**3 * (G.sum().value * C.sum().value / A.sum().value) * \
+                ((H.sum().value / E.sum().value)**4) \
+                * (G.sum().value * F.sum().value / D.sum().value)**-2 \
+                * (H.sum().value * C.sum().value / B.sum().value)**-2
+    elif sum_var == 'y':
+        A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+        B = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+        C = hist_abcd[xregions[0]:xregions[1],yregions[2]:yregions[3]:sum]
+        D = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+        E = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+        F = hist_abcd[xregions[1]:xregions[2],yregions[2]:yregions[3]:sum]
+        G = hist_abcd[xregions[2]:xregions[3],yregions[0]:yregions[1]:sum]
+        H = hist_abcd[xregions[2]:xregions[3],yregions[1]:yregions[2]:sum]
+        SR = hist_abcd[xregions[2]:xregions[3],yregions[2]:yregions[3]:sum]
+        SR_exp = H * H.sum().value **3 * (G.sum().value * C.sum().value / A.sum().value) * \
+            ((F.sum().value / E.sum().value)**4) \
+            * (G.sum().value * F.sum().value / D.sum().value)**-2 \
+            * (H.sum().value * C.sum().value / B.sum().value)**-2
+        
+    return SR, SR_exp
+
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
     return i.value, np.sqrt(i.variance)
