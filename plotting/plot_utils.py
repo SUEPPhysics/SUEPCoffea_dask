@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import pickle
 import boost_histogram as bh
+import mplhep as hep
 import pandas as pd
 import logging
 import shutil
@@ -482,6 +483,47 @@ def plot_all_regions(plots, samples, plot_label,
     ax.set_ylabel("Events", y=1, ha='right')
     ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
            
+    return fig, ax
+
+def slice_hist2d(hist, regions_list, slice_var='y'):
+    """
+    Inputs:
+        hist: 2d Hist histogram.
+        regions_list: list of regions using Hist slicing. e.g. [[10j,20j],[20j,30j],...]
+        slice_var: 'x' or 'y', which dimensions to slice in
+    Returns:
+        A list of Hist histograms.
+    """
+    hist_list = []
+    for regions in regions_list:
+        if slice_var == 'y': h = hist[:,regions[0]:regions[1]:sum]
+        elif slice_var == 'x': h = hist[regions[0]:regions[1]:sum,:]
+        hist_list.append(h)
+    return hist_list
+
+def plot_sliced_hist2d(hist, regions_list, slice_var='y', labels=None):
+    """
+    Takes a 2d histogram, slices it in different regions, and plots the
+    regions stacked.
+    Inputs:
+        hist: 2d Hist histogram.
+        regions_list: list of regions using Hist slicing. e.g. [[10j,20j],[20j,30j],...]
+        bin_var: 'x' or 'y', which dimensions to slice in
+        labels: list of strings to use as labels in plot.
+    Returns:
+        matplotlib fig and ax
+    """
+    if labels: assert len(labels) == len(regions_list)
+    hist_list = slice_hist2d(hist, regions_list, slice_var)
+    cmap = plt.cm.jet(np.linspace(0, 1, len(hist_list)))
+    
+    fig = plt.figure()
+    ax = fig.subplots()
+    hep.histplot(hist_list, yerr=True, stack=True, histtype ='fill',
+                 label=labels, color=cmap, ax=ax)
+    ax.legend(fontsize=14, framealpha=1, facecolor='white', shadow=True, bbox_to_anchor=(1.04,1), loc="upper left")
+    ax.set_yscale("log")
+    
     return fig, ax
 
 def integrate(h, lower, upper):
