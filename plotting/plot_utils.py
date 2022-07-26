@@ -5,9 +5,12 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import pickle
 import boost_histogram as bh
+import mplhep as hep
 import pandas as pd
 import logging
 import shutil
+from sympy import symbols, diff, sqrt
+import sympy
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -351,11 +354,11 @@ def plot_ratio_regions(plots, plot_label,
         y2, x2 = h2.to_numpy()
         x2 = x2[:-1]
                 
-        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [0]
-        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [0]
+        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [1e6]
+        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [1e6]
         xmax1 = np.argwhere(y1>0)[-1] if any(y1>0) else [0]
         xmax2 = np.argwhere(y2>0)[-1] if any(y2>0) else [0]
-        xmin = max(np.concatenate((xmin1, xmin2)))
+        xmin = min(np.concatenate((xmin1, xmin2)))
         xmax = max(np.concatenate((xmax2, xmax2)))
         x1 = x1[xmin:xmax+1]
         x2 = x2[xmin:xmax+1]
@@ -375,15 +378,15 @@ def plot_ratio_regions(plots, plot_label,
         y1_errs = np.sqrt(h1.variances())*lumi1
         y1_errs = y1_errs[xmin:xmax+1]
         if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
-        if i == 0: ax1.step(x1, y1, color='maroon',label=sample1, where='mid')
-        else: ax1.step(x1, y1, color='maroon', where='mid')
+        if i == 0: ax1.step(x1, y1, color='midnightblue',label=sample1, where='mid')
+        else: ax1.step(x1, y1, color='midnightblue', where='mid')
         ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
 
         y2_errs = np.sqrt(h2.variances())*lumi2
         y2_errs = y2_errs[xmin:xmax+1]
         if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
-        if i == 0: ax1.step(x2, y2, color='blue',label=sample2, where= 'mid')
-        else: ax1.step(x2, y2, color='blue', where= 'mid')
+        if i == 0: ax1.step(x2, y2, color='maroon',label=sample2, where= 'mid')
+        else: ax1.step(x2, y2, color='maroon', where= 'mid')
         ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
         
         ax1.axvline(x2[0], ls="--", color='black')
@@ -413,6 +416,249 @@ def plot_ratio_regions(plots, plot_label,
         
     return fig, (ax1, ax2)
     
+def plot_all_regions(plots, plot_label, samples, labels,
+               regions='ABCDEFGH',
+               rebin=-1, 
+               density=False,
+               xlim='default', 
+               log=True):
+
+    fig = plt.figure(figsize=(20,7))
+    ax = fig.subplots()
+    
+    offset = 0
+    mids = []
+    for i,r in enumerate(regions):
+        
+        # get (x, y) for each sample in rhig region
+        hists, ys, xs = [], [], []
+        for sample in samples:
+            h = plots[sample][plot_label.replace("A_", r+"_")]
+            if density: h /= h.sum().value
+            y, x = h.to_numpy()
+            x = x[:-1]
+            hists.append(h)
+            ys.append(y)
+            xs.append(x)
+        
+        # get args for min and max
+        xmins, xmaxs = [], []
+        for x, y in zip(xs, ys):
+            xmin = np.argwhere(y>0)[0] if any(y>0) else [1e6]
+            xmax = np.argwhere(y>0)[-1] if any(y>0) else [1e-6]
+            xmins.append(xmin)
+            xmaxs.append(xmax)
+        xmin = min(xmins)[0]
+        xmax = max(xmaxs)[0]
+                        
+        # get only range that matters
+        Xs, Ys = [], []
+        for x, y in zip(xs, ys):
+            x = x[xmin:xmax+1]
+            y = y[xmin:xmax+1]
+            x = x - x[0]
+            this_offset = x[-1]-x[0]
+            x = x + offset
+            Xs.append(x)
+            Ys.append(y)
+                
+        # total offset
+        offset += this_offset
+        
+        mids.append((Xs[0][-1]+Xs[0][0])/2)
+        
+        for h, x, y, sample, label in zip(hists, Xs, Ys, samples, labels):
+            y_errs = np.sqrt(h.variances())
+            y_errs = y_errs[xmin:xmax+1]
+            if rebin!=-1: x, y, y_errs = combine_bins(x, y, y_errs, n=rebin)
+            if i == 0: ax.step(x, y, color=default_colors[sample], label=label, where='mid')
+            else: ax.step(x, y, color=default_colors[sample], where='mid')
+     
+        ax.axvline(Xs[0][0], ls="--", color='black')
+        
+    if log: ax.set_yscale("log")
+ 
+    ax.set_xticks(mids)
+    ax.set_xticklabels(list(regions))
+    
+    ax.set_ylabel("Events", y=1, ha='right')
+    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
+           
+    return fig, ax
+
+def slice_hist2d(hist, regions_list, slice_var='y'):
+    """
+    Inputs:
+        hist: 2d Hist histogram.
+        regions_list: list of regions using Hist slicing. e.g. [[10j,20j],[20j,30j],...]
+        slice_var: 'x' or 'y', which dimensions to slice in
+    Returns:
+        A list of Hist histograms.
+    """
+    hist_list = []
+    for regions in regions_list:
+        if slice_var == 'y': h = hist[:,regions[0]:regions[1]:sum]
+        elif slice_var == 'x': h = hist[regions[0]:regions[1]:sum,:]
+        hist_list.append(h)
+    return hist_list
+
+def plot_sliced_hist2d(hist, regions_list, slice_var='y', labels=None):
+    """
+    Takes a 2d histogram, slices it in different regions, and plots the
+    regions stacked.
+    Inputs:
+        hist: 2d Hist histogram.
+        regions_list: list of regions using Hist slicing. e.g. [[10j,20j],[20j,30j],...]
+        bin_var: 'x' or 'y', which dimensions to slice in
+        labels: list of strings to use as labels in plot.
+    Returns:
+        matplotlib fig and ax
+    """
+    if labels: assert len(labels) == len(regions_list)
+    hist_list = slice_hist2d(hist, regions_list, slice_var)
+    cmap = plt.cm.jet(np.linspace(0, 1, len(hist_list)))
+    
+    fig = plt.figure()
+    ax = fig.subplots()
+    hep.histplot(hist_list, yerr=True, stack=True, histtype ='fill',
+                 label=labels, color=cmap, ax=ax)
+    ax.legend(fontsize=14, framealpha=1, facecolor='white', shadow=True, bbox_to_anchor=(1.04,1), loc="upper left")
+    ax.set_yscale("log")
+    
+    return fig, ax
+
+def ABCD_4regions(hist_abcd, xregions, yregions, sum_var='x',):
+    
+    if sum_var == 'x':
+        A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+        B = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+        C = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+        SR = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+        SR_exp = B * C.sum().value/A.sum().value
+    elif sum_var == 'y':
+        A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+        B = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+        C = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+        SR = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+        SR_exp = C * B.sum().value/A.sum().value
+        
+    return SR, SR_exp
+
+def ABCD_6regions(hist_abcd, xregions, yregions, sum_var='x'):
+    
+    if sum_var == 'x':
+        if len(xregions) == 3:
+            A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+            B = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+            C = hist_abcd[xregions[0]:xregions[1]:sum,yregions[2]:yregions[3]]
+            D = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+            E = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+            SR = hist_abcd[xregions[1]:xregions[2]:sum,yregions[2]:yregions[3]]
+        elif len(xregions) == 4:
+            A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+            B = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+            C = hist_abcd[xregions[2]:xregions[3]:sum,yregions[0]:yregions[1]]
+            D = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+            E = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+            SR = hist_abcd[xregions[2]:xregions[3]:sum,yregions[1]:yregions[2]]
+        SR_exp = E * E.sum().value * C.sum().value * A.sum().value / (B.sum().value**2 * D.sum().value)
+    elif sum_var == 'y':
+        if len(xregions) == 3:
+            A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+            B = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+            C = hist_abcd[xregions[0]:xregions[1],yregions[2]:yregions[3]:sum]
+            D = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+            E = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+            SR = hist_abcd[xregions[1]:xregions[2],yregions[2]:yregions[3]:sum]
+        elif len(xregions) == 4:
+            A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+            B = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+            C = hist_abcd[xregions[2]:xregions[3],yregions[0]:yregions[1]:sum]
+            D = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+            E = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+            SR = hist_abcd[xregions[2]:xregions[3],yregions[1]:yregions[2]:sum]
+        SR_exp = C * E.sum().value**2 * A.sum().value / (B.sum().value**2 * D.sum().value)
+    
+    return SR, SR_exp
+
+def ABCD_9regions(hist_abcd, xregions, yregions, sum_var='x', return_all=False):
+    
+    if sum_var == 'x':
+        A = hist_abcd[xregions[0]:xregions[1]:sum,yregions[0]:yregions[1]]
+        B = hist_abcd[xregions[0]:xregions[1]:sum,yregions[1]:yregions[2]]
+        C = hist_abcd[xregions[0]:xregions[1]:sum,yregions[2]:yregions[3]]
+        D = hist_abcd[xregions[1]:xregions[2]:sum,yregions[0]:yregions[1]]
+        E = hist_abcd[xregions[1]:xregions[2]:sum,yregions[1]:yregions[2]]
+        F = hist_abcd[xregions[1]:xregions[2]:sum,yregions[2]:yregions[3]]
+        G = hist_abcd[xregions[2]:xregions[3]:sum,yregions[0]:yregions[1]]
+        H = hist_abcd[xregions[2]:xregions[3]:sum,yregions[1]:yregions[2]]
+        SR = hist_abcd[xregions[2]:xregions[3]:sum,yregions[2]:yregions[3]]
+        SR_exp = F * F.sum().value**3 * (G.sum().value * C.sum().value / A.sum().value) * \
+                ((H.sum().value / E.sum().value)**4) \
+                * (G.sum().value * F.sum().value / D.sum().value)**-2 \
+                * (H.sum().value * C.sum().value / B.sum().value)**-2
+    elif sum_var == 'y':
+        A = hist_abcd[xregions[0]:xregions[1],yregions[0]:yregions[1]:sum]
+        B = hist_abcd[xregions[0]:xregions[1],yregions[1]:yregions[2]:sum]
+        C = hist_abcd[xregions[0]:xregions[1],yregions[2]:yregions[3]:sum]
+        D = hist_abcd[xregions[1]:xregions[2],yregions[0]:yregions[1]:sum]
+        E = hist_abcd[xregions[1]:xregions[2],yregions[1]:yregions[2]:sum]
+        F = hist_abcd[xregions[1]:xregions[2],yregions[2]:yregions[3]:sum]
+        G = hist_abcd[xregions[2]:xregions[3],yregions[0]:yregions[1]:sum]
+        H = hist_abcd[xregions[2]:xregions[3],yregions[1]:yregions[2]:sum]
+        SR = hist_abcd[xregions[2]:xregions[3],yregions[2]:yregions[3]:sum]
+        SR_exp = H * H.sum().value **3 * (G.sum().value * C.sum().value / A.sum().value) * \
+            ((F.sum().value / E.sum().value)**4) \
+            * (G.sum().value * F.sum().value / D.sum().value)**-2 \
+            * (H.sum().value * C.sum().value / B.sum().value)**-2
+        
+    if return_all: return A, B, C, D, E, F, G, H, SR, SR_exp
+    else: return SR, SR_exp
+
+def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var='x'):
+    """
+    Does 9 region ABCD using error propagation of the statistical
+    uncerantities of the regions. We need to scale histogram F or H
+    by some factor 'alpha' (defined in exp). For example, for F,
+    the new variance is:
+    variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance**2
+    """
+    
+    A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(abcd, xregions, yregions, sum_var='x', return_all=True)
+
+    # define the scaling factor function
+    a, b, c, d, e, f, g, h = symbols('A B C D E F G H')
+    if sum_var == 'x': exp = f * h**2 * d**2 * b**2 * g**-1 * c**-1 * a**-1 * e**-4
+    elif sum_var == 'y': exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
+
+    # defines lists of variables (sympy symbols) and accumulators (hist.sum())
+    variables = [a, b, c, d, e, f, g, h]
+    accs = [A.sum(), B.sum(), C.sum(), D.sum(), 
+            E.sum(), F.sum(), G.sum(), H.sum()]
+
+    # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
+    alpha = exp.copy()
+    for var, acc in zip(variables, accs):
+        alpha = alpha.subs(var, acc.value)
+
+    # calculate the error on the scaling factor
+    variance = 0
+    for var, acc in zip(variables, accs):
+        der = diff(exp, var)
+        var = abs(acc.variance)
+        variance += der**2 * var
+    for var, acc in zip(variables, accs):
+        variance = variance.subs(var, acc.value)
+    sigma_alpha = sqrt(variance)
+
+    # define SR_exp and propagate the error on the scaling factor to the bin variances
+    SR_exp = F.copy()
+    new_var = SR_exp.values()**2 * float(sigma_alpha)**2 + float(alpha)**2 * abs(SR_exp.variances())
+    SR_exp.view().variance = new_var
+    SR_exp.view().value = SR_exp.view().value * float(alpha)
+    
+    return SR, SR_exp, alpha, sigma_alpha
+
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
     return i.value, np.sqrt(i.variance)
