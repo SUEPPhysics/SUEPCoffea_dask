@@ -64,8 +64,8 @@ def loader(infile_names):
             lumi = 1
 
         # exclude low bins
-        if "50to100" in infile_name:
-            continue
+        # if "50to100" in infile_name:
+        #     continue
         # if '100to200' in infile_name: continue
         # if '200to300' in infile_name: continue
         # if '300to500' in infile_name: continue
@@ -86,6 +86,8 @@ def loader(infile_names):
             # include this block to import the QCD bins individually
             temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
             plots[temp_sample] = openpkl(infile_name)
+            if len(plots[temp_sample].keys()) == 0:
+                continue
             for plot in list(plots[temp_sample].keys()):
                 plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 

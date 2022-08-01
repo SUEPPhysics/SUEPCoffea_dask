@@ -117,8 +117,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Initial processing
         #####################################################################################
 
+        output['out_weight'] = processor.value_accumulator(float, 0)
         if self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
+            output['out_weight'] = processor.value_accumulator(float, self.gensumweight)
 
         # cut based on ak4 jets to replicate the trigger
         Jets = ak.zip(

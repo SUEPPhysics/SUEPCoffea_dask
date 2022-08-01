@@ -84,18 +84,18 @@ config = {
             ["SUEP_S1_CL", ">=", 0.0],
         ],
     },
-    "ClusterInverted": {
-        "input_method": "CL",
-        "xvar": "ISR_S1_CL",
-        "xvar_regions": [0.35, 0.4, 0.5, 1.0],
-        "yvar": "ISR_nconst_CL",
-        "yvar_regions": [20, 40, 80, 1000],
-        "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
-        "selections": [
-            ["ntracks", ">", 10],
-            ["ISR_S1_CL", ">=", 0.35],
-        ],
-    },
+#    "ClusterInverted": {
+#        "input_method": "CL",
+#        "xvar": "ISR_S1_CL",
+#        "xvar_regions": [0.35, 0.4, 0.5, 1.0],
+#        "yvar": "ISR_nconst_CL",
+#        "yvar_regions": [20, 40, 80, 1000],
+#        "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
+#        "selections": [
+#            ["ntracks", ">", 10],
+#            ["ISR_S1_CL", ">=", 0.35],
+#        ],
+#    },
 }
 
 #############################################################################################################
@@ -287,8 +287,8 @@ if options.xrootd:
     files = result.split("\n")
     files = [f for f in files if len(f) > 0]
 else:
-    dataDir = "../"
-    files = [dataDir + f for f in os.listdir(dataDir) if ".hdf5" in f]
+    dataDir = "../hdf5_temp/"
+    files = [dataDir + "condor_" + options.dataset + ".hdf5"]
 
 # get cross section
 xsection = 1.0

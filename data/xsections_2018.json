@@ -285,5 +285,87 @@
       "br":1,
       "kr":1,
       "xsec":6344.0
+   },
+
+    
+    "QCD_Pt_80to120+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 2346000.0
+   },
+   "QCD_Pt_800to1000+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 26.25
+   },
+   "QCD_Pt_600to800+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 156.7
+   },
+   "QCD_Pt_50to80+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 15700000.0
+   },
+   "QCD_Pt_470to600+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 551.2
+   },
+   "QCD_Pt_3200toInf+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 0.0001352
+   },
+   "QCD_Pt_3200toInf+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 0.0001352
+   },
+   "QCD_Pt_30to50+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 106500000.0
+   },
+   "QCD_Pt_300to470+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 6826.0 
+   },
+   "QCD_Pt_2400to3200+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 0.005237
+   },
+   "QCD_Pt_1800to2400+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 0.08734
+   },
+   "QCD_Pt_170to300+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 103700.0
+   },
+   "QCD_Pt_15to30+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 1244000000.0
+   },
+   "QCD_Pt_1400to1800+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 0.6487
+   },
+   "QCD_Pt_120to170+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 407700.0
+   },
+   "QCD_Pt_1000to1400+RunIISummer20UL18": {
+      "br": 1,
+      "kr": 1,
+      "xsec": 7.465
    }
 }
