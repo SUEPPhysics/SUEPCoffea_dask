@@ -1,0 +1,6 @@
+{
+    "QCD_Pt_1800to2400+RunIISummer20UL18": [
+        "root://cmseos.fnal.gov//store/user/lpcsuep/QCD_nano/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/90DF3E22-C726-2447-874C-29C5D7300637.root",
+        "root://cmseos.fnal.gov//store/user/lpcsuep/QCD_nano/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/E3A5A505-302B-2840-826D-63D39DBBC3FD.root"
+    ]
+}

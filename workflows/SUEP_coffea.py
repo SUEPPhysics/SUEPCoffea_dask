@@ -208,8 +208,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # have to set min_pt = 0 and cut later to avoid some memory issues
         # FIXME: should try to understand this failure
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(), "Momentum4D")
-        ak_inclusive_cluster = ak.with_name(cluster.constituents(), "Momentum4D")
+        ak_inclusive_jets = cluster.inclusive_jets()[:]
+        ak_inclusive_cluster = cluster.constituents()[:]
 
         # apply minimum pT cut
         minPtCut = ak_inclusive_jets.pt > minPt
