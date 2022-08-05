@@ -11,6 +11,7 @@ import logging
 import shutil
 from sympy import symbols, diff, sqrt
 import sympy
+import json
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -203,7 +204,20 @@ def check_proxy(time_min=100):
         shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
         
     return lifetime
-    
+
+def getXSection(dataset, year):
+    xsection = 1
+    with open('../data/xsections_{}.json'.format(year)) as file:
+        MC_xsecs = json.load(file)
+        try:
+            xsection *= MC_xsecs[dataset]["xsec"]
+            xsection *= MC_xsecs[dataset]["kr"]
+            xsection *= MC_xsecs[dataset]["br"]
+        except:
+            print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
+            return 1
+    return xsection
+
 def make_selection(df, variable, operator, value, apply=True):
     """
     Apply a selection on DataFrame df based on on the df column'variable'
