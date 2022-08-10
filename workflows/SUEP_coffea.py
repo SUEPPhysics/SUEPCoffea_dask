@@ -392,7 +392,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": events.PFCands.mass
         }, with_name="Momentum4D")
         cut = (events.PFCands.fromPV > 1) & \
-                 (events.PFCands.trkPt >= 0.7) & \
+                 (events.PFCands.trkPt >= 0.75) & \
                  (abs(events.PFCands.trkEta) <= 2.5) & \
                  (abs(events.PFCands.dz) < 10) & \
                  (events.PFCands.dzErr < 0.05)
@@ -407,7 +407,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "mass": 0.0
         }, with_name="Momentum4D")
         cut = (events.lostTracks.fromPV > 1) & \
-            (events.lostTracks.pt >= 0.7) & \
+            (events.lostTracks.pt >= 0.75) & \
             (abs(events.lostTracks.eta) <= 1.0) & \
             (abs(events.lostTracks.dz) < 10) & \
             (events.lostTracks.dzErr < 0.05)
