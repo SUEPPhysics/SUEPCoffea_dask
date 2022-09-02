@@ -74,7 +74,7 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_tracks_b = SUEP_cluster_tracks.boost_p4(boost_SUEP)        
         
         # SUEP jet variables
-        eigs = sphericity(self, SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
+        eigs = sphericity(SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
         self.out_vars.loc[indices, "SUEP_nconst_CL"] = ak.num(SUEP_tracks_b)
         self.out_vars.loc[indices, "SUEP_pt_avg_b_CL"] = ak.mean(SUEP_tracks_b.pt, axis=-1)
         self.out_vars.loc[indices, "SUEP_pt_mean_scaled_CL"] = ak.mean(SUEP_tracks_b.pt, axis=-1)/ak.max(SUEP_tracks_b.pt, axis=-1)
@@ -84,13 +84,15 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
         self.out_vars.loc[indices, "SUEP_pt_avg_CL"] = ak.mean(SUEP_tracks.pt, axis=-1)
         deltaR = SUEP_tracks.deltaR(SUEP_cand)
-        self.out_vars.loc[indices, "SUEP_rho0_CL"] = rho(self, 0, SUEP_cand, SUEP_tracks, deltaR)
-        self.out_vars.loc[indices, "SUEP_rho1_CL"] = rho(self, 1, SUEP_cand, SUEP_tracks, deltaR)
+        self.out_vars.loc[indices, "SUEP_rho0_CL"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
+        self.out_vars.loc[indices, "SUEP_rho1_CL"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
         
         self.out_vars.loc[indices, "SUEP_pt_CL"] = SUEP_cand.pt
         self.out_vars.loc[indices, "SUEP_eta_CL"] = SUEP_cand.eta
         self.out_vars.loc[indices, "SUEP_phi_CL"] = SUEP_cand.phi
         self.out_vars.loc[indices, "SUEP_mass_CL"] = SUEP_cand.mass
+        
+        self.out_vars.loc[indices, "SUEP_delta_mass_genMass_CL"] = SUEP_cand.mass - self.out_vars['SUEP_genMass'][indices]
         
         # inverted selection
         if do_inverted:
@@ -117,7 +119,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 ISR_cand = ISR_cand[oneISRtrackCut]
 
                 # ISR jet variables
-                eigs = sphericity(self, ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
+                eigs = sphericity(ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
                 self.out_vars.loc[indices, "ISR_nconst_CL"] = ak.num(ISR_tracks_b)
                 self.out_vars.loc[indices, "ISR_pt_avg_b_CL"] = ak.mean(ISR_tracks_b.pt, axis=-1)
                 self.out_vars.loc[indices, "ISR_pt_mean_scaled_CL"] = ak.mean(ISR_tracks_b.pt, axis=-1)/ak.max(ISR_tracks_b.pt, axis=-1)
@@ -127,8 +129,8 @@ class SUEP_cluster(processor.ProcessorABC):
                 ISR_tracks = ISR_tracks_b.boost_p4(ISR_cand)
                 self.out_vars.loc[indices, "ISR_pt_avg_CL"] = ak.mean(ISR_tracks.pt, axis=-1)
                 deltaR = ISR_tracks.deltaR(ISR_cand)
-                self.out_vars.loc[indices, "ISR_rho0_CL"] = rho(self, 0, ISR_cand, ISR_tracks, deltaR)
-                self.out_vars.loc[indices, "ISR_rho1_CL"] = rho(self, 1, ISR_cand, ISR_tracks, deltaR)
+                self.out_vars.loc[indices, "ISR_rho0_CL"] = rho(0, ISR_cand, ISR_tracks, deltaR)
+                self.out_vars.loc[indices, "ISR_rho1_CL"] = rho(1, ISR_cand, ISR_tracks, deltaR)
 
                 self.out_vars.loc[indices, "ISR_pt_CL"] = ISR_cand.pt
                 self.out_vars.loc[indices, "ISR_eta_CL"] = ISR_cand.eta
@@ -177,7 +179,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars.loc[indices, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(abs(SUEP_cand.deltaphi(ISR_cand_IRM)), axis=-1)
 
             # SUEP jet variables
-            eigs = sphericity(self, SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
+            eigs = sphericity(SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
             self.out_vars.loc[indices, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b)
             self.out_vars.loc[indices, "SUEP_pt_avg_b_IRM"] = ak.mean(SUEP_tracks_b.pt, axis=-1)
             self.out_vars.loc[indices, "SUEP_pt_mean_scaled_IRM"] = ak.mean(SUEP_tracks_b.pt, axis=-1)/ak.max(SUEP_tracks_b.pt, axis=-1)
@@ -187,8 +189,8 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
             self.out_vars.loc[indices, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks.pt, axis=-1)
             deltaR = SUEP_tracks.deltaR(SUEP_cand)
-            self.out_vars.loc[indices, "SUEP_rho0_IRM"] = rho(self, 0, SUEP_cand, SUEP_tracks, deltaR)
-            self.out_vars.loc[indices, "SUEP_rho1_IRM"] = rho(self, 1, SUEP_cand, SUEP_tracks, deltaR)
+            self.out_vars.loc[indices, "SUEP_rho0_IRM"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
+            self.out_vars.loc[indices, "SUEP_rho1_IRM"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
 
             # redefine the jets using the tracks as selected by IRM
             SUEP = ak.zip({
@@ -248,7 +250,7 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_tracks_b = SUEP_tracks.boost_p4(boost_SUEP)
                 
             # SUEP jet variables
-            eigs = sphericity(self, SUEP_tracks_b, 1.0) #Set r=1.0 for IRC safe
+            eigs = sphericity(SUEP_tracks_b, 1.0) #Set r=1.0 for IRC safe
             self.out_vars.loc[indices, "SUEP_nconst_CO"] = ak.num(SUEP_tracks_b)
             self.out_vars.loc[indices, "SUEP_pt_avg_b_CO"] = ak.mean(SUEP_tracks_b.pt, axis=-1)
             self.out_vars.loc[indices, "SUEP_pt_mean_scaled_CO"] = ak.mean(SUEP_tracks_b.pt, axis=-1)/ak.max(SUEP_tracks_b.pt, axis=-1)
@@ -258,8 +260,8 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
             self.out_vars.loc[indices, "SUEP_pt_avg_CO"] = ak.mean(SUEP_tracks.pt, axis=-1)
             deltaR = SUEP_tracks.deltaR(SUEP_cand)
-            self.out_vars.loc[indices, "SUEP_rho0_CO"] = rho(self, 0, SUEP_cand, SUEP_tracks, deltaR)
-            self.out_vars.loc[indices, "SUEP_rho1_CO"] = rho(self, 1, SUEP_cand, SUEP_tracks, deltaR)               
+            self.out_vars.loc[indices, "SUEP_rho0_CO"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
+            self.out_vars.loc[indices, "SUEP_rho1_CO"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)               
             
             self.out_vars.loc[indices, "SUEP_pt_CO"] = SUEP_cand.pt
             self.out_vars.loc[indices, "SUEP_eta_CO"] = SUEP_cand.eta
@@ -299,7 +301,7 @@ class SUEP_cluster(processor.ProcessorABC):
                     ISR_tracks_b = ISR_tracks.boost_p4(boost_ISR)
 
                     # ISR jet variables
-                    eigs = sphericity(self, ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
+                    eigs = sphericity(ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
                     self.out_vars.loc[indices, "ISR_nconst_CO"] = ak.num(ISR_tracks_b)
                     self.out_vars.loc[indices, "ISR_pt_avg_b_CO"] = ak.mean(ISR_tracks_b.pt, axis=-1)
                     self.out_vars.loc[indices, "ISR_pt_mean_scaled_CO"] = ak.mean(ISR_tracks_b.pt, axis=-1)/ak.max(ISR_tracks_b.pt, axis=-1)
@@ -309,8 +311,8 @@ class SUEP_cluster(processor.ProcessorABC):
                     ISR_tracks = ISR_tracks_b.boost_p4(ISR_cand)
                     self.out_vars.loc[indices, "ISR_pt_avg_CO"] = ak.mean(ISR_tracks.pt, axis=-1)
                     deltaR = ISR_tracks.deltaR(ISR_cand)
-                    self.out_vars.loc[indices, "ISR_rho0_CO"] = rho(self, 0, ISR_cand, ISR_tracks, deltaR)
-                    self.out_vars.loc[indices, "ISR_rho1_CO"] = rho(self, 1, ISR_cand, ISR_tracks, deltaR)
+                    self.out_vars.loc[indices, "ISR_rho0_CO"] = rho(0, ISR_cand, ISR_tracks, deltaR)
+                    self.out_vars.loc[indices, "ISR_rho1_CO"] = rho(1, ISR_cand, ISR_tracks, deltaR)
 
                     self.out_vars.loc[indices, "ISR_pt_CO"] = ISR_cand.pt
                     self.out_vars.loc[indices, "ISR_eta_CO"] = ISR_cand.eta
@@ -383,6 +385,17 @@ class SUEP_cluster(processor.ProcessorABC):
             ak4jets = ak4jets[(trigger & (ht > 1200))]
             
         return events, ak4jets
+    
+    def getGenTracks(self, events):
+        genParts = events.GenPart
+        genParts = ak.zip({
+            "pt": genParts.pt,
+            "eta": genParts.eta,
+            "phi": genParts.phi,
+            "mass": genParts.mass,
+            "pdgID": genParts.pdgId
+        }, with_name="Momentum4D")
+        return genParts
     
     def getTracks(self, events):
         Cands = ak.zip({
@@ -474,6 +487,14 @@ class SUEP_cluster(processor.ProcessorABC):
             if self.isMC: self.out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt
             self.out_vars["PV_npvs"] = events.PV.npvs
             self.out_vars["PV_npvsGood"] = events.PV.npvsGood
+            
+        # get gen SUEP mass
+        if self.isMC:
+            genParts = self.getGenTracks(events)
+            genParts = genParts[(abs(genParts.pdgID) == 25)]
+            # we need to grab the last SUEP in the chain for each event
+            SUEP_genMass = [g[-1].mass for g in genParts]
+            self.out_vars["SUEP_genMass"] = SUEP_genMass
     
     def FastJetReclustering(self, tracks, r, minPt):
         
@@ -482,8 +503,8 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # have to set min_pt = 0 and cut later to avoid some memory issues
         # FIXME: should try to understand this failure
-        ak_inclusive_jets = ak.with_name(cluster.inclusive_jets(),"Momentum4D") 
-        ak_inclusive_cluster = ak.with_name(cluster.constituents(),"Momentum4D")
+        ak_inclusive_jets = cluster.inclusive_jets()[:] 
+        ak_inclusive_cluster = cluster.constituents()[:]
         
         # apply minimum pT cut
         minPtCut = ak_inclusive_jets.pt > minPt

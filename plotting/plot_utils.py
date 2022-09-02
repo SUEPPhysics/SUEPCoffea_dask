@@ -11,9 +11,21 @@ import logging
 import shutil
 from sympy import symbols, diff, sqrt
 import sympy
+import json
 
 default_colors = {
     'QCD': 'midnightblue',
+    'QCD_HT': 'midnightblue',
+    'QCD_HT_2018': 'midnightblue',
+    'QCD_HT_2017': 'midnightblue',
+    'QCD_HT_2016': 'midnightblue',
+    'QCD_HT_allyears': 'midnightblue',
+    'data': 'maroon',
+    'data': 'maroon',
+    'data_2018': 'maroon',
+    'data_2017': 'maroon',
+    'data_2016': 'maroon',
+    'data_allyears': 'maroon',
     'SUEP-m1000-darkPho': 'red',
     'SUEP-m1000-darkPhoHad': 'red',
     'SUEP-m1000-generic': 'red',
@@ -63,7 +75,7 @@ def loader(infile_names):
 
         # exclude low bins
         if '50to100' in infile_name: continue
-        # if '100to200' in infile_name: continue
+        if '100to200' in infile_name: continue
         # if '200to300' in infile_name: continue
         # if '300to500' in infile_name: continue
         # if '500to700' in infile_name: continue
@@ -110,8 +122,37 @@ def loader(infile_names):
             plotsToAdd = openpkl(infile_name) 
             for plot in list(plotsToAdd.keys()):
                 plots[sample][plot]  = plots[sample][plot] + plotsToAdd[plot]*lumi
-                
+            
     return plots
+
+def combineYears(inplots, tag='QCD_HT', years=['2018','2017','2016']):
+    """
+    Combines all samples in plots with a certain tag and with certain
+    years. Returns combined plots.
+    """
+    outPlots = {}
+    yearsAdded = []
+    initialize=True
+    for sample in inplots.keys():
+        if tag not in sample: continue
+        if not any([y in sample for y in years]): continue
+        
+        # keep track of which years we've added already
+        for year in years:
+            if year in sample: 
+                if year in yearsAdded: raise Exception("Already loaded this year: "+year)
+                yearsAdded.append(year)
+                
+        # combine samples
+        if initialize:
+            outPlots = inplots[sample].copy()
+        else:            
+            for plot in list(inplots[sample].keys()):
+                outPlots[plot] = outPlots[plot] + inplots[sample][plot].copy()
+                    
+        initialize = False
+    
+    return outPlots
 
 # load hdf5 with pandas
 def h5load(ifile, label):
@@ -163,7 +204,20 @@ def check_proxy(time_min=100):
         shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
         
     return lifetime
-    
+
+def getXSection(dataset, year):
+    xsection = 1
+    with open('../data/xsections_{}.json'.format(year)) as file:
+        MC_xsecs = json.load(file)
+        try:
+            xsection *= MC_xsecs[dataset]["xsec"]
+            xsection *= MC_xsecs[dataset]["kr"]
+            xsection *= MC_xsecs[dataset]["br"]
+        except:
+            print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
+            return 1
+    return xsection
+
 def make_selection(df, variable, operator, value, apply=True):
     """
     Apply a selection on DataFrame df based on on the df column'variable'
@@ -253,7 +307,6 @@ def plot_ratio(h1, h2,
                plot_label=None, 
                label1=None, label2=None, 
                rebin=-1, 
-               lumi1=1, lumi2=1, 
                xlim='default', 
                log=True):
 
@@ -263,17 +316,16 @@ def plot_ratio(h1, h2,
     ax1 = plt.subplot2grid((4,1), (0,0),rowspan=2)
 
     y1, x1 = h1.to_numpy()
-    y1 = y1*lumi1
     x1 = x1[:-1]
-    y1_errs = np.sqrt(h1.variances())*lumi1
+    y1_errs = np.sqrt(h1.variances())
     if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
     ax1.step(x1, y1, color='maroon',label=label1, where='mid')
     ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
 
     y2, x2 = h2.to_numpy()
-    y2 = y2*lumi2
+    y2 = y2
     x2 = x2[:-1]
-    y2_errs = np.sqrt(h2.variances())*lumi2
+    y2_errs = np.sqrt(h2.variances())
     if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
     ax1.step(x2, y2, color='blue',label=label2, where= 'mid')
     ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
@@ -327,10 +379,7 @@ def plot_ratio_regions(plots, plot_label,
                sample1, sample2, 
                regions,
                rebin=-1, 
-               lumi1=1, lumi2=1, 
-               density=False,
-               xlim='default', 
-               log=True):
+               density=False):
 
     fig = plt.figure(figsize=(20,7))
     ax1 = plt.subplot2grid((4,1),(0,0), rowspan=2)
@@ -346,8 +395,8 @@ def plot_ratio_regions(plots, plot_label,
         h2 = plots[sample2][plot_label.replace("A_", r+"_")]
         
         if density:
-            h1 /= h1.sum().value
-            h2 /= h2.sum().value
+            h1 = h1/h1.sum().value
+            h2 = h2/h2.sum().value
         
         y1, x1 = h1.to_numpy()
         x1 = x1[:-1]
@@ -375,14 +424,14 @@ def plot_ratio_regions(plots, plot_label,
         
         mids.append((x1[-1]+x1[0])/2)
         
-        y1_errs = np.sqrt(h1.variances())*lumi1
+        y1_errs = np.sqrt(h1.variances())
         y1_errs = y1_errs[xmin:xmax+1]
         if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
         if i == 0: ax1.step(x1, y1, color='midnightblue',label=sample1, where='mid')
         else: ax1.step(x1, y1, color='midnightblue', where='mid')
         ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
 
-        y2_errs = np.sqrt(h2.variances())*lumi2
+        y2_errs = np.sqrt(h2.variances())
         y2_errs = y2_errs[xmin:xmax+1]
         if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
         if i == 0: ax1.step(x2, y2, color='maroon',label=sample2, where= 'mid')
@@ -401,7 +450,7 @@ def plot_ratio_regions(plots, plot_label,
         ratios = np.where((y2>0) & (y1>0), y2/y1, 1)
         ax2.errorbar(x1, ratios, yerr=ratio_errs, color="black", fmt="", drawstyle='steps-mid')
     
-    if log: ax1.set_yscale("log")
+    ax1.set_yscale("log")
  
     ax1.set_xticks(mids)
     ax1.set_xticklabels(list(regions))
@@ -434,7 +483,7 @@ def plot_all_regions(plots, plot_label, samples, labels,
         hists, ys, xs = [], [], []
         for sample in samples:
             h = plots[sample][plot_label.replace("A_", r+"_")]
-            if density: h /= h.sum().value
+            if density: h = h/h.sum().value
             y, x = h.to_numpy()
             x = x[:-1]
             hists.append(h)
@@ -740,23 +789,3 @@ def nested_dict(n, type):
         return defaultdict(type)
     else:
         return defaultdict(lambda: nested_dict(n-1, type))
-    
-def D_expect(plots, selection):
-    sizeC = plots['C_' + selection].sum()
-    sizeA = plots['A_' + selection].sum()
-    Bhist = plots['B_' + selection]
-    if sizeA.value > 0:
-        D_exp = Bhist * sizeC.value / sizeA.value
-    else: #Cannot properly predict D without any events in A
-        D_exp = Bhist * 0.0
-    return D_exp
-
-def D_expect_var2(plots, selection):
-    sizeB = plots['B_var2_' + selection].sum()
-    sizeA = plots['A_var2_' + selection].sum()
-    Chist = plots['C_var2_' + selection]
-    if sizeA.value > 0:
-        D_exp = Chist * sizeB.value / sizeA.value
-    else: #Cannot properly predict D without any events in A
-        D_exp = Chist * 0.0
-    return D_exp

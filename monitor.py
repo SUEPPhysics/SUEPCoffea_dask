@@ -107,8 +107,8 @@ def main():
                 logging.info("-- resubmitting files for {}".format(sample))
                 file_names = []
                 for item in complete_list:
-                    if 'hdf5' not in item: continue
-                    file_names.append(item.split('.hdf5')[0])
+                    if '.' not in item: continue
+                    file_names.append(item.split('.')[0])
                 
                 jobs_resubmit = [item for item in jobs if item.split("\t")[-1] not in file_names]
                 resubmit_file = open(jobs_dir + "/" + "inputfiles.dat","w")
