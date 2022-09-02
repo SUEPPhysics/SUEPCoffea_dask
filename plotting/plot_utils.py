@@ -218,6 +218,19 @@ def getXSection(dataset, year):
             return 1
     return xsection
 
+def get_tracks_up(nom, down):
+    nom_out = nom.to_numpy()
+    down_out = down.to_numpy()
+    if len(nom_out) == 2:
+        variation = nom_out[0] - down_out[0]
+        h = bh.Histogram(bh.axis.Variable(nom_out[1]), storage=bh.storage.Weight())
+        h[:] = np.stack([nom_out[0] + variation, np.sqrt(nom_out[0] + variation)], axis=-1)
+    elif len(nom_out) == 3:
+        variation = nom_out[0] - down_out[0]
+        h = bh.Histogram(bh.axis.Variable(nom_out[1]), bh.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
+        h[:,:] = np.stack([nom_out[0] + variation, np.sqrt(nom_out[0] + variation)], axis=-1)
+    return h
+
 def make_selection(df, variable, operator, value, apply=True):
     """
     Apply a selection on DataFrame df based on on the df column'variable'

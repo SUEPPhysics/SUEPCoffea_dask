@@ -189,7 +189,7 @@ if options.weights != "None":
 def create_output_file(label, abcd, sys):
 
     # don't recreate histograms if called multiple times with the same output label
-    label = label + "_" + sys
+    if len(sys) > 0: label += + "_" + sys
     if label in output["labels"]: return output
     else: output["labels"].append(label)
     
@@ -372,9 +372,6 @@ for ifile in tqdm(files):
                         config_out[label_out]['SR'][iSel][0] += "_trackDOWN"
                     for iSel in range(len(config_out[label_out]['selections'])):
                         config_out[label_out]['selections'][iSel][0] += "_trackDOWN"
-            elif "tracks_up" in sys:
-                # FIXME: need to finish this
-                pass
 
         # 4) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling
@@ -400,6 +397,18 @@ for ifile in tqdm(files):
 
 ### End plotting loop ###################################################################
     
+# do the tracks UP systematic
+sys = 'tracks_up'
+for label_out, config_out in config.items():
+    output.update(create_output_file(label_out, config_out,sys))
+    
+    for hist_name in output.keys():
+        if not hist_name.endswith('_tracks_down'): continue
+        hDown = output[hist_name]
+        hNom = output[hist_name.replace('tracks_down','')]
+        hUp = get_tracks_up(hNom, hDown)
+        output.update({hist_name.replace('tracks_down','tracks_up'): hUp})
+        
 # apply normalization
 output.pop("labels")
 if options.isMC:
