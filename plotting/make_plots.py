@@ -43,19 +43,9 @@ selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
 config = {
-    'ISRRemoval' : {
-        'input_method' : 'IRM',
-        'xvar' : 'SUEP_S1_IRM',
-        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-        'yvar' : 'SUEP_nconst_IRM',
-        'yvar_regions' : [10, 20, 40, 1000],
-        'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
-    },
     
     'Cluster' : {
         'input_method' : 'CL',
-        'label_out' : 'CL',
         'xvar' :'SUEP_S1_CL',
         'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
         'yvar' : 'SUEP_nconst_CL',
@@ -74,9 +64,18 @@ config = {
         'selections' : [['ht', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.0]]
     },
     
+    # 'ISRRemoval' : {
+    #     'input_method' : 'IRM',
+    #     'xvar' : 'SUEP_S1_IRM',
+    #     'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+    #     'yvar' : 'SUEP_nconst_IRM',
+    #     'yvar_regions' : [10, 20, 40, 1000],
+    #     'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
+    #     'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
+    # },
+        
 #     'ResNet' : {
 #         'input_method' : 'ML',
-#         'label_out' : 'ML',
 #         'xvar' : 'resnet_SUEP_pred_ML',
 #         'xvar_regions' : [0.0, 0.5, 1.0],
 #         'yvar' : 'ntracks',
@@ -88,71 +87,6 @@ config = {
 }
 
 #############################################################################################################
-    
-def auto_fill(df, output, abcd, label_out, do_abcd=False):
-    
-    input_method = abcd['input_method']
-
-    #####################################################################################
-    # ---- Fill Histograms
-    # Automatically fills all histograms that are declared in the output dict.
-    #####################################################################################
-    
-    # 1. fill the distributions as they are saved in the dataframes
-    # 1a. Plot event wide variables
-    plot_labels = [key for key in df.keys() if key+"_"+label_out in list(output.keys())]  
-    for plot in plot_labels: output[plot+"_"+label_out].fill(df[plot], weight=df['event_weight']) 
-    # 1b. Plot method variables
-    plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys())]
-    for plot in plot_labels: output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
-    # FIXME: plot ABCD 2d
-    
-    # 2. fill some 2D distributions  
-    keys = list(output.keys())
-    keys_2Dhists = [k for k in keys if '2D' in k]
-    for key in keys_2Dhists:
-        if not key.endswith(label_out): continue
-        string = key[len("2D")+1:-(len(label_out)+1)] # cut out "2D_" and output label
-        var1 = string.split("_vs_")[0]
-        var2 = string.split("_vs_")[1]
-        if var1 not in list(df.keys()): var1 += "_" + input_method
-        if var2 not in list(df.keys()): var2 += "_" + input_method
-        output[key].fill(df[var1], df[var2], weight=df['event_weight'])
-
-    # 3. divide the dfs by region
-    if do_abcd:
-        regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        xvar = abcd['xvar']
-        yvar = abcd['yvar']
-        xvar_regions = abcd['xvar_regions']
-        yvar_regions = abcd['yvar_regions']
-        iRegion = 0
-        for i in range(len(xvar_regions)-1):
-            x_val_lo = xvar_regions[i]
-            x_val_hi = xvar_regions[i+1]
-
-            for j in range(len(yvar_regions)-1):
-                y_val_lo = yvar_regions[j]
-                y_val_hi = yvar_regions[j+1]
-
-                x_cut = (make_selection(df, xvar, '>=', x_val_lo, False) & make_selection(df, xvar, '<', x_val_hi, False))
-                y_cut = (make_selection(df, yvar, '>=', y_val_lo, False) & make_selection(df, yvar, '<', y_val_hi, False))
-                df_r = df.loc[(x_cut & y_cut)]
-
-                r = regions[iRegion] + "_"
-                iRegion += 1
-
-                # double check blinding
-                if iRegion == (len(xvar_regions)-1)*(len(yvar_regions)-1) and not options.isMC:
-                    if df_r.shape[0] > 0: 
-                        sys.exit(label_out+": You are not blinding correctly! Exiting.")
-
-                # 3a. Plot event wide variables
-                plot_labels = [key for key in df_r.keys() if r+key+"_"+label_out in list(output.keys())]   # event wide variables
-                for plot in plot_labels: output[r+plot+"_"+label_out].fill(df_r[plot], weight=df_r['event_weight']) 
-                # 3b. Plot method variables
-                plot_labels = [key for key in df_r.keys() if r+key.replace(input_method, label_out) in list(output.keys())]  # method vars
-                for plot in plot_labels: output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
             
 def plot(df, output, abcd, label_out, sys):
     """
@@ -202,11 +136,8 @@ def plot(df, output, abcd, label_out, sys):
     """
 
     input_method = abcd['input_method']
-
-    #####################################################################################
-    # ---- Event Selection
-    #####################################################################################
     label_out = label_out + "_" + sys
+    
     # 1. keep only events that passed this method
     df = df[~df[abcd['xvar']].isnull()]
         
@@ -248,11 +179,11 @@ puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.er
 trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
 
 # custom per region weights
-weights = None
+scaling_weights = None
 if options.weights != "None":
     w = np.load(options.weights, allow_pickle=True)
-    weights = defaultdict(lambda: np.zeros(2))
-    weights.update(w.item())
+    scaling_weights = defaultdict(lambda: np.zeros(2))
+    scaling_weights.update(w.item())
 
 # output histos
 def create_output_file(label, abcd, sys):
@@ -397,7 +328,9 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    sys_loop = ["","puweights_up","puweights_down","trigSF_up","trigSF_down"]
+    sys_loop = ["","puweights_up","puweights_down",
+                "trigSF_up","trigSF_down",
+               "tracks_down"]
     for sys in sys_loop:
         # prepare new event weight
         df['event_weight'] = event_weight
@@ -424,48 +357,35 @@ for ifile in tqdm(files):
                  trigSF = trig_weights_down[ht_bin]
             else:
                  trigSF = trig_weights[ht_bin]
-            df['event_weight'] *= trigSF   
+            df['event_weight'] *= trigSF  
+            
+        if options.isMC and not options.scouting:
+            if "tracks_down" in sys:
+                # we need to use the trackDOWN version of the data,
+                # which has the randomly deleted tracks (see SUEPCoffea.py)
+                # so we need to modify the config to use the _trackDOWN vars
+                for label_out, config_out in config.items():
+                    config_out[label_out]['input_method'] += "_trackDOWN"
+                    config_out[label_out]['xvar'] += "_trackDOWN"
+                    config_out[label_out]['yvar'] += "_trackDOWN"
+                    for iSel in range(len(config_out[label_out]['SR'])):
+                        config_out[label_out]['SR'][iSel][0] += "_trackDOWN"
+                    for iSel in range(len(config_out[label_out]['selections'])):
+                        config_out[label_out]['selections'][iSel][0] += "_trackDOWN"
+            elif "tracks_up" in sys:
+                # FIXME: need to finish this
+                pass
 
-        # 3) scaling weights
-        if options.isMC == 1 and weights is not None:
-
-            regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            x_var = 'SUEP_S1_CL'
-            y_var = 'SUEP_nconst_CL'
-            z_var = 'ht'
-            x_var_regions = []
-            y_var_regions = []
-            iRegion = 0
-
-            # S1 regions
-            for i in range(len(x_var_regions)-1):
-                x_val_lo = x_var_regions[i]
-                x_val_hi = x_var_regions[i+1]
-
-                # nconst regions
-                for j in range(len(y_var_regions)-1):
-                    y_val_lo = y_var_regions[j]
-                    y_val_hi = y_var_regions[j+1]
-
-                    r = regions[iRegion]
-
-                    # from the weights
-                    bins = weights[r]['ht_bins']
-                    ratios = weights[r]['ratios']
-
-                    # ht bins
-                    for k in range(len(bins)-1):
-                        z_val_lo = bins[k]
-                        z_val_hi = bins[k+1]
-                        ratio = ratios[k]
-
-                        zslice = (df[z_var] >= z_val_lo) & (df[z_var] < z_val_hi)
-                        yslice = (df[y_var] >= y_val_lo) & (df[y_var] < y_val_hi)
-                        xslice = (df[x_var] >= x_val_lo) & (df[x_var] < x_val_hi)
-
-                        df.loc[xslice & yslice & zslice, 'event_weight'] *= ratio
-
-                    iRegion += 1
+        # 4) scaling weights
+        # N.B.: these aren't part of the systematics, just an optional scaling
+        if options.isMC == 1 and scaling_weights is not None:
+            df = apply_scaling_weights(df.copy(), scaling_weights,
+                config['Cluster']['x_var_regions'],
+                config['Cluster']['x_var_regions'],
+                regions = "ABCDEFGHI",
+                x_var = 'SUEP_S1_CL',
+                y_var = 'SUEP_nconst_CL',
+                z_var = 'ht')
 
         for label_out, config_out in config.items():
             output.update(create_output_file(label_out, config_out,sys))
