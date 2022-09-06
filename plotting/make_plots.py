@@ -11,6 +11,7 @@ import json
 from tqdm import tqdm
 from hist import Hist
 from collections import defaultdict
+from copy import deepcopy
 
 #Import our own functions
 import pileup_weight
@@ -28,6 +29,7 @@ parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
 parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
+parser.add_argument('--merged', type=int, default=1, help="Use merged files")
 options = parser.parse_args()
 
 # parameters for script
@@ -54,15 +56,15 @@ config = {
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
-    'ClusterInverted' : {
-        'input_method' : 'CL',
-        'xvar' : 'ISR_S1_CL',
-        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-        'yvar' : 'ISR_nconst_CL',
-        'yvar_regions' : [20, 40, 80, 1000],
-        'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.0]]
-    },
+    # 'ClusterInverted' : {
+    #     'input_method' : 'CL',
+    #     'xvar' : 'ISR_S1_CL',
+    #     'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+    #     'yvar' : 'ISR_nconst_CL',
+    #     'yvar_regions' : [20, 40, 80, 1000],
+    #     'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
+    #     'selections' : [['ht', '>', 1200], ['ntracks','>', 10], ["ISR_S1_CL", ">=", 0.0]]
+    # },
     
     # 'ISRRemoval' : {
     #     'input_method' : 'IRM',
@@ -136,7 +138,7 @@ def plot(df, output, abcd, label_out, sys):
     """
 
     input_method = abcd['input_method']
-    label_out = label_out + "_" + sys
+    if len(sys) > 0: label_out = label_out + "_" + sys
     
     # 1. keep only events that passed this method
     df = df[~df[abcd['xvar']].isnull()]
@@ -150,9 +152,9 @@ def plot(df, output, abcd, label_out, sys):
     # 3. apply selections
     for sel in abcd['selections']: 
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
-        
+    
     # auto fill all histograms in the output dictionary
-    auto_fill(df, output, abcd, label_out, do_abcd=True)
+    auto_fill(df, output, abcd, label_out, isMC=options.isMC, do_abcd=True)
            
     return output
         
@@ -161,13 +163,15 @@ def plot(df, output, abcd, label_out, sys):
 # get list of files
 username = getpass.getuser()
 if options.xrootd:
-    dataDir = "/scratch/{}/SUEP/{}/{}/merged/".format(username,options.tag,options.dataset)
+    dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+    if options.merged: dataDir += "merged/"
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
     result = result.decode("utf-8")
     files = result.split("\n")
     files = [f for f in files if len(f) > 0]
 else:
-    dataDir = "/data/submit/{}/{}/{}/merged/".format(username, options.tag, options.dataset)
+    dataDir = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
+    if options.merged: dataDir += "merged/"
     files = [dataDir + f for f in os.listdir(dataDir)]
 
 # get cross section
@@ -189,7 +193,7 @@ if options.weights != "None":
 def create_output_file(label, abcd, sys):
 
     # don't recreate histograms if called multiple times with the same output label
-    if len(sys) > 0: label += + "_" + sys
+    if len(sys) > 0: label += "_" + sys
     if label in output["labels"]: return output
     else: output["labels"].append(label)
     
@@ -219,16 +223,14 @@ def create_output_file(label, abcd, sys):
             r+"ISR_contamination_" + label : Hist.new.Reg(50,0, 1, name=r+"ISR_contamination_"+label, label= r'# SUEP Tracks in ISR / # ISR Tracks').Weight(),
         })
     
-    if label == 'ISRRemoval' or label == 'Cluster' or label=='Cone':
+    if any([l in label for l in ['ISRRemoval','Cluster','Cone']]):
         # 2D histograms
         output.update({
             "2D_SUEP_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_vs_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             "2D_SUEP_nconst_vs_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(), 
             "2D_SUEP_nconst_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(), 
-            "2D_SUEP_S1_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(), 
-            "2D_SUEP_nconst_vs_SUEP_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_pt_mean_scaled_"+label, label='$p_T Avg / p_T Max (Boosted frame)$').Weight(),  
-        })
+           })
         
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
@@ -237,7 +239,6 @@ def create_output_file(label, abcd, sys):
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
                 r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(50, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
-                r+"SUEP_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_pt_mean_scaled_"+label, label=r"SUEP Components $p_T$ Mean / Max (Boosted Frame)").Weight(),
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
                 r+"SUEP_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"SUEP_phi_"+label, label=r"SUEP $\phi$").Weight(),
                 r+"SUEP_mass_"+label : Hist.new.Reg(150, 0, 2000, name=r+"SUEP_mass_"+label, label="SUEP Mass [GeV]").Weight(),
@@ -248,16 +249,13 @@ def create_output_file(label, abcd, sys):
                 r+"SUEP_rho1_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             })
     
-    if label == 'ClusterInverted':
+    if 'ClusterInverted' in label:
         output.update({
             # 2D histograms
             "2D_ISR_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_ISR_S1_vs_ISR_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             "2D_ISR_nconst_vs_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(), 
-            "2D_ISR_nconst_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(), 
-            "2D_ISR_S1_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name="ISR_S1_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),
-            "2D_ISR_nconst_vs_ISR_pt_mean_scaled_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 1, name="ISR_pt_mean_scaled_"+label).Weight(),  
-            
+            "2D_ISR_nconst_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),  
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
@@ -266,7 +264,6 @@ def create_output_file(label, abcd, sys):
                 r+"ISR_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"ISR_pt_"+label, label=r"ISR $p_T$ [GeV]").Weight(),
                 r+"ISR_pt_avg_"+label : Hist.new.Reg(500, 0, 500, name=r+"ISR_pt_avg_"+label, label=r"ISR Components $p_T$ Avg.").Weight(),
                 r+"ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name=r+"ISR_pt_avg_b_"+label, label=r"ISR Components $p_T$ avg (Boosted Frame)").Weight(),
-                r+"ISR_pt_mean_scaled_"+label : Hist.new.Reg(100, 0, 1, name=r+"ISR_pt_mean_scaled_"+label, label=r"ISR Components $p_T$ Mean / Max (Boosted Frame)").Weight(),
                 r+"ISR_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"ISR_eta_"+label, label=r"ISR $\eta$").Weight(),
                 r+"ISR_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"ISR_phi_"+label, label=r"ISR $\phi$").Weight(),
                 r+"ISR_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"ISR_mass_"+label, label="ISR Mass [GeV]").Weight(),
@@ -291,6 +288,24 @@ weight = 0
 fpickle =  open(outDir + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {"labels":[]}
 
+# track systematics
+if options.isMC and not options.scouting:
+    # we need to use the trackDOWN version of the data,
+    # which has the randomly deleted tracks (see SUEPCoffea.py)
+    # so we need to modify the config to use the _trackDOWN vars
+    new_config = {}
+    for label_out, config_out in config.items():
+        label_out_new = label_out+"_trackDOWN"
+        new_config[label_out_new] = deepcopy(config[label_out])
+        new_config[label_out_new]['input_method'] += "_trackDOWN"
+        new_config[label_out_new]['xvar'] += "_trackDOWN"
+        new_config[label_out_new]['yvar'] += "_trackDOWN"
+        for iSel in range(len(new_config[label_out_new]['SR'])):
+            new_config[label_out_new]['SR'][iSel][0] += "_trackDOWN"
+        for iSel in range(len(new_config[label_out_new]['selections'])):
+            new_config[label_out_new]['selections'][iSel][0] += "_trackDOWN"
+    config = new_config | config
+    
 ### Plotting loop #######################################################################
 #files = ["filenames.hdf5"] #for running locally add file name here
 for ifile in tqdm(files):
@@ -329,8 +344,7 @@ for ifile in tqdm(files):
     #####################################################################################
     event_weight = np.ones(df.shape[0])
     sys_loop = ["","puweights_up","puweights_down",
-                "trigSF_up","trigSF_down",
-               "tracks_down"]
+                "trigSF_up","trigSF_down"]
     for sys in sys_loop:
         # prepare new event weight
         df['event_weight'] = event_weight
@@ -358,20 +372,6 @@ for ifile in tqdm(files):
             else:
                  trigSF = trig_weights[ht_bin]
             df['event_weight'] *= trigSF  
-            
-        if options.isMC and not options.scouting:
-            if "tracks_down" in sys:
-                # we need to use the trackDOWN version of the data,
-                # which has the randomly deleted tracks (see SUEPCoffea.py)
-                # so we need to modify the config to use the _trackDOWN vars
-                for label_out, config_out in config.items():
-                    config_out[label_out]['input_method'] += "_trackDOWN"
-                    config_out[label_out]['xvar'] += "_trackDOWN"
-                    config_out[label_out]['yvar'] += "_trackDOWN"
-                    for iSel in range(len(config_out[label_out]['SR'])):
-                        config_out[label_out]['SR'][iSel][0] += "_trackDOWN"
-                    for iSel in range(len(config_out[label_out]['selections'])):
-                        config_out[label_out]['selections'][iSel][0] += "_trackDOWN"
 
         # 4) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling
@@ -385,8 +385,9 @@ for ifile in tqdm(files):
                 z_var = 'ht')
 
         for label_out, config_out in config.items():
-            output.update(create_output_file(label_out, config_out,sys))
-            output = plot(df.copy(), output, config_out, label_out,sys)
+            if 'trackDOWN' in label_out and sys != "": continue
+            output.update(create_output_file(label_out, config_out, sys))
+            output = plot(df.copy(), output, config_out, label_out, sys)
         
     #####################################################################################
     # ---- End
@@ -397,17 +398,22 @@ for ifile in tqdm(files):
 
 ### End plotting loop ###################################################################
     
+print(output['SUEP_S1_Cluster'])
+print(output['SUEP_S1_Cluster_trackDOWN'])
+
 # do the tracks UP systematic
-sys = 'tracks_up'
+sys = 'trackUP'
 for label_out, config_out in config.items():
-    output.update(create_output_file(label_out, config_out,sys))
+    if 'trackDOWN' in label_out: continue
     
+    new_output = {}
     for hist_name in output.keys():
-        if not hist_name.endswith('_tracks_down'): continue
-        hDown = output[hist_name]
-        hNom = output[hist_name.replace('tracks_down','')]
+        if not hist_name.endswith('_trackDOWN'): continue
+        hDown = output[hist_name].copy()
+        hNom = output[hist_name.replace('_trackDOWN','')].copy()
         hUp = get_tracks_up(hNom, hDown)
-        output.update({hist_name.replace('tracks_down','tracks_up'): hUp})
+        new_output.update({hist_name.replace('_trackDOWN','_trackUP'): hUp})
+    output = new_output | output
         
 # apply normalization
 output.pop("labels")

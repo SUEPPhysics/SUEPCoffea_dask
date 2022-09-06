@@ -49,7 +49,7 @@ lumis = {
 }
 
 # load file(s)
-def loader(infile_names):
+def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name): 
@@ -60,33 +60,35 @@ def loader(infile_names):
 
         # sets the lumi based on year
         lumi = 1
-        if ('20UL16MiniAODv2' in infile_name):
-            lumi = lumis['2016']
-        if ('20UL17MiniAODv2' in infile_name):
-            lumi = lumis['2017']
-        if ('20UL16MiniAODAPVv2' in infile_name):
-            lumi = lumis['2016_apv']
-        if ('20UL18' in infile_name):
-            lumi = lumis['2018']
-        if 'SUEP-m' in infile_name:
-            lumi = lumis['2018']
-        if 'JetHT+Run' in infile_name:
-            lumi = 1
+        if apply_lumis:
+            if ('20UL16MiniAODv2' in infile_name):
+                lumi = lumis['2016']
+            if ('20UL17MiniAODv2' in infile_name):
+                lumi = lumis['2017']
+            if ('20UL16MiniAODAPVv2' in infile_name):
+                lumi = lumis['2016_apv']
+            if ('20UL18' in infile_name):
+                lumi = lumis['2018']
+            if 'SUEP-m' in infile_name:
+                lumi = lumis['2018']
+            if 'JetHT+Run' in infile_name:
+                lumi = 1
 
         # exclude low bins
-        if '50to100' in infile_name: continue
-        if '100to200' in infile_name: continue
-        # if '200to300' in infile_name: continue
-        # if '300to500' in infile_name: continue
-        # if '500to700' in infile_name: continue
-        # if '700to1000' in infile_name: continue
+        if exclude_low_bins:
+            if '50to100' in infile_name: continue
+            if '100to200' in infile_name: continue
+            # if '200to300' in infile_name: continue
+            # if '300to500' in infile_name: continue
+            # if '500to700' in infile_name: continue
+            # if '700to1000' in infile_name: continue
 
-        # if '15to30' in infile_name: continue
-        # if '30to50' in infile_name: continue
-        # if '50to80' in infile_name: continue
-        # if '80to120' in infile_name: continue
-        # if '120to170' in infile_name: continue
-        # if '170to300' in infile_name: continue
+            # if '15to30' in infile_name: continue
+            # if '30to50' in infile_name: continue
+            # if '50to80' in infile_name: continue
+            # if '80to120' in infile_name: continue
+            # if '120to170' in infile_name: continue
+            # if '170to300' in infile_name: continue
 
         # plots[sample] sample is filled here
         if 'QCD_Pt' in infile_name:
@@ -219,16 +221,21 @@ def getXSection(dataset, year):
     return xsection
 
 def get_tracks_up(nom, down):
+    """
+    Use envelope method to define the
+    """
     nom_out = nom.to_numpy()
     down_out = down.to_numpy()
     if len(nom_out) == 2:
         variation = nom_out[0] - down_out[0]
         h = bh.Histogram(bh.axis.Variable(nom_out[1]), storage=bh.storage.Weight())
-        h[:] = np.stack([nom_out[0] + variation, np.sqrt(nom_out[0] + variation)], axis=-1)
+        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
+        h[:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
     elif len(nom_out) == 3:
         variation = nom_out[0] - down_out[0]
         h = bh.Histogram(bh.axis.Variable(nom_out[1]), bh.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
-        h[:,:] = np.stack([nom_out[0] + variation, np.sqrt(nom_out[0] + variation)], axis=-1)
+        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
+        h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
     return h
 
 def make_selection(df, variable, operator, value, apply=True):
@@ -323,7 +330,7 @@ def apply_scaling_weights(df, scaling_weights,
             iRegion += 1
     return df
 
-def auto_fill(df, output, abcd, label_out, do_abcd=False):
+def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
     
     input_method = abcd['input_method']
 
@@ -337,7 +344,7 @@ def auto_fill(df, output, abcd, label_out, do_abcd=False):
     plot_labels = [key for key in df.keys() if key+"_"+label_out in list(output.keys())]  
     for plot in plot_labels: output[plot+"_"+label_out].fill(df[plot], weight=df['event_weight']) 
     # 1b. Plot method variables
-    plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys())]
+    plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys()) and key.endswith(input_method)]
     for plot in plot_labels: output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
     # FIXME: plot ABCD 2d
     
@@ -377,7 +384,7 @@ def auto_fill(df, output, abcd, label_out, do_abcd=False):
                 iRegion += 1
 
                 # double check blinding
-                if iRegion == (len(xvar_regions)-1)*(len(yvar_regions)-1) and not options.isMC:
+                if iRegion == (len(xvar_regions)-1)*(len(yvar_regions)-1) and not isMC:
                     if df_r.shape[0] > 0: 
                         sys.exit(label_out+": You are not blinding correctly! Exiting.")
 

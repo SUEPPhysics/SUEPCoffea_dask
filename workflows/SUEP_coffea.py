@@ -78,7 +78,6 @@ class SUEP_cluster(processor.ProcessorABC):
         eigs = sphericity(SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
         self.out_vars.loc[indices, "SUEP_nconst_CL"+out_label] = ak.num(SUEP_tracks_b)
         self.out_vars.loc[indices, "SUEP_pt_avg_b_CL"+out_label] = ak.mean(SUEP_tracks_b.pt, axis=-1)
-        #self.out_vars.loc[indices, "SUEP_pt_mean_scaled_CL"+out_label] = ak.mean(SUEP_tracks_b.pt, axis=-1)/ak.max(SUEP_tracks_b.pt, axis=-1)
         self.out_vars.loc[indices, "SUEP_S1_CL"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
        
         # unboost for these
@@ -123,7 +122,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 eigs = sphericity(ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
                 self.out_vars.loc[indices, "ISR_nconst_CL"+out_label] = ak.num(ISR_tracks_b)
                 self.out_vars.loc[indices, "ISR_pt_avg_b_CL"+out_label] = ak.mean(ISR_tracks_b.pt, axis=-1)
-                #self.out_vars.loc[indices, "ISR_pt_mean_scaled_CL"+out_label] = ak.mean(ISR_tracks_b.pt, axis=-1)/ak.max(ISR_tracks_b.pt, axis=-1)
                 self.out_vars.loc[indices, "ISR_S1_CL"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
 
                 # unboost for these
@@ -183,7 +181,6 @@ class SUEP_cluster(processor.ProcessorABC):
             eigs = sphericity(SUEP_tracks_b,1.0) #Set r=1.0 for IRC safe
             self.out_vars.loc[indices, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b)
             self.out_vars.loc[indices, "SUEP_pt_avg_b_IRM"] = ak.mean(SUEP_tracks_b.pt, axis=-1)
-            #self.out_vars.loc[indices, "SUEP_pt_mean_scaled_IRM"] = ak.mean(SUEP_tracks_b.pt, axis=-1)/ak.max(SUEP_tracks_b.pt, axis=-1)
             self.out_vars.loc[indices, "SUEP_S1_IRM"] = 1.5 * (eigs[:,1]+eigs[:,0])
 
             # unboost for these
@@ -254,7 +251,6 @@ class SUEP_cluster(processor.ProcessorABC):
             eigs = sphericity(SUEP_tracks_b, 1.0) #Set r=1.0 for IRC safe
             self.out_vars.loc[indices, "SUEP_nconst_CO"] = ak.num(SUEP_tracks_b)
             self.out_vars.loc[indices, "SUEP_pt_avg_b_CO"] = ak.mean(SUEP_tracks_b.pt, axis=-1)
-            #self.out_vars.loc[indices, "SUEP_pt_mean_scaled_CO"] = ak.mean(SUEP_tracks_b.pt, axis=-1)/ak.max(SUEP_tracks_b.pt, axis=-1)
             self.out_vars.loc[indices, "SUEP_S1_CO"] = 1.5 * (eigs[:,1]+eigs[:,0])
 
             # unboost for these
@@ -471,7 +467,7 @@ class SUEP_cluster(processor.ProcessorABC):
             new_indices.append(list(event_bool))
 
         new_indices = ak.Array(new_indices)
-        trakcs = tracks[new_indices]
+        tracks = tracks[new_indices]
         return tracks
         
     def getScoutingTracks(self, events):
@@ -586,7 +582,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # for some reason, initializing these as empty and then trying to fill them doesn't work
         self.columns_IRM = [
                 "SUEP_nconst_IRM", "SUEP_ntracks_IRM", 
-                "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM", "SUEP_pt_mean_scaled",
+                "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM",
                 "SUEP_S1_IRM", "SUEP_rho0_IRM", "SUEP_rho1_IRM", 
                 "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM",
                 "dphi_SUEP_ISR_IRM"
@@ -597,7 +593,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.columns = self.columns_IRM + self.columns_CL + self.columns_CL_ISR
         
         # add a specific label to all columns
-        for iCol in range(len(self.columns)): self.columns[iCol] = self.columns[iCol] + "_" + label
+        for iCol in range(len(self.columns)): self.columns[iCol] = self.columns[iCol] + label
             
     def applyGoldenJSON(self, events):
         if self.era == 2016:
