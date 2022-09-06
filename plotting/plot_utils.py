@@ -228,12 +228,12 @@ def get_tracks_up(nom, down):
     down_out = down.to_numpy()
     if len(nom_out) == 2:
         variation = nom_out[0] - down_out[0]
-        h = bh.Histogram(bh.axis.Variable(nom_out[1]), storage=bh.storage.Weight())
+        h = hist.Hist(hist.axis.Variable(nom_out[1]), storage=bh.storage.Weight())
         new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
         h[:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
     elif len(nom_out) == 3:
         variation = nom_out[0] - down_out[0]
-        h = bh.Histogram(bh.axis.Variable(nom_out[1]), bh.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
+        h = hist.Hist(hist.axis.Variable(nom_out[1]), hist.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
         new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
         h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
     return h
@@ -912,7 +912,7 @@ def rebin(h, bins):
     new_freq = rebin_piecewise_constant(current_edges, h.values(), bins)
     new_variances = rebin_piecewise_constant(current_bins, h.variances(), bins)
     
-    h = bh.Histogram(bh.axis.Variable(bins),storage=bh.storage.Weight())
+    h = hist.Hist(hist.axis.Variable(bins),storage=hist.storage.Weight())
 
     h[:] = np.stack([new_freq, new_variances], axis=-1)
     
