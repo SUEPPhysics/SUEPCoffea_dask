@@ -12,6 +12,7 @@ import shutil
 from sympy import symbols, diff, sqrt
 import sympy
 import json
+import hist
 
 default_colors = {
     'QCD': 'midnightblue',
