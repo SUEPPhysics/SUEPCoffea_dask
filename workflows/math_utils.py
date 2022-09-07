@@ -1,7 +1,7 @@
 import numpy as np
 import awkward as ak
 
-def sphericity(self, particles, r):
+def sphericity(particles, r):
     norm = ak.sum(particles.p ** r, axis=1, keepdims=True)
     s = np.array([[
                    ak.sum(particles.px * particles.px * particles.p ** (r-2.0), axis=1 ,keepdims=True)/norm,
@@ -22,7 +22,7 @@ def sphericity(self, particles, r):
     evals = np.sort(np.linalg.eigvalsh(s))
     return evals
 
-def rho(self, number, jet, tracks, deltaR, dr=0.05):
+def rho(number, jet, tracks, deltaR, dr=0.05):
     r_start = number*dr
     r_end = (number+1)*dr
     ring = (deltaR > r_start) & (deltaR < r_end)

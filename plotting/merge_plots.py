@@ -19,6 +19,13 @@ def h5load(ifile, label):
     except:
        print("Some error occurred", ifile)
        return 0, 0
+# def h5load(ifile, label):
+#     with pd.HDFStore(ifile, 'r') as store:
+        
+#         data = store[label] 
+#         metadata = store.get_storer(label).attrs.metadata
+#         return data, metadata
+
     
 parser = argparse.ArgumentParser(description='Famous Submitter')
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
@@ -111,14 +118,21 @@ for ifile, file in enumerate(tqdm(files)):
     if options.isMC:
         if type(metadata_tot) == int: metadata_tot = metadata
         else: metadata_tot['gensumweight'] += metadata['gensumweight']
-        
+    
     # don't need to add empty ones
     if 'empty' in list(df.keys()): 
         subprocess.run(['rm',dataset+'.hdf5'])    
         continue
+    
+    # debug
+    print("wwhat")
+    
     if df.shape[0] == 0: 
         subprocess.run(['rm',dataset +'.hdf5'])  
         continue
+        
+    # debug
+    print("here")
                 
     ### MERGE DF VARS
     if type(df_tot) == int: df_tot = df
