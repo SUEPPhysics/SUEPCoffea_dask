@@ -289,7 +289,7 @@ fpickle =  open(outDir + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {"labels":[]}
 
 # track systematics
-if options.isMC and not options.scouting:
+if options.isMC:
     # we need to use the trackDOWN version of the data,
     # which has the randomly deleted tracks (see SUEPCoffea.py)
     # so we need to modify the config to use the _trackDOWN vars
@@ -397,9 +397,6 @@ for ifile in tqdm(files):
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
 ### End plotting loop ###################################################################
-    
-print(output['SUEP_S1_Cluster'])
-print(output['SUEP_S1_Cluster_trackDOWN'])
 
 # do the tracks UP systematic
 sys = 'trackUP'

@@ -111,7 +111,7 @@ def main():
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
             if options.scout == 1:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E03/{}/RawFiles.00".format(sample_name)
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
             Raw_list = open(input_list, "r")
@@ -140,7 +140,7 @@ def main():
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
                 if options.scout == 1:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E03/{}/RawFiles.00".format(sample_name)
                 else:
                     input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
