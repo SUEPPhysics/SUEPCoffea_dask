@@ -634,11 +634,11 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         if self.scouting == 1: tracks, Cleaned_cands = self.getScoutingTracks(events)
-        else: 
-            tracks, Cleaned_cands = self.getTracks(events)
-            if self.isMC and do_syst:
-                tracks = self.tracksSystematics(tracks)
-                Cleaned_cands = self.tracksSystematics(Cleaned_cands)
+        else: tracks, Cleaned_cands = self.getTracks(events)
+            
+        if self.isMC and do_syst:
+            tracks = self.tracksSystematics(tracks)
+            Cleaned_cands = self.tracksSystematics(Cleaned_cands)
         
         #####################################################################################
         # ---- FastJet reclustering
