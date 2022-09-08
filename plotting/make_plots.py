@@ -366,7 +366,7 @@ output = {"labels":[]}
 
 ### Plotting loop #######################################################################
 #files = ["filenames.hdf5"] #for running locally add file name here
-files = ["../out_QCD_Pt_2400to3200_addPS.hdf5"]
+files = ["../out_sig_addPS.hdf5"]
 for ifile in tqdm(files):
     
     #####################################################################################
@@ -403,6 +403,7 @@ for ifile in tqdm(files):
     #####################################################################################
     event_weight = np.ones(df.shape[0])
     sys_loop = ["","puweights_up","puweights_down","trigSF_up","trigSF_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
+#    sys_loop = ["","puweights_up","puweights_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
     for sys in sys_loop:
         # prepare new event weight
         df['event_weight'] = event_weight
@@ -419,6 +420,7 @@ for ifile in tqdm(files):
             df['event_weight'] *= pu
 
         # 2) TriggerSF weights
+        
         if options.isMC == 1 and options.scouting != 1:
             ht = np.array(df['ht']).astype(int)
             ht_bin = np.digitize(ht,trig_bins)-1 #digitize the values to bins
@@ -430,6 +432,7 @@ for ifile in tqdm(files):
             else:
                  trigSF = trig_weights[ht_bin]
             df['event_weight'] *= trigSF   
+        
         # 3) PS weights
         if options.isMC == 1 and options.scouting != 1 and ("PSWeight" in sys):
             if sys in df.keys():
