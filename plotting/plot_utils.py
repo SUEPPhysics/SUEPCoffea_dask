@@ -12,6 +12,7 @@ import shutil
 from sympy import symbols, diff, sqrt
 import sympy
 import json
+import hist
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -49,7 +50,7 @@ lumis = {
 }
 
 # load file(s)
-def loader(infile_names):
+def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name): 
@@ -60,33 +61,35 @@ def loader(infile_names):
 
         # sets the lumi based on year
         lumi = 1
-        if ('20UL16MiniAODv2' in infile_name):
-            lumi = lumis['2016']
-        if ('20UL17MiniAODv2' in infile_name):
-            lumi = lumis['2017']
-        if ('20UL16MiniAODAPVv2' in infile_name):
-            lumi = lumis['2016_apv']
-        if ('20UL18' in infile_name):
-            lumi = lumis['2018']
-        if 'SUEP-m' in infile_name:
-            lumi = lumis['2018']
-        if 'JetHT+Run' in infile_name:
-            lumi = 1
+        if apply_lumis:
+            if ('20UL16MiniAODv2' in infile_name):
+                lumi = lumis['2016']
+            if ('20UL17MiniAODv2' in infile_name):
+                lumi = lumis['2017']
+            if ('20UL16MiniAODAPVv2' in infile_name):
+                lumi = lumis['2016_apv']
+            if ('20UL18' in infile_name):
+                lumi = lumis['2018']
+            if 'SUEP-m' in infile_name:
+                lumi = lumis['2018']
+            if 'JetHT+Run' in infile_name:
+                lumi = 1
 
         # exclude low bins
-        if '50to100' in infile_name: continue
-        if '100to200' in infile_name: continue
-        # if '200to300' in infile_name: continue
-        # if '300to500' in infile_name: continue
-        # if '500to700' in infile_name: continue
-        # if '700to1000' in infile_name: continue
+        if exclude_low_bins:
+            if '50to100' in infile_name: continue
+            if '100to200' in infile_name: continue
+            # if '200to300' in infile_name: continue
+            # if '300to500' in infile_name: continue
+            # if '500to700' in infile_name: continue
+            # if '700to1000' in infile_name: continue
 
-        # if '15to30' in infile_name: continue
-        # if '30to50' in infile_name: continue
-        # if '50to80' in infile_name: continue
-        # if '80to120' in infile_name: continue
-        # if '120to170' in infile_name: continue
-        # if '170to300' in infile_name: continue
+            # if '15to30' in infile_name: continue
+            # if '30to50' in infile_name: continue
+            # if '50to80' in infile_name: continue
+            # if '80to120' in infile_name: continue
+            # if '120to170' in infile_name: continue
+            # if '170to300' in infile_name: continue
 
         # plots[sample] sample is filled here
         if 'QCD_Pt' in infile_name:
@@ -218,6 +221,24 @@ def getXSection(dataset, year):
             return 1
     return xsection
 
+def get_tracks_up(nom, down):
+    """
+    Use envelope method to define the
+    """
+    nom_out = nom.to_numpy()
+    down_out = down.to_numpy()
+    if len(nom_out) == 2:
+        variation = nom_out[0] - down_out[0]
+        h = hist.Hist(hist.axis.Variable(nom_out[1]), storage=bh.storage.Weight())
+        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
+        h[:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
+    elif len(nom_out) == 3:
+        variation = nom_out[0] - down_out[0]
+        h = hist.Hist(hist.axis.Variable(nom_out[1]), hist.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
+        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
+        h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
+    return h
+
 def make_selection(df, variable, operator, value, apply=True):
     """
     Apply a selection on DataFrame df based on on the df column'variable'
@@ -261,6 +282,120 @@ def openpkl(infile_name):
                 break
     return plots
 
+def apply_scaling_weights(df, scaling_weights,
+    x_var_regions, y_var_regions,
+    regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    x_var = 'SUEP_S1_CL',
+    y_var = 'SUEP_nconst_CL',
+    z_var = 'ht'):
+    """
+    df: input DataFrame to scale
+    *_var_regions: x/y ABCD regions
+    scaling_weights: nested dictionary, region x (bins or ratios)
+    regions: string of ordered regions, used to apply corrections
+    *_var: x/y are of the ABCD plane, z of the scaling histogram
+    """
+    
+    x_var_regions = abcd['x_var_regions']
+    y_var_regions = abcd['y_var_regions']
+    iRegion = 0
+
+    # S1 regions
+    for i in range(len(x_var_regions)-1):
+        x_val_lo = x_var_regions[i]
+        x_val_hi = x_var_regions[i+1]
+
+        # nconst regions
+        for j in range(len(y_var_regions)-1):
+            y_val_lo = y_var_regions[j]
+            y_val_hi = y_var_regions[j+1]
+
+            r = regions[iRegion]
+
+            # from the weights
+            bins = weights[r]['bins']
+            ratios = weights[r]['ratios']
+
+            # ht bins
+            for k in range(len(bins)-1):
+                z_val_lo = bins[k]
+                z_val_hi = bins[k+1]
+                ratio = ratios[k]
+
+                zslice = (df[z_var] >= z_val_lo) & (df[z_var] < z_val_hi)
+                yslice = (df[y_var] >= y_val_lo) & (df[y_var] < y_val_hi)
+                xslice = (df[x_var] >= x_val_lo) & (df[x_var] < x_val_hi)
+
+                df.loc[xslice & yslice & zslice, 'event_weight'] *= ratio
+
+            iRegion += 1
+    return df
+
+def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
+    
+    input_method = abcd['input_method']
+
+    #####################################################################################
+    # ---- Fill Histograms
+    # Automatically fills all histograms that are declared in the output dict.
+    #####################################################################################
+    
+    # 1. fill the distributions as they are saved in the dataframes
+    # 1a. Plot event wide variables
+    plot_labels = [key for key in df.keys() if key+"_"+label_out in list(output.keys())]  
+    for plot in plot_labels: output[plot+"_"+label_out].fill(df[plot], weight=df['event_weight']) 
+    # 1b. Plot method variables
+    plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys()) and key.endswith(input_method)]
+    for plot in plot_labels: output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
+    # FIXME: plot ABCD 2d
+    
+    # 2. fill some 2D distributions  
+    keys = list(output.keys())
+    keys_2Dhists = [k for k in keys if '2D' in k]
+    for key in keys_2Dhists:
+        if not key.endswith(label_out): continue
+        string = key[len("2D")+1:-(len(label_out)+1)] # cut out "2D_" and output label
+        var1 = string.split("_vs_")[0]
+        var2 = string.split("_vs_")[1]
+        if var1 not in list(df.keys()): var1 += "_" + input_method
+        if var2 not in list(df.keys()): var2 += "_" + input_method
+        output[key].fill(df[var1], df[var2], weight=df['event_weight'])
+
+    # 3. divide the dfs by region
+    if do_abcd:
+        regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        xvar = abcd['xvar']
+        yvar = abcd['yvar']
+        xvar_regions = abcd['xvar_regions']
+        yvar_regions = abcd['yvar_regions']
+        iRegion = 0
+        for i in range(len(xvar_regions)-1):
+            x_val_lo = xvar_regions[i]
+            x_val_hi = xvar_regions[i+1]
+
+            for j in range(len(yvar_regions)-1):
+                y_val_lo = yvar_regions[j]
+                y_val_hi = yvar_regions[j+1]
+
+                x_cut = (make_selection(df, xvar, '>=', x_val_lo, False) & make_selection(df, xvar, '<', x_val_hi, False))
+                y_cut = (make_selection(df, yvar, '>=', y_val_lo, False) & make_selection(df, yvar, '<', y_val_hi, False))
+                df_r = df.loc[(x_cut & y_cut)]
+
+                r = regions[iRegion] + "_"
+                iRegion += 1
+
+                # double check blinding
+                if iRegion == (len(xvar_regions)-1)*(len(yvar_regions)-1) and not isMC:
+                    if df_r.shape[0] > 0: 
+                        sys.exit(label_out+": You are not blinding correctly! Exiting.")
+
+                # 3a. Plot event wide variables
+                plot_labels = [key for key in df_r.keys() if r+key+"_"+label_out in list(output.keys())]   # event wide variables
+                for plot in plot_labels: output[r+plot+"_"+label_out].fill(df_r[plot], weight=df_r['event_weight']) 
+                # 3b. Plot method variables
+                plot_labels = [key for key in df_r.keys() if r+key.replace(input_method, label_out) in list(output.keys())]  # method vars
+                for plot in plot_labels: output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
+                
 def plot1d(h, ax, label, rebin=-1, color='default', lw=1):
     
     if color == 'default': color = default_colors[label]
@@ -778,7 +913,7 @@ def rebin(h, bins):
     new_freq = rebin_piecewise_constant(current_edges, h.values(), bins)
     new_variances = rebin_piecewise_constant(current_bins, h.variances(), bins)
     
-    h = bh.Histogram(bh.axis.Variable(bins),storage=bh.storage.Weight())
+    h = hist.Hist(hist.axis.Variable(bins),storage=hist.storage.Weight())
 
     h[:] = np.stack([new_freq, new_variances], axis=-1)
     
