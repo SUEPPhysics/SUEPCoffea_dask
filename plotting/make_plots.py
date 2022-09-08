@@ -32,7 +32,8 @@ options = parser.parse_args()
 
 # parameters for script
 output_label = options.output
-outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
+#outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
+outDir = "/work/"
 redirector = "root://t3serv017.mit.edu/"
 
 """
@@ -228,6 +229,7 @@ def plot(df, output, abcd, label_out, sys):
 #############################################################################################################
 
 # get list of files
+'''
 username = getpass.getuser()
 if options.xrootd:
     dataDir = "/scratch/{}/SUEP/{}/{}/merged/".format(username,options.tag,options.dataset)
@@ -238,12 +240,14 @@ if options.xrootd:
 else:
     dataDir = "/data/submit/{}/{}/{}/merged/".format(username, options.tag, options.dataset)
     files = [dataDir + f for f in os.listdir(dataDir)]
-
+'''
 # get cross section
 xsection = 1.0
 if options.isMC: xsection = getXSection(options.dataset, options.era)
 
 # event weights
+
+
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
 
@@ -362,6 +366,7 @@ output = {"labels":[]}
 
 ### Plotting loop #######################################################################
 #files = ["filenames.hdf5"] #for running locally add file name here
+files = ["../out_QCD_Pt_2400to3200_addPS.hdf5"]
 for ifile in tqdm(files):
     
     #####################################################################################
@@ -397,7 +402,7 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    sys_loop = ["","puweights_up","puweights_down","trigSF_up","trigSF_down"]
+    sys_loop = ["","puweights_up","puweights_down","trigSF_up","trigSF_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
     for sys in sys_loop:
         # prepare new event weight
         df['event_weight'] = event_weight
@@ -425,8 +430,11 @@ for ifile in tqdm(files):
             else:
                  trigSF = trig_weights[ht_bin]
             df['event_weight'] *= trigSF   
-
-        # 3) scaling weights
+        # 3) PS weights
+        if options.isMC == 1 and options.scouting != 1 and ("PSWeight" in sys):
+            if sys in df.keys():
+                df['event_weight'] *= df[sys]
+        # 4) scaling weights
         if options.isMC == 1 and weights is not None:
 
             regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
