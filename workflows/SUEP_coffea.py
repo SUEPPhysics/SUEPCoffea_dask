@@ -527,9 +527,17 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.scouting == 1:
             self.out_vars["PV_npvs"+out_label] = ak.num(events.Vertex.x)
         else:
-            if self.isMC: self.out_vars["Pileup_nTrueInt"+out_label] = events.Pileup.nTrueInt
-            self.out_vars["PV_npvs"+out_label] = events.PV.npvs
-            self.out_vars["PV_npvsGood"+out_label] = events.PV.npvsGood
+            if self.isMC:
+                self.out_vars["Pileup_nTrueInt"] = events.Pileup.nTrueInt
+                if len(events.PSWeight[0])==4:
+                    self.out_vars["PSWeight_ISR_up"] = events.PSWeight[:,0]
+                    self.out_vars["PSWeight_ISR_down"] = events.PSWeight[:,2]
+                    self.out_vars["PSWeight_FSR_up"] = events.PSWeight[:,1]
+                    self.out_vars["PSWeight_FSR_down"] = events.PSWeight[:,3]
+                else:
+                    self.out_vars["PSWeight"] = events.PSWeight[:,0]
+            self.out_vars["PV_npvs"] = events.PV.npvs
+            self.out_vars["PV_npvsGood"] = events.PV.npvsGood
             
         # get gen SUEP mass
         SUEP_genMass = len(events)*[0]
