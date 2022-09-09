@@ -30,7 +30,7 @@ modules_era = []
 
 rewrite(options.infile)
 
-modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=1, do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=False, output_location=out_dir))
+modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=1, do_syst=options.doSyst,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=False, output_location=out_dir))
 
 processor.NanoAODSchema.mixins["PFcand"] = "PFCand"
 for instance in modules_era:

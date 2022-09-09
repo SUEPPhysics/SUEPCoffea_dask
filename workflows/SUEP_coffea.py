@@ -438,13 +438,17 @@ class SUEP_cluster(processor.ProcessorABC):
          For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
         """
         
-        year_percent = {
-            "2018": 0.021,
-            "2017": 0.022,
-            "2016": 0.027
-        }
-        block1_percent = year_percent[str(2018)]
-        block2_percent = 0.01
+        if self.scouting:
+            block1_percent = 0.05
+            block2_percent = 0.01
+        else:
+            year_percent = {
+                "2018": 0.021,
+                "2017": 0.022,
+                "2016": 0.027
+            }
+            block1_percent = year_percent[str(self.era)]
+            block2_percent = 0.01
         
         block0_indices = (tracks.pt <= 1)
         block1_indices = (tracks.pt > 1) & (tracks.pt < 20)
@@ -528,12 +532,13 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars["PV_npvsGood"+out_label] = events.PV.npvsGood
             
         # get gen SUEP mass
-        if self.isMC:
+        SUEP_genMass = len(events)*[0]
+        if self.isMC and not self.scouting:
             genParts = self.getGenTracks(events)
             genSUEP = genParts[(abs(genParts.pdgID) == 25)]
             # we need to grab the last SUEP in the chain for each event
             SUEP_genMass = [g[-1].mass if len(g) > 0 else 0 for g in genSUEP]
-            self.out_vars["SUEP_genMass"+out_label] = SUEP_genMass
+        self.out_vars["SUEP_genMass"+out_label] = SUEP_genMass
     
     def FastJetReclustering(self, tracks, r, minPt):
         
@@ -629,11 +634,11 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         if self.scouting == 1: tracks, Cleaned_cands = self.getScoutingTracks(events)
-        else: 
-            tracks, Cleaned_cands = self.getTracks(events)
-            if self.isMC and do_syst:
-                tracks = self.tracksSystematics(tracks)
-                Cleaned_cands = self.tracksSystematics(Cleaned_cands)
+        else: tracks, Cleaned_cands = self.getTracks(events)
+            
+        if self.isMC and do_syst:
+            tracks = self.tracksSystematics(tracks)
+            Cleaned_cands = self.tracksSystematics(Cleaned_cands)
         
         #####################################################################################
         # ---- FastJet reclustering
