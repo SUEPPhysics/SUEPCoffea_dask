@@ -116,7 +116,9 @@ def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
 
         elif 'SUEP-m' in infile_name:
             sample = infile_name.split('/')[-1].split('+')[0]
-
+        else:
+            sample = infile_name
+            
         if sample not in list(plots.keys()): 
             plots[sample] = openpkl(infile_name)
             for plot in list(plots[sample].keys()):
