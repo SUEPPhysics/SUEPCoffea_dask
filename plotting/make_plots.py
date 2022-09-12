@@ -19,7 +19,7 @@ import triggerSF
 from plot_utils import *
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
-parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=True)
+parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=False)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
 parser.add_argument("-o"   , "--output"   , type=str, default="IronMan"  , help="output tag", required=False)
 parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
@@ -30,6 +30,7 @@ parser.add_argument('--blind', type=int, default=1, help="Blind the data (defaul
 parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 parser.add_argument('--merged', type=int, default=1, help="Use merged files")
+parser.add_argument('-f', '--file', type=str, default='', help="Use specific input file")
 options = parser.parse_args()
 
 # parameters for script
@@ -164,7 +165,9 @@ def plot(df, output, abcd, label_out, sys):
 # get list of files
 '''
 username = getpass.getuser()
-if options.xrootd:
+if options.file:
+    files = [options.file]
+elif options.xrootd:
     dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
     if options.merged: dataDir += "merged/"
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
@@ -217,6 +220,11 @@ def create_output_file(label, abcd, sys):
     for r in regions_list:
         output.update({
             r+"ht_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
+            r+"ht_JEC_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_"+label, label='HT JEC').Weight(),
+            r+"ht_JEC_JER_up_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JER_up_"+label, label='HT JEC up').Weight(),
+            r+"ht_JEC_JER_down_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JER_down_"+label, label='HT JEC JER down').Weight(),
+            r+"ht_JEC_JES_up_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JES_up_"+label, label='HT JEC JES up').Weight(),
+            r+"ht_JEC_JES_down_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JES_down_"+label, label='HT JEC JES down').Weight(),
             r+"ntracks_" + label : Hist.new.Reg(101, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
@@ -292,12 +300,15 @@ weight = 0
 fpickle =  open(outDir + options.dataset+ "_" + output_label + '.pkl', "wb")
 output = {"labels":[]}
 
-# track systematics
+# systematics
 if options.isMC:
+    
+    new_config = {}
+    
+    # track systematics
     # we need to use the trackDOWN version of the data,
     # which has the randomly deleted tracks (see SUEPCoffea.py)
     # so we need to modify the config to use the _trackDOWN vars
-    new_config = {}
     for label_out, config_out in config.items():
         label_out_new = label_out+"_trackDOWN"
         new_config[label_out_new] = deepcopy(config[label_out])
@@ -307,12 +318,22 @@ if options.isMC:
         for iSel in range(len(new_config[label_out_new]['SR'])):
             new_config[label_out_new]['SR'][iSel][0] += "_trackDOWN"
         for iSel in range(len(new_config[label_out_new]['selections'])):
+            if new_config[label_out_new]['selections'][iSel][0] in ['ht', 'ngood_ak4jets']: continue
             new_config[label_out_new]['selections'][iSel][0] += "_trackDOWN"
+    
+    # jet systematics
+    # here, we just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
+    for sys in ['JEC', 'JEC_JER_up', 'JEC_JER_down', 'JEC_JES_up', 'JEC_JES_down']: 
+        for label_out, config_out in config.items():
+            label_out_new = label_out+"_"+sys
+            new_config[label_out_new] = deepcopy(config[label_out])
+            for iSel in range(len(new_config[label_out_new]['selections'])):
+                if 'ht' == new_config[label_out_new]['selections'][iSel][0]:
+                    new_config[label_out_new]['selections'][iSel][0] += "_" + sys 
+
     config = new_config | config
     
 ### Plotting loop #######################################################################
-#files = ["filenames.hdf5"] #for running locally add file name here
-files = ["../out_sig_addPS.hdf5"]
 for ifile in tqdm(files):
     
     #####################################################################################
