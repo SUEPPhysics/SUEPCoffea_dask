@@ -216,6 +216,11 @@ def create_output_file(label, abcd, sys):
     for r in regions_list:
         output.update({
             r+"ht_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_"+label, label='HT').Weight(),
+            r+"ht_JEC_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_"+label, label='HT JEC').Weight(),
+            r+"ht_JEC_JER_up_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JER_up_"+label, label='HT JEC up').Weight(),
+            r+"ht_JEC_JER_down_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JER_down_"+label, label='HT JEC JER down').Weight(),
+            r+"ht_JEC_JES_up_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JES_up_"+label, label='HT JEC JES up').Weight(),
+            r+"ht_JEC_JES_down_" + label : Hist.new.Reg(100, 0, 10000, name=r+"ht_JEC_JES_down_"+label, label='HT JEC JES down').Weight(),
             r+"ntracks_" + label : Hist.new.Reg(101, 0, 500, name=r+"ntracks_"+label, label='# Tracks in Event').Weight(),
             r+"ngood_fastjets_" + label : Hist.new.Reg(9,0, 10, name=r+"ngood_fastjets_"+label, label='# FastJets in Event').Weight(),
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
