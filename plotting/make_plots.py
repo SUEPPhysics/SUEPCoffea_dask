@@ -35,7 +35,8 @@ options = parser.parse_args()
 
 # parameters for script
 output_label = options.output
-outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
+#outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
+outDir = "/work/"
 redirector = "root://t3serv017.mit.edu/"
 
 """
@@ -162,6 +163,7 @@ def plot(df, output, abcd, label_out, sys):
 #############################################################################################################
 
 # get list of files
+'''
 username = getpass.getuser()
 if options.file:
     files = [options.file]
@@ -176,12 +178,14 @@ else:
     dataDir = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
     if options.merged: dataDir += "merged/"
     files = [dataDir + f for f in os.listdir(dataDir)]
-
+'''
 # get cross section
 xsection = 1.0
 if options.isMC: xsection = getXSection(options.dataset, options.era)
 
 # event weights
+
+
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
 
@@ -365,8 +369,8 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    sys_loop = ["","puweights_up","puweights_down",
-                "trigSF_up","trigSF_down"]
+    sys_loop = ["","puweights_up","puweights_down","trigSF_up","trigSF_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
+#    sys_loop = ["","puweights_up","puweights_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
     for sys in sys_loop:
         # prepare new event weight
         df['event_weight'] = event_weight
@@ -383,6 +387,7 @@ for ifile in tqdm(files):
             df['event_weight'] *= pu
 
         # 2) TriggerSF weights
+        
         if options.isMC == 1 and options.scouting != 1:
             ht = np.array(df['ht']).astype(int)
             ht_bin = np.digitize(ht,trig_bins)-1 #digitize the values to bins
@@ -393,7 +398,12 @@ for ifile in tqdm(files):
                  trigSF = trig_weights_down[ht_bin]
             else:
                  trigSF = trig_weights[ht_bin]
-            df['event_weight'] *= trigSF  
+            df['event_weight'] *= trigSF   
+        
+        # 3) PS weights
+        if options.isMC == 1 and options.scouting != 1 and ("PSWeight" in sys):
+            if sys in df.keys():
+                df['event_weight'] *= df[sys]
 
         # 4) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling

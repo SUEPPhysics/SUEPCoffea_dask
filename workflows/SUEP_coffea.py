@@ -18,6 +18,9 @@ from workflows.inference_utils import *
 from workflows.pandas_utils import *
 from workflows.math_utils import *
 
+#Importing SUEP specific corrections/systematics
+from workflows.jetmet_utils import *
+
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
         self._flag = flag
@@ -348,40 +351,44 @@ class SUEP_cluster(processor.ProcessorABC):
 
         else:
             for c in self.columns_ML: self.out_vars[c] = np.nan
-            
+          
+    def jet_awkward(self,Jets):
+        Jets_awk = ak.zip({
+            "pt": Jets.pt,
+            "eta": Jets.eta,
+            "phi": Jets.phi,
+            "mass": Jets.mass,
+        })
+        jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta)<2.4)
+        Jets_correct = Jets_awk[jet_awk_Cut]
+        return Jets_correct
+  
     def eventSelection(self, events):
-        if self.scouting == 1:
-            Jets = ak.zip({
-                "pt": events.Jet.pt,
-                "eta": events.Jet.eta,
-                "phi": events.Jet.phi,
-                "mass": events.Jet.mass,
-            })
-        else:
-            Jets = ak.zip({
-                "pt": events.Jet.pt,
-                "eta": events.Jet.eta,
-                "phi": events.Jet.phi,
-                "mass": events.Jet.mass,
-                "jetId": events.Jet.jetId
-            })
-        jetCut = (Jets.pt > 30) & (abs(Jets.eta)<2.4)
-        ak4jets = Jets[jetCut]
-        ht = ak.sum(ak4jets.pt,axis=-1)
-        
-        # apply trigger selection
-        if self.scouting == 1:
-            events = events[(ht > 600)]
-            ak4jets = ak4jets[(ht > 600)]
-        else:
+
+        if self.scouting != 1:
             if self.era == 2016:
                 trigger = (events.HLT.PFHT900 == 1)
             else:
                 trigger = (events.HLT.PFHT1050 == 1)
-            events = events[(trigger & (ht > 1200))]
-            ak4jets = ak4jets[(trigger & (ht > 1200))]
-            
-        return events, ak4jets
+            events = events[trigger]
+
+        ak4jets = self.jet_awkward(events.Jet)
+
+        #work on JECs and systematics
+        jets_c = apply_jecs(isMC=self.isMC, Sample=self.sample, era=self.era, events=events)
+        jets_jec = self.jet_awkward(jets_c)
+        if self.isMC:
+            jets_jec_JERUp   = self.jet_awkward(jets_c["JER"].up)
+            jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
+            jets_jec_JESUp   = self.jet_awkward(jets_c["JES_jes"].up)
+            jets_jec_JESDown = self.jet_awkward(jets_c["JES_jes"].down)
+        else: #For data set these all to nominal so we can plot without switching all of the names
+            jets_jec_JERUp   = jets_jec
+            jets_jec_JERDown = jets_jec
+            jets_jec_JESUp   = jets_jec
+            jets_jec_JESDown = jets_jec
+
+        return events, ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown
     
     def getGenTracks(self, events):
         genParts = events.GenPart
@@ -490,47 +497,40 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
     
     def storeEventVars(self, events, tracks, 
-                       ak4jets, ak_inclusive_jets, ak_inclusive_cluster,
+                       ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown, ak_inclusive_jets, ak_inclusive_cluster,
                        out_label=""):
-        
-        # from https://twiki.cern.ch/twiki/bin/view/CMS/JetID:
-        # jetId==2 means: pass tight ID, fail tightLepVeto
-        # jetId==6 means: pass tight and tightLepVeto ID. 
-        if self.scouting == 1:
-            tight_ak4jets = ak4jets
-            loose_ak4jets = ak4jets
-        else:
-            tightJetId = (ak4jets.jetId > 2)
-            tight_ak4jets = ak4jets[tightJetId]
-            looseJetId = (ak4jets.jetId >= 2)
-            loose_ak4jets = ak4jets[looseJetId]
             
         # save per event variables to a dataframe
         self.out_vars["ntracks"+out_label] = ak.num(tracks).to_list()
         self.out_vars["ngood_fastjets"+out_label] = ak.num(ak_inclusive_jets).to_list()
-        self.out_vars["ht"+out_label] = ak.sum(ak4jets.pt,axis=-1).to_list()
-        if self.era == 2016 and self.scouting == 0:
-            self.out_vars["HLT_PFHT900"+out_label] = events.HLT.PFHT900
-        elif self.scouting == 0:
-            self.out_vars["HLT_PFHT1050"+out_label] = events.HLT.PFHT1050
-        # store first n jets infos per event
-        # for i in range(10):
-        #     iAk4jet = (ak.num(ak4jets) > i)  
-        #     self.out_vars["eta_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.eta)]
-        #     self.out_vars["phi_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.phi)]
-        #     self.out_vars["pt_ak4jets"+str(i)] = [x[i] if j else np.nan for j, x in zip(iAk4jet, ak4jets.pt)]
-        self.out_vars["ngood_ak4jets"+out_label] = ak.num(ak4jets).to_list()
-        #self.out_vars["n_loose_ak4jets"+out_label] = ak.num(loose_ak4jets).to_list()
-        #self.out_vars["n_tight_ak4jets"+out_label] = ak.num(tight_ak4jets).to_list()
-        #self.out_vars["ht_loose"+out_label] = ak.sum(loose_ak4jets.pt,axis=-1).to_list()
-        #self.out_vars["ht_tight"+out_label] = ak.sum(tight_ak4jets.pt,axis=-1).to_list()
-        if self.scouting == 1:
-            self.out_vars["PV_npvs"+out_label] = ak.num(events.Vertex.x)
-        else:
-            if self.isMC: self.out_vars["Pileup_nTrueInt"+out_label] = events.Pileup.nTrueInt
-            self.out_vars["PV_npvs"+out_label] = events.PV.npvs
-            self.out_vars["PV_npvsGood"+out_label] = events.PV.npvsGood
-            
+        if out_label == "":
+            self.out_vars["ht"+out_label] = ak.sum(ak4jets.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label] = ak.sum(jets_jec.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label+"_JER_up"] = ak.sum(jets_jec_JERUp.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label+"_JER_down"] = ak.sum(jets_jec_JERDown.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label+"_JES_up"] = ak.sum(jets_jec_JESUp.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label+"_JES_down"] = ak.sum(jets_jec.pt,axis=-1).to_list()
+
+            if self.era == 2016 and self.scouting == 0:
+                self.out_vars["HLT_PFHT900"+out_label] = events.HLT.PFHT900
+            elif self.scouting == 0:
+                self.out_vars["HLT_PFHT1050"+out_label] = events.HLT.PFHT1050
+            self.out_vars["ngood_ak4jets"+out_label] = ak.num(ak4jets).to_list()
+            if self.scouting == 1:
+                self.out_vars["PV_npvs"+out_label] = ak.num(events.Vertex.x)
+            else:
+                if self.isMC:
+                    self.out_vars["Pileup_nTrueInt"+out_label] = events.Pileup.nTrueInt
+                    if len(events.PSWeight[0])==4:
+                        self.out_vars["PSWeight"+out_label+"_ISR_up"] = events.PSWeight[:,0]
+                        self.out_vars["PSWeight"+out_label+"_ISR_down"] = events.PSWeight[:,2]
+                        self.out_vars["PSWeight"+out_label+"_FSR_up"] = events.PSWeight[:,1]
+                        self.out_vars["PSWeight"+out_label+"_FSR_down"] = events.PSWeight[:,3]
+                    else:
+                        self.out_vars["PSWeight"+out_label] = events.PSWeight[:,0]
+                self.out_vars["PV_npvs"+out_label] = events.PV.npvs
+                self.out_vars["PV_npvsGood"+out_label] = events.PV.npvsGood
+                
         # get gen SUEP mass
         SUEP_genMass = len(events)*[0]
         if self.isMC and not self.scouting:
@@ -620,7 +620,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Cut based on ak4 jets to replicate the trigger
         #####################################################################################
         
-        events, ak4jets = self.eventSelection(events)
+        events, ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown = self.eventSelection(events)
         
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -651,7 +651,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Event level information
         #####################################################################################
                 
-        self.storeEventVars(events, tracks, ak4jets, 
+        self.storeEventVars(events, tracks, ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown, 
                             ak_inclusive_jets, ak_inclusive_cluster,
                             out_label=col_label)
 
