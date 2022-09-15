@@ -35,8 +35,7 @@ options = parser.parse_args()
 
 # parameters for script
 output_label = options.output
-#outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
-outDir = "/work/"
+outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
 redirector = "root://t3serv017.mit.edu/"
 
 """
@@ -163,7 +162,6 @@ def plot(df, output, abcd, label_out, sys):
 #############################################################################################################
 
 # get list of files
-'''
 username = getpass.getuser()
 if options.file:
     files = [options.file]
@@ -178,7 +176,7 @@ else:
     dataDir = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
     if options.merged: dataDir += "merged/"
     files = [dataDir + f for f in os.listdir(dataDir)]
-'''
+    
 # get cross section
 xsection = 1.0
 if options.isMC: xsection = getXSection(options.dataset, options.era)

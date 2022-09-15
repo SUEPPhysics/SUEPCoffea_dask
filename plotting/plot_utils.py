@@ -48,9 +48,11 @@ lumis = {
     '2017': 41.5*1000,
     '2018': 61000
 }
-
+    
 # load file(s)
-def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
+def loader(infile_names, 
+           apply_lumis=True,
+           exclude_low_bins=False):
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name): 
@@ -210,17 +212,26 @@ def check_proxy(time_min=100):
         
     return lifetime
 
-def getXSection(dataset, year):
+def getXSection(dataset, year, SUEP=False):
     xsection = 1
-    with open('../data/xsections_{}.json'.format(year)) as file:
-        MC_xsecs = json.load(file)
-        try:
-            xsection *= MC_xsecs[dataset]["xsec"]
-            xsection *= MC_xsecs[dataset]["kr"]
-            xsection *= MC_xsecs[dataset]["br"]
-        except:
-            print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
-            return 1
+    if not SUEP:
+        with open('../data/xsections_{}.json'.format(year)) as file:
+            MC_xsecs = json.load(file)
+            try:
+                xsection *= MC_xsecs[dataset]["xsec"]
+                xsection *= MC_xsecs[dataset]["kr"]
+                xsection *= MC_xsecs[dataset]["br"]
+            except:
+                print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
+                return 1
+    else:
+        with open('../data/xsections_{}_SUEP.json'.format(year)) as file:
+            MC_xsecs = json.load(file)
+            try:
+                xsection *= MC_xsecs[dataset]
+            except:
+                print("WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file")
+                return 1
     return xsection
 
 def get_tracks_up(nom, down):

@@ -27,8 +27,8 @@ hostname
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
+echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2"
+python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
@@ -79,6 +79,7 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
     parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
+    parser.add_argument("-doSyst", "--doSyst", type=int, default=1          , help="")
     parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="")
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
     parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
@@ -167,6 +168,7 @@ def main():
                     proxy=proxy_base,
                     ismc=options.isMC,
                     era=options.era,
+                    doSyst=options.doSyst,
                     outdir=fin_outdir_condor,          
                     dataset=sample_name,
                     condor_file=condor_file,

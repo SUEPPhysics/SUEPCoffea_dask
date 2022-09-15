@@ -50,6 +50,7 @@ executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
 should_transfer_files = YES
 transfer_input_files  = {transfer_file}
+MAX_TRANSFER_INPUT_MB = 400
 output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
