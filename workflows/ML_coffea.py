@@ -179,21 +179,18 @@ class ML_cluster(processor.ProcessorABC):
         
         # convert to this format
         l1event_feat = self.store_event_features(out_vars)
-        l1pfcand_cyl, l1pfcand_cart = self.store_objects_coordinates(tracks_CL, npfcands, obj='PFcand')
-        l1bpfcand_cyl, l1bpfcand_cart = self.store_objects_coordinates(tracks_b_CL, npfcands, obj='bPFcand')
-        
-        # debug
-        print()
-        print(l1event_feat.shape)
-        print()
-        
+        l1pfcand_cyl, l1pfcand_cart, l1pfcand_p4 = self.store_objects_coordinates(tracks_CL, npfcands, obj='PFcand')
+        l1bpfcand_cyl, l1bpfcand_cart, l1bpfcand_p4 = self.store_objects_coordinates(tracks_b_CL, npfcands, obj='bPFcand')
+
         # save to file
         outFile = events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5"
         with h5py.File(outFile, 'w') as outFile:
             outFile.create_dataset('Pfcand_cyl', data=l1pfcand_cyl, compression='gzip')
             outFile.create_dataset('Pfcand_cart', data=l1pfcand_cart, compression='gzip')
+            outFile.create_dataset('Pfcand_p4', data=l1pfcand_p4, compression='gzip')
             outFile.create_dataset('bPfcand_cyl', data=l1bpfcand_cyl, compression='gzip')
             outFile.create_dataset('bPfcand_cart', data=l1bpfcand_cart, compression='gzip')
+            outFile.create_dataset('bPfcand_p4', data=l1bpfcand_p4, compression='gzip')
             outFile.create_dataset('event_feat', data=l1event_feat, compression='gzip')
             
         return output
@@ -225,8 +222,12 @@ class ML_cluster(processor.ProcessorABC):
         
         l1Obj_cyl = np.zeros((nentries,nobj,4))
         l1Obj_cart = np.zeros((nentries,nobj,4))
+        l1Obj_p4 = np.zeros((nentries,nobj,4))
 
         pt = self.to_np_array(tracks.pt,maxN=nobj)
+        px = self.to_np_array(tracks.px,maxN=nobj)
+        py = self.to_np_array(tracks.py,maxN=nobj)
+        pz = self.to_np_array(tracks.pz,maxN=nobj)
         eta = self.to_np_array(tracks.eta,maxN=nobj)
         phi = self.to_np_array(tracks.phi,maxN=nobj)
         m = self.to_np_array(tracks.mass,maxN=nobj)
@@ -239,8 +240,12 @@ class ML_cluster(processor.ProcessorABC):
         l1Obj_cart[:,:,1] = pt*np.sin(phi)
         l1Obj_cart[:,:,2] = pt*np.sinh(eta)
         l1Obj_cart[:,:,3] = m
-
-        return l1Obj_cyl, l1Obj_cart
+        l1Obj_p4[:,:,0] = px
+        l1Obj_p4[:,:,1] = py
+        l1Obj_p4[:,:,2] = pz
+        l1Obj_p4[:,:,3] = m
+        
+        return l1Obj_cyl, l1Obj_cart, l1Obj_p4
     
     def to_np_array(self, ak_array, maxN=100, pad=0):
         '''convert awkward array to regular numpy array'''

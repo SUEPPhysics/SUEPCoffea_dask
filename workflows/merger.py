@@ -74,9 +74,6 @@ def merge_ML(options):
     
     files = glob.glob("*Events*.hdf5")
     
-    # debug
-    print(files)
-    
     # skip if no files
     if len(files) == 0: 
         print("No .hdf5 files found")
@@ -106,10 +103,6 @@ def merge_ML(options):
     outFile = "out.hdf5"
     with h5py.File(outFile, 'w') as outFile:
         for key, item in output.items():
-            
-            # debug
-            print(key, item.shape)
-            
             outFile.create_dataset(key, data=item, compression='gzip')
         
     # clean up the chunk files that we have already merged together
