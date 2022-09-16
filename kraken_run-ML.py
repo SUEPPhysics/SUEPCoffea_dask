@@ -28,8 +28,8 @@ sleep $[ ( $RANDOM % 100 )  + 1 ]s
 pip install --user h5py
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2"
-python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --dataset={dataset} --infile=$2
+echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --doSyst={doSyst} --era={era} --dataset={dataset} --infile=$2"
+python3 {condor_file} --jobNum=$1 --isMC={ismc} --doSyst={doSyst} --era={era} --dataset={dataset} --infile=$2
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
@@ -56,6 +56,7 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
+MAX_TRANSFER_INPUT_MB = 400
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
@@ -79,7 +80,8 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
     parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
-    parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="")
+    parser.add_argument("-doSyst", "--doSyst", type=int, default=0          , help="")
+    parser.add_argument("-sc"  , "--scout" , type=int, default=0          , help="")
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
     parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
@@ -160,6 +162,7 @@ def main():
                     #home_base=home_base,
                     proxy=proxy_base,
                     ismc=options.isMC,
+                    doSyst=options.doSyst,
                     era=options.era,
                     outdir=fin_outdir_condor,          
                     dataset=sample_name,

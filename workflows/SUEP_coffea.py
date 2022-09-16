@@ -369,7 +369,7 @@ class SUEP_cluster(processor.ProcessorABC):
   
     def eventSelection(self, events):
         """
-        Applies trigger and returns jets w/ various systematics applied.
+        Applies trigger, returns events.
         """
         if self.scouting != 1:
             if self.era == 2016:
