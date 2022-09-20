@@ -353,6 +353,10 @@ class SUEP_cluster(processor.ProcessorABC):
             for c in self.columns_ML: self.out_vars[c] = np.nan
           
     def jet_awkward(self,Jets):
+        """"
+        Create awkward array of jets. Applies basic selections.
+        Returns: awkward array of dimensions (events x jets x 4 momentum)
+        """
         Jets_awk = ak.zip({
             "pt": Jets.pt,
             "eta": Jets.eta,
@@ -364,7 +368,9 @@ class SUEP_cluster(processor.ProcessorABC):
         return Jets_correct
   
     def eventSelection(self, events):
-
+        """
+        Applies trigger, returns events.
+        """
         if self.scouting != 1:
             if self.era == 2016:
                 trigger = (events.HLT.PFHT900 == 1)
@@ -372,23 +378,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 trigger = (events.HLT.PFHT1050 == 1)
             events = events[trigger]
 
-        ak4jets = self.jet_awkward(events.Jet)
-
-        #work on JECs and systematics
-        jets_c = apply_jecs(isMC=self.isMC, Sample=self.sample, era=self.era, events=events)
-        jets_jec = self.jet_awkward(jets_c)
-        if self.isMC:
-            jets_jec_JERUp   = self.jet_awkward(jets_c["JER"].up)
-            jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
-            jets_jec_JESUp   = self.jet_awkward(jets_c["JES_jes"].up)
-            jets_jec_JESDown = self.jet_awkward(jets_c["JES_jes"].down)
-        else: #For data set these all to nominal so we can plot without switching all of the names
-            jets_jec_JERUp   = jets_jec
-            jets_jec_JERDown = jets_jec
-            jets_jec_JESUp   = jets_jec
-            jets_jec_JESDown = jets_jec
-
-        return events, ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown
+        return events
     
     def getGenTracks(self, events):
         genParts = events.GenPart
@@ -497,8 +487,26 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
     
     def storeEventVars(self, events, tracks, 
-                       ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown, ak_inclusive_jets, ak_inclusive_cluster,
+                       ak_inclusive_jets, ak_inclusive_cluster,
                        out_label=""):
+        
+        # select out ak4jets
+        ak4jets = self.jet_awkward(events.Jet)        
+        
+        # work on JECs and systematics
+        jets_c = apply_jecs(isMC=self.isMC, Sample=self.sample, era=self.era, events=events)
+        jets_jec = self.jet_awkward(jets_c)
+        if self.isMC:
+            jets_jec_JERUp   = self.jet_awkward(jets_c["JER"].up)
+            jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
+            jets_jec_JESUp   = self.jet_awkward(jets_c["JES_jes"].up)
+            jets_jec_JESDown = self.jet_awkward(jets_c["JES_jes"].down)
+        # For data set these all to nominal so we can plot without switching all of the names
+        else: 
+            jets_jec_JERUp   = jets_jec
+            jets_jec_JERDown = jets_jec
+            jets_jec_JESUp   = jets_jec
+            jets_jec_JESDown = jets_jec
             
         # save per event variables to a dataframe
         self.out_vars["ntracks"+out_label] = ak.num(tracks).to_list()
@@ -620,7 +628,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # Cut based on ak4 jets to replicate the trigger
         #####################################################################################
         
-        events, ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown = self.eventSelection(events)
+        events = self.eventSelection(events)
         
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -651,7 +659,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Event level information
         #####################################################################################
                 
-        self.storeEventVars(events, tracks, ak4jets, jets_jec, jets_jec_JERUp, jets_jec_JERDown, jets_jec_JESUp, jets_jec_JESDown, 
+        self.storeEventVars(events, tracks,
                             ak_inclusive_jets, ak_inclusive_cluster,
                             out_label=col_label)
 

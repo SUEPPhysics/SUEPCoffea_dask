@@ -9,7 +9,8 @@
 import pandas as pd
 import os, sys
 import glob
-#import tqdm
+import h5py
+import numpy as np
 
 def h5load(ifile, label):
     try:
@@ -66,4 +67,46 @@ def merge(options):
     # clean up the chunk files that we have already merged together
     for file in files:
         os.system("rm " + str(file))
+    return
+
+
+def merge_ML(options):
+    
+    files = glob.glob("*Events*.hdf5")
+    
+    # skip if no files
+    if len(files) == 0: 
+        print("No .hdf5 files found")
+        sys.exit()
+    
+    output = {}
+    for ifile, file in enumerate(files):
+        f = h5py.File(file, 'r')
+
+        # skip if empty
+        if 'empty' in list(f.keys()): 
+            f.close()
+            continue
+        
+        for key in f.keys():
+            data = f[key]
+            data = data[:]
+
+            if ifile == 0:
+                output[key] = data
+            else:
+                output[key] = np.vstack((output[key], data))
+
+        f.close()
+        
+    # save to file
+    outFile = "out.hdf5"
+    with h5py.File(outFile, 'w') as outFile:
+        for key, item in output.items():
+            outFile.create_dataset(key, data=item, compression='gzip')
+        
+    # clean up the chunk files that we have already merged together
+    for file in files:
+        os.system("rm " + str(file))
+    
     return

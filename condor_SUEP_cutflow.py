@@ -7,10 +7,11 @@ import numpy
 from tqdm import tqdm
 
 #Import coffea specific features
-from coffea.processor import run_uproot_job, futures_executor
+import coffea
+from coffea.processor import run_uproot_job, futures_executor, iterative_executor
 
 #SUEP Repo Specific
-from workflows.SUEP_coffea import *
+from workflows.SUEP_coffea_cutflow import *
 from workflows.merger import *
 
 #Begin argparse
@@ -43,4 +44,4 @@ for instance in modules_era:
         chunksize=1000000,
     )
     
-merge(options)
+coffea.util.save(output, "output.coffea")

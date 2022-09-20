@@ -18,25 +18,32 @@ import pileup_weight
 import triggerSF
 from plot_utils import *
 
+
 parser = argparse.ArgumentParser(description='Famous Submitter')
+# Name of the output file, and outDir
+parser.add_argument("-o"   , "--output"   , type=str, help="output tag", required=True)
+parser.add_argument("-od"  , "--outDir", type=str, help="output dir", default="/work/submit/{}/SUEP/outputs/".format(getpass.getuser()), required=False)
+# Where the files are coming from. Either provide: 
+# 1. filepath with -f
+# 2. tag and dataset for something in /work/submit/{user}/SUEP/{tag}/{dataset}/
+# 3. tag, dataset and xrootd = 1 for something in root://t3serv017.mit.edu//scratch/{user}/SUEP/{tag}/{dataset}/
+# optional: call it with --merged = 1 to add a /merged/ to the paths in options 2 and 3
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=False)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
-parser.add_argument("-o"   , "--output"   , type=str, default="IronMan"  , help="output tag", required=False)
-parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
-parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
-parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
-parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
-parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
+parser.add_argument('-f', '--file', type=str, default='', help="Use specific input file")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
 parser.add_argument('--merged', type=int, default=1, help="Use merged files")
-parser.add_argument('-f', '--file', type=str, default='', help="Use specific input file")
+# some info about the files, highly encouraged to specify everytime
+parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
+parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
+parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
+# some parameters you can toggle freely
+parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
+parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
+parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 options = parser.parse_args()
 
 # parameters for script
-output_label = options.output
-#outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
-outDir = "/work/"
 redirector = "root://t3serv017.mit.edu/"
 
 """
@@ -163,7 +170,6 @@ def plot(df, output, abcd, label_out, sys):
 #############################################################################################################
 
 # get list of files
-'''
 username = getpass.getuser()
 if options.file:
     files = [options.file]
@@ -178,14 +184,12 @@ else:
     dataDir = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
     if options.merged: dataDir += "merged/"
     files = [dataDir + f for f in os.listdir(dataDir)]
-'''
+    
 # get cross section
 xsection = 1.0
 if options.isMC: xsection = getXSection(options.dataset, options.era)
 
 # event weights
-
-
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
 
@@ -296,8 +300,11 @@ def create_output_file(label, abcd, sys):
 
 # fill ABCD hists with dfs from hdf5 files
 nfailed = 0
-weight = 0
-fpickle =  open(outDir + options.dataset+ "_" + output_label + '.pkl', "wb")
+total_gensumweight = 0
+
+if options.dataset: outFile = options.outDir + "/" + options.dataset+ "_" + options.output
+else: outFile = os.path.join(options.outDir,options.output)
+fpickle =  open(outFile + '.pkl', "wb")
 output = {"labels":[]}
 
 # systematics
@@ -323,7 +330,8 @@ if options.isMC:
     
     # jet systematics
     # here, we just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
-    for sys in ['JEC', 'JEC_JER_up', 'JEC_JER_down', 'JEC_JES_up', 'JEC_JES_down']: 
+    jet_corrections = ['JEC', 'JEC_JER_up', 'JEC_JER_down', 'JEC_JES_up', 'JEC_JES_down']
+    for sys in jet_corrections: 
         for label_out, config_out in config.items():
             label_out_new = label_out+"_"+sys
             new_config[label_out_new] = deepcopy(config[label_out])
@@ -354,7 +362,7 @@ for ifile in tqdm(files):
         continue
             
     # update the gensumweight
-    if options.isMC and metadata != 0: weight += metadata['gensumweight']
+    if options.isMC and metadata != 0: total_gensumweight += metadata['gensumweight']
 
     # check if file is empty
     if 'empty' in list(df.keys()): continue
@@ -387,7 +395,6 @@ for ifile in tqdm(files):
             df['event_weight'] *= pu
 
         # 2) TriggerSF weights
-        
         if options.isMC == 1 and options.scouting != 1:
             ht = np.array(df['ht']).astype(int)
             ht_bin = np.digitize(ht,trig_bins)-1 #digitize the values to bins
@@ -418,6 +425,7 @@ for ifile in tqdm(files):
 
         for label_out, config_out in config.items():
             if 'trackDOWN' in label_out and sys != "": continue
+            if any([j in label_out for j in jet_corrections]) and sys != "": continue
             output.update(create_output_file(label_out, config_out, sys))
             output = plot(df.copy(), output, config_out, label_out, sys)
         
@@ -447,16 +455,16 @@ for label_out, config_out in config.items():
 # apply normalization
 output.pop("labels")
 if options.isMC:
-    if weight > 0.0:
-        for plot in list(output.keys()): output[plot] = output[plot]*xsection/weight
+    if total_gensumweight > 0.0:
+        for plot in list(output.keys()): output[plot] = output[plot]*xsection/total_gensumweight
     else:
-        print("Weight is 0")
+        print("Total gensumweight is 0")
         
 #Save to pickle
 pickle.dump(output, fpickle)
 print("Number of files that failed to be read:", nfailed)
 
 # save to root
-with uproot.recreate(outDir + options.dataset+ "_" + output_label + '.root') as froot:
+with uproot.recreate(outFile + '.root') as froot:
     for h, hist in output.items():
         froot[h] = hist
