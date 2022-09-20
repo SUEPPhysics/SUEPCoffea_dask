@@ -31,11 +31,11 @@ echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSy
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5"
-xrdcp out.hdf5 root://t3serv017.mit.edu/{outdir}/$3.hdf5
+echo "xrdcp {outfile}.{file_ext} root://t3serv017.mit.edu/{outdir}/$3.{file_ext}"
+xrdcp {outfile}.{file_ext} root://t3serv017.mit.edu/{outdir}/$3.{file_ext}
 
-echo "rm *.hdf5"
-rm *.hdf5
+echo "rm *.{file_ext}"
+rm *.{file_ext}
 
 echo " ------ THE END (everyone dies !) ----- "
 """
@@ -78,9 +78,11 @@ def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
-    parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
-    parser.add_argument("-doSyst", "--doSyst", type=int, default=1          , help="")
-    parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="")
+    parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="Is Monte Carlo or data.")
+    parser.add_argument("-doSyst", "--doSyst", type=int, default=1          , help="Apply systematics.")
+    parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="Scouting data.")
+    parser.add_argument("-ML"  , "--ML"    , type=int, default=0          , help="ML samples production.")
+    parser.add_argument("-cutflow"  , "--cutflow"    , type=int, default=0, help="Cutflow analyzer.")
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
     parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
@@ -96,6 +98,25 @@ def main():
     outdir_condor = '/scratch/'+username+'/SUEP/{tag}/{sample}/'
     workdir = os.getcwd()
     logdir = '/work/submit/'+username+'/SUEP/logs/'
+    
+    # define which file you want to run, the output file name and extension that it produces
+    # these will be transfered back to outdir/outdir_condor
+    if options.scout == 1:
+        condor_file = "condor_Scouting.py"
+        outfile = 'out'
+        file_ext = 'hdf5'
+    elif options.ML == 1:
+        condor_file = 'condor_ML.py'
+        outfile = 'out'
+        file_ext = 'hdf5'
+    elif options.cutflow == 1:
+        condor_file = 'condor_SUEP_cutflow.py'
+        outfile = 'output'
+        file_ext = 'coffea'
+    else:
+        condor_file = "condor_SUEP_WS.py"
+        outfile = 'out'
+        file_ext = 'hdf5'
     
     # Making sure that the proxy is good
     lifetime = check_proxy(time_min=100)
@@ -113,7 +134,7 @@ def main():
             if len(sample.split('/')) <= 1: continue
             sample_name = sample.split("/")[-1]
             if options.scout == 1:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E03/{}/RawFiles.00".format(sample_name)
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
             Raw_list = open(input_list, "r")
@@ -142,7 +163,7 @@ def main():
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
                 if options.scout == 1:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E03/{}/RawFiles.00".format(sample_name)
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(sample_name)
                 else:
                     input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(sample_name)
                 Raw_list = open(input_list, "r")
@@ -153,15 +174,15 @@ def main():
                         just_file = full_file.split("/")[-1]
                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
                         nfiles+=1
+                        
+                        # debug
+                        break
+                        
                     infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
             os.system("mkdir -p {}".format(fin_outdir))
   
-            if options.scout == 1:
-                condor_file = "condor_Scouting.py"
-            else:
-                condor_file = "condor_SUEP_WS.py"
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 script = script_TEMPLATE.format(
                     #home_base=home_base,
@@ -172,6 +193,8 @@ def main():
                     outdir=fin_outdir_condor,          
                     dataset=sample_name,
                     condor_file=condor_file,
+                    outfile=outfile,
+                    file_ext=file_ext
                 )
                 scriptfile.write(script)
                 scriptfile.close()
@@ -179,8 +202,7 @@ def main():
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file= ",".join([
-                        workdir + "/condor_SUEP_WS.py",
-                        workdir + "/condor_Scouting.py",
+                        workdir + "/" + condor_file,
                         workdir + "/workflows",
                         workdir + "/data",
                         proxy_copy
@@ -209,6 +231,8 @@ def main():
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
             
+            # debug
+            break
             
 if __name__ == "__main__":
     main()

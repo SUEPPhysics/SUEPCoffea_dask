@@ -29,7 +29,7 @@ options = parser.parse_args()
 out_dir = os.getcwd()
 modules_era = []
 
-modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=1,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=options.do_inf, output_location=out_dir))
+modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=options.doSyst,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=options.do_inf, output_location=out_dir))
 
 for instance in modules_era:
     output = run_uproot_job(
@@ -37,11 +37,11 @@ for instance in modules_era:
         treename='Events',
         processor_instance=instance,
         executor=futures_executor,
-        executor_args={'workers': 5,
+        executor_args={'workers': 2,
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=20,
+        chunksize=100000,
     )
     
 coffea.util.save(output, "output.coffea")
