@@ -26,6 +26,8 @@ hostname
 
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
+pip install h5py
+
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2"
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2
@@ -121,10 +123,10 @@ def main():
     # Making sure that the proxy is good
     lifetime = check_proxy(time_min=100)
     logging.info("--- proxy lifetime is {} hours".format(round(lifetime,1)))
-    home_base  = os.environ['HOME']
     proxy_base = 'x509up_u{}'.format(os.getuid())
+    home_base  = os.environ['HOME']
     proxy_copy = os.path.join(home_base,proxy_base)
-
+    
     with open(options.input, 'r') as stream:
         
         # count total number of files to submit
@@ -185,7 +187,6 @@ def main():
   
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 script = script_TEMPLATE.format(
-                    #home_base=home_base,
                     proxy=proxy_base,
                     ismc=options.isMC,
                     era=options.era,

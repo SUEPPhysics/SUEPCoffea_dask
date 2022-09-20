@@ -487,7 +487,7 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
     
     def storeEventVars(self, events, tracks, 
-                       ak4jets, ak_inclusive_jets, ak_inclusive_cluster,
+                       ak_inclusive_jets, ak_inclusive_cluster,
                        out_label=""):
         
         # select out ak4jets

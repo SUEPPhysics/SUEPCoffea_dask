@@ -41,7 +41,7 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=100000,
+        chunksize=1000000,
     )
     
 coffea.util.save(output, "output.coffea")
