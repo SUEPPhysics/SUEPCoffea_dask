@@ -69,8 +69,9 @@ class ML_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
-            out_vars = pd.DataFrame(['empty'], columns=['empty'])
-            save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            outFile = events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5"
+            with h5py.File(outFile, 'w') as outFile:
+                outFile.create_dataset('empty', data=['empty'], compression='gzip')
             return output
         
         #####################################################################################
@@ -119,8 +120,9 @@ class ML_cluster(processor.ProcessorABC):
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass clusterCut.")
-            for c in columns: out_vars[c] = np.nan
-            save_dfs(self, [out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+            outFile = events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5"
+            with h5py.File(outFile, 'w') as outFile:
+                outFile.create_dataset('empty', data=['empty'], compression='gzip')
             return output
         
         # drop events that don't pass the cut

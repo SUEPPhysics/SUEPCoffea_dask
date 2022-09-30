@@ -28,8 +28,8 @@ class SUEP_cluster(processor.ProcessorABC):
         self.do_syst = do_syst
         self.gensumweight = 1.0
         self.scouting = scouting
-        self.era = era
-        self.isMC = isMC
+        self.era = int(era)
+        self.isMC = bool(isMC)
         self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
@@ -721,7 +721,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # run the anlaysis with the track systematics applied
         if self.isMC and self.do_syst:
-            self.analysis(events, do_syst=True, col_label='_trackDOWN')
+            self.analysis(events, do_syst=True, col_label='_track_down')
         
         # run the analysis
         self.analysis(events)

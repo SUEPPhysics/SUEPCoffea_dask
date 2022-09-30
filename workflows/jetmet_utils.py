@@ -6,7 +6,7 @@ from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
 from coffea.lookup_tools import extractor
 
 def apply_jecs(isMC, Sample, era, events):
-
+    
     #Find the Collection we want to look at
     if isMC:
         if era==2016:
@@ -34,27 +34,27 @@ def apply_jecs(isMC, Sample, era, events):
                 jerdir = 'Summer20UL16_JRV3_DATA'
         elif era==2017:
             jerdir = 'Summer19UL17_JRV3_DATA'
-            if "RunB" in Sample:
+            if "RunB" or 'Run2017B' in Sample:
                 jecdir = 'Summer19UL17_RunB_V5_DATA'
-            elif "RunC" in Sample:
+            elif "RunC" or 'Run2017C' in Sample:
                 jecdir = 'Summer19UL17_RunC_V5_DATA'
-            elif "RunD" in Sample:
+            elif "RunD" or 'Run2017D' in Sample:
                 jecdir = 'Summer19UL17_RunD_V5_DATA'
-            elif "RunE" in Sample:
+            elif "RunE" or 'Run2017E' in Sample:
                 jecdir = 'Summer19UL17_RunE_V5_DATA'
-            elif "RunF" in Sample:
+            elif "RunF" or 'Run2017F' in Sample:
                 jecdir = 'Summer19UL17_RunF_V5_DATA'
             else:
                 print('WARNING: The JECs for the 2017 data era do not seem to exist!')
         elif era==2018:
             jerdir = 'Summer19UL18_JRV2_DATA'
-            if "RunA" in Sample:
+            if "RunA" or 'Run2018A' in Sample:
                 jecdir = 'Summer19UL18_RunA_V5_DATA'
-            elif "RunB" in Sample:
+            elif "RunB" or 'Run2018B' in Sample:
                 jecdir = 'Summer19UL18_RunB_V5_DATA'
-            elif "RunC" in Sample:
+            elif "RunC" or 'Run2018C' in Sample:
                 jecdir = 'Summer19UL18_RunC_V5_DATA'
-            elif "RunD" in Sample:
+            elif "RunD" or 'Run2018D' in Sample:
                 jecdir = 'Summer19UL18_RunD_V5_DATA'
             else:
                 print('WARNING: The JECs for the 2018 data era do not seem to exist!')
