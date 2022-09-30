@@ -80,23 +80,25 @@ def merge_ML(options):
         sys.exit()
     
     output = {}
+    firstFile = True
     for ifile, file in enumerate(files):
         f = h5py.File(file, 'r')
-
+        
         # skip if empty
         if 'empty' in list(f.keys()): 
             f.close()
             continue
         
         for key in f.keys():
-            data = f[key]
+            data = f[key]            
             data = data[:]
 
-            if ifile == 0:
+            if firstFile:
                 output[key] = data
             else:
                 output[key] = np.vstack((output[key], data))
 
+        firstFile = False
         f.close()
         
     # save to file

@@ -73,7 +73,7 @@ def time_limited_move(infile, outfile, time_limit=60, max_attempts=5):
         returncode = -1
         q = multiprocessing.Manager().Queue()
         q.put(returncode)
-        p = multiprocessing.Process(target=move, name="move_"+file, args=(q, infile, outfile))
+        p = multiprocessing.Process(target=move, name="move_"+infile, args=(q, infile, outfile))
         p.start()
         # Wait a maximum of time_limit seconds for foo
         # Usage: join([timeout in seconds])

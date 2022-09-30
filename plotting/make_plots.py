@@ -313,20 +313,20 @@ if options.isMC:
     new_config = {}
     
     # track systematics
-    # we need to use the trackDOWN version of the data,
+    # we need to use the track_down version of the data,
     # which has the randomly deleted tracks (see SUEPCoffea.py)
-    # so we need to modify the config to use the _trackDOWN vars
+    # so we need to modify the config to use the _track_down vars
     for label_out, config_out in config.items():
-        label_out_new = label_out+"_trackDOWN"
+        label_out_new = label_out+"_track_down"
         new_config[label_out_new] = deepcopy(config[label_out])
-        new_config[label_out_new]['input_method'] += "_trackDOWN"
-        new_config[label_out_new]['xvar'] += "_trackDOWN"
-        new_config[label_out_new]['yvar'] += "_trackDOWN"
+        new_config[label_out_new]['input_method'] += "_track_down"
+        new_config[label_out_new]['xvar'] += "_track_down"
+        new_config[label_out_new]['yvar'] += "_track_down"
         for iSel in range(len(new_config[label_out_new]['SR'])):
-            new_config[label_out_new]['SR'][iSel][0] += "_trackDOWN"
+            new_config[label_out_new]['SR'][iSel][0] += "_track_down"
         for iSel in range(len(new_config[label_out_new]['selections'])):
             if new_config[label_out_new]['selections'][iSel][0] in ['ht', 'ngood_ak4jets']: continue
-            new_config[label_out_new]['selections'][iSel][0] += "_trackDOWN"
+            new_config[label_out_new]['selections'][iSel][0] += "_track_down"
     
     # jet systematics
     # here, we just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
@@ -424,8 +424,9 @@ for ifile in tqdm(files):
                 z_var = 'ht')
 
         for label_out, config_out in config.items():
-            if 'trackDOWN' in label_out and sys != "": continue
-            if any([j in label_out for j in jet_corrections]) and sys != "": continue
+            if 'track_down' in label_out and sys != "": continue
+            if options.isMC:
+                if any([j in label_out for j in jet_corrections]) and sys != "": continue
             output.update(create_output_file(label_out, config_out, sys))
             output = plot(df.copy(), output, config_out, label_out, sys)
         
@@ -439,17 +440,17 @@ for ifile in tqdm(files):
 ### End plotting loop ###################################################################
 
 # do the tracks UP systematic
-sys = 'trackUP'
+sys = 'track_up'
 for label_out, config_out in config.items():
-    if 'trackDOWN' in label_out: continue
+    if 'track_down' in label_out: continue
     
     new_output = {}
     for hist_name in output.keys():
-        if not hist_name.endswith('_trackDOWN'): continue
+        if not hist_name.endswith('_track_down'): continue
         hDown = output[hist_name].copy()
-        hNom = output[hist_name.replace('_trackDOWN','')].copy()
+        hNom = output[hist_name.replace('_track_down','')].copy()
         hUp = get_tracks_up(hNom, hDown)
-        new_output.update({hist_name.replace('_trackDOWN','_trackUP'): hUp})
+        new_output.update({hist_name.replace('_track_down','_track_up'): hUp})
     output = new_output | output
         
 # apply normalization
