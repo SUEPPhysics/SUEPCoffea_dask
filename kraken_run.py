@@ -33,8 +33,8 @@ echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSy
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp {outfile}.{file_ext} root://t3serv017.mit.edu/{outdir}/$3.{file_ext}"
-xrdcp {outfile}.{file_ext} root://t3serv017.mit.edu/{outdir}/$3.{file_ext}
+echo "xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}"
+xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}
 
 echo "rm *.{file_ext}"
 rm *.{file_ext}
@@ -62,7 +62,8 @@ on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
 x509userproxy         = /home/submit/{user}/{proxy}
-+AccountingGroup = "analysis.{user}"
++AccountingGroup      = "analysis.{user}"
+Requirements          = BOSCOCluster =!= "eofe8.mit.edu"
 #requirements          = (target.MACHINE == t3btch115.mit.edu)
 #requirements          = ( ((BOSCOCluster == "t3serv008.mit.edu") || (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu")) && HAS_CVMFS_cms_cern_ch )
 #requirements          = (BOSCOGroup == "bosco_cms" && BOSCOCluster == "ce03.cmsaf.mit.edu"  && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch)
@@ -86,7 +87,7 @@ def main():
     parser.add_argument("-ML"  , "--ML"    , type=int, default=0          , help="ML samples production.")
     parser.add_argument("-cutflow"  , "--cutflow"    , type=int, default=0, help="Cutflow analyzer.")
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
-    parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
+    parser.add_argument("-e"   , "--era"   , type=str, default="2018"     , help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
@@ -96,10 +97,11 @@ def main():
 
     # script parameters
     username = getpass.getuser()
-    outdir = '/mnt/T3_US_MIT/hadoop/scratch/'+ username + '/SUEP/{tag}/{sample}/'
-    outdir_condor = '/scratch/'+username+'/SUEP/{tag}/{sample}/'
+    outdir = '/data/submit/cms/store/user/'+username+'/SUEP/{tag}/{sample}/'
+    outdir_condor = '/cms/store/user/'+username+'/SUEP/{tag}/{sample}/'
     workdir = os.getcwd()
     logdir = '/work/submit/'+username+'/SUEP/logs/'
+    redirector = 'root://submit50.mit.edu/'
     
     # define which file you want to run, the output file name and extension that it produces
     # these will be transfered back to outdir/outdir_condor
@@ -176,10 +178,6 @@ def main():
                         just_file = full_file.split("/")[-1]
                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
                         nfiles+=1
-                        
-                        # debug
-                        break
-                        
                     infiles.close()
             fin_outdir =  outdir.format(tag=options.tag,sample=sample_name)
             fin_outdir_condor =  outdir_condor.format(tag=options.tag,sample=sample_name)
@@ -195,7 +193,8 @@ def main():
                     dataset=sample_name,
                     condor_file=condor_file,
                     outfile=outfile,
-                    file_ext=file_ext
+                    file_ext=file_ext,
+                    redirector=redirector
                 )
                 scriptfile.write(script)
                 scriptfile.close()
@@ -231,9 +230,6 @@ def main():
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info("condor submission status : {}".format(exit_status))
-            
-            # debug
-            break
             
 if __name__ == "__main__":
     main()

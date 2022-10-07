@@ -44,7 +44,11 @@ parser.add_argument('--weights', type=str, default="None", help="Pass the filena
 options = parser.parse_args()
 
 # parameters for script
-redirector = "root://t3serv017.mit.edu/"
+# define these if --xrootd 0
+dataDirLocal = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
+# and these is --xrootd 1
+redirector = "root://submit50.mit.edu/"
+dataDirXRootD = "/cms/store/user/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
 
 """
 Define output plotting methods, each draws from an input_method (outputs of SUEPCoffea),
@@ -174,14 +178,14 @@ username = getpass.getuser()
 if options.file:
     files = [options.file]
 elif options.xrootd:
-    dataDir = "/scratch/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+    dataDir = dataDirXRootD
     if options.merged: dataDir += "merged/"
     result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
     result = result.decode("utf-8")
     files = result.split("\n")
     files = [f for f in files if len(f) > 0]
 else:
-    dataDir = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
+    dataDir = dataDirLocal
     if options.merged: dataDir += "merged/"
     files = [dataDir + f for f in os.listdir(dataDir)]
     
@@ -311,7 +315,7 @@ output = {"labels":[]}
 if options.isMC:
     
     new_config = {}
-    
+        
     # track systematics
     # we need to use the track_down version of the data,
     # which has the randomly deleted tracks (see SUEPCoffea.py)
@@ -427,6 +431,7 @@ for ifile in tqdm(files):
             if 'track_down' in label_out and sys != "": continue
             if options.isMC:
                 if any([j in label_out for j in jet_corrections]) and sys != "": continue
+            print("here", label_out)
             output.update(create_output_file(label_out, config_out, sys))
             output = plot(df.copy(), output, config_out, label_out, sys)
         
