@@ -49,3 +49,42 @@ def softmax(data):
     # some numpy magic
     return np.exp(data)/(np.exp(data).sum(axis=-1)[:,:,None])
 
+def GNN_convertEvents(self, events, SUEP_cand):
+    
+    allowed_objects = ['pfcand', 'bpfcand']
+    allowed_coords = ['cyl', 'cart', 'p4']
+    if self.obj.lower() not in allowed_objects: raise Exception(self.obj + " is not supported in GNN_convertEvents.")
+    if self.obj.lower() not in allowed_coords: raise Exception(self.coords + " is not supported in GNN_convertEvents.")
+    
+    if self.obj.lower() == 'pfcand':
+        events = events
+        
+    elif self.obj.lower() == 'bpfcand':
+        boost_SUEP = ak.zip({
+            "px": SUEP_cand.px*-1,
+            "py": SUEP_cand.py*-1,
+            "pz": SUEP_cand.pz*-1,
+            "mass": SUEP_cand.mass
+        }, with_name="Momentum4D")    
+        events = events.boost_p4(boost_SUEP)    
+        
+    new_events = np.empty_like(events)
+    if self.coords.lower() == 'cyl':
+        new_events[:,:,0] = events.pt
+        new_events[:,:,1] = events.eta
+        new_events[:,:,2] = events.phi
+        new_events[:,:,3] = events.mass
+        
+    elif self.coords.lower() == 'cart':
+        new_events[:,:,0] = events.pt*np.cos(events.phi)
+        new_events[:,:,1] = events.pt*np.sin(events.phi)
+        new_events[:,:,2] = events.pt*np.sinh(events.eta)
+        new_events[:,:,3] = events.mass
+        
+    elif self.coords.lower() == 'p4':
+        new_events[:,:,0] = events.px
+        new_events[:,:,1] = events.py
+        new_events[:,:,2] = events.pz
+        new_events[:,:,3] = events.mass
+    
+    return new_events

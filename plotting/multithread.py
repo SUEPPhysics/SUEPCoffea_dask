@@ -42,7 +42,7 @@ with open(options.inputList, 'r') as f:
     input_list = [l.split('/')[-1].strip('\n') for l in input_list]
 
 #if you want to limit what you run over modify the following:
-#input_list = [f for f in read_filelist('../filelist/list_2018_MC_A01.txt') if 'SUEP' in f] 
+# input_list = [f for f in read_filelist('../filelist/list_2018_SUEP_A01.txt')] 
 
 results = []
 start = time.time()
