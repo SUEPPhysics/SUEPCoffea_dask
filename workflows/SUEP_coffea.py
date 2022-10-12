@@ -4,7 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
-from coffea import hist, processor, lumi_tools
+from coffea import processor, lumi_tools
 from typing import List, Optional
 import awkward as ak
 import pandas as pd
@@ -14,12 +14,12 @@ import vector
 vector.register_awkward()
 
 #Importing SUEP specific functions
-from workflows.fasjet_utils import *
+from workflows.fastjet_utils import *
 from workflows.inference_utils import *
 from workflows.pandas_utils import *
 from workflows.math_utils import *
-
-#Importing SUEP specific corrections/systematics
+from workflows.offline_cutBased_methods import *
+from workflows.offline_ML_methods import *
 from workflows.systematics_utils import *
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -40,22 +40,27 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
+            
             # ML settings
-            self.models = ['model125']#Add to this list. There will be an output for each prediction in this list
-            self.batch_size = 100
+            self.batch_size = 1024
             
             # GNN settings
-            self.configs = []
+            self.dgnn_models = ['data/epoch-49.pt']#Add to this list. There will be an output for each
+            self.configs = ['data/config.yml']#Add to this list. For each model you need a config file
             self.obj = 'bPFcand'
             self.coords = 'cyl'
 
             # SSD settings
+            self.ssd_models = ['']#Add to this list. There will be an output for each
             self.eta_pix = 280
             self.phi_pix = 360
             self.eta_span = (-2.5, 2.5)
             self.phi_span = (-np.pi, np.pi)
             self.eta_scale = self.eta_pix/(self.eta_span[1]-self.eta_span[0])
             self.phi_scale = self.phi_pix/(self.phi_span[1]-self.phi_span[0])
+            
+            # define here which models to run
+            self.models = self.dgnn_models 
         
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
@@ -228,7 +233,8 @@ class SUEP_cluster(processor.ProcessorABC):
         ]
         self.columns_CL = [c.replace("IRM", "CL") for c in self.columns_IRM]
         self.columns_CL_ISR = [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in self.columns_IRM]
-        self.columns_ML = [str(m) for m in self.models] 
+        self.columns_ML = []
+        if self.do_inf: self.columns_ML = [str(m) for m in self.models] 
         self.columns = self.columns_CL + self.columns_CL_ISR + self.columns_ML
         
         # add a specific label to all columns

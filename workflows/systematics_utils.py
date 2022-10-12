@@ -1,6 +1,7 @@
 import numpy as np
 import awkward as ak
 import cachetools
+from coffea import lumi_tools
 from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
 from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
 from coffea.lookup_tools import extractor

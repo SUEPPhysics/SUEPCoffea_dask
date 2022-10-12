@@ -4,6 +4,8 @@ import awkward as ak
 import vector
 vector.register_awkward()
 
+from workflows.math_utils import *
+
 def ClusterMethod(self, indices, tracks, 
                   SUEP_cand, ISR_cand, 
                   SUEP_cluster_tracks, ISR_cluster_tracks,

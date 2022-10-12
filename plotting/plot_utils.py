@@ -76,7 +76,9 @@ def loader(infile_names,
                 lumi = lumis['2018']
             if 'JetHT+Run' in infile_name:
                 lumi = 1
-
+        
+        print(infile_name, lumi)
+        
         # exclude low bins
         if exclude_low_bins:
             if '50to100' in infile_name: continue
@@ -821,7 +823,7 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var='x'):
     variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance**2
     """
     
-    A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(abcd, xregions, yregions, sum_var='x', return_all=True)
+    A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(abcd, xregions, yregions, sum_var=sum_var, return_all=True)
 
     # define the scaling factor function
     a, b, c, d, e, f, g, h = symbols('A B C D E F G H')
@@ -849,7 +851,8 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var='x'):
     sigma_alpha = sqrt(variance)
 
     # define SR_exp and propagate the error on the scaling factor to the bin variances
-    SR_exp = F.copy()
+    if sum_var == 'x': SR_exp = F.copy()
+    elif sum_var == 'y': SR_exp = H.copy()
     new_var = SR_exp.values()**2 * float(sigma_alpha)**2 + float(alpha)**2 * abs(SR_exp.variances())
     SR_exp.view().variance = new_var
     SR_exp.view().value = SR_exp.view().value * float(alpha)
