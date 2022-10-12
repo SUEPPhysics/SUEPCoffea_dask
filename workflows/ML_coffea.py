@@ -181,8 +181,14 @@ class ML_cluster(processor.ProcessorABC):
         
         # convert to this format
         l1event_feat = self.store_event_features(out_vars)
-        l1pfcand_cyl, l1pfcand_cart, l1pfcand_p4 = self.store_objects_coordinates(tracks_CL, npfcands, obj='PFcand')
-        l1bpfcand_cyl, l1bpfcand_cart, l1bpfcand_p4 = self.store_objects_coordinates(tracks_b_CL, npfcands, obj='bPFcand')
+        
+        l1pfcand_cyl = convert_cyl(tracks_CL, npfcands)
+        l1pfcand_cart = convert_cart(tracks_CL, npfcands)
+        l1pfcand_p4 = convert_p4(tracks_CL, npfcands)
+        
+        l1bpfcand_cyl = convert_cyl(tracks_b_CL, npfcands, obj='bPFcand')
+        l1bpfcand_cart = convert_cart(tracks_b_CL, npfcands, obj='bPFcand')
+        l1bpfcand_p4 = convert_p4(tracks_b_CL, npfcands, obj='bPFcand')
 
         # save to file
         outFile = events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5"
@@ -215,40 +221,3 @@ class ML_cluster(processor.ProcessorABC):
         l1Oevent_features[:,3] = suepJetBoosted_nconst
 
         return l1Oevent_features
-
-    def store_objects_coordinates(self, tracks, nobj=10, obj='FatJet_'):
-        '''store objects in zero-padded numpy arrays'''
-        
-        # bad naming, tracks dimensions is (events x tracks)
-        nentries = len(tracks)
-        
-        l1Obj_cyl = np.zeros((nentries,nobj,4))
-        l1Obj_cart = np.zeros((nentries,nobj,4))
-        l1Obj_p4 = np.zeros((nentries,nobj,4))
-
-        pt = self.to_np_array(tracks.pt,maxN=nobj)
-        px = self.to_np_array(tracks.px,maxN=nobj)
-        py = self.to_np_array(tracks.py,maxN=nobj)
-        pz = self.to_np_array(tracks.pz,maxN=nobj)
-        eta = self.to_np_array(tracks.eta,maxN=nobj)
-        phi = self.to_np_array(tracks.phi,maxN=nobj)
-        m = self.to_np_array(tracks.mass,maxN=nobj)
-
-        l1Obj_cyl[:,:,0] = pt
-        l1Obj_cyl[:,:,1] = eta
-        l1Obj_cyl[:,:,2] = phi
-        l1Obj_cyl[:,:,3] = m
-        l1Obj_cart[:,:,0] = pt*np.cos(phi)
-        l1Obj_cart[:,:,1] = pt*np.sin(phi)
-        l1Obj_cart[:,:,2] = pt*np.sinh(eta)
-        l1Obj_cart[:,:,3] = m
-        l1Obj_p4[:,:,0] = px
-        l1Obj_p4[:,:,1] = py
-        l1Obj_p4[:,:,2] = pz
-        l1Obj_p4[:,:,3] = m
-        
-        return l1Obj_cyl, l1Obj_cart, l1Obj_p4
-    
-    def to_np_array(self, ak_array, maxN=100, pad=0):
-        '''convert awkward array to regular numpy array'''
-        return ak.to_numpy(ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad))
