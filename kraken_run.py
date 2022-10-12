@@ -14,6 +14,7 @@ source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 export X509_USER_PROXY={proxy}
 export PATH=$USER_PATH:$PATH
+export PATH=$PATH:/opt/conda/bin
 
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
@@ -21,7 +22,7 @@ export HOME=.
 echo "PATH"
 echo $PATH
 
-echo "hostname:"
+echo "hostname"
 hostname
 
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
@@ -29,8 +30,8 @@ sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 pip install h5py
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2"
-python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doSyst={doSyst} --dataset={dataset} --infile=$2
+echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$2"
+python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$2
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}"
@@ -70,7 +71,7 @@ Requirements          = BOSCOCluster =!= "eofe8.mit.edu"
 #requirements          = (BOSCOCluster == "t3serv008.mit.edu" && Machine =!= LastRemoteHost && HAS_CVMFS_cms_cern_ch )
 # requirements          = ( BOSCOCluster =!= "t3serv008.mit.edu" && BOSCOCluster =!= "ce03.cmsaf.mit.edu")
 +DESIRED_Sites        = "T2_AT_Vienna,T2_BE_IIHE,T2_BE_UCL,T2_BR_SPRACE,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_MIT,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC"
-+SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"
++SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 +JobFlavour           = "{queue}"
 
 queue jobid, fileid from {jobdir}/inputfiles.dat
@@ -82,11 +83,12 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
     parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="Is Monte Carlo or data.")
-    parser.add_argument("-doSyst", "--doSyst", type=int, default=1          , help="Apply systematics.")
-    parser.add_argument("-sc"  , "--scout"  , type=int, default=0          , help="Scouting data.")
+    parser.add_argument("-doInf", "--doInf"  , type=int, default=0      , help="Do inference or not.")
+    parser.add_argument("-doSyst", "--doSyst", type=int, default=1        , help="Apply systematics.")
+    parser.add_argument("-sc"  , "--scout"  , type=int, default=0         , help="Scouting data.")
     parser.add_argument("-ML"  , "--ML"    , type=int, default=0          , help="ML samples production.")
-    parser.add_argument("-cutflow"  , "--cutflow"    , type=int, default=0, help="Cutflow analyzer.")
-    parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
+    parser.add_argument("-cutflow"  , "--cutflow", type=int, default=0    , help="Cutflow analyzer.")
+    parser.add_argument("-q"   , "--queue" , type=str, default="espresso" , help="")
     parser.add_argument("-e"   , "--era"   , type=str, default="2018"     , help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
@@ -189,6 +191,7 @@ def main():
                     ismc=options.isMC,
                     era=options.era,
                     doSyst=options.doSyst,
+                    doInf=options.doInf,
                     outdir=fin_outdir_condor,          
                     dataset=sample_name,
                     condor_file=condor_file,
