@@ -86,7 +86,7 @@ class ML_cluster(processor.ProcessorABC):
         # ---- FastJet reclustering
         #####################################################################################
         
-        ak_inclusive_jets, ak_inclusive_cluster = SUEP_cluster.FastJetReclustering(self, tracks, r=1.5, minPt=30)
+        ak_inclusive_jets, ak_inclusive_cluster = SUEP_cluster.FastJetReclustering(self, tracks, r=1.5, minPt=150)
         
         #####################################################################################
         # ---- Event level information
