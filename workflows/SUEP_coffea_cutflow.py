@@ -97,11 +97,6 @@ class SUEP_cluster(processor.ProcessorABC):
             events = events[(ht > 600)]
             ak4jets = ak4jets[(ht > 600)]
         else:
-            events = events[(ht > 1200)]
-            ak4jets = ak4jets[(ht > 1200)]
-            
-            output['cut1'][dataset] += len(events)
-            
             if self.era == 2016:
                 trigger = (events.HLT.PFHT900 == 1)
             else:
@@ -109,6 +104,12 @@ class SUEP_cluster(processor.ProcessorABC):
             
             events = events[(trigger)]
             ak4jets = ak4jets[(trigger)]
+            ht = ht[(trigger)]
+            
+            output['cut1'][dataset] += len(events)
+            
+            events = events[(ht > 1200)]
+            ak4jets = ak4jets[(ht > 1200)]
             
             output['cut2'][dataset] += len(events)
         

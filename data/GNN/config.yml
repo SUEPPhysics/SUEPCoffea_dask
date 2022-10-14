@@ -1,0 +1,27 @@
+dataset:
+  obj: bPfcand
+  coords: cyl
+  test:
+  - /work/submit/lavezzo/private_samples//val/
+  train:
+  - /work/submit/lavezzo/private_samples/
+  validation:
+  - /work/submit/lavezzo/private_samples//val/
+evaluation_pref:
+  batch_size: 50
+  names_classes:
+  - SUEP
+  - QCD
+  workers: 0
+model_pref:
+  hidden_dim: 16
+  out_dim: 1
+training_pref:
+  batch_size_train: 512
+  batch_size_validation: 1024
+  disco_var: S1
+  gamma: 0.5
+  lambda_disco: 5
+  learning_rate: 0.001
+  max_epochs: 50
+  step_size: 20
