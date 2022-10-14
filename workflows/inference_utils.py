@@ -2,6 +2,8 @@ import onnxruntime as ort
 from numba import jit
 import awkward as ak
 import numpy as np
+import vector
+vector.register_awkward()
 
 @jit(forceobj=True)
 def convert_to_images(self, events):
@@ -63,7 +65,7 @@ def GNN_convertEvents(self, events, SUEP_cand, max_objects=1000):
             "py": SUEP_cand.py*-1,
             "pz": SUEP_cand.pz*-1,
             "mass": SUEP_cand.mass
-        }, with_name="Momentum4D")    
+        }, with_name="Momentum4D")      
         events = events.boost_p4(boost_SUEP)    
         
     new_events = convert_coords(self.coords, events, max_objects)

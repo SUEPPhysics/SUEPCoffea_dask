@@ -45,8 +45,8 @@ class SUEP_cluster(processor.ProcessorABC):
             self.batch_size = 1024
             
             # GNN settings
-            self.dgnn_models = ['data/epoch-49.pt']#Add to this list. There will be an output for each
-            self.configs = ['data/config.yml']#Add to this list. For each model you need a config file
+            self.dgnn_model_names = ['single_l5_bPfcand_S1']#Name for output
+            self.configs = ['data/config.yml']#config paths
             self.obj = 'bPFcand'
             self.coords = 'cyl'
 
@@ -58,9 +58,6 @@ class SUEP_cluster(processor.ProcessorABC):
             self.phi_span = (-np.pi, np.pi)
             self.eta_scale = self.eta_pix/(self.eta_span[1]-self.eta_span[0])
             self.phi_scale = self.phi_pix/(self.phi_span[1]-self.phi_span[0])
-            
-            # define here which models to run
-            self.models = self.dgnn_models 
         
         #Set up for the histograms
         self._accumulator = processor.dict_accumulator({})
@@ -234,7 +231,9 @@ class SUEP_cluster(processor.ProcessorABC):
         self.columns_CL = [c.replace("IRM", "CL") for c in self.columns_IRM]
         self.columns_CL_ISR = [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in self.columns_IRM]
         self.columns_ML = []
-        if self.do_inf: self.columns_ML = [str(m) for m in self.models] 
+        if self.do_inf: 
+            self.columns_ML = [m+"_GNN"+label for m in self.dgnn_model_names]
+            self.columns_ML += [m+"_ssd"+label for m in self.ssd_models] 
         self.columns = self.columns_CL + self.columns_CL_ISR + self.columns_ML
         
         # add a specific label to all columns
@@ -246,6 +245,8 @@ class SUEP_cluster(processor.ProcessorABC):
         # Cut based on ak4 jets to replicate the trigger
         #####################################################################################
         
+        # golden jsons for offline data
+        if not self.isMC and self.scouting!=1: events = applyGoldenJSON(self, events)
         events = self.eventSelection(events)
         
         # output empty dataframe if no events pass trigger
@@ -316,7 +317,8 @@ class SUEP_cluster(processor.ProcessorABC):
                            do_inverted=True,
                            out_label=col_label)
         
-        DGNNMethod(self, indices, tracks, SUEP_cand)
+        DGNNMethod(self, indices, tracks, SUEP_cluster_tracks, SUEP_cand, 
+                       out_label=out_label)
                 
         # self.ConeMethod(indices, tracks, 
         #                 SUEP_cand, ISR_cand)
@@ -328,9 +330,6 @@ class SUEP_cluster(processor.ProcessorABC):
         # gen weights
         if self.isMC and self.scouting==1: self.gensumweight = ak.num(events.PFcand.pt,axis=0)
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
-        
-        # golden jsons for offline data
-        if not self.isMC and self.scouting!=1: events = applyGoldenJSON(self, events)
 
         # run the anlaysis with the track systematics applied
         if self.isMC and self.do_syst:

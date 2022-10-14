@@ -4,9 +4,10 @@ import awkward as ak
 import vector
 vector.register_awkward()
 
+from workflows.math_utils import *
 from workflows.inference_utils import *
 
-def SSDMethod(self, indices, events):
+def SSDMethod(self, indices, events, out_label=''):
     #####################################################################################
     # ---- ML Analysis
     # Each event is converted into an input for the ML models. Using ONNX, we run
@@ -35,10 +36,12 @@ def SSDMethod(self, indices, events):
                 else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
                 pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
 
+        for model in self.ssd_models:
+            self.out_vars.loc[indices, model+"_ssd"+out_label] = pred_dict[model]
     else:
-        for c in self.columns_ML: self.out_vars[c] = np.nan
+        for c in self.ssd_models: self.out_vars.loc[indices, c+"_ssd"+out_label] = np.nan
 
-def DGNNMethod(self, indices, events, SUEP_cand):
+def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
     #####################################################################################
     # ---- ML Analysis
     # Each event is converted into an input for the ML models. Using ONNX, we run
@@ -58,15 +61,16 @@ def DGNNMethod(self, indices, events, SUEP_cand):
         device = torch.device('cpu')
 
         # consistency check
-        assert len(self.dgnn_models) == len(self.configs)
+        assert len(self.dgnn_model_names) == len(self.configs)
         
-        for model_path, config in zip(self.dgnn_models, self.configs):
+        for model_name, config in zip(self.dgnn_model_names, self.configs):
             
+            model_path = 'data/' + model_name + '.pt'
             # initialize model with original configurations and import the weights
             config = yaml.safe_load(open(config))
             suep = Net(out_dim=config['model_pref']['out_dim'], 
                     hidden_dim=config['model_pref']['hidden_dim']).to(device)
-            suep.load_state_dict(torch.load('data/epoch-49.pt', map_location=torch.device('cpu'))['model'])
+            suep.load_state_dict(torch.load(model_path, map_location=torch.device('cpu'))['model'])
             suep = suep.float()
             suep.eval()
             sigmoid = torch.nn.Sigmoid()
@@ -108,7 +112,11 @@ def DGNNMethod(self, indices, events, SUEP_cand):
                     nn1 = sigmoid(nn1)
                     results = np.concatenate((results, nn1.cpu().numpy()))
             
-            self.out_vars.loc[indices, model_path] = results
+            self.out_vars.loc[indices, model_name + "_GNN"+out_label] = results
+            
+            eigs = sphericity(SUEP_tracks, 1.0) #Set r=1.0 for IRC safe
+            self.out_vars.loc[indices, "SUEP_nconst_GNN"+out_label] = ak.num(SUEP_tracks)
+            self.out_vars.loc[indices, "SUEP_S1_GNN"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
 
     else:
-        for c in self.columns_ML: self.out_vars[c] = np.nan
+        for c in self.dgnn_model_names: self.out_vars.loc[indices, c+"_GNN"+out_label] = np.nan
