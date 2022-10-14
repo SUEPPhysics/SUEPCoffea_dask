@@ -51,7 +51,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self.coords = 'cyl'
 
             # SSD settings
-            self.ssd_models = ['']#Add to this list. There will be an output for each
+            self.ssd_models = []#Add to this list. There will be an output for each
             self.eta_pix = 280
             self.phi_pix = 360
             self.eta_span = (-2.5, 2.5)
@@ -232,8 +232,8 @@ class SUEP_cluster(processor.ProcessorABC):
         self.columns_CL_ISR = [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in self.columns_IRM]
         self.columns_ML = []
         if self.do_inf: 
-            self.columns_ML = [m+"_GNN"+label for m in self.dgnn_model_names]
-            self.columns_ML += [m+"_ssd"+label for m in self.ssd_models] 
+            self.columns_ML = [m+"_GNN" for m in self.dgnn_model_names] + ['SUEP_S1_GNN', 'SUEP_nconst_GNN']
+            self.columns_ML += [m+"_ssd" for m in self.ssd_models] 
         self.columns = self.columns_CL + self.columns_CL_ISR + self.columns_ML
         
         # add a specific label to all columns
@@ -308,7 +308,7 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks, indices, topTwoJets = getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
         
-        #self.ISRRemovalMethod(indices, tracks, 
+        # self.ISRRemovalMethod(indices, tracks, 
         #                      SUEP_cand, ISR_cand)
         
         ClusterMethod(self, indices, tracks, 
@@ -318,7 +318,7 @@ class SUEP_cluster(processor.ProcessorABC):
                            out_label=col_label)
         
         DGNNMethod(self, indices, tracks, SUEP_cluster_tracks, SUEP_cand, 
-                       out_label=out_label)
+                       out_label=col_label)
                 
         # self.ConeMethod(indices, tracks, 
         #                 SUEP_cand, ISR_cand)

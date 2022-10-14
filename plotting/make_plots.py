@@ -196,9 +196,9 @@ def create_output_file(label, abcd, sys):
     if label == 'GNN':
         for r in regions_list:
             output.update({
-                r+"single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"resnet_SUEP_pred_"+label, label="Resnet Output").Weight(),
-                r+"SUEP_nconst_"+label : Hist.new.Reg(100, 0, 500, name=r+"SUEP_nconst"+label, label="# Tracks in SUEP").Weight(),
-                r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 500, name=r+"SUEP_S1_"+label, label="$Sph_1$").Weight(),
+                r+"single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"single_l5_bPfcand_S1_"+label, label="GNN Output").Weight(),
+                r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"SUEP_nconst"+label, label="# Tracks in SUEP").Weight(),
+                r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label="$Sph_1$").Weight(),
             })
                         
     return output
