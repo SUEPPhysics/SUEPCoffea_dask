@@ -20,22 +20,21 @@ from plot_utils import *
 
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
-# Name of the output file, and outDir
+# Name of the output file tag
 parser.add_argument("-o"   , "--output"   , type=str, help="output tag", required=True)
-parser.add_argument("-od"  , "--outDir", type=str, help="output dir", default="/work/submit/{}/SUEP/outputs/".format(getpass.getuser()), required=False)
 # Where the files are coming from. Either provide: 
 # 1. filepath with -f
-# 2. tag and dataset for something in /work/submit/{user}/SUEP/{tag}/{dataset}/
-# 3. tag, dataset and xrootd = 1 for something in root://t3serv017.mit.edu//scratch/{user}/SUEP/{tag}/{dataset}/
-# optional: call it with --merged = 1 to add a /merged/ to the paths in options 2 and 3
+# 2. tag and dataset for something in dataDirLocal.format(tag, dataset)
+# 3. tag, dataset and xrootd = 1 for something in dataDirXRootD.format(tag, dataset)
 parser.add_argument("-dataset", "--dataset"  , type=str, default="QCD", help="dataset name", required=False)
 parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=False)
 parser.add_argument('-f', '--file', type=str, default='', help="Use specific input file")
 parser.add_argument('--xrootd', type=int, default=0, help="Local data or xrdcp from hadoop (default=False)")
+# optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument('--merged', type=int, default=1, help="Use merged files")
 # some info about the files, highly encouraged to specify everytime
-parser.add_argument("-e"   , "--era"   , type=int, default=2018  , help="era", required=False)
-parser.add_argument('--isMC', type=int, default=1, help="Is this MC or data")
+parser.add_argument("-e"   , "--era"   , type=int, help="era", required=True)
+parser.add_argument('--isMC', type=int, help="Is this MC or data", required=True)
 parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
@@ -43,12 +42,16 @@ parser.add_argument('--blind', type=int, default=1, help="Blind the data (defaul
 parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 options = parser.parse_args()
 
-# parameters for script
+###################################################################################################################
+# Script Parameters
+###################################################################################################################
+
+outDir = "/work/submit/{}/SUEP/outputs/".format(getpass.getuser())
 # define these if --xrootd 0
-dataDirLocal = "/data/submit/{}/{}/{}/".format(username, options.tag, options.dataset)
+dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(getpass.getuser(),options.tag,options.dataset)
 # and these is --xrootd 1
 redirector = "root://submit50.mit.edu/"
-dataDirXRootD = "/cms/store/user/{}/SUEP/{}/{}/".format(username,options.tag,options.dataset)
+dataDirXRootD = "/cms/store/user/{}/SUEP/{}/{}/".format(getpass.getuser(),options.tag,options.dataset)
 
 """
 Define output plotting methods, each draws from an input_method (outputs of SUEPCoffea),
@@ -66,6 +69,16 @@ config = {
         'yvar' : 'SUEP_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
+        'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
+    },
+    
+    'GNN' : {
+        'input_method' : 'GNN',
+        'xvar' :'SUEP_S1_GNN',
+        'xvar_regions' : [0.0, 0.5, 1.0],
+        'yvar' : 'single_l5_bPfcand_S1_GNN',
+        'yvar_regions' : [0.0, 0.5, 1.0],
+        'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_GNN', '>=', 0.5]],
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
@@ -88,121 +101,8 @@ config = {
     #     'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
     #     'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
     # },
-        
-#     'ResNet' : {
-#         'input_method' : 'ML',
-#         'xvar' : 'resnet_SUEP_pred_ML',
-#         'xvar_regions' : [0.0, 0.5, 1.0],
-#         'yvar' : 'ntracks',
-#         'yvar_regions' : [0, 100, 1000],
-#         'SR' : [['resnet_SUEP_pred_ML', '>=', 0.5], ['ntracks', '>=', 100]],
-#         'selections' : [['ht', '>', 600], ['ntracks','>',0]]
-#     },
     
 }
-
-#############################################################################################################
-            
-def plot(df, output, abcd, label_out, sys):
-    """
-    INPUTS:
-        df: input file DataFrame.
-        output: dictionary of histograms to be filled.
-        abcd: definitions of ABCD regions, signal region, event selections.
-        label_out: label associated with the output (e.g. "ISRRemoval"), as keys in 
-                   the config dictionary.
-        
-    OUTPUTS: 
-        output: now with updated histograms.
-        
-    EXPLANATION:
-    The DataFrame generated by ../workflows/SUEP_coffea.py has the form:
-    event variables (ht, ...)   IRM vars (SUEP_S1_IRM, ...)  ML vars  Other Methods
-          0                                 0                   0          ...
-          1                                 NaN                 1          ...
-          2                                 NaN                 NaN        ...
-          3                                 1                   2          ...
-    (The event vars are always filled, while the vars for each method are filled only
-    if the event passes the method's selections, hence the NaNs).
-    
-    This function will plot, for each 'label_out':
-        1. All event variables, e.g. output histogram = ht_label_out
-        2. All columns from 'input_method', e.g. SUEP_S1_IRM column will be
-           plotted to histogram SUEP_S1_ISRRemoval.
-        3. 2D variables are automatically plotted, as long as hstogram is
-           initialized in the output dict as "2D_var1_vs_var2"
-    
-    N.B.: Histograms are filled only if they are initialized in the output dictionary.
-
-    e.g. We want to plot CL. 
-    Event Selection:
-        1. Grab only events that don't have NaN for CL variables.
-        2. Blind for data! Use SR to define signal regions and cut it out of df.
-        3. Apply selections as defined in the 'selections' in the dict.
-
-    Fill Histograms:
-        1. Plot variables from the DataFrame. 
-           1a. Event wide variables
-           1b. Cluster method variables
-        2. Plot 2D variables.
-        3. Plot variables from the different ABCD regions as defined in the abcd dict.
-           3a. Event wide variables
-           3b. Cluster method variables
-    """
-
-    input_method = abcd['input_method']
-    if len(sys) > 0: label_out = label_out + "_" + sys
-    
-    # 1. keep only events that passed this method
-    df = df[~df[abcd['xvar']].isnull()]
-        
-    # 2. blind
-    if options.blind and not options.isMC:       
-        SR = abcd['SR']
-        if len(SR) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
-        df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
-        
-    # 3. apply selections
-    for sel in abcd['selections']: 
-        df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
-    
-    # auto fill all histograms in the output dictionary
-    auto_fill(df, output, abcd, label_out, isMC=options.isMC, do_abcd=True)
-           
-    return output
-        
-#############################################################################################################
-
-# get list of files
-username = getpass.getuser()
-if options.file:
-    files = [options.file]
-elif options.xrootd:
-    dataDir = dataDirXRootD
-    if options.merged: dataDir += "merged/"
-    result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
-    result = result.decode("utf-8")
-    files = result.split("\n")
-    files = [f for f in files if len(f) > 0]
-else:
-    dataDir = dataDirLocal
-    if options.merged: dataDir += "merged/"
-    files = [dataDir + f for f in os.listdir(dataDir)]
-    
-# get cross section
-xsection = 1.0
-if options.isMC: xsection = getXSection(options.dataset, options.era)
-
-# event weights
-puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
-trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
-
-# custom per region weights
-scaling_weights = None
-if options.weights != "None":
-    w = np.load(options.weights, allow_pickle=True)
-    scaling_weights = defaultdict(lambda: np.zeros(2))
-    scaling_weights.update(w.item())
 
 # output histos
 def create_output_file(label, abcd, sys):
@@ -293,26 +193,129 @@ def create_output_file(label, abcd, sys):
                 r+"ISR_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho1_"+label, label=r"ISR $\rho_1$").Weight(),
             })
     
-    if label == 'ML':
+    if label == 'GNN':
         for r in regions_list:
             output.update({
-                r+"resnet_pred_"+label : Hist.new.Reg(100, 0, 1, name=r+"resnet_SUEP_pred_"+label, label="Resnet Output").Weight(),
-                r+"ntracks_"+label : Hist.new.Reg(100, 0, 500, name=r+"ntracks"+label, label="# Tracks in Event").Weight(),
+                r+"single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"resnet_SUEP_pred_"+label, label="Resnet Output").Weight(),
+                r+"SUEP_nconst_"+label : Hist.new.Reg(100, 0, 500, name=r+"SUEP_nconst"+label, label="# Tracks in SUEP").Weight(),
+                r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 500, name=r+"SUEP_S1_"+label, label="$Sph_1$").Weight(),
             })
                         
     return output
+
+#############################################################################################################
+            
+def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
+    """
+    INPUTS:
+        df: input file DataFrame.
+        output: dictionary of histograms to be filled.
+        abcd: definitions of ABCD regions, signal region, event selections.
+        label_out: label associated with the output (e.g. "ISRRemoval"), as keys in 
+                   the config dictionary.
+        
+    OUTPUTS: 
+        output: dict, now with updated histograms.
+        
+    EXPLANATION:
+    The DataFrame generated by ../workflows/SUEP_coffea.py has the form:
+    event variables (ht, ...)   CL vars (SUEP_S1_CL, ...)  ML vars  Other Methods
+          0                                 0                   0          ...
+          1                                 NaN                 1          ...
+          2                                 NaN                 NaN        ...
+          3                                 1                   2          ...
+    (The event vars are always filled, while the vars for each method are filled only
+    if the event passes the method's selections, hence the NaNs).
+    
+    This function will plot, for each 'label_out':
+        1. All event variables, e.g. ht_label_out
+        2. All columns from 'input_method', e.g. SUEP_S1_IRM column will be
+           plotted to histogram SUEP_S1_ISRRemoval.
+        3. 2D variables are automatically plotted, as long as hstogram is
+           initialized in the output dict as "2D_var1_vs_var2"
+    
+    N.B.: Histograms are filled only if they are initialized in the output dictionary.
+
+    e.g. We want to plot CL. 
+    Event Selection:
+        1. Grab only events that don't have NaN for CL variables.
+        2. Blind for data! Use SR to define signal regions and cut it out of df.
+        3. Apply selections as defined in the 'selections' in the dict.
+
+    Fill Histograms:
+        1. Plot variables from the DataFrame. 
+           1a. Event wide variables
+           1b. Cluster method (CL) variables
+        2. Plot 2D variables.
+        3. Plot variables from the different ABCD regions as defined in the abcd dict.
+           3a. Event wide variables
+           3b. Cluster method (CL) variables
+    """
+
+    input_method = abcd['input_method']
+    if len(sys) > 0: label_out = label_out + "_" + sys
+    
+    # 1. keep only events that passed this method
+    df = df[~df[abcd['xvar']].isnull()]
+        
+    # 2. blind
+    if blind and not isMC:       
+        SR = abcd['SR']
+        if len(SR) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
+        df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
+        
+    # 3. apply selections
+    for sel in abcd['selections']: 
+        df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+    
+    # auto fill all histograms in the output dictionary
+    auto_fill(df, output, abcd, label_out, isMC=isMC, do_abcd=True)
+           
+    return output
+        
+#############################################################################################################
+
+# get list of files
+username = getpass.getuser()
+if options.file:
+    files = [options.file]
+elif options.xrootd:
+    dataDir = dataDirXRootD
+    if options.merged: dataDir += "merged/"
+    result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
+    result = result.decode("utf-8")
+    files = result.split("\n")
+    files = [f for f in files if len(f) > 0]
+else:
+    dataDir = dataDirLocal
+    if options.merged: dataDir += "merged/"
+    files = [dataDir + f for f in os.listdir(dataDir)]
+    
+# get cross section
+xsection = 1.0
+if options.isMC: xsection = getXSection(options.dataset, options.era, SUEP=False)
+
+# event weights
+puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
+trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
+
+# custom per region weights
+scaling_weights = None
+if options.weights != "None":
+    w = np.load(options.weights, allow_pickle=True)
+    scaling_weights = defaultdict(lambda: np.zeros(2))
+    scaling_weights.update(w.item())
 
 # fill ABCD hists with dfs from hdf5 files
 nfailed = 0
 total_gensumweight = 0
 
-if options.dataset: outFile = options.outDir + "/" + options.dataset+ "_" + options.output
-else: outFile = os.path.join(options.outDir,options.output)
-fpickle =  open(outFile + '.pkl', "wb")
+if options.dataset: outFile = outDir + "/" + options.dataset+ "_" + options.output
+else: outFile = os.path.join(outDir,options.output)
 output = {"labels":[]}
 
 # systematics
-if options.isMC:
+if options.isMC and options.doSyst:
     
     new_config = {}
         
@@ -381,8 +384,11 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     event_weight = np.ones(df.shape[0])
-    sys_loop = ["","puweights_up","puweights_down","trigSF_up","trigSF_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
-#    sys_loop = ["","puweights_up","puweights_down","PSWeight_ISR_up","PSWeight_ISR_down","PSWeight_FSR_up","PSWeight_FSR_down"]
+    if options.doSyst:
+        sys_loop = ["", "puweights_up", "puweights_down", "trigSF_up", "trigSF_down", 
+                    "PSWeight_ISR_up", "PSWeight_ISR_down", "PSWeight_FSR_up", "PSWeight_FSR_down"]
+    else:
+        sys_loop = [""]
     for sys in sys_loop:
         # prepare new event weight
         df['event_weight'] = event_weight
@@ -429,11 +435,10 @@ for ifile in tqdm(files):
 
         for label_out, config_out in config.items():
             if 'track_down' in label_out and sys != "": continue
-            if options.isMC:
-                if any([j in label_out for j in jet_corrections]) and sys != "": continue
-            print("here", label_out)
+            if options.isMC and sys != "":
+                if any([j in label_out for j in jet_corrections]): continue
             output.update(create_output_file(label_out, config_out, sys))
-            output = plot(df.copy(), output, config_out, label_out, sys)
+            output = plotter(df.copy(), output, config_out, label_out, sys, isMC=options.isMC, blind=options.blind)
         
     #####################################################################################
     # ---- End
@@ -442,21 +447,23 @@ for ifile in tqdm(files):
     # remove file at the end of loop   
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
+print("Number of files that failed to be read:", nfailed)
 ### End plotting loop ###################################################################
 
 # do the tracks UP systematic
-sys = 'track_up'
-for label_out, config_out in config.items():
-    if 'track_down' in label_out: continue
-    
-    new_output = {}
-    for hist_name in output.keys():
-        if not hist_name.endswith('_track_down'): continue
-        hDown = output[hist_name].copy()
-        hNom = output[hist_name.replace('_track_down','')].copy()
-        hUp = get_tracks_up(hNom, hDown)
-        new_output.update({hist_name.replace('_track_down','_track_up'): hUp})
-    output = new_output | output
+if options.doSyst:
+    sys = 'track_up'
+    for label_out, config_out in config.items():
+        if 'track_down' in label_out: continue
+
+        new_output = {}
+        for hist_name in output.keys():
+            if not hist_name.endswith('_track_down'): continue
+            hDown = output[hist_name].copy()
+            hNom = output[hist_name.replace('_track_down','')].copy()
+            hUp = get_tracks_up(hNom, hDown)
+            new_output.update({hist_name.replace('_track_down','_track_up'): hUp})
+        output = new_output | output
         
 # apply normalization
 output.pop("labels")
@@ -467,8 +474,7 @@ if options.isMC:
         print("Total gensumweight is 0")
         
 #Save to pickle
-pickle.dump(output, fpickle)
-print("Number of files that failed to be read:", nfailed)
+pickle.dump(output, open(outFile + '.pkl', "wb"))
 
 # save to root
 with uproot.recreate(outFile + '.root') as froot:
