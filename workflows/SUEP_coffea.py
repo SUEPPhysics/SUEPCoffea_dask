@@ -14,13 +14,12 @@ import vector
 vector.register_awkward()
 
 #Importing SUEP specific functions
-from workflows.fastjet_utils import *
-from workflows.inference_utils import *
 from workflows.pandas_utils import *
-from workflows.math_utils import *
-from workflows.offline_cutBased_methods import *
-from workflows.offline_ML_methods import *
-from workflows.systematics_utils import *
+from workflows.SUEP_utils import *
+from workflows.ML_utils import *
+from workflows.CMS_corrections.golden_jsons_utils import *
+from workflows.CMS_corrections.jetmet_utils import *
+from workflows.CMS_corrections.track_killing_utils import *
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -45,8 +44,9 @@ class SUEP_cluster(processor.ProcessorABC):
             self.batch_size = 1024
             
             # GNN settings
+            # model names and configs should be in data/GNN/
             self.dgnn_model_names = ['single_l5_bPfcand_S1']#Name for output
-            self.configs = ['data/config.yml']#config paths
+            self.configs = ['config.yml']#config paths
             self.obj = 'bPFcand'
             self.coords = 'cyl'
 
