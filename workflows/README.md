@@ -10,7 +10,7 @@ Associated Production | ZH_Coffea, ZH_utils
 
 ## CMS Corrections
 
-Additional corrections for CMS analyses are stored in the CMS_corrections directory and can be called directly in the main worfklows. Some, but bot all of these corrections are common between channels.
+Additional corrections for CMS analyses are stored in the CMS_corrections directory and can be called directly in the main worfklows. Some, but not all of these corrections are common between channels.
 
 See table below:
 
