@@ -23,13 +23,13 @@ parser.add_argument('--doSyst', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
-parser.add_argument('--do_inf', type=bool, default=False, help="")
+parser.add_argument('--doInf', type=bool, default=False, help="")
 options = parser.parse_args()
 
 out_dir = os.getcwd()
 modules_era = []
 
-modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=options.doSyst,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=options.do_inf, output_location=out_dir))
+modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=options.doSyst,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=options.doInf, output_location=out_dir))
 
 for instance in modules_era:
     output = run_uproot_job(
@@ -41,7 +41,7 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=1000000,
+        chunksize=100000,
     )
     
 coffea.util.save(output, "output.coffea")
