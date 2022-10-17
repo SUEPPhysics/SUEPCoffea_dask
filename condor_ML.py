@@ -19,6 +19,7 @@ parser.add_argument('--isMC', type=int, default=1, help="")
 parser.add_argument('--jobNum', type=int, default=1, help="")
 parser.add_argument('--era', type=str, default="2018", help="")
 parser.add_argument('--doSyst', type=int, default=1, help="")
+parser.add_argument('--doInf', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
@@ -39,7 +40,8 @@ for instance in modules_era:
                        'schema': processor.NanoAODSchema,
                        'xrootdtimeout': 10,
         },
-        chunksize=1000000,
+        chunksize=1,
     )
     
+
 merge_ML(options)

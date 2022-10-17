@@ -22,7 +22,7 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="input"  , required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit"  , type=int, default=0          , help="")
-    parser.add_argument("-m", "--move"  , type=int, default=0          , help="Move files to move_dir while you check if they are corrupted.")
+    parser.add_argument("-m", "--move"  , type=int, default=0          , help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.")
     options = parser.parse_args()
 
     redirector = "root://t3serv017.mit.edu/"
@@ -77,7 +77,7 @@ def main():
                 size = os.path.getsize(out_dir.format(sample_name) + "/" + file)
                 if size == 0: subprocess.run(['rm',out_dir.format(sample_name) + "/" + file])
             
-            print(jobs_dir)
+            logging.info(jobs_dir)
             
             #We write the original list. inputfiles.dat will now contain missing files. Compare with original list
             if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
