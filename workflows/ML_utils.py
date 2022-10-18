@@ -72,6 +72,7 @@ def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
         for model_name, config in zip(self.dgnn_model_names, self.configs):
             
             model_path = modelDir + model_name + '.pt'
+            
             # initialize model with original configurations and import the weights
             config = yaml.safe_load(open(modelDir + config))
             suep = SUEPNet(out_dim=config['model_pref']['out_dim'], 
@@ -120,7 +121,15 @@ def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
             
             self.out_vars.loc[indices, model_name + "_GNN"+out_label] = results
             
-            eigs = SUEP_utils.sphericity(SUEP_tracks, 1.0) #Set r=1.0 for IRC safe
+            boost_SUEP = ak.zip({
+                "px": SUEP_cand.px*-1,
+                "py": SUEP_cand.py*-1,
+                "pz": SUEP_cand.pz*-1,
+                "mass": SUEP_cand.mass
+            }, with_name="Momentum4D")      
+            SUEP_tracks_b = SUEP_tracks.boost_p4(boost_SUEP)  
+            
+            eigs = SUEP_utils.sphericity(SUEP_tracks_b, 1.0) #Set r=1.0 for IRC safe
             self.out_vars.loc[indices, "SUEP_nconst_GNN"+out_label] = ak.num(SUEP_tracks)
             self.out_vars.loc[indices, "SUEP_S1_GNN"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
 
@@ -227,7 +236,7 @@ def GNN_convertEvents(self, events, SUEP_cand, max_objects=1000):
     if self.obj.lower() == 'pfcand':
         events = events
         
-    elif self.obj.lower() == 'bpfcand':
+    elif self.obj.lower() == 'bpfcand':     
         boost_SUEP = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
@@ -235,6 +244,9 @@ def GNN_convertEvents(self, events, SUEP_cand, max_objects=1000):
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")      
         events = events.boost_p4(boost_SUEP)    
+        
+    else:
+        raise Exception()
         
     new_events = convert_coords(self.coords, events, max_objects)
     
@@ -247,6 +259,7 @@ def convert_coords(coords, tracks, nobj):
     if coords.lower() == 'p4': new_tracks = convert_p4(tracks, nobj)
     elif coords.lower() == 'cart': new_tracks = convert_cart(tracks, nobj)
     elif coords.lower() == 'cyl': new_tracks = convert_cyl(tracks, nobj)
+    else: raise Exception()
     
     return new_tracks
     

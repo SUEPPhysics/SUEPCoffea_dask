@@ -194,6 +194,13 @@ def create_output_file(label, abcd, sys):
             })
     
     if label == 'GNN':
+        
+        # 2D histograms
+        output.update({
+            "2D_SUEP_S1_vs_single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="single_l5_bPfcand_S1_"+label, label='GNN Output').Weight(), 
+            "2D_SUEP_nconst_vs_single_l5_bPfcand_S1_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="single_l5_bPfcand_S1_"+label, label='GNN Output').Weight(), 
+           })
+        
         for r in regions_list:
             output.update({
                 r+"single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"single_l5_bPfcand_S1_"+label, label="GNN Output").Weight(),

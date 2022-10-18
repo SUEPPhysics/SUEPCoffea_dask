@@ -317,8 +317,8 @@ class SUEP_cluster(processor.ProcessorABC):
                            do_inverted=True,
                            out_label=col_label)
         
-        DGNNMethod(self, indices, tracks, SUEP_cluster_tracks, SUEP_cand, 
-                       out_label=col_label)
+        DGNNMethod(self, indices, events=tracks, SUEP_tracks=SUEP_cluster_tracks,
+                       SUEP_cand=SUEP_cand, out_label=col_label)
                 
         # self.ConeMethod(indices, tracks, 
         #                 SUEP_cand, ISR_cand)

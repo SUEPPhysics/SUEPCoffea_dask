@@ -17,8 +17,7 @@ vector.register_awkward()
 #Importing SUEP specific functions
 from workflows.inference_utils import *
 from workflows.pandas_utils import *
-from workflows.math_utils import *
-from workflows.SUEP_coffea import SUEP_cluster
+import workflows.SUEP_utils 
 
 class ML_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -48,10 +47,10 @@ class ML_cluster(processor.ProcessorABC):
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # apply trigger
-        events = SUEP_cluster.eventSelection(self, events)
+        events = SUEP_utils.eventSelection(self, events)
         
         # cut based on ak4 jets to replicate the trigger
-        ak4jets = SUEP_cluster.jet_awkward(self, events.Jet)    
+        ak4jets = SUEP_utils.jet_awkward(self, events.Jet)    
         ht = ak.sum(ak4jets.pt,axis=-1)
         
         # apply trigger selection
@@ -63,8 +62,8 @@ class ML_cluster(processor.ProcessorABC):
                 trigger = (events.HLT.PFHT900 == 1)
             else:
                 trigger = (events.HLT.PFHT1050 == 1)
-            events = events[(trigger & (ht > 1150))]
-            ak4jets = ak4jets[(trigger & (ht > 1150))]
+            events = events[(trigger & (ht > 1200))]
+            ak4jets = ak4jets[(trigger & (ht > 1200))]
         
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -79,14 +78,14 @@ class ML_cluster(processor.ProcessorABC):
         #####################################################################################
 
         #Prepare the clean PFCand matched to tracks collection      
-        if self.scouting == 1: tracks, _ = SUEP_cluster.getScoutingTracks(self, events)
-        else: tracks, _ = SUEP_cluster.getTracks(self, events)
+        if self.scouting == 1: tracks, _ = SUEP_utils.getScoutingTracks(self, events)
+        else: tracks, _ = SUEP_utils.getTracks(self, events)
         
         #####################################################################################
         # ---- FastJet reclustering
         #####################################################################################
         
-        ak_inclusive_jets, ak_inclusive_cluster = SUEP_cluster.FastJetReclustering(self, tracks, r=1.5, minPt=150)
+        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(self, tracks, r=1.5, minPt=150)
         
         #####################################################################################
         # ---- Event level information
@@ -130,7 +129,7 @@ class ML_cluster(processor.ProcessorABC):
         assert len(out_vars) == len(tracks)
         indices = np.arange(0, len(tracks))
         
-        tracks, indices, topTwoJets = SUEP_cluster.getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
+        tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
         
         # drop events that don't pass the cut
@@ -186,9 +185,9 @@ class ML_cluster(processor.ProcessorABC):
         l1pfcand_cart = convert_cart(tracks_CL, npfcands)
         l1pfcand_p4 = convert_p4(tracks_CL, npfcands)
         
-        l1bpfcand_cyl = convert_cyl(tracks_b_CL, npfcands, obj='bPFcand')
-        l1bpfcand_cart = convert_cart(tracks_b_CL, npfcands, obj='bPFcand')
-        l1bpfcand_p4 = convert_p4(tracks_b_CL, npfcands, obj='bPFcand')
+        l1bpfcand_cyl = convert_cyl(tracks_b_CL, npfcands)
+        l1bpfcand_cart = convert_cart(tracks_b_CL, npfcands)
+        l1bpfcand_p4 = convert_p4(tracks_b_CL, npfcands)
 
         # save to file
         outFile = events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5"
