@@ -4,7 +4,7 @@ Coffea producer for SUEP ML analysis. Uses fastjet package to recluster large je
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2022
 """
-from coffea import hist, processor
+from coffea import processor
 from typing import List, Optional
 import awkward as ak
 import pandas as pd
@@ -15,9 +15,10 @@ import vector
 vector.register_awkward()
 
 #Importing SUEP specific functions
-from workflows.inference_utils import *
+import workflows.ML_utils as ML_utils
+import workflows.SUEP_utils as SUEP_utils
 from workflows.pandas_utils import *
-import workflows.SUEP_utils 
+from workflows.SUEP_coffea import SUEP_cluster
 
 class ML_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -47,10 +48,10 @@ class ML_cluster(processor.ProcessorABC):
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # apply trigger
-        events = SUEP_utils.eventSelection(self, events)
+        events = SUEP_cluster.eventSelection(self, events)
         
         # cut based on ak4 jets to replicate the trigger
-        ak4jets = SUEP_utils.jet_awkward(self, events.Jet)    
+        ak4jets = SUEP_cluster.jet_awkward(self, events.Jet)    
         ht = ak.sum(ak4jets.pt,axis=-1)
         
         # apply trigger selection
@@ -58,12 +59,8 @@ class ML_cluster(processor.ProcessorABC):
             events = events[(ht > 600)]
             ak4jets = ak4jets[(ht > 600)]
         else:
-            if self.era == 2016:
-                trigger = (events.HLT.PFHT900 == 1)
-            else:
-                trigger = (events.HLT.PFHT1050 == 1)
-            events = events[(trigger & (ht > 1200))]
-            ak4jets = ak4jets[(trigger & (ht > 1200))]
+            events = events[(ht > 1200)]
+            ak4jets = ak4jets[(ht > 1200)]
         
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -78,8 +75,8 @@ class ML_cluster(processor.ProcessorABC):
         #####################################################################################
 
         #Prepare the clean PFCand matched to tracks collection      
-        if self.scouting == 1: tracks, _ = SUEP_utils.getScoutingTracks(self, events)
-        else: tracks, _ = SUEP_utils.getTracks(self, events)
+        if self.scouting == 1: tracks, _ = SUEP_cluster.getScoutingTracks(self, events)
+        else: tracks, _ = SUEP_cluster.getTracks(self, events)
         
         #####################################################################################
         # ---- FastJet reclustering
@@ -161,14 +158,14 @@ class ML_cluster(processor.ProcessorABC):
         SUEP_tracks_b_CL = SUEP_cluster_tracks.boost_p4(boost_SUEP)        
         
         # SUEP jet variables
-        eigs = sphericity(SUEP_tracks_b_CL,1.0) #Set r=1.0 for IRC safe
+        eigs = SUEP_utils.sphericity(SUEP_tracks_b_CL,1.0) #Set r=1.0 for IRC safe
         out_vars["SUEP_nconst_CL"] = ak.num(SUEP_tracks_b_CL)
         out_vars["SUEP_S1_CL"] = 1.5 * (eigs[:,1]+eigs[:,0])
         
         tracks_b_CL = tracks_CL.boost_p4(boost_SUEP)      
         
         # event variables
-        eigs = sphericity(tracks_b_CL,1.0) #Set r=1.0 for IRC safe
+        eigs = SUEP_utils.sphericity(tracks_b_CL,1.0) #Set r=1.0 for IRC safe
         out_vars["event_S1_CL"] = 1.5 * (eigs[:,1]+eigs[:,0])
         
         #####################################################################################
@@ -179,15 +176,15 @@ class ML_cluster(processor.ProcessorABC):
         npfcands=1000
         
         # convert to this format
-        l1event_feat = self.store_event_features(out_vars)
+        l1event_feat, l1event_feat_names = self.store_event_features(out_vars)
         
-        l1pfcand_cyl = convert_cyl(tracks_CL, npfcands)
-        l1pfcand_cart = convert_cart(tracks_CL, npfcands)
-        l1pfcand_p4 = convert_p4(tracks_CL, npfcands)
+        l1pfcand_cyl = ML_utils.convert_cyl(SUEP_cluster_tracks, npfcands)
+        l1pfcand_cart = ML_utils.convert_cart(SUEP_cluster_tracks, npfcands)
+        l1pfcand_p4 = ML_utils.convert_p4(SUEP_cluster_tracks, npfcands)
         
-        l1bpfcand_cyl = convert_cyl(tracks_b_CL, npfcands)
-        l1bpfcand_cart = convert_cart(tracks_b_CL, npfcands)
-        l1bpfcand_p4 = convert_p4(tracks_b_CL, npfcands)
+        l1bpfcand_cyl = ML_utils.convert_cyl(SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_cart = ML_utils.convert_cart(SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_p4 = ML_utils.convert_p4(SUEP_tracks_b_CL, npfcands)
 
         # save to file
         outFile = events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5"
@@ -199,6 +196,7 @@ class ML_cluster(processor.ProcessorABC):
             outFile.create_dataset('bPfcand_cart', data=l1bpfcand_cart, compression='gzip')
             outFile.create_dataset('bPfcand_p4', data=l1bpfcand_p4, compression='gzip')
             outFile.create_dataset('event_feat', data=l1event_feat, compression='gzip')
+            outFile.create_dataset('event_feat_names', data=l1event_feat_names, compression='gzip')
             
         return output
 
@@ -218,5 +216,7 @@ class ML_cluster(processor.ProcessorABC):
         l1Oevent_features[:,1] = eventBoosted_sphericity
         l1Oevent_features[:,2] = suepJetBoosted_sphericity
         l1Oevent_features[:,3] = suepJetBoosted_nconst
+        
+        l1Oevent_names = ['n_pfcand', 'eventBoosted_sphericity', 'suepJetBoosted_sphericity', 'suepJetBoosted_nconst']
 
-        return l1Oevent_features
+        return l1Oevent_features, l1Oevent_names

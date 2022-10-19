@@ -49,7 +49,7 @@ def SSDMethod(self, indices, events, out_label=''):
     else:
         for c in self.ssd_models: self.out_vars.loc[indices, c+"_ssd"+out_label] = np.nan
 
-def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
+def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label='', do_inverted=False):
     #####################################################################################
     # ---- ML Analysis
     # Each event is converted into an input for the ML models. Using ONNX, we run
