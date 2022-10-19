@@ -221,20 +221,20 @@ class SUEP_cluster(processor.ProcessorABC):
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
-        self.columns_IRM = [
-                "SUEP_nconst_IRM", "SUEP_ntracks_IRM", 
-                "SUEP_pt_avg_IRM", "SUEP_pt_avg_b_IRM",
-                "SUEP_S1_IRM", "SUEP_rho0_IRM", "SUEP_rho1_IRM", 
-                "SUEP_pt_IRM", "SUEP_eta_IRM", "SUEP_phi_IRM", "SUEP_mass_IRM",
-                "dphi_SUEP_ISR_IRM"
+        self.columns_CL = [
+                "SUEP_nconst_CL", "SUEP_ntracks_CL", 
+                "SUEP_pt_avg_CL", "SUEP_pt_avg_b_CL",
+                "SUEP_S1_CL", "SUEP_rho0_CL", "SUEP_rho1_CL", 
+                "SUEP_pt_CL", "SUEP_eta_CL", "SUEP_phi_CL", "SUEP_mass_CL",
+                "dphi_SUEP_ISR_CL"
         ]
-        self.columns_CL = [c.replace("IRM", "CL") for c in self.columns_IRM]
-        self.columns_CL_ISR = [c.replace("IRM", "CL".replace("SUEP", "ISR")) for c in self.columns_IRM]
+        self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
         self.columns_ML = []
         if self.do_inf: 
             self.columns_ML = [m+"_GNN" for m in self.dgnn_model_names] + ['SUEP_S1_GNN', 'SUEP_nconst_GNN']
             self.columns_ML += [m+"_ssd" for m in self.ssd_models] 
-        self.columns = self.columns_CL + self.columns_CL_ISR + self.columns_ML
+            self.columns_ML_ISR = [c.replace("SUEP", "ISR") for c in self.columns_ML]
+        self.columns = self.columns_CL + self.columns_CL_ISR + self.columns_ML + self.columns_ML_ISR
         
         # add a specific label to all columns
         for iCol in range(len(self.columns)): self.columns[iCol] = self.columns[iCol] + label
@@ -317,8 +317,9 @@ class SUEP_cluster(processor.ProcessorABC):
                            do_inverted=True,
                            out_label=col_label)
         
-        DGNNMethod(self, indices, events=tracks, SUEP_tracks=SUEP_cluster_tracks,
-                       SUEP_cand=SUEP_cand, out_label=col_label)
+        DGNNMethod(self, indices, SUEP_tracks=SUEP_cluster_tracks, SUEP_cand=SUEP_cand, 
+                   ISR_tracks=ISR_cluster_tracks, ISR_cand=ISR_cand,
+                   out_label=col_label, do_inverted=True)
                 
         # self.ConeMethod(indices, tracks, 
         #                 SUEP_cand, ISR_cand)
