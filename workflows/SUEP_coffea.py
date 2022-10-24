@@ -313,7 +313,7 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
         
-        ClusterMethod(self, indices, tracks, 
+        SUEP_utils.ClusterMethod(self, indices, tracks, 
                            SUEP_cand, ISR_cand, 
                            SUEP_cluster_tracks, ISR_cluster_tracks, 
                            do_inverted=True,
