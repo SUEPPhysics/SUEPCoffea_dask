@@ -17,7 +17,6 @@ vector.register_awkward()
 #Importing SUEP specific functions
 import workflows.ML_utils as ML_utils
 import workflows.SUEP_utils as SUEP_utils
-from workflows.pandas_utils import *
 from workflows.SUEP_coffea import SUEP_cluster
 
 class ML_cluster(processor.ProcessorABC):
