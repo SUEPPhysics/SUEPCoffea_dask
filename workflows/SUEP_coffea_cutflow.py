@@ -14,12 +14,15 @@ import vector
 vector.register_awkward()
 
 #Importing SUEP specific functions
-from workflows.inference_utils import *
-from workflows.pandas_utils import *
-from workflows.math_utils import *
-from workflows.SUEP_coffea import SUEP_cluster as SUEP_util
+import workflows.SUEP_utils as SUEP_utils
+from workflows.SUEP_coffea import SUEP_cluster
 
-class SUEP_cluster(processor.ProcessorABC):
+# Importing CMS corrections
+from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
+from workflows.CMS_corrections.jetmet_utils import apply_jecs
+from workflows.CMS_corrections.track_killing_utils import track_killing
+
+class cutflow_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
         self._flag = flag
         self.output_location = output_location
@@ -71,7 +74,7 @@ class SUEP_cluster(processor.ProcessorABC):
         elif self.isMC: self.gensumweight = ak.sum(events.genWeight)
         
         # golden jsons for offline data
-        if not self.isMC and self.scouting!=1: events = SUEP_util.applyGoldenJSON(events)
+        if not self.isMC and self.scouting!=1: events = applyGoldenJSON(events)
         
         output["sumw"][dataset] += ak.sum(events.genWeight)
         output["total"][dataset] += len(events)
@@ -123,15 +126,15 @@ class SUEP_cluster(processor.ProcessorABC):
         # Prepare the clean PFCand matched to tracks collection     
         #####################################################################################
 
-        if self.scouting == 1: tracks, Cleaned_cands = SUEP_util.getScoutingTracks(self, events)
-        else: tracks, Cleaned_cands = SUEP_util.getTracks(self, events)
+        if self.scouting == 1: tracks, Cleaned_cands = SUEP_cluster.getScoutingTracks(self, events)
+        else: tracks, Cleaned_cands = SUEP_cluster.getTracks(self, events)
         
         #####################################################################################
         # ---- FastJet reclustering
         # The jet clustering part
         #####################################################################################
         
-        ak_inclusive_jets, ak_inclusive_cluster = SUEP_util.FastJetReclustering(self, tracks, r=1.5, minPt=150)
+        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(self, tracks, r=1.5, minPt=150)
                 
         #####################################################################################
         # ---- Cut Based Analysis
@@ -149,7 +152,7 @@ class SUEP_cluster(processor.ProcessorABC):
             print("No events pass clusterCut.")
             return output
         
-        tracks, indices, topTwoJets = SUEP_util.getTopTwoJets(self, tracks, np.arange(0,len(tracks)), ak_inclusive_jets, ak_inclusive_cluster)
+        tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(self, tracks, np.arange(0,len(tracks)), ak_inclusive_jets, ak_inclusive_cluster)
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
         
         # boost into frame of SUEP
