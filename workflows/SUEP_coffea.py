@@ -13,13 +13,14 @@ import fastjet
 import vector
 vector.register_awkward()
 
-#Importing SUEP specific functions
-from workflows.pandas_utils import *
-from workflows.SUEP_utils import *
-from workflows.ML_utils import *
-from workflows.CMS_corrections.golden_jsons_utils import *
-from workflows.CMS_corrections.jetmet_utils import *
-from workflows.CMS_corrections.track_killing_utils import *
+# Importing SUEP specific functions
+import workflows.SUEP_utils as SUEP_utils
+import workflows.pandas_utils as pandas_utils
+
+# Importing CMS corrections
+from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
+from workflows.CMS_corrections.jetmet_utils import apply_jecs
+from workflows.CMS_corrections.track_killing_utils import track_killing
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -39,6 +40,8 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
+            
+            import workflows.ML_utils as ML_utils
             
             # ML settings
             self.batch_size = 1024
@@ -216,7 +219,9 @@ class SUEP_cluster(processor.ProcessorABC):
             genSUEP = genParts[(abs(genParts.pdgID) == 25)]
             # we need to grab the last SUEP in the chain for each event
             SUEP_genMass = [g[-1].mass if len(g) > 0 else 0 for g in genSUEP]
+            SUEP_genPt = [g[-1].pt if len(g) > 0 else 0 for g in genSUEP]
         self.out_vars["SUEP_genMass"+out_label] = SUEP_genMass
+        self.out_vars["SUEP_genPt"+out_label] = SUEP_genPt
     
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -229,7 +234,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "dphi_SUEP_ISR_CL"
         ]
         self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
-        self.columns_ML = []
+        self.columns_ML, self.columns_ML_ISR = [], []
         if self.do_inf: 
             self.columns_ML = [m+"_GNN" for m in self.dgnn_model_names] + ['SUEP_S1_GNN', 'SUEP_nconst_GNN']
             self.columns_ML += [m+"_ssd" for m in self.ssd_models] 
@@ -264,15 +269,15 @@ class SUEP_cluster(processor.ProcessorABC):
         else: tracks, Cleaned_cands = self.getTracks(events)
             
         if self.isMC and do_syst:
-            tracks = tracksSystematics(self, tracks)
-            Cleaned_cands = tracksSystematics(self, Cleaned_cands)
+            tracks = track_killing(self, tracks)
+            Cleaned_cands = track_killing(self, Cleaned_cands)
         
         #####################################################################################
         # ---- FastJet reclustering
         # The jet clustering part
         #####################################################################################
         
-        ak_inclusive_jets, ak_inclusive_cluster = FastJetReclustering(self, tracks, r=1.5, minPt=150)
+        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(tracks, r=1.5, minPt=150)
         
         #####################################################################################
         # ---- Event level information
@@ -305,11 +310,8 @@ class SUEP_cluster(processor.ProcessorABC):
             for c in self.columns: self.out_vars[c] = np.nan
             return
         
-        tracks, indices, topTwoJets = getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
+        tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster)
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
-        
-        # self.ISRRemovalMethod(indices, tracks, 
-        #                      SUEP_cand, ISR_cand)
         
         ClusterMethod(self, indices, tracks, 
                            SUEP_cand, ISR_cand, 
@@ -317,12 +319,10 @@ class SUEP_cluster(processor.ProcessorABC):
                            do_inverted=True,
                            out_label=col_label)
         
-        DGNNMethod(self, indices, SUEP_tracks=SUEP_cluster_tracks, SUEP_cand=SUEP_cand, 
-                   ISR_tracks=ISR_cluster_tracks, ISR_cand=ISR_cand,
-                   out_label=col_label, do_inverted=True)
-                
-        # self.ConeMethod(indices, tracks, 
-        #                 SUEP_cand, ISR_cand)
+        if self.do_inf:
+            ML_utils.DGNNMethod(self, indices, SUEP_tracks=SUEP_cluster_tracks, SUEP_cand=SUEP_cand, 
+                       ISR_tracks=ISR_cluster_tracks, ISR_cand=ISR_cand,
+                       out_label=col_label, do_inverted=True)
 
     def process(self, events):
         output = self.accumulator.identity()
@@ -340,7 +340,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.analysis(events)
         
         # save the out_vars object as a Pandas DataFrame
-        save_dfs(self, [self.out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
+        pandas_utils.save_dfs(self, [self.out_vars],["vars"], events.behavior["__events_factory__"]._partition_key.replace("/", "_")+".hdf5")
         return output
 
     def postprocess(self, accumulator):

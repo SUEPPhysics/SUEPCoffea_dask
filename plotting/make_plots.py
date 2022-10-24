@@ -79,6 +79,7 @@ config = {
         'yvar' : 'single_l5_bPfcand_S1_GNN',
         'yvar_regions' : [0.0, 0.5, 1.0],
         'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_GNN', '>=', 0.5]],
+        'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
@@ -270,6 +271,11 @@ def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
         SR = abcd['SR']
         if len(SR) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
         df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
+        
+        if 'SR2' in abcd.keys():
+            SR2 = abcd['SR2']
+            if len(SR2) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
+            df = df.loc[~(make_selection(df, SR2[0][0], SR2[0][1], SR2[0][2], apply=False) & make_selection(df, SR2[1][0], SR2[1][1], SR2[1][2], apply=False))]
         
     # 3. apply selections
     for sel in abcd['selections']: 

@@ -46,9 +46,7 @@ def SSDMethod(self, indices, events, out_label=''):
 
         for model in self.ssd_models:
             self.out_vars.loc[indices, model+"_ssd"+out_label] = pred_dict[model]
-    else:
-        for c in self.ssd_models: self.out_vars.loc[indices, c+"_ssd"+out_label] = np.nan
-
+   
 def DGNNMethod(self, indices, SUEP_tracks, SUEP_cand, 
                ISR_tracks=None, ISR_cand=None,
                out_label='', do_inverted=False):
@@ -116,10 +114,7 @@ def DGNNMethod(self, indices, SUEP_tracks, SUEP_cand,
                 eigs = SUEP_utils.sphericity(ISR_tracks_b, 1.0) #Set r=1.0 for IRC safe
                 self.out_vars.loc[indices, "ISR_nconst_GNNInverted"+out_label] = ak.num(ISR_tracks)
                 self.out_vars.loc[indices, "ISR_S1_GNNInverted"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
-
-    else:
-        for c in self.dgnn_model_names: self.out_vars.loc[indices, c+"_GNN"+out_label] = np.nan
-
+                
 def run_inference_GNN(self, model, tracks, SUEP_cand):
     
     results = np.array([])
