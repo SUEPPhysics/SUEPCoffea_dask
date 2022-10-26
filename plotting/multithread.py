@@ -27,6 +27,7 @@ options = parser.parse_args()
 working_directory = '/work/submit/{}/dummy_directory{}'.format(getpass.getuser(), np.random.randint(0,10000))
 os.system('mkdir {}'.format(working_directory))
 os.system('cp -R ../* {}/.'.format(working_directory))
+print("Working in", working_directory)
 
 def call_process(cmd):
     """ This runs in a separate thread. """

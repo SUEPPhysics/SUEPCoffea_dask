@@ -69,6 +69,7 @@ config = {
         'yvar' : 'SUEP_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
+        'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
@@ -158,6 +159,7 @@ def create_output_file(label, abcd, sys):
             output.update({
                 r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
+                r+"SUEP_delta_pt_genPt_"+label : Hist.new.Reg(400, -2000, 2000, name=r+"SUEP_delta_pt_genPt_"+label, label="SUEP $p_T$ - genSUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
                 r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(50, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),

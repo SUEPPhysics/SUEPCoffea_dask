@@ -11,7 +11,7 @@ import coffea
 from coffea.processor import run_uproot_job, futures_executor, iterative_executor
 
 #SUEP Repo Specific
-from workflows.SUEP_coffea_cutflow import *
+from workflows.SUEP_coffea_cutflow import cutflow_cluster
 from workflows.merger import *
 
 #Begin argparse
@@ -29,7 +29,7 @@ options = parser.parse_args()
 out_dir = os.getcwd()
 modules_era = []
 
-modules_era.append(SUEP_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=options.doSyst,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=options.doInf, output_location=out_dir))
+modules_era.append(cutflow_cluster(isMC=options.isMC, era=int(options.era), scouting=0, do_syst=options.doSyst,  syst_var='', sample=options.dataset, weight_syst='' , flag=False, do_inf=options.doInf, output_location=out_dir))
 
 for instance in modules_era:
     output = run_uproot_job(

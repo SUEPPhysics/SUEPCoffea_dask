@@ -41,8 +41,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         if self.do_inf:
             
-            import workflows.ML_utils as ML_utils
-            
             # ML settings
             self.batch_size = 1024
             
@@ -214,6 +212,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 
         # get gen SUEP mass
         SUEP_genMass = len(events)*[0]
+        SUEP_genPt = len(events)*[0]
         if self.isMC and not self.scouting:
             genParts = self.getGenTracks(events)
             genSUEP = genParts[(abs(genParts.pdgID) == 25)]
@@ -320,6 +319,7 @@ class SUEP_cluster(processor.ProcessorABC):
                            out_label=col_label)
         
         if self.do_inf:
+            import workflows.ML_utils as ML_utils
             ML_utils.DGNNMethod(self, indices, SUEP_tracks=SUEP_cluster_tracks, SUEP_cand=SUEP_cand, 
                        ISR_tracks=ISR_cluster_tracks, ISR_cand=ISR_cand,
                        out_label=col_label, do_inverted=True)
