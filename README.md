@@ -3,15 +3,16 @@
 This code runs the SUEP analysis using the coffea framework. We use fastjet with awkward array inputs for jet clustering.
 
 Three separate analyses and their documentation are here:
-Offline:
+
+**Offline:**
 
 https://gitlab.cern.ch/tdr/notes/AN-22-133
 
-Scouting:
+**Scouting:**
 
 https://gitlab.cern.ch/tdr/notes/AN-21-119
 
-ZH:
+**ZH:**
 NEED LINK
 
 
