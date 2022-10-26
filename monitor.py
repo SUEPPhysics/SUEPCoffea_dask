@@ -22,15 +22,16 @@ def main():
     parser.add_argument("-i"   , "--input" , type=str, default="input"  , required=True)
     parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit"  , type=int, default=0          , help="")
-    parser.add_argument("-m", "--move"  , type=int, default=0          , help="Move files to move_dir (/work/submit/) while you check if they are corrupted.")
+    parser.add_argument("-m", "--move"  , type=int, default=0          , help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.")
     options = parser.parse_args()
 
+    redirector = "root://t3serv017.mit.edu/"
     proxy_base = 'x509up_u{}'.format(os.getuid())
     home_base  = os.environ['HOME']
     username = os.environ['USER']
     proxy_copy = os.path.join(home_base,proxy_base)
     out_dir = "/data/submit/cms/store/user/" + username  + "/SUEP/" + options.tag + "/{}/"
-    out_dir_xrd = "/scratch/" + username  + "/SUEP/" + options.tag + "/{}/"
+    out_dir_xrd = "/cms/store/user/" + username  + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
     jobs_base_dir = '/work/submit/'+username+'/SUEP/logs/'
     
@@ -66,7 +67,7 @@ def main():
         for sample in stream.read().split('\n'):
             if '#' in sample: continue
             if len(sample.split('/')) <= 1: continue
-            
+                        
             sample_name = sample.split("/")[-1]
             jobs_dir =  '_'.join(['jobs', options.tag, sample_name])
             jobs_dir = jobs_base_dir + jobs_dir
@@ -76,7 +77,7 @@ def main():
                 size = os.path.getsize(out_dir.format(sample_name) + "/" + file)
                 if size == 0: subprocess.run(['rm',out_dir.format(sample_name) + "/" + file])
             
-            print(jobs_dir)
+            logging.info(jobs_dir)
             
             #We write the original list. inputfiles.dat will now contain missing files. Compare with original list
             if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
@@ -88,7 +89,7 @@ def main():
             njobs = len(jobs)
             complete_list = os.listdir(out_dir.format(sample_name)) 
             nfile = len(complete_list)
-            
+                        
             #Print out the results
             logging.info(
                 "-- {:62s}".format((sample_name[:60] + '..') if len(sample_name)>60 else sample_name)
@@ -108,8 +109,8 @@ def main():
                 file_names = []
                 for item in complete_list:
                     if '.' not in item: continue
-                    file_names.append(item.split('.')[0])
-                
+                    file_names.append(os.path.splitext(item)[0])
+                                    
                 jobs_resubmit = [item for item in jobs if item.split("\t")[-1] not in file_names]
                 resubmit_file = open(jobs_dir + "/" + "inputfiles.dat","w")
                 for redo_file in jobs_resubmit:
@@ -150,7 +151,7 @@ def main():
                 logging.info("Moving " + str(len(filesToMove)) + " files to " + move_dir.format(sample_name))
                 for file in filesToMove:
                     subprocess.run(['xrdcp', 
-                               "root://t3serv017.mit.edu/" + out_dir.split('hadoop')[-1].format(sample_name) + "/" + file,
+                               redirector +"/"+ out_dir_xrd + file,
                                move_dir.format(sample_name) + "/"])
                 
 

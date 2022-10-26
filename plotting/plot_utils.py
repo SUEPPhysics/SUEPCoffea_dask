@@ -361,7 +361,9 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
     for plot in plot_labels: output[plot+"_"+label_out].fill(df[plot], weight=df['event_weight']) 
     # 1b. Plot method variables
     plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys()) and key.endswith(input_method)]
-    for plot in plot_labels: output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
+    for plot in plot_labels: 
+        if input_method not in plot: continue
+        output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
     # FIXME: plot ABCD 2d
     
     # 2. fill some 2D distributions  
@@ -391,10 +393,13 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
             for j in range(len(yvar_regions)-1):
                 y_val_lo = yvar_regions[j]
                 y_val_hi = yvar_regions[j+1]
-
+                
                 x_cut = (make_selection(df, xvar, '>=', x_val_lo, False) & make_selection(df, xvar, '<', x_val_hi, False))
                 y_cut = (make_selection(df, yvar, '>=', y_val_lo, False) & make_selection(df, yvar, '<', y_val_hi, False))
                 df_r = df.loc[(x_cut & y_cut)]
+
+                # double check the region is defined correctly
+                assert df_r[(df_r[xvar] > float(x_val_hi)) | (df_r[xvar] < float(x_val_lo))].shape[0] == 0
 
                 r = regions[iRegion] + "_"
                 iRegion += 1
@@ -406,10 +411,13 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
 
                 # 3a. Plot event wide variables
                 plot_labels = [key for key in df_r.keys() if r+key+"_"+label_out in list(output.keys())]   # event wide variables
-                for plot in plot_labels: output[r+plot+"_"+label_out].fill(df_r[plot], weight=df_r['event_weight']) 
+                for plot in plot_labels: 
+                    output[r+plot+"_"+label_out].fill(df_r[plot], weight=df_r['event_weight']) 
                 # 3b. Plot method variables
                 plot_labels = [key for key in df_r.keys() if r+key.replace(input_method, label_out) in list(output.keys())]  # method vars
-                for plot in plot_labels: output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
+                for plot in plot_labels: 
+                    if input_method not in plot: continue
+                    output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
                 
 def plot1d(h, ax, label, rebin=-1, color='default', lw=1):
     
@@ -553,8 +561,8 @@ def plot_ratio_regions(plots, plot_label,
         y2, x2 = h2.to_numpy()
         x2 = x2[:-1]
                 
-        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [1e6]
-        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [1e6]
+        xmin1 = np.argwhere(y1>0)[0] if any(y1>0) else [len(x1)]
+        xmin2 = np.argwhere(y2>0)[0] if any(y2>0) else [len(x1)]
         xmax1 = np.argwhere(y1>0)[-1] if any(y1>0) else [0]
         xmax2 = np.argwhere(y2>0)[-1] if any(y2>0) else [0]
         xmin = min(np.concatenate((xmin1, xmin2)))

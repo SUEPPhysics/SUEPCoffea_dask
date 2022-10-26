@@ -22,7 +22,7 @@ parser.add_argument('--doSyst', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
-parser.add_argument('--doInf', type=bool, default=False, help="")
+parser.add_argument('--doInf', type=int, default=0, help="")
 options = parser.parse_args()
 
 out_dir = os.getcwd()

@@ -1,7 +1,7 @@
 import numpy as np
 import awkward as ak
 
-def tracksSystematics(self, tracks):
+def track_killing(self, tracks):
         """
         Drop 2.7%, 2.2%, and 2.1% of the tracks randomly at reco-level
         for charged-particles with 1 < pT < 20 GeV in simulation for 2016, 2017, and
@@ -32,7 +32,6 @@ def tracksSystematics(self, tracks):
 
             block1_event_indices = event_indices[block1_indices[i]]
             block1_event_indices_drop = np.random.choice(block1_event_indices, int((block1_percent) * len(block1_event_indices)))
-
             event_bool[block1_event_indices_drop] = False
 
             block2_event_indices = event_indices[block2_indices[i]]

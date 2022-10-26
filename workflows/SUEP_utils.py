@@ -47,6 +47,7 @@ def ClusterMethod(self, indices, tracks,
     self.out_vars.loc[indices, "SUEP_mass_CL"+out_label] = SUEP_cand.mass
 
     self.out_vars.loc[indices, "SUEP_delta_mass_genMass_CL"+out_label] = SUEP_cand.mass - self.out_vars['SUEP_genMass'+out_label][indices]
+    self.out_vars.loc[indices, "SUEP_delta_pt_genPt_CL"+out_label] = SUEP_cand.pt - self.out_vars['SUEP_genPt'+out_label][indices]
 
     # inverted selection
     if do_inverted:
@@ -298,7 +299,7 @@ def rho(number, jet, tracks, deltaR, dr=0.05):
     rho_values = ak.sum(tracks[ring].pt, axis=1)/(dr*jet.pt)
     return rho_values
 
-def FastJetReclustering(self, tracks, r, minPt):
+def FastJetReclustering(tracks, r, minPt):
         
     jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, r)        
     cluster = fastjet.ClusterSequence(tracks, jetdef)

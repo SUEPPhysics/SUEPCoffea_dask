@@ -79,6 +79,7 @@ config = {
         'yvar' : 'single_l5_bPfcand_S1_GNN',
         'yvar_regions' : [0.0, 0.5, 1.0],
         'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_GNN', '>=', 0.5]],
+        'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
@@ -157,6 +158,7 @@ def create_output_file(label, abcd, sys):
             output.update({
                 r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"SUEP_nconst_"+label, label="# Tracks in SUEP").Weight(),
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
+                r+"SUEP_delta_pt_genPt_"+label : Hist.new.Reg(400, -2000, 2000, name=r+"SUEP_delta_pt_genPt_"+label, label="SUEP $p_T$ - genSUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
                 r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(50, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
@@ -194,6 +196,14 @@ def create_output_file(label, abcd, sys):
             })
     
     if label == 'GNN':
+        
+        # 2D histograms
+        output.update({
+            "2D_SUEP_S1_vs_single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="single_l5_bPfcand_S1_"+label, label='GNN Output').Weight(), 
+            "2D_SUEP_nconst_vs_single_l5_bPfcand_S1_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="single_l5_bPfcand_S1_"+label, label='GNN Output').Weight(), 
+            "2D_SUEP_nconst_vs_SUEP_S1_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Weight(), 
+           })
+        
         for r in regions_list:
             output.update({
                 r+"single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"single_l5_bPfcand_S1_"+label, label="GNN Output").Weight(),
@@ -264,6 +274,11 @@ def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
         if len(SR) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
         df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
         
+        if 'SR2' in abcd.keys():
+            SR2 = abcd['SR2']
+            if len(SR2) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
+            df = df.loc[~(make_selection(df, SR2[0][0], SR2[0][1], SR2[0][2], apply=False) & make_selection(df, SR2[1][0], SR2[1][1], SR2[1][2], apply=False))]
+     
     # 3. apply selections
     for sel in abcd['selections']: 
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)

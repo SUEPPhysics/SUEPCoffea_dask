@@ -39,17 +39,17 @@ def SSDMethod(self, indices, events, out_label=''):
             batch = inf_cands[i:i+self.batch_size]
             imgs = convert_to_images(self, batch)
             for model in self.ssd_models:
-                batch_resnet_jets = run_inference(self, imgs, ort_infs[model])
+                batch_resnet_jets = run_inference_SSD(self, imgs, ort_infs[model])
                 if i == 0: resnet_jets = batch_resnet_jets
                 else: resnet_jets = np.concatenate((resnet_jets, batch_resnet_jets))    
                 pred_dict.update({model: resnet_jets[:,1]}) #highest SUEP prediction per event
 
         for model in self.ssd_models:
             self.out_vars.loc[indices, model+"_ssd"+out_label] = pred_dict[model]
-    else:
-        for c in self.ssd_models: self.out_vars.loc[indices, c+"_ssd"+out_label] = np.nan
-
-def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
+   
+def DGNNMethod(self, indices, SUEP_tracks, SUEP_cand, 
+               ISR_tracks=None, ISR_cand=None,
+               out_label='', do_inverted=False):
     #####################################################################################
     # ---- ML Analysis
     # Each event is converted into an input for the ML models. Using ONNX, we run
@@ -72,6 +72,7 @@ def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
         for model_name, config in zip(self.dgnn_model_names, self.configs):
             
             model_path = modelDir + model_name + '.pt'
+            
             # initialize model with original configurations and import the weights
             config = yaml.safe_load(open(modelDir + config))
             suep = SUEPNet(out_dim=config['model_pref']['out_dim'], 
@@ -79,55 +80,83 @@ def DGNNMethod(self, indices, events, SUEP_tracks, SUEP_cand, out_label=''):
             suep.load_state_dict(torch.load(model_path, map_location=torch.device('cpu'))['model'])
             suep = suep.float()
             suep.eval()
-            sigmoid = torch.nn.Sigmoid()
             
-            results = np.array([])
-            for i in range(0, len(events), self.batch_size):
-                
-                # define batch and convert objects in a coordinate frame
-                batch = events[i:i+self.batch_size]
-                this_batch_size = len(batch)
-                batch_SUEP_cand = SUEP_cand[i:i+self.batch_size]
-                batch = GNN_convertEvents(self, batch, batch_SUEP_cand)
-                
-                with torch.no_grad():
-                    
-                    # count how many tracks per event are nonzero: dimensions of (events, tracks)
-                    Nlc = np.count_nonzero(batch[:,:,0], axis=1)
-                    
-                    # reshape the batch for correct DGNN format
-                    x_pf = None  # dims: (events times tracks, 4)
-                    x_pf_batch = None   #dim: (events times tracks)
-                    for idx in range(this_batch_size):
-                        # flatten the batch
-                        if idx == 0: x_pf = batch[idx, :Nlc[idx], :]
-                        else: x_pf = np.vstack((x_pf, batch[idx, :Nlc[idx], :]))
-                        # event indices
-                        if idx == 0: x_pf_batch = np.ones(Nlc[idx])*idx
-                        else: x_pf_batch = np.concatenate((x_pf_batch, np.ones(Nlc[idx])*idx))
-
-                    # convert to torch
-                    x_pf = torch.from_numpy(x_pf).float()
-                    x_pf_batch = torch.from_numpy(x_pf_batch).float()
-
-                    # batch predictions
-                    out = suep(x_pf, x_pf_batch)
-
-                    # normalize the outputs
-                    nn1 = out[0][:,0]
-                    nn1 = sigmoid(nn1)
-                    results = np.concatenate((results, nn1.cpu().numpy()))
-            
+            # run GNN inference on the SUEP tracks
+            results = run_inference_GNN(self, suep, SUEP_tracks, SUEP_cand)
             self.out_vars.loc[indices, model_name + "_GNN"+out_label] = results
             
-            eigs = SUEP_utils.sphericity(SUEP_tracks, 1.0) #Set r=1.0 for IRC safe
+            # calculate other obserables to store
+            boost_SUEP = ak.zip({
+                "px": SUEP_cand.px*-1,
+                "py": SUEP_cand.py*-1,
+                "pz": SUEP_cand.pz*-1,
+                "mass": SUEP_cand.mass
+            }, with_name="Momentum4D")      
+            SUEP_tracks_b = SUEP_tracks.boost_p4(boost_SUEP)  
+            eigs = SUEP_utils.sphericity(SUEP_tracks_b, 1.0) #Set r=1.0 for IRC safe
             self.out_vars.loc[indices, "SUEP_nconst_GNN"+out_label] = ak.num(SUEP_tracks)
             self.out_vars.loc[indices, "SUEP_S1_GNN"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
+            
+            if do_inverted:
+                
+                # run GNN inference on the SUEP tracks
+                results = run_inference_GNN(self, suep, ISR_tracks, ISR_cand)
+                self.out_vars.loc[indices, model_name + "_GNNInverted"+out_label] = results
 
-    else:
-        for c in self.dgnn_model_names: self.out_vars.loc[indices, c+"_GNN"+out_label] = np.nan
+                # calculate other obserables to store
+                boost_ISR = ak.zip({
+                    "px": ISR_cand.px*-1,
+                    "py": ISR_cand.py*-1,
+                    "pz": ISR_cand.pz*-1,
+                    "mass": ISR_cand.mass
+                }, with_name="Momentum4D")      
+                ISR_tracks_b = ISR_tracks.boost_p4(boost_ISR)  
+                eigs = SUEP_utils.sphericity(ISR_tracks_b, 1.0) #Set r=1.0 for IRC safe
+                self.out_vars.loc[indices, "ISR_nconst_GNNInverted"+out_label] = ak.num(ISR_tracks)
+                self.out_vars.loc[indices, "ISR_S1_GNNInverted"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
+                
+def run_inference_GNN(self, model, tracks, SUEP_cand):
+    
+    results = np.array([])
+    for i in range(0, len(tracks), self.batch_size):
 
-        
+        # define batch and convert objects in a coordinate frame
+        batch = tracks[i:i+self.batch_size]
+        this_batch_size = len(batch)
+        batch_SUEP_cand = SUEP_cand[i:i+self.batch_size]
+        batch = GNN_convertEvents(self, batch, batch_SUEP_cand)
+
+        sigmoid = torch.nn.Sigmoid()
+        with torch.no_grad():
+
+            # count how many tracks per event are nonzero: dimensions of (events, tracks)
+            Nlc = np.count_nonzero(batch[:,:,0], axis=1)
+
+            # reshape the batch for correct DGNN format
+            x_pf = None  # dims: (events times tracks, 4)
+            x_pf_batch = None   #dim: (events times tracks)
+            for idx in range(this_batch_size):
+                # flatten the batch
+                if idx == 0: x_pf = batch[idx, :Nlc[idx], :]
+                else: x_pf = np.vstack((x_pf, batch[idx, :Nlc[idx], :]))
+                # event indices
+                if idx == 0: x_pf_batch = np.ones(Nlc[idx])*idx
+                else: x_pf_batch = np.concatenate((x_pf_batch, np.ones(Nlc[idx])*idx))
+
+            # convert to torch
+            x_pf = torch.from_numpy(x_pf).float()
+            x_pf_batch = torch.from_numpy(x_pf_batch).float()
+
+            # batch predictions
+            out = model(x_pf, x_pf_batch)
+
+            # normalize the outputs
+            nn1 = out[0][:,0]
+            nn1 = sigmoid(nn1)
+            results = np.concatenate((results, nn1.cpu().numpy()))
+            
+    return results
+
 class SUEPNet(nn.Module):
     def __init__(self, out_dim=1, hidden_dim=16):
         super(SUEPNet, self).__init__()
@@ -197,7 +226,7 @@ def convert_to_images(self, events):
             
     return to_infer
 
-def run_inference(self, imgs, ort_sess):
+def run_inference_SSD(self, imgs, ort_sess):
 
     #Running the inference in batch mode
     input_name = ort_sess.get_inputs()[0].name
@@ -227,7 +256,7 @@ def GNN_convertEvents(self, events, SUEP_cand, max_objects=1000):
     if self.obj.lower() == 'pfcand':
         events = events
         
-    elif self.obj.lower() == 'bpfcand':
+    elif self.obj.lower() == 'bpfcand':     
         boost_SUEP = ak.zip({
             "px": SUEP_cand.px*-1,
             "py": SUEP_cand.py*-1,
@@ -235,6 +264,9 @@ def GNN_convertEvents(self, events, SUEP_cand, max_objects=1000):
             "mass": SUEP_cand.mass
         }, with_name="Momentum4D")      
         events = events.boost_p4(boost_SUEP)    
+        
+    else:
+        raise Exception()
         
     new_events = convert_coords(self.coords, events, max_objects)
     
@@ -247,6 +279,7 @@ def convert_coords(coords, tracks, nobj):
     if coords.lower() == 'p4': new_tracks = convert_p4(tracks, nobj)
     elif coords.lower() == 'cart': new_tracks = convert_cart(tracks, nobj)
     elif coords.lower() == 'cyl': new_tracks = convert_cyl(tracks, nobj)
+    else: raise Exception()
     
     return new_tracks
     
