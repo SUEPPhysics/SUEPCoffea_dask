@@ -69,7 +69,6 @@ config = {
         'yvar' : 'SUEP_nconst_CL',
         'yvar_regions' : [20, 40, 80, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]],
-        'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_CL", ">=", 0.0]]
     },
     
@@ -202,6 +201,7 @@ def create_output_file(label, abcd, sys):
         output.update({
             "2D_SUEP_S1_vs_single_l5_bPfcand_S1_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="single_l5_bPfcand_S1_"+label, label='GNN Output').Weight(), 
             "2D_SUEP_nconst_vs_single_l5_bPfcand_S1_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="single_l5_bPfcand_S1_"+label, label='GNN Output').Weight(), 
+            "2D_SUEP_nconst_vs_SUEP_S1_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Weight(), 
            })
         
         for r in regions_list:
@@ -278,7 +278,7 @@ def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
             SR2 = abcd['SR2']
             if len(SR2) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
             df = df.loc[~(make_selection(df, SR2[0][0], SR2[0][1], SR2[0][2], apply=False) & make_selection(df, SR2[1][0], SR2[1][1], SR2[1][2], apply=False))]
-        
+     
     # 3. apply selections
     for sel in abcd['selections']: 
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
