@@ -16,6 +16,7 @@ vector.register_awkward()
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
 import workflows.pandas_utils as pandas_utils
+import workflows.ZH_utils as ZH_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
@@ -37,7 +38,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.weight_syst = weight_syst
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
-        
+        self.doOF = False
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
@@ -246,6 +247,7 @@ class SUEP_cluster(processor.ProcessorABC):
         
         # golden jsons for offline data
         if not self.isMC and self.scouting!=1: events = applyGoldenJSON(self, events)
+        events, electrons, muons = ZH_utils.selectByLeptons(self,events,lepveto=True)
         events = self.eventSelection(events)
         
         # output empty dataframe if no events pass trigger
