@@ -21,6 +21,7 @@ import workflows.pandas_utils as pandas_utils
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.track_killing_utils import track_killing
+from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -183,11 +184,11 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars["ntracks"+out_label] = ak.num(tracks).to_list()
         self.out_vars["ngood_fastjets"+out_label] = ak.num(ak_inclusive_jets).to_list()
         if out_label == "":
-            self.out_vars["ht"+out_label] = ak.sum(ak4jets.pt,axis=-1).to_list()
-            self.out_vars["ht_JEC"+out_label] = ak.sum(jets_jec.pt,axis=-1).to_list()
-            self.out_vars["ht_JEC"+out_label+"_JER_up"] = ak.sum(jets_jec_JERUp.pt,axis=-1).to_list()
+            self.out_vars["ht"+out_label]                 = ak.sum(ak4jets.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label]             = ak.sum(jets_jec.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label+"_JER_up"]   = ak.sum(jets_jec_JERUp.pt,axis=-1).to_list()
             self.out_vars["ht_JEC"+out_label+"_JER_down"] = ak.sum(jets_jec_JERDown.pt,axis=-1).to_list()
-            self.out_vars["ht_JEC"+out_label+"_JES_up"] = ak.sum(jets_jec_JESUp.pt,axis=-1).to_list()
+            self.out_vars["ht_JEC"+out_label+"_JES_up"]   = ak.sum(jets_jec_JESUp.pt,axis=-1).to_list()
             self.out_vars["ht_JEC"+out_label+"_JES_down"] = ak.sum(jets_jec.pt,axis=-1).to_list()
 
             if self.era == 2016 and self.scouting == 0:
@@ -200,13 +201,7 @@ class SUEP_cluster(processor.ProcessorABC):
             else:
                 if self.isMC:
                     self.out_vars["Pileup_nTrueInt"+out_label] = events.Pileup.nTrueInt
-                    if len(events.PSWeight[0])==4:
-                        self.out_vars["PSWeight"+out_label+"_ISR_up"] = events.PSWeight[:,0]
-                        self.out_vars["PSWeight"+out_label+"_ISR_down"] = events.PSWeight[:,2]
-                        self.out_vars["PSWeight"+out_label+"_FSR_up"] = events.PSWeight[:,1]
-                        self.out_vars["PSWeight"+out_label+"_FSR_down"] = events.PSWeight[:,3]
-                    else:
-                        self.out_vars["PSWeight"+out_label] = events.PSWeight[:,0]
+                    GetPSWeights(self, events)#Parton Shower weights
                 self.out_vars["PV_npvs"+out_label] = events.PV.npvs
                 self.out_vars["PV_npvsGood"+out_label] = events.PV.npvsGood
                 
