@@ -81,7 +81,7 @@ class ML_cluster(processor.ProcessorABC):
         # ---- FastJet reclustering
         #####################################################################################
         
-        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(self, tracks, r=1.5, minPt=150)
+        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(tracks, r=1.5, minPt=150)
         
         #####################################################################################
         # ---- Event level information
@@ -166,6 +166,12 @@ class ML_cluster(processor.ProcessorABC):
         # event variables
         eigs = SUEP_utils.sphericity(tracks_b_CL,1.0) #Set r=1.0 for IRC safe
         out_vars["event_S1_CL"] = 1.5 * (eigs[:,1]+eigs[:,0])
+        
+        # some extra selections
+        indices = (out_vars['SUEP_S1_CL'] > 0.3) & (out_vars['SUEP_nconst_CL'] > 40)
+        out_vars = out_vars[indices]
+        SUEP_cluster_tracks = SUEP_cluster_tracks[indices]
+        SUEP_tracks_b_CL = SUEP_tracks_b_CL[indices]
         
         #####################################################################################
         # ---- Save outputs
