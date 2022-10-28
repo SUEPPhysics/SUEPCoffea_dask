@@ -18,6 +18,7 @@ Correction            | Channels          | Status
 --------------------- | ----------------- | -----------------------------------------------
 Golden JSON           | ggF, ML and ZH    | - [x]
 JECs                  | ggF, ML and ZH    | - [x]
+Parton Shower         | ggF, ML and ZH    | - [x]
 Track killing         | ggF, ML and ZH    | - [x] (Percentages for scouting need updating)
 Higgs pT reweight     | ggF, ML and ZH    | - [ ]
 Prefire               | ggF, ML and ZH    | - [ ]
@@ -28,7 +29,7 @@ Other uncertainties are added on the fly while making histograms in the plotting
 
 Correction            | Channels          | Status
 --------------------- | ----------------- | -----------------------------------------------
-Pileup Weight         | ggF, ML and ZH    | - [ ]
+Pileup Weight         | ggF, ML and ZH    | - [x]
 Trigger SF            | ggF, ML and ZH    | - [ ] IN PROGRESS
   
 ## Additional utils
