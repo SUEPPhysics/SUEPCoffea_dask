@@ -76,9 +76,7 @@ def loader(infile_names,
                 lumi = lumis['2018']
             if 'JetHT+Run' in infile_name:
                 lumi = 1
-        
-        print(infile_name, lumi)
-        
+                
         # exclude low bins
         if exclude_low_bins:
             if '50to100' in infile_name: continue
@@ -359,10 +357,11 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
     # 1a. Plot event wide variables
     plot_labels = [key for key in df.keys() if key+"_"+label_out in list(output.keys())]  
     for plot in plot_labels: output[plot+"_"+label_out].fill(df[plot], weight=df['event_weight']) 
+    
     # 1b. Plot method variables
     plot_labels = [key for key in df.keys() if key.replace(input_method, label_out) in list(output.keys()) and key.endswith(input_method)]
     for plot in plot_labels: 
-        if input_method not in plot: continue
+        if not plot.endswith(input_method): continue
         output[plot.replace(input_method, label_out)].fill(df[plot], weight=df['event_weight'])  
     # FIXME: plot ABCD 2d
     
@@ -416,7 +415,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
                 # 3b. Plot method variables
                 plot_labels = [key for key in df_r.keys() if r+key.replace(input_method, label_out) in list(output.keys())]  # method vars
                 for plot in plot_labels: 
-                    if input_method not in plot: continue
+                    if not plot.endswith(input_method): continue
                     output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
                 
 def plot1d(h, ax, label, rebin=-1, color='default', lw=1):
