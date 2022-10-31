@@ -60,36 +60,26 @@ def ClusterMethod(self, indices, tracks,
         }, with_name="Momentum4D")    
         ISR_tracks_b = ISR_cluster_tracks.boost_p4(boost_ISR)
 
-        oneISRtrackCut = (ak.num(ISR_tracks_b) > 1)
+        # consistency check: we required already that ISR and SUEP have each at least 2 tracks
+        assert all(ak.num(ISR_tracks_b) > 1)
 
-        # output file if no events pass selections for ISR
-        # avoids leaving this chunk without these columns
-        if not any(oneISRtrackCut):
-            print("No events in Inverted CL Removal Method, oneISRtrackCut.")
-            for c in self.columns_CL_ISR: self.out_vars[c] = np.nan
-        else:
-            # remove events with only one track in ISR
-            indices = indices[oneISRtrackCut]
-            ISR_tracks_b = ISR_tracks_b[oneISRtrackCut]
-            ISR_cand = ISR_cand[oneISRtrackCut]
+        # ISR jet variables
+        eigs = sphericity(ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
+        self.out_vars.loc[indices, "ISR_nconst_CL"+out_label] = ak.num(ISR_tracks_b)
+        self.out_vars.loc[indices, "ISR_pt_avg_b_CL"+out_label] = ak.mean(ISR_tracks_b.pt, axis=-1)
+        self.out_vars.loc[indices, "ISR_S1_CL"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
 
-            # ISR jet variables
-            eigs = sphericity(ISR_tracks_b,1.0) #Set r=1.0 for IRC safe
-            self.out_vars.loc[indices, "ISR_nconst_CL"+out_label] = ak.num(ISR_tracks_b)
-            self.out_vars.loc[indices, "ISR_pt_avg_b_CL"+out_label] = ak.mean(ISR_tracks_b.pt, axis=-1)
-            self.out_vars.loc[indices, "ISR_S1_CL"+out_label] = 1.5 * (eigs[:,1]+eigs[:,0])
+        # unboost for these
+        ISR_tracks = ISR_tracks_b.boost_p4(ISR_cand)
+        self.out_vars.loc[indices, "ISR_pt_avg_CL"+out_label] = ak.mean(ISR_tracks.pt, axis=-1)
+        deltaR = ISR_tracks.deltaR(ISR_cand)
+        #self.out_vars.loc[indices, "ISR_rho0_CL"+out_label] = rho(0, ISR_cand, ISR_tracks, deltaR)
+        #self.out_vars.loc[indices, "ISR_rho1_CL"+out_label] = rho(1, ISR_cand, ISR_tracks, deltaR)
 
-            # unboost for these
-            ISR_tracks = ISR_tracks_b.boost_p4(ISR_cand)
-            self.out_vars.loc[indices, "ISR_pt_avg_CL"+out_label] = ak.mean(ISR_tracks.pt, axis=-1)
-            deltaR = ISR_tracks.deltaR(ISR_cand)
-            #self.out_vars.loc[indices, "ISR_rho0_CL"+out_label] = rho(0, ISR_cand, ISR_tracks, deltaR)
-            #self.out_vars.loc[indices, "ISR_rho1_CL"+out_label] = rho(1, ISR_cand, ISR_tracks, deltaR)
-
-            self.out_vars.loc[indices, "ISR_pt_CL"+out_label] = ISR_cand.pt
-            self.out_vars.loc[indices, "ISR_eta_CL"+out_label] = ISR_cand.eta
-            self.out_vars.loc[indices, "ISR_phi_CL"+out_label] = ISR_cand.phi
-            self.out_vars.loc[indices, "ISR_mass_CL"+out_label] = ISR_cand.mass
+        self.out_vars.loc[indices, "ISR_pt_CL"+out_label] = ISR_cand.pt
+        self.out_vars.loc[indices, "ISR_eta_CL"+out_label] = ISR_cand.eta
+        self.out_vars.loc[indices, "ISR_phi_CL"+out_label] = ISR_cand.phi
+        self.out_vars.loc[indices, "ISR_mass_CL"+out_label] = ISR_cand.mass
 
 def ISRRemovalMethod(self, indices, tracks, 
                      SUEP_cand, ISR_cand):
@@ -306,11 +296,12 @@ def FastJetReclustering(tracks, r, minPt):
 
     # have to set min_pt = 0 and cut later to avoid some memory issues
     # FIXME: should try to understand this failure
-    ak_inclusive_jets = cluster.inclusive_jets()[:] 
-    ak_inclusive_cluster = cluster.constituents()[:]
-
+    ak_inclusive_jets = cluster.inclusive_jets()
+    ak_inclusive_cluster = cluster.constituents()
+    
     # apply minimum pT cut
     minPtCut = ak_inclusive_jets.pt > minPt
+    
     ak_inclusive_jets = ak_inclusive_jets[minPtCut]
     ak_inclusive_cluster = ak_inclusive_cluster[minPtCut]
 
@@ -322,9 +313,8 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
     jets_pTsorted = ak_inclusive_jets[highpt_jet]
     clusters_pTsorted = ak_inclusive_cluster[highpt_jet]     
 
-    # at least 2 tracks in highest pt jet
-    highpt_cands = clusters_pTsorted[:,0]                    # tracks for highest pt jet         
-    singletrackCut = (ak.num(highpt_cands)>1)             
+    # at least 2 tracks in SUEP and ISR
+    singletrackCut = (ak.num(clusters_pTsorted[:,1])>1) & (ak.num(clusters_pTsorted[:,1])>1)   
     jets_pTsorted = jets_pTsorted[singletrackCut]          
     clusters_pTsorted = clusters_pTsorted[singletrackCut]
     tracks = tracks[singletrackCut]
