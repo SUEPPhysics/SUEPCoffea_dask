@@ -460,6 +460,12 @@ def plot2d(h, ax, log=False, cmap='RdYlBu'):
     ax.set_ylabel(h.axes[1].label)
     fig.colorbar(mesh)
 
+def bin_midpoints(bins):
+    midpoints = []
+    for i in range(len(bins)-1):
+        midpoints.append((bins[i]+bins[i+1])/2)
+    return np.array(midpoints)
+
 def plot_ratio(h1, h2, 
                plot_label=None, 
                label1=None, label2=None, 
@@ -473,19 +479,18 @@ def plot_ratio(h1, h2,
     ax1 = plt.subplot2grid((4,1), (0,0),rowspan=2)
 
     y1, x1 = h1.to_numpy()
-    x1 = x1[:-1]
     y1_errs = np.sqrt(h1.variances())
     if rebin!=-1: x1, y1, y1_errs = combine_bins(x1, y1, y1_errs, n=rebin)
-    ax1.step(x1, y1, color='maroon',label=label1, where='mid')
-    ax1.errorbar(x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='steps-mid')
+    ax1.stairs(y1, x1, color='maroon',label=label1)
+    x1_mid = bin_midpoints(x1)
+    ax1.errorbar(x1_mid, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle='default', linestyle='')
 
     y2, x2 = h2.to_numpy()
-    y2 = y2
-    x2 = x2[:-1]
     y2_errs = np.sqrt(h2.variances())
     if rebin!=-1: x2, y2, y2_errs = combine_bins(x2, y2, y2_errs, n=rebin)
-    ax1.step(x2, y2, color='blue',label=label2, where= 'mid')
-    ax1.errorbar(x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='steps-mid')
+    ax1.stairs(y2, x2, color='blue',label=label2)
+    x2_mid = bin_midpoints(x2)
+    ax1.errorbar(x2_mid, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle='default', linestyle='')
     
     #Set parameters that will be used to make the plots prettier
     if log: ax1.set_yscale("log")
@@ -497,10 +502,10 @@ def plot_ratio(h1, h2,
         xmax = xlim[1]
         ax1.set_xlim([xmin,xmax])
     else:
-        xmin1 = min(x1[y1>0]) if len(x1[y1>0]) else 0
-        xmin2 = min(x2[y2>0]) if len(x2[y2>0]) else 0
-        xmax1 = max(x1[y1>0]) if len(x1[y1>0]) else 0
-        xmax2 = max(x2[y2>0]) if len(x2[y2>0]) else 0
+        xmin1 = min(x1_mid[y1>0]) if len(x1_mid[y1>0]) else 0
+        xmin2 = min(x2_mid[y2>0]) if len(x2_mid[y2>0]) else 0
+        xmax1 = max(x1_mid[y1>0]) if len(x1_mid[y1>0]) else 0
+        xmax2 = max(x2_mid[y2>0]) if len(x2_mid[y2>0]) else 0
         xmin = max([xmin1, xmin2])
         xmax = max([xmax1, xmax2])
         x_range = xmax - xmin
@@ -519,7 +524,7 @@ def plot_ratio(h1, h2,
     ratio_errs = [yerrors_up, yerrors_low]
     ratios = np.where((y2>0) & (y1>0), y2/y1, 1)
 
-    ax2.errorbar(x1, ratios, yerr=ratio_errs, color="black", fmt="", drawstyle='steps-mid')
+    ax2.errorbar(x1_mid, ratios, yerr=ratio_errs, color="black", fmt="", drawstyle='steps-mid')
     ax2.axhline(1, ls="--", color='gray')
     ax2.set_ylim(0.4,1.6)
     ax2.set_ylabel("Ratio", y=1, ha='right')
