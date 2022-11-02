@@ -268,8 +268,9 @@ def apply_binwise_scaling(h_in, bins, scales, dim='x'):
         for iBin in range(len(bins)-1):
             if dim == 'x': h_fragments.append(h_in[bins[iBin]:bins[iBin+1], :] * scales[iBin])
             elif dim == 'y': h_fragments.append(h_in[:, bins[iBin]:bins[iBin+1]] * scales[iBin])
-        h = hist.Hist(hist.axis.Variable(h_out[1]), hist.axis.Variable(h_out[2]), storage=bh.storage.Weight())
-        new_z = np.concatenate([f.to_numpy()[0] for f in h_fragments])
+        h = hist.Hist(hist.axis.Variable(h_npy[1]), hist.axis.Variable(h_npy[2]), storage=bh.storage.Weight())
+        if dim == 'x': new_z = np.concatenate([f.to_numpy()[0] for f in h_fragments])
+        if dim == 'y': new_z = np.hstack([f.to_numpy()[0] for f in h_fragments])
         h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
     return h
 

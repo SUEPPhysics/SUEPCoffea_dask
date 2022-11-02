@@ -544,8 +544,22 @@ if options.doSyst:
             continue
                                
         # scale them
-        output[model+"_GNN_down_GNN"] = apply_binwise_scaling(output[model+"_GNN"].copy(), bins, [1-s for s in scales])
-        output[model+"_GNN_up_GNN"] = apply_binwise_scaling(output[model+"_GNN"].copy(), bins, [1+s for s in scales])
+        GNN_syst_plots = {}
+        for plot in output.keys():
+            # apply only to GNN
+            if not plot.endswith("GNN"): continue
+            
+            if model in plot and '2D' not in plot:
+                GNN_syst_plots[plot+"_GNN_down_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1-s for s in scales])
+                GNN_syst_plots[plot+"_GNN_up_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1+s for s in scales])
+            if model in plot and '2D' in plot:
+                var1 = plot.split("_vs_")[0]
+                var2 = plot.split("_vs_")[1]
+                if model in var1: dim='x'
+                elif model in var2: dim='y'
+                GNN_syst_plots[plot+"_GNN_down_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1-s for s in scales],dim=dim)
+                GNN_syst_plots[plot+"_GNN_up_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1+s for s in scales],dim=dim)
+        output.update(GNN_syst_plots)
         
 # apply normalization
 output.pop("labels")
