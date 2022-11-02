@@ -14,15 +14,16 @@ import vector
 vector.register_awkward()
 
 # Importing SUEP specific functions
-import workflows.SUEP_utils as SUEP_utils
+import workflows.SUEP_utils   as SUEP_utils
 import workflows.pandas_utils as pandas_utils
-import workflows.ZH_utils as ZH_utils
+import workflows.ZH_utils     as ZH_utils
 
 # Importing CMS corrections
-from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.jetmet_utils import apply_jecs
+from workflows.CMS_corrections.golden_jsons_utils  import applyGoldenJSON
+from workflows.CMS_corrections.jetmet_utils        import apply_jecs
 from workflows.CMS_corrections.track_killing_utils import track_killing
-from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
+from workflows.CMS_corrections.PartonShower_utils  import GetPSWeights
+from workflows.CMS_corrections.Prefire_utils       import GetPrefireWeights
 
 class SUEP_cluster(processor.ProcessorABC):
     def __init__(self, isMC: int, era: int, scouting: int, sample: str,  do_syst: bool, syst_var: str, weight_syst: bool, flag: bool, do_inf: bool, output_location: Optional[str]) -> None:
@@ -203,6 +204,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 if self.isMC:
                     self.out_vars["Pileup_nTrueInt"+out_label] = events.Pileup.nTrueInt
                     GetPSWeights(self, events)#Parton Shower weights
+                    #GetPrefireWeights(self, events)#Prefire weights (commented out until A02 is ready)
                 self.out_vars["PV_npvs"+out_label] = events.PV.npvs
                 self.out_vars["PV_npvsGood"+out_label] = events.PV.npvsGood
                 
