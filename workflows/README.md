@@ -21,9 +21,9 @@ JECs                  | ggF, ML and ZH    | - [x]
 Parton Shower         | ggF, ML and ZH    | - [x]
 Track killing         | ggF, ML and ZH    | - [x] (Percentages for scouting need updating)
 Higgs pT reweight     | ggF, ML and ZH    | - [ ]
-Prefire               | ggF, ML and ZH    | - [ ]
+Prefire               | ggF, ML and ZH    | - [x] Need CMSSW_10_6_26 (A02)
 Lepton SF             | ZH                | - [ ]
-GNN Uncertainty       | ML                | - [ ]
+
 
 Other uncertainties are added on the fly while making histograms in the plotting directory:
 
@@ -31,6 +31,7 @@ Correction            | Channels          | Status
 --------------------- | ----------------- | -----------------------------------------------
 Pileup Weight         | ggF, ML and ZH    | - [x]
 Trigger SF            | ggF, ML and ZH    | - [ ] IN PROGRESS
+GNN Uncertainty       | ML                | - [x]
   
 ## Additional utils
 
