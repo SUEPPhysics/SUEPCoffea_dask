@@ -72,15 +72,26 @@ config = {
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0]]
     },
     
-    'GNN' : {
+    'ClusterInverted' : {
+        'input_method' : 'CL',
+        'xvar' : 'ISR_S1_CL',
+        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
+        'yvar' : 'ISR_nconst_CL',
+        'yvar_regions' : [20, 40, 80, 1000],
+        'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
+        'selections' : [['ht', '>', 1200], ['ntracks','>', 0]]
+    },
+    
+     'GNN' : {
         'input_method' : 'GNN',
         'xvar' :'SUEP_S1_GNN',
-        'xvar_regions' : [0.0, 0.5, 1.0],
+        'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
         'yvar' : 'single_l5_bPfcand_S1_SUEPtracks_GNN',
         'yvar_regions' : [0.0, 0.5, 1.0],
         'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_SUEPtracks_GNN', '>=', 0.5]],
         'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 0]]
+        'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
+        'models': ['single_l5_bPfcand_S1_SUEPtracks']
     },
     
     'GNNInverted' : {
@@ -91,17 +102,8 @@ config = {
         'yvar_regions' : [0.0, 1.5, 2.0],
         'SR' : [['ISR_S1_GNNInverted', '>=', 10.0], ['single_l5_bPfcand_S1_SUEPtracks_GNNInverted', '>=', 10.0]],
         #'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 0]]
-    },
-    
-    'ClusterInverted' : {
-        'input_method' : 'CL',
-        'xvar' : 'ISR_S1_CL',
-        'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-        'yvar' : 'ISR_nconst_CL',
-        'yvar_regions' : [20, 40, 80, 1000],
-        'SR' : [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]],
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 0]]
+        'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
+        'models': ['single_l5_bPfcand_S1_SUEPtracks']
     },
     
     # 'ISRRemoval' : {
@@ -136,6 +138,7 @@ def create_output_file(label, abcd, sys):
     n_regions = ((len(xvar_regions) - 1) * (len(yvar_regions) - 1))
     regions_list =  [""] + [regions[i]+"_" for i in range(n_regions)]
     
+    ###########################################################################################################################
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in regions_list:
         output.update({
@@ -155,6 +158,7 @@ def create_output_file(label, abcd, sys):
             r+"ISR_contamination_" + label : Hist.new.Reg(50,0, 1, name=r+"ISR_contamination_"+label, label= r'# SUEP Tracks in ISR / # ISR Tracks').Weight(),
         })
     
+    ###########################################################################################################################
     if any([l in label for l in ['ISRRemoval','Cluster','Cone']]):
         # 2D histograms
         output.update({
@@ -182,6 +186,7 @@ def create_output_file(label, abcd, sys):
                 r+"SUEP_rho1_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             })
     
+    ###########################################################################################################################
     if 'ClusterInverted' in label:
         output.update({
             # 2D histograms
@@ -206,38 +211,47 @@ def create_output_file(label, abcd, sys):
                 r+"ISR_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho1_"+label, label=r"ISR $\rho_1$").Weight(),
             })
     
+    ###########################################################################################################################
     if label == 'GNN':
         
         # 2D histograms
+        for model in abcd['models']:
+            output.update({"2D_SUEP_S1_vs_"+model+"_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name=model+"_"+label, label='GNN Output').Weight(), 
+            "2D_SUEP_nconst_vs_"+model+"_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name=model+"_"+label, label='GNN Output').Weight()})
+            
         output.update({
-            "2D_SUEP_S1_vs_single_l5_bPfcand_S1_SUEPtracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="single_l5_bPfcand_S1_SUEPtracks_"+label, label='GNN Output').Weight(), 
-            "2D_SUEP_nconst_vs_single_l5_bPfcand_S1_SUEPtracks_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="single_l5_bPfcand_S1_SUEPtracks_"+label, label='GNN Output').Weight(), 
             "2D_SUEP_nconst_vs_SUEP_S1_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(100, 0, 1, name="SUEP_S1_"+label, label='$Sph_1$').Weight(), 
            })
         
         for r in regions_list:
             output.update({
-                r+"single_l5_bPfcand_S1_SUEPtracks_"+label : Hist.new.Reg(100, 0, 1, name=r+"single_l5_bPfcand_S1_SUEPtracks_"+label, label="GNN Output").Weight(),
                 r+"SUEP_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"SUEP_nconst"+label, label="# Tracks in SUEP").Weight(),
                 r+"SUEP_S1_"+label : Hist.new.Reg(100, -1, 2, name=r+"SUEP_S1_"+label, label="$Sph_1$").Weight(),
             })
+            for model in abcd['models']:
+                output.update({r+model+"_"+label : Hist.new.Reg(100, 0, 1, name=r+model+"_"+label, label="GNN Output").Weight()})
             
+    ###########################################################################################################################
     if label == 'GNNInverted':
         
         # 2D histograms
-        output.update({
-            "2D_ISR_S1_vs_single_l5_bPfcand_S1_SUEPtracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name="single_l5_bPfcand_S1_SUEPtracks_"+label, label='GNN Output').Weight(), 
-            "2D_ISR_nconst_vs_single_l5_bPfcand_S1_SUEPtracks_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label, label='# Const').Reg(100, 0, 1, name="single_l5_bPfcand_S1_SUEPtracks_"+label, label='GNN Output').Weight(), 
-            "2D_ISR_nconst_vs_ISR_S1_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label, label='# Const').Reg(100, 0, 1, name="ISR_S1_"+label, label='$Sph_1$').Weight(), 
-           })
+        for model in abcd['models']:
+            output.update({
+                "2D_ISR_S1_vs_"+model+"_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(100, 0, 1, name=model+"_"+label, label='GNN Output').Weight(), 
+                "2D_ISR_nconst_vs_"+model+"_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label, label='# Const').Reg(100, 0, 1, name=model+"_"+label, label='GNN Output').Weight(), 
+               })
+        output.update({"2D_ISR_nconst_vs_ISR_S1_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label, label='# Const').Reg(100, 0, 1, name="ISR_S1_"+label, label='$Sph_1$').Weight()}) 
 
         for r in regions_list:
             output.update({
-                r+"single_l5_bPfcand_S1_SUEPtracks_"+label : Hist.new.Reg(100, 0, 1, name=r+"single_l5_bPfcand_S1_SUEPtracks_"+label, label="GNN Output").Weight(),
                 r+"ISR_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"ISR_nconst"+label, label="# Tracks in ISR").Weight(),
                 r+"ISR_S1_"+label : Hist.new.Reg(100, -1, 2, name=r+"ISR_S1_"+label, label="$Sph_1$").Weight(),
             })
-                        
+            for model in abcd['models']:
+                output.update({r+model+"_"+label : Hist.new.Reg(100, 0, 1, name=r+model+"_"+label, label="GNN Output").Weight()})
+
+    ###########################################################################################################################
+                      
     return output
 
 #############################################################################################################
@@ -506,6 +520,32 @@ if options.doSyst:
             hUp = get_tracks_up(hNom, hDown)
             new_output.update({hist_name.replace('_track_down','_track_up'): hUp})
         output = new_output | output
+        
+# do the GNN systematic
+if options.doSyst:
+    
+    # load in the json file containing the corrections for each year/model
+    fGNNsyst = '../data/GNN/GNNsyst.json'
+    with open(fGNNsyst, 'r') as f:
+        GNNsyst = json.load(f)
+        
+    # complex numbers for hist
+    bins = [0.0j, 0.25j, 0.5j, 0.75j, 1.0j] 
+    for model in config['GNN']['models']:
+        
+        # load the correct model for each year
+        yearSyst = GNNsyst.get(str(options.era))
+        if yearSyst is None:
+            logging.warning("--- {} was not found in file {}; systematic has not been applied".format(options.era, fGNNsyst))
+            continue
+        scales = yearSyst.get(model)
+        if scales is None:
+            logging.warning("--- {} was not found in file {}; systematic has not been applied".format(model, fGNNsyst))
+            continue
+                               
+        # scale them
+        output[model+"_GNN_down_GNN"] = apply_binwise_scaling(output[model+"_GNN"].copy(), bins, [1-s for s in scales])
+        output[model+"_GNN_up_GNN"] = apply_binwise_scaling(output[model+"_GNN"].copy(), bins, [1+s for s in scales])
         
 # apply normalization
 output.pop("labels")

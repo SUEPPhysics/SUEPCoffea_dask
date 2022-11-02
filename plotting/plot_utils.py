@@ -252,6 +252,27 @@ def get_tracks_up(nom, down):
         h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
     return h
 
+def apply_binwise_scaling(h_in, bins, scales, dim='x'):
+    """
+    Apply scales to bins of a particular histogram.
+    """
+    h_npy = h_in.to_numpy()
+    if len(h_npy) == 2:
+        h_fragments = []
+        for iBin in range(len(bins)-1): h_fragments.append(h_in[bins[iBin]:bins[iBin+1]] * scales[iBin])
+        h = hist.Hist(hist.axis.Variable(h_npy[1]), storage=bh.storage.Weight())
+        new_z = np.concatenate([f.to_numpy()[0] for f in h_fragments])
+        h[:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
+    elif len(h_npy) == 3:
+        h_fragments = []
+        for iBin in range(len(bins)-1):
+            if dim == 'x': h_fragments.append(h_in[bins[iBin]:bins[iBin+1], :] * scales[iBin])
+            elif dim == 'y': h_fragments.append(h_in[:, bins[iBin]:bins[iBin+1]] * scales[iBin])
+        h = hist.Hist(hist.axis.Variable(h_out[1]), hist.axis.Variable(h_out[2]), storage=bh.storage.Weight())
+        new_z = np.concatenate([f.to_numpy()[0] for f in h_fragments])
+        h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
+    return h
+
 def make_selection(df, variable, operator, value, apply=True):
     """
     Apply a selection on DataFrame df based on on the df column'variable'
@@ -524,7 +545,7 @@ def plot_ratio(h1, h2,
     ratio_errs = [yerrors_up, yerrors_low]
     ratios = np.where((y2>0) & (y1>0), y2/y1, 1)
 
-    ax2.errorbar(x1_mid, ratios, yerr=ratio_errs, color="black", fmt="", drawstyle='steps-mid')
+    ax2.errorbar(x1_mid, ratios, yerr=ratio_errs, color="black", fmt='o', linestyle='none')
     ax2.axhline(1, ls="--", color='gray')
     ax2.set_ylim(0.4,1.6)
     ax2.set_ylabel("Ratio", y=1, ha='right')
