@@ -48,7 +48,7 @@ class SUEP_cluster(processor.ProcessorABC):
             
             # GNN settings
             # model names and configs should be in data/GNN/
-            self.dgnn_model_names = ['single_l5_bPfcand_S1']#Name for output
+            self.dgnn_model_names = ['single_l5_bPfcand_S1_SUEPtracks']#Name for output
             self.configs = ['config.yml']#config paths
             self.obj = 'bPFcand'
             self.coords = 'cyl'
