@@ -893,7 +893,7 @@ def find_nth(string, substring, n):
     else:
         return string.find(substring, find_nth(string, substring, n - 1) + 1)
 
-def rebin(h_in, bins, histtype='hist'):
+def rebin_piecewise(h_in, bins, histtype='hist'):
     """
     Inputs:
         h : histogram
