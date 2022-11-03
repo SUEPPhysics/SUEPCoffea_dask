@@ -519,15 +519,15 @@ def plot_ratio(h1, h2,
         xmax = xlim[1]
         ax1.set_xlim([xmin,xmax])
     else:
-        xmin1 = np.argmin(x1_mid[y1>0]) if len(x1_mid[y1>0]) else x1[0]
-        xmin2 = np.argmin(x2_mid[y2>0]) if len(x2_mid[y2>0]) else x2[0]
-        xmax1 = np.argmax(x1_mid[y1>0]) if len(x1_mid[y1>0]) else x1[-1]
-        xmax2 = np.argmax(x2_mid[y2>0]) if len(x2_mid[y2>0]) else x2[-1]
+        xmin1 = np.min([i for i, x in enumerate((y1>0)) if x]) if len(x1_mid[y1>0]) else x1[0]
+        xmin2 = np.min([i for i, x in enumerate((y1>0)) if x]) if len(x2_mid[y2>0]) else x2[0]
+        xmax1 = np.max([i for i, x in enumerate((y1>0)) if x]) if len(x1_mid[y1>0]) else x1[-1]
+        xmax2 = np.max([i for i, x in enumerate((y2>0)) if x]) if len(x2_mid[y2>0]) else x2[-1]
         xmin = min([x1[xmin1], x2[xmin2]])
         xmax = max([x1[xmax1+1], x2[xmax2+1]])
         x_range = xmax - xmin
         ax1.set_xlim([xmin, xmax])
- 
+        
     ax1.set_ylabel("Events", y=1, ha='right')
 
     ax2 = plt.subplot2grid((4,1), (2,0), sharex=ax1)
