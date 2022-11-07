@@ -16,6 +16,7 @@ from copy import deepcopy
 #Import our own functions
 import pileup_weight
 import triggerSF
+import higgs_reweight
 from plot_utils import *
 
 
@@ -354,6 +355,8 @@ if options.isMC: xsection = getXSection(options.dataset, options.era, SUEP=False
 # event weights
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
+higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down = higgs_reweight.higgs_reweight()
+
 
 # custom per region weights
 scaling_weights = None
@@ -441,8 +444,10 @@ for ifile in tqdm(files):
     #####################################################################################
     event_weight = np.ones(df.shape[0])
     if options.doSyst:
+        higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down = higgs_reweight.higgs_reweight(df['SUEP_genPt'])
         sys_loop = ["", "puweights_up", "puweights_down", "trigSF_up", "trigSF_down", 
-                    "PSWeight_ISR_up", "PSWeight_ISR_down", "PSWeight_FSR_up", "PSWeight_FSR_down"]
+                    "PSWeight_ISR_up", "PSWeight_ISR_down", "PSWeight_FSR_up", "PSWeight_FSR_down",
+                   "higgs_weights_up", "higgs_weights_down"]
     else:
         sys_loop = [""]
     for sys in sys_loop:
@@ -478,7 +483,20 @@ for ifile in tqdm(files):
             if sys in df.keys():
                 df['event_weight'] *= df[sys]
 
-        # 4) scaling weights
+        # 4) Higgs_pt weights
+        if options.isMC == 1 and 'SUEP' in options.dataset:
+            gen_pt = np.array(df['SUEP_genPt']).astype(int)
+            gen_bin = np.digitize(gen_pt,higgs_bins)-1
+            if "higgs_weights_up" in sys:
+                 higgs_weight = higgs_weights_up[gen_bin]
+            elif "higgs_weights_down" in sys:
+                 higgs_weight = higgs_weights_up[gen_bin]
+            else:
+                 higgs_weight = higgs_weights[gen_bin]
+            df['event_weight'] *= higgs_weight
+
+
+        # 5) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling
         if options.isMC == 1 and scaling_weights is not None:
             df = apply_scaling_weights(df.copy(), scaling_weights,
