@@ -36,7 +36,7 @@ def pileup_weight(era):
     
     return weights, weights_plus, weights_minus
 
-def get_pileup_weights(df, puweights, puweights_up, puweights_down)
+def get_pileup_weights(df, sys, puweights, puweights_up, puweights_down):
     Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
     if "puweights_up" in sys:
          pu = puweights_up[Pileup_nTrueInt]
@@ -44,3 +44,4 @@ def get_pileup_weights(df, puweights, puweights_up, puweights_down)
          pu = puweights_down[Pileup_nTrueInt]
     else:
          pu = puweights[Pileup_nTrueInt]
+    return pu

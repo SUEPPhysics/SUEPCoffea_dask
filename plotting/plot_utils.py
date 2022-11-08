@@ -432,6 +432,7 @@ def apply_normalization(plots, xsection, total_gensumweight):
     return plots
 
 def get_track_killing_config(config):
+    new_config = {}
     for label_out, config_out in config.items():
         label_out_new = label_out+"_track_down"
         new_config[label_out_new] = deepcopy(config[label_out])
@@ -446,7 +447,8 @@ def get_track_killing_config(config):
         
     return new_config
 
-def get_jet_corrections_config(config):
+def get_jet_corrections_config(config, jet_corrections):
+    new_config = {}
     for sys in jet_corrections: 
         for label_out, config_out in config.items():
             label_out_new = label_out+"_"+sys
@@ -455,6 +457,12 @@ def get_jet_corrections_config(config):
                 if 'ht' == new_config[label_out_new]['selections'][iSel][0]:
                     new_config[label_out_new]['selections'][iSel][0] += "_" + sys 
     return new_config
+
+def read_in_weights(fweights):
+    w = np.load(fweights, allow_pickle=True)
+    scaling_weights = defaultdict(lambda: np.zeros(2))
+    scaling_weights.update(w.item())
+    return scaling_weights
 
 def plot1d(h, ax, label, color='default', lw=1):
     

@@ -39,9 +39,9 @@ parser.add_argument('--isMC', type=int, help="Is this MC or data", required=True
 parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
-parser.add_argument('--doInf', type=int, default=0, help="")
+parser.add_argument('--doInf', type=int, default=1, help="")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
+parser.add_argument('--weights', default=None, help="Pass the filename of the weights, e.g. --weights weights.npy")
 options = parser.parse_args()
 
 ###################################################################################################################
@@ -84,32 +84,6 @@ config = {
         'selections' : [['ht', '>', 1200], ['ntracks','>', 0]]
     },
     
-     'GNN' : {
-        'input_method' : 'GNN',
-        'xvar' :'SUEP_S1_GNN',
-        'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
-        'yvar' : 'single_l5_bPfcand_S1_SUEPtracks_GNN',
-        'yvar_regions' : [0.0, 0.5, 1.0],
-        'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_SUEPtracks_GNN', '>=', 0.5]],
-        'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
-        'models': ['single_l5_bPfcand_S1_SUEPtracks'],
-        'fGNNsyst' : '../data/GNN/GNNsyst.json',
-        'GNNsyst_bins' : [0.0j, 0.25j, 0.5j, 0.75j, 1.0j] 
-    },
-    
-    'GNNInverted' : {
-        'input_method' : 'GNNInverted',
-        'xvar' :'ISR_S1_GNNInverted',
-        'xvar_regions' : [0.0, 1.5, 2.0],
-        'yvar' : 'single_l5_bPfcand_S1_SUEPtracks_GNNInverted',
-        'yvar_regions' : [0.0, 1.5, 2.0],
-        'SR' : [['ISR_S1_GNNInverted', '>=', 10.0], ['single_l5_bPfcand_S1_SUEPtracks_GNNInverted', '>=', 10.0]],
-        #'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
-        'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
-        'models': ['single_l5_bPfcand_S1_SUEPtracks']
-    },
-    
     # 'ISRRemoval' : {
     #     'input_method' : 'IRM',
     #     'xvar' : 'SUEP_S1_IRM',
@@ -121,6 +95,34 @@ config = {
     # },
     
 }
+
+if options.doInf:
+    config.update({
+         'GNN' : {
+            'input_method' : 'GNN',
+            'xvar' :'SUEP_S1_GNN',
+            'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
+            'yvar' : 'single_l5_bPfcand_S1_SUEPtracks_GNN',
+            'yvar_regions' : [0.0, 0.5, 1.0],
+            'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_SUEPtracks_GNN', '>=', 0.5]],
+            'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
+            'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
+            'models': ['single_l5_bPfcand_S1_SUEPtracks'],
+            'fGNNsyst' : '../data/GNN/GNNsyst.json',
+            'GNNsyst_bins' : [0.0j, 0.25j, 0.5j, 0.75j, 1.0j] 
+        },
+        'GNNInverted' : {
+            'input_method' : 'GNNInverted',
+            'xvar' :'ISR_S1_GNNInverted',
+            'xvar_regions' : [0.0, 1.5, 2.0],
+            'yvar' : 'single_l5_bPfcand_S1_SUEPtracks_GNNInverted',
+            'yvar_regions' : [0.0, 1.5, 2.0],
+            'SR' : [['ISR_S1_GNNInverted', '>=', 10.0], ['single_l5_bPfcand_S1_SUEPtracks_GNNInverted', '>=', 10.0]],
+            #'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
+            'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
+            'models': ['single_l5_bPfcand_S1_SUEPtracks']
+        }
+    })
 
 # output histos
 def create_output_file(label, abcd, sys):
@@ -135,7 +137,7 @@ def create_output_file(label, abcd, sys):
     yvar = abcd['yvar']
     xvar_regions = abcd['xvar_regions']
     yvar_regions = abcd['yvar_regions']
-    output.update({"ABCDvars_"+label : Hist.new.Reg(100, 0, yvar_regions[-1], name=xvar).Reg(100, 0, xvar_regions[-1], name=yvar).Weight()})
+    output.update({"ABCDvars_"+label : Hist.new.Reg(100, yvar_regions[0], yvar_regions[-1], name=xvar).Reg(100, xvar_regions[0], xvar_regions[-1], name=yvar).Weight()})
  
     # defnie all the regions, will be used to make historgams for each region
     regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -157,9 +159,6 @@ def create_output_file(label, abcd, sys):
             r+"PV_npvs_"+label : Hist.new.Reg(199,0, 200, name=r+"PV_npvs_"+label, label="# PVs in Event ").Weight(),
             r+"Pileup_nTrueInt_"+label : Hist.new.Reg(199,0, 200, name=r+"Pileup_nTrueInt_"+label, label="# True Interactions in Event ").Weight(),
             r+"ngood_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_ak4jets_"+label, label= '# ak4jets in Event').Weight(),
-            r+"ngood_tracker_ak4jets_" + label : Hist.new.Reg(19,0, 20, name=r+"ngood_tracker_ak4jets_"+label, label= r'# ak4jets in Event ($|\eta| < 2.4$)').Weight(),
-            r+"FNR_" + label : Hist.new.Reg(50,0, 1, name=r+"FNR_"+label, label= r'# SUEP Tracks in ISR / # SUEP Tracks').Weight(),
-            r+"ISR_contamination_" + label : Hist.new.Reg(50,0, 1, name=r+"ISR_contamination_"+label, label= r'# SUEP Tracks in ISR / # ISR Tracks').Weight(),
         })
     
     ###########################################################################################################################
@@ -169,7 +168,6 @@ def create_output_file(label, abcd, sys):
             "2D_SUEP_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(100, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_SUEP_S1_vs_SUEP_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="SUEP_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             "2D_SUEP_nconst_vs_SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(200, 0, 500, name="SUEP_pt_avg_"+label, label='$p_T Avg$').Weight(), 
-            "2D_SUEP_nconst_vs_SUEP_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="SUEP_nconst_"+label, label='# Const').Reg(50, 0, 50, name="SUEP_pt_avg_b_"+label, label='$p_T Avg (Boosted frame)$').Weight(), 
            })
         
         # variables from the dataframe for all the events, and those in A, B, C regions
@@ -185,15 +183,13 @@ def create_output_file(label, abcd, sys):
                 r+"SUEP_delta_mass_genMass_"+label : Hist.new.Reg(400, -2000, 2000, name=r+"SUEP_delta_mass_genMass_"+label, label="SUEP Mass - genSUEP Mass [GeV]").Weight(),
                 r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label='$Sph_1$').Weight(),
             })
-    
-    ###########################################################################################################################
+     ###########################################################################################################################
     if 'ClusterInverted' in label:
         output.update({
             # 2D histograms
             "2D_ISR_S1_vs_ntracks_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="ntracks_"+label, label='# Tracks').Weight(),
             "2D_ISR_S1_vs_ISR_nconst_"+label : Hist.new.Reg(100, 0, 1.0, name="ISR_S1_"+label, label='$Sph_1$').Reg(200, 0, 500, name="nconst_"+label, label='# Constituents').Weight(),     
             "2D_ISR_nconst_vs_ISR_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(500, 0, 500, name="ISR_pt_avg_"+label).Weight(), 
-            "2D_ISR_nconst_vs_ISR_pt_avg_b_"+label : Hist.new.Reg(200, 0, 500, name="ISR_nconst_"+label).Reg(100, 0, 100, name="ISR_pt_avg_"+label).Weight(),  
         })
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
@@ -254,6 +250,8 @@ def create_output_file(label, abcd, sys):
             
 def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
     """
+    FIXME: move to README and organize the script better.
+    
     INPUTS:
         df: input file DataFrame.
         output: dictionary of histograms to be filled.
@@ -309,19 +307,19 @@ def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
     if blind and not isMC:       
         SR = abcd['SR']
         if len(SR) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
-        df = df.loc[~(make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
+        df = df.loc[~(plot_utils.make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & plot_utils.make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
         
         if 'SR2' in abcd.keys():
             SR2 = abcd['SR2']
             if len(SR2) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
-            df = df.loc[~(make_selection(df, SR2[0][0], SR2[0][1], SR2[0][2], apply=False) & make_selection(df, SR2[1][0], SR2[1][1], SR2[1][2], apply=False))]
+            df = df.loc[~(plot_utils.make_selection(df, SR2[0][0], SR2[0][1], SR2[0][2], apply=False) & plot_utils.make_selection(df, SR2[1][0], SR2[1][1], SR2[1][2], apply=False))]
      
     # 3. apply selections
     for sel in abcd['selections']: 
-        df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+        df = plot_utils.make_selection(df, sel[0], sel[1], sel[2], apply=True)
     
     # auto fill all histograms in the output dictionary
-    auto_fill(df, output, abcd, label_out, isMC=isMC, do_abcd=True)
+    plot_utils.auto_fill(df, output, abcd, label_out, isMC=isMC, do_abcd=True)
            
     return output
         
@@ -349,10 +347,7 @@ if options.isMC: xsection = plot_utils.getXSection(options.dataset, options.era,
 
 # custom per region weights
 scaling_weights = None
-if options.weights != "None":
-    w = np.load(options.weights, allow_pickle=True)
-    scaling_weights = defaultdict(lambda: np.zeros(2))
-    scaling_weights.update(w.item())
+if options.weights is not None: scaling_weights = plot_utils.read_in_weights(options.weights)
 
 # fill ABCD hists with dfs from hdf5 files
 nfailed = 0
@@ -365,16 +360,12 @@ output = {"labels":[]}
 # systematics
 if options.isMC and options.doSyst:
             
-    # track systematics
-    # we need to use the track_down version of the data,
-    # which has the randomly deleted tracks (see SUEPCoffea.py)
-    # so we need to modify the config to use the _track_down vars
+    # track systematics: need to use the track_down version of the variables
     new_config_track_killing = plot_utils.get_track_killing_config(config)
     
-    # jet systematics
-    # here, we just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
+    # jet systematics: just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
     jet_corrections = ['JEC', 'JEC_JER_up', 'JEC_JER_down', 'JEC_JES_up', 'JEC_JES_down']
-    new_config_jet_corrections = plot_utils.get_jet_corrections_config(config)
+    new_config_jet_corrections = plot_utils.get_jet_corrections_config(config, jet_corrections)
 
     config = config | new_config_jet_corrections
     config = config | new_config_track_killing
@@ -391,9 +382,9 @@ for ifile in tqdm(files):
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
         xrd_file = redirector + ifile
         os.system("xrdcp -s {} {}.hdf5".format(xrd_file, options.dataset))
-        df, metadata = h5load(options.dataset+'.hdf5', 'vars')   
+        df, metadata = plot_utils.h5load(options.dataset+'.hdf5', 'vars')   
     else:
-        df, metadata = h5load(ifile, 'vars')   
+        df, metadata = plot_utils.h5load(ifile, 'vars')   
  
     # check if file is corrupted
     if type(df) == int: 
@@ -432,11 +423,11 @@ for ifile in tqdm(files):
             if options.scouting != 1:
             
                  # 1) pileup weights
-                pu = pileup_weight.get_pileup_weights(df, puweights, puweights_up, puweights_down)
+                pu = pileup_weight.get_pileup_weights(df, sys, puweights, puweights_up, puweights_down)
                 df['event_weight'] *= pu
 
                 # 2) TriggerSF weights
-                trigSF = triggerSF.get_trigSF_weight(df, trig_bins, trig_weights, trig_weights_up, trig_weights_down)
+                trigSF = triggerSF.get_trigSF_weight(df, sys, trig_bins, trig_weights, trig_weights_up, trig_weights_down)
                 df['event_weight'] *= trigSF   
 
                 # 3) PS weights
@@ -445,7 +436,7 @@ for ifile in tqdm(files):
 
             # 4) Higgs_pt weights
             if'SUEP-m125' in options.dataset:
-                higgs_weight = higgs_reweight.get_higgs_weight(df, higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down)
+                higgs_weight = higgs_reweight.get_higgs_weight(df, sys, higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down)
                 df['event_weight'] *= higgs_weight
 
             # 5) scaling weights
