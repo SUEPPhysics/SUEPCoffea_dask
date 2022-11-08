@@ -19,11 +19,13 @@ username = getpass.getuser()
 tag = options.tag
 dataset = options.dataset
 redirector = "root://submit50.mit.edu/"
+localDataDir = "/data/submit/cms/store/user/{}/SUEP/{}/{}/".format(username,tag,dataset)
 dataDir = "/cms/store/user/{}/SUEP/{}/{}/".format(username,tag,dataset)
+localOutDir = localDataDir + "/merged/"
 outDir = dataDir + "/merged/"
 
 # create output dir
-subprocess.run(["xrdfs",redirector,"mkdir",outDir])
+os.mkdir(localOutDir)
 
 # list files in dir using xrootd
 result = subprocess.check_output(["xrdfs",redirector,"ls",dataDir])
