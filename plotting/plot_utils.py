@@ -438,6 +438,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
                 plot_labels = [key for key in df_r.keys() if r+key.replace(input_method, label_out) in list(output.keys())]  # method vars
                 for plot in plot_labels: 
                     if not plot.endswith(input_method): continue
+                    
                     output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
                 
 def plot1d(h, ax, label, color='default', lw=1):
@@ -899,42 +900,48 @@ def rebin_piecewise(h_in, bins, histtype='hist'):
         h : histogram
         bins: list of bins as real numbers
         histtype: one of allowed_histtypes to return
-        
+
     Returns:
         h_out: a histogram of type 'histtype', rebinned according to desired bins
     """
-    
+
     # only 1D hists supported for now
     if len(h_in.shape) != 1:
         raise Exception("Only 1D hists supported for now")
-    
+
     # only hist and bh supported
     allowed_histtypes = ['hist', 'bh']
     if histtype not in allowed_histtypes:
         raise Exception("histtype in not in allowed_histtypes")
-    
+
     # check that the bins are real numbers
     if any([x.imag != 0 for x in bins]):
         raise Exception("Only pass real-valued bins")
-    
+
     # split the histogram by the bins
     # and for each bin, calculate total amount of events and variance
     z_vals, z_vars = [], []
     for iBin in range(len(bins)-1): 
-        bin_lo = bins[iBin]*1.0j
-        bin_hi = bins[iBin+1]*1.0j
-        h_fragment = h_in[bin_lo:bin_hi]
+
+        if histtype == 'hist':
+            bin_lo = bins[iBin]*1.0j
+            bin_hi = bins[iBin+1]*1.0j            
+        elif histtype == 'bh':
+            bin_lo = bh.loc(bins[iBin])
+            bin_hi = bh.loc(bins[iBin+1])
+
+        h_fragment = h_in[bin_lo:bin_hi]    
         z_vals.append(h_fragment.sum().value)
         z_vars.append(h_fragment.sum().variance)
-        
+
     # fill the histograms
     if histtype == 'hist':
         h_out = hist.Hist(hist.axis.Variable(bins), storage=hist.storage.Weight())
-        h_out[:] = np.stack([z_vals, np.sqrt(z_vars)], axis=-1)
-        
+        h_out[:] = np.stack([z_vals, z_vars], axis=-1)
+
     elif histtype == 'bh':
         h_out = bh.Histogram(bh.axis.Variable(bins), storage=bh.storage.Weight())
-        h_out[:] = np.stack([z_vals, np.sqrt(z_vars)], axis=-1)
+        h_out[:] = np.stack([z_vals, z_vars], axis=-1)
 
     return h_out
 
