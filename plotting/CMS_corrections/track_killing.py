@@ -18,7 +18,7 @@ def generate_up_histograms(output_labels, plots):
         if 'track_down' in label_out: continue
 
         new_output = {}
-        for hist_name in output.keys():
+        for hist_name in plots.keys():
             if not hist_name.endswith('_track_down'): continue
             hDown = plots[hist_name].copy()
             hNom = plots[hist_name.replace('_track_down','')].copy()
