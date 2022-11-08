@@ -77,3 +77,23 @@ python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --scout=1 --input=file
 ```
  
 All other commands listed above in the offline section will work similarly.
+
+### Example Workflow
+Explained here is an example workflow. Each of these scripts should have more descriptions in the README's throughout this repo, but this guide should better explain how they fit together. 
+  
+**Produce NTuples**
+
+  1. Find datasets to run (specified in a .txt file in `filelist/`), and lists of the .root files for the datasets (usually in `/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00` as specified in `kraken_run.py`).
+2. Run `kraken_run.py` to submit these jobs to HTCondor. Make sure to set the correct output and log directories in the python script.
+3. These usually take a couple hours, which you can monitor using HTCondor. We don't expect perfect efficiency here, as normal in batch submission systems, but 80-90% is typical: if it's much less, the errors need to be investigated using the logs produced (found in `logdir`, specified in step 2). You can check how many of them have successfully finished using `python monitor.py -r=0`. Once a good amount of them have finished running (succesfully or not), usually after a couple hours, kill the currently running jobs, and resubmit using `python monitor.py -r=1`.
+4. Repeat step 3. until you have achieved desired completion rate (suggested: >95% for MC, >99% for data).
+  
+**(Optional) Merge and Move NTuples**
+
+5. Merge the hdf5 files for faster plotting, see section above.
+6. Depending the way you have set it up, the output is on a remote filesystem, so move the hdf5 files (and/or the merged ones if you went through step 5), to a local filesystem for faster reading.
+  
+**Plotting**
+
+7. Run `make_plots.py` (if needed, with `multithread.py`) over all the desired datasets to produce histograms
+8. Use plotting notebooks like `plot.ipynb` to display them.
