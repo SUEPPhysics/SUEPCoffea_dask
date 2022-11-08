@@ -35,3 +35,12 @@ def pileup_weight(era):
     weights_minus = np.divide(norm_data_minus, hist_MC[0], out=np.ones_like(norm_data_minus), where=hist_MC[0]!=0)
     
     return weights, weights_plus, weights_minus
+
+def get_pileup_weights(df, puweights, puweights_up, puweights_down)
+    Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
+    if "puweights_up" in sys:
+         pu = puweights_up[Pileup_nTrueInt]
+    elif "puweights_down" in sys:
+         pu = puweights_down[Pileup_nTrueInt]
+    else:
+         pu = puweights[Pileup_nTrueInt]

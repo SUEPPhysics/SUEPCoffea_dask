@@ -5,7 +5,6 @@ import numpy as np
 import argparse
 import getpass
 import uproot
-import getpass
 import pickle
 import json
 from tqdm import tqdm
@@ -14,11 +13,12 @@ from collections import defaultdict
 from copy import deepcopy
 
 #Import our own functions
-import pileup_weight
-import triggerSF
-import higgs_reweight
-from plot_utils import *
-
+from CMS_corrections import pileup_weight
+from CMS_corrections import triggerSF
+from CMS_corrections import higgs_reweight
+from CMS_corrections import track_killing
+from CMS_corrections import GNN_syst
+import plot_utils
 
 parser = argparse.ArgumentParser(description='Famous Submitter')
 # Name of the output file tag
@@ -93,7 +93,9 @@ config = {
         'SR' : [['SUEP_S1_GNN', '>=', 0.5], ['single_l5_bPfcand_S1_SUEPtracks_GNN', '>=', 0.5]],
         'SR2': [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]], # both are blinded
         'selections' : [['ht', '>', 1200], ['ntracks','>', 40]],
-        'models': ['single_l5_bPfcand_S1_SUEPtracks']
+        'models': ['single_l5_bPfcand_S1_SUEPtracks'],
+        'fGNNsyst' : '../data/GNN/GNNsyst.json',
+        'GNNsyst_bins' : [0.0j, 0.25j, 0.5j, 0.75j, 1.0j] 
     },
     
     'GNNInverted' : {
@@ -343,12 +345,7 @@ else:
     
 # get cross section
 xsection = 1.0
-if options.isMC: xsection = getXSection(options.dataset, options.era, SUEP=False)
-
-# event weights
-puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
-trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
-#Higgs pT reweighting is implemented later when df is defined
+if options.isMC: xsection = plot_utils.getXSection(options.dataset, options.era, SUEP=False)
 
 # custom per region weights
 scaling_weights = None
@@ -367,37 +364,20 @@ output = {"labels":[]}
 
 # systematics
 if options.isMC and options.doSyst:
-    
-    new_config = {}
-        
+            
     # track systematics
     # we need to use the track_down version of the data,
     # which has the randomly deleted tracks (see SUEPCoffea.py)
     # so we need to modify the config to use the _track_down vars
-    for label_out, config_out in config.items():
-        label_out_new = label_out+"_track_down"
-        new_config[label_out_new] = deepcopy(config[label_out])
-        new_config[label_out_new]['input_method'] += "_track_down"
-        new_config[label_out_new]['xvar'] += "_track_down"
-        new_config[label_out_new]['yvar'] += "_track_down"
-        for iSel in range(len(new_config[label_out_new]['SR'])):
-            new_config[label_out_new]['SR'][iSel][0] += "_track_down"
-        for iSel in range(len(new_config[label_out_new]['selections'])):
-            if new_config[label_out_new]['selections'][iSel][0] in ['ht', 'ngood_ak4jets']: continue
-            new_config[label_out_new]['selections'][iSel][0] += "_track_down"
+    new_config_track_killing = plot_utils.get_track_killing_config(config)
     
     # jet systematics
     # here, we just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
     jet_corrections = ['JEC', 'JEC_JER_up', 'JEC_JER_down', 'JEC_JES_up', 'JEC_JES_down']
-    for sys in jet_corrections: 
-        for label_out, config_out in config.items():
-            label_out_new = label_out+"_"+sys
-            new_config[label_out_new] = deepcopy(config[label_out])
-            for iSel in range(len(new_config[label_out_new]['selections'])):
-                if 'ht' == new_config[label_out_new]['selections'][iSel][0]:
-                    new_config[label_out_new]['selections'][iSel][0] += "_" + sys 
+    new_config_jet_corrections = plot_utils.get_jet_corrections_config(config)
 
-    config = new_config | config
+    config = config | new_config_jet_corrections
+    config = config | new_config_track_killing
     
 ### Plotting loop #######################################################################
 for ifile in tqdm(files):
@@ -406,6 +386,7 @@ for ifile in tqdm(files):
     # ---- Load file
     #####################################################################################
 
+    # get the file
     if options.xrootd:
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
         xrd_file = redirector + ifile
@@ -432,77 +413,56 @@ for ifile in tqdm(files):
     # and optionally (options.weights) scaling weights that are derived to force
     # MC to agree with data in one variable. Usage:
     # df['event_weight'] *= another event weight, etc
-    # ---- Make plots
-    #####################################################################################
-    event_weight = np.ones(df.shape[0])
-    higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down = higgs_reweight.higgs_reweight(df['SUEP_genPt'])
-    if options.doSyst:
+    #####################################################################################    
+    if options.isMC and options.doSyst:
+        puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
+        trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
+        higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down = higgs_reweight.higgs_reweight(df['SUEP_genPt'])
         sys_loop = ["", "puweights_up", "puweights_down", "trigSF_up", "trigSF_down", 
                     "PSWeight_ISR_up", "PSWeight_ISR_down", "PSWeight_FSR_up", "PSWeight_FSR_down",
                    "higgs_weights_up", "higgs_weights_down"]
-    else:
-        sys_loop = [""]
+    else: sys_loop = [""]
+    
     for sys in sys_loop:
         # prepare new event weight
-        df['event_weight'] = event_weight
+        df['event_weight'] = np.ones(df.shape[0])
+       
+        if options.isMC == 1:
+            
+            if options.scouting != 1:
+            
+                 # 1) pileup weights
+                pu = pileup_weight.get_pileup_weights(df, puweights, puweights_up, puweights_down)
+                df['event_weight'] *= pu
 
-        # 1) pileup weights
-        if options.isMC == 1 and options.scouting != 1:
-            Pileup_nTrueInt = np.array(df['Pileup_nTrueInt']).astype(int)
-            if "puweights_up" in sys:
-                 pu = puweights_up[Pileup_nTrueInt]
-            elif "puweights_down" in sys:
-                 pu = puweights_down[Pileup_nTrueInt]
-            else:
-                 pu = puweights[Pileup_nTrueInt]
-            df['event_weight'] *= pu
+                # 2) TriggerSF weights
+                trigSF = triggerSF.get_trigSF_weight(df, trig_bins, trig_weights, trig_weights_up, trig_weights_down)
+                df['event_weight'] *= trigSF   
 
-        # 2) TriggerSF weights
-        if options.isMC == 1 and options.scouting != 1:
-            ht = np.array(df['ht']).astype(int)
-            ht_bin = np.digitize(ht,trig_bins)-1 #digitize the values to bins
-            ht_bin = np.clip(ht_bin,0,49)        #Set overlflow to last SF
-            if "trigSF_up" in sys:
-                 trigSF = trig_weights_up[ht_bin]
-            elif "trigSF_down" in sys:
-                 trigSF = trig_weights_down[ht_bin]
-            else:
-                 trigSF = trig_weights[ht_bin]
-            df['event_weight'] *= trigSF   
-        
-        # 3) PS weights
-        if options.isMC == 1 and options.scouting != 1 and ("PSWeight" in sys):
-            if sys in df.keys():
-                df['event_weight'] *= df[sys]
+                # 3) PS weights
+                if "PSWeight" in sys and sys in df.keys(): 
+                    df['event_weight'] *= df[sys]
 
-        # 4) Higgs_pt weights
-        if options.isMC == 1 and 'SUEP-m125' in options.dataset:
-            gen_pt = np.array(df['SUEP_genPt']).astype(int)
-            gen_bin = np.digitize(gen_pt,higgs_bins)-1
-            if "higgs_weights_up" in sys:
-                 higgs_weight = higgs_weights_up[gen_bin]
-            elif "higgs_weights_down" in sys:
-                 higgs_weight = higgs_weights_up[gen_bin]
-            else:
-                 higgs_weight = higgs_weights[gen_bin]
-            df['event_weight'] *= higgs_weight
+            # 4) Higgs_pt weights
+            if'SUEP-m125' in options.dataset:
+                higgs_weight = higgs_reweight.get_higgs_weight(df, higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down)
+                df['event_weight'] *= higgs_weight
 
-
-        # 5) scaling weights
-        # N.B.: these aren't part of the systematics, just an optional scaling
-        if options.isMC == 1 and scaling_weights is not None:
-            df = apply_scaling_weights(df.copy(), scaling_weights,
-                config['Cluster']['x_var_regions'],
-                config['Cluster']['x_var_regions'],
-                regions = "ABCDEFGHI",
-                x_var = 'SUEP_S1_CL',
-                y_var = 'SUEP_nconst_CL',
-                z_var = 'ht')
+            # 5) scaling weights
+            # N.B.: these aren't part of the systematics, just an optional scaling
+            if scaling_weights is not None:
+                df = apply_scaling_weights(df.copy(), scaling_weights,
+                    config['Cluster']['x_var_regions'],
+                    config['Cluster']['x_var_regions'],
+                    regions = "ABCDEFGHI",
+                    x_var = 'SUEP_S1_CL',
+                    y_var = 'SUEP_nconst_CL',
+                    z_var = 'ht')
 
         for label_out, config_out in config.items():
-            if 'track_down' in label_out and sys != "": continue
+            if 'track_down' in label_out and sys != "": continue # don't run other systematics when doing track killing systematic
             if options.isMC and sys != "":
-                if any([j in label_out for j in jet_corrections]): continue
+                if any([j in label_out for j in jet_corrections]): continue # don't run other systematics when doing jet systematics
             output.update(create_output_file(label_out, config_out, sys))
             output = plotter(df.copy(), output, config_out, label_out, sys, isMC=options.isMC, blind=options.blind)
         
@@ -513,71 +473,24 @@ for ifile in tqdm(files):
     # remove file at the end of loop   
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
-print("Number of files that failed to be read:", nfailed)
+logging.warning("Number of files that failed to be read:", nfailed)
 ### End plotting loop ###################################################################
 
-# do the tracks UP systematic
-if options.doSyst:
-    sys = 'track_up'
-    for label_out, config_out in config.items():
-        if 'track_down' in label_out: continue
-
-        new_output = {}
-        for hist_name in output.keys():
-            if not hist_name.endswith('_track_down'): continue
-            hDown = output[hist_name].copy()
-            hNom = output[hist_name.replace('_track_down','')].copy()
-            hUp = get_tracks_up(hNom, hDown)
-            new_output.update({hist_name.replace('_track_down','_track_up'): hUp})
-        output = new_output | output
-        
-# do the GNN systematic
-if options.doSyst and options.doInf:
-    
-    # load in the json file containing the corrections for each year/model
-    fGNNsyst = '../data/GNN/GNNsyst.json'
-    with open(fGNNsyst, 'r') as f:
-        GNNsyst = json.load(f)
-        
-    # complex numbers for hist
-    bins = [0.0j, 0.25j, 0.5j, 0.75j, 1.0j] 
-    for model in config['GNN']['models']:
-        
-        # load the correct model for each year
-        yearSyst = GNNsyst.get(str(options.era))
-        if yearSyst is None:
-            logging.warning("--- {} was not found in file {}; systematic has not been applied".format(options.era, fGNNsyst))
-            continue
-        scales = yearSyst.get(model)
-        if scales is None:
-            logging.warning("--- {} was not found in file {}; systematic has not been applied".format(model, fGNNsyst))
-            continue
-                               
-        # scale them
-        GNN_syst_plots = {}
-        for plot in output.keys():
-            # apply only to GNN
-            if not plot.endswith("GNN"): continue
-            
-            if model in plot and '2D' not in plot:
-                GNN_syst_plots[plot+"_GNN_down_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1-s for s in scales])
-                GNN_syst_plots[plot+"_GNN_up_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1+s for s in scales])
-            if model in plot and '2D' in plot:
-                var1 = plot.split("_vs_")[0]
-                var2 = plot.split("_vs_")[1]
-                if model in var1: dim='x'
-                elif model in var2: dim='y'
-                GNN_syst_plots[plot+"_GNN_down_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1-s for s in scales],dim=dim)
-                GNN_syst_plots[plot+"_GNN_up_GNN"] = apply_binwise_scaling(output[plot].copy(), bins, [1+s for s in scales],dim=dim)
-        output.update(GNN_syst_plots)
-        
-# apply normalization
+# not needed anymore
 output.pop("labels")
+
+# do the systematics
+if options.isMC and options.doSyst:
+    # do the tracks UP systematic
+    output = track_killing.generate_up_histograms(config.keys(), output)
+        
+    if options.doInf:
+        # do the GNN systematic
+        GNN_syst.apply_GNN_syst(outputs, config['GNN']['fGNNsyst'], config['GNN']['models'], config['GNN']['GNNsyst_bins'], options.era, out_label='GNN')
+
+# apply normalization
 if options.isMC:
-    if total_gensumweight > 0.0:
-        for plot in list(output.keys()): output[plot] = output[plot]*xsection/total_gensumweight
-    else:
-        print("Total gensumweight is 0")
+    outputs = plot_utils.apply_normalization(outputs, xsection, total_gensumweight)
         
 #Save to pickle
 pickle.dump(output, open(outFile + '.pkl', "wb"))

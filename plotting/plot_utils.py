@@ -13,6 +13,7 @@ from sympy import symbols, diff, sqrt
 import sympy
 import json
 import hist
+from copy import deepcopy
 
 default_colors = {
     'QCD': 'midnightblue',
@@ -234,24 +235,6 @@ def getXSection(dataset, year, SUEP=False):
                 return 1
     return xsection
 
-def get_tracks_up(nom, down):
-    """
-    Use envelope method to define the
-    """
-    nom_out = nom.to_numpy()
-    down_out = down.to_numpy()
-    if len(nom_out) == 2:
-        variation = nom_out[0] - down_out[0]
-        h = hist.Hist(hist.axis.Variable(nom_out[1]), storage=bh.storage.Weight())
-        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
-        h[:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
-    elif len(nom_out) == 3:
-        variation = nom_out[0] - down_out[0]
-        h = hist.Hist(hist.axis.Variable(nom_out[1]), hist.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
-        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
-        h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
-    return h
-
 def apply_binwise_scaling(h_in, bins, scales, dim='x'):
     """
     Apply scales to bins of a particular histogram.
@@ -262,7 +245,7 @@ def apply_binwise_scaling(h_in, bins, scales, dim='x'):
         for iBin in range(len(bins)-1): h_fragments.append(h_in[bins[iBin]:bins[iBin+1]] * scales[iBin])
         h = hist.Hist(hist.axis.Variable(h_npy[1]), storage=bh.storage.Weight())
         new_z = np.concatenate([f.to_numpy()[0] for f in h_fragments])
-        h[:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
+        h[:] = np.stack([new_z, new_z], axis=-1)
     elif len(h_npy) == 3:
         h_fragments = []
         for iBin in range(len(bins)-1):
@@ -271,7 +254,7 @@ def apply_binwise_scaling(h_in, bins, scales, dim='x'):
         h = hist.Hist(hist.axis.Variable(h_npy[1]), hist.axis.Variable(h_npy[2]), storage=bh.storage.Weight())
         if dim == 'x': new_z = np.concatenate([f.to_numpy()[0] for f in h_fragments])
         if dim == 'y': new_z = np.hstack([f.to_numpy()[0] for f in h_fragments])
-        h[:,:] = np.stack([new_z, np.sqrt(new_z)], axis=-1)
+        h[:,:] = np.stack([new_z, new_z], axis=-1)
     return h
 
 def make_selection(df, variable, operator, value, apply=True):
@@ -440,7 +423,39 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
                     if not plot.endswith(input_method): continue
                     
                     output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
-                
+
+def apply_normalization(plots, xsection, total_gensumweight):
+    if total_gensumweight > 0.0:
+        for plot in list(output.keys()): plots[plot] = plots[plot]*xsection/total_gensumweight
+    else:
+        logging.warning("Total gensumweight is 0")
+    return plots
+
+def get_track_killing_config(config):
+    for label_out, config_out in config.items():
+        label_out_new = label_out+"_track_down"
+        new_config[label_out_new] = deepcopy(config[label_out])
+        new_config[label_out_new]['input_method'] += "_track_down"
+        new_config[label_out_new]['xvar'] += "_track_down"
+        new_config[label_out_new]['yvar'] += "_track_down"
+        for iSel in range(len(new_config[label_out_new]['SR'])):
+            new_config[label_out_new]['SR'][iSel][0] += "_track_down"
+        for iSel in range(len(new_config[label_out_new]['selections'])):
+            if new_config[label_out_new]['selections'][iSel][0] in ['ht', 'ngood_ak4jets']: continue
+            new_config[label_out_new]['selections'][iSel][0] += "_track_down"
+        
+    return new_config
+
+def get_jet_corrections_config(config):
+    for sys in jet_corrections: 
+        for label_out, config_out in config.items():
+            label_out_new = label_out+"_"+sys
+            new_config[label_out_new] = deepcopy(config[label_out])
+            for iSel in range(len(new_config[label_out_new]['selections'])):
+                if 'ht' == new_config[label_out_new]['selections'][iSel][0]:
+                    new_config[label_out_new]['selections'][iSel][0] += "_" + sys 
+    return new_config
+
 def plot1d(h, ax, label, color='default', lw=1):
     
     if color == 'default': color = default_colors[label]
