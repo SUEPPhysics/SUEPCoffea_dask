@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 def higgs_reweight(gen_pt):
     #numbers taken from table 1 here: https://cds.cern.ch/record/2669113/files/LHCHXSWG-2019-002.pdf
     bins = np.array([   0,  400,  450,  500,  550,  600,  650,  700,  750,  800,  850,
-            900,  950, 1000, 1050, 1100, 1150, 1200, 1250, 1500])
+            900,  950, 1000, 1050, 1100, 1150, 1200, 1250, 15000])
     Higgs_factor = np.array([1.25, 1.25, 1.25, 1.25, 1.25, 1.24, 1.24, 1.24, 1.24, 1.24, 1.24,
            1.24, 1.24, 1.24, 1.24, 1.24, 1.24, 1.24, 1.24])
     up_factor   = np.array([1.092, 1.092, 1.089, 1.088, 1.088, 1.087, 1.087, 1.087, 1.087,
