@@ -27,13 +27,13 @@ def higgs_reweight(gen_pt):
     ups = ups * factor
     downs = downs * factor
     
-    weights = freqs / vals[0]
-    weights_up = ups / vals[0]
-    weights_down = downs / vals[0]
+    weights = np.divide(freqs, vals[0], out=np.ones_like(freqs), where=vals[0]!=0)
+    weights_up = np.divide(ups, vals[0], out=np.ones_like(ups), where=vals[0]!=0)
+    weights_down = np.divide(downs, vals[0], out=np.ones_like(downs), where=vals[0]!=0)
     
     return bins, weights, weights_up, weights_down
 
-def get_higgs_weight(df, higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down):
+def get_higgs_weight(df, sys, higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down):
     gen_pt = np.array(df['SUEP_genPt']).astype(int)
     gen_bin = np.digitize(gen_pt,higgs_bins)-1
     if "higgs_weights_up" in sys:
