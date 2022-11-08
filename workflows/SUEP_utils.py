@@ -314,7 +314,7 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
     clusters_pTsorted = ak_inclusive_cluster[highpt_jet]     
 
     # at least 2 tracks in SUEP and ISR
-    singletrackCut = (ak.num(clusters_pTsorted[:,1])>1) & (ak.num(clusters_pTsorted[:,1])>1)   
+    singletrackCut = (ak.num(clusters_pTsorted[:,0])>1) & (ak.num(clusters_pTsorted[:,1])>1)   
     jets_pTsorted = jets_pTsorted[singletrackCut]          
     clusters_pTsorted = clusters_pTsorted[singletrackCut]
     tracks = tracks[singletrackCut]
