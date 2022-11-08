@@ -16,6 +16,7 @@ from copy import deepcopy
 #Import our own functions
 import pileup_weight
 import triggerSF
+import higgs_reweight
 from plot_utils import *
 
 
@@ -38,6 +39,7 @@ parser.add_argument('--isMC', type=int, help="Is this MC or data", required=True
 parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
+parser.add_argument('--doInf', type=int, default=0, help="")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
 parser.add_argument('--weights', type=str, default="None", help="Pass the filename of the weights, e.g. --weights weights.npy")
 options = parser.parse_args()
@@ -175,15 +177,11 @@ def create_output_file(label, abcd, sys):
                 r+"SUEP_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"SUEP_pt_"+label, label=r"SUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_delta_pt_genPt_"+label : Hist.new.Reg(400, -2000, 2000, name=r+"SUEP_delta_pt_genPt_"+label, label="SUEP $p_T$ - genSUEP $p_T$ [GeV]").Weight(),
                 r+"SUEP_pt_avg_"+label : Hist.new.Reg(200, 0, 500, name=r+"SUEP_pt_avg_"+label, label=r"SUEP Components $p_T$ Avg.").Weight(),
-                r+"SUEP_pt_avg_b_"+label : Hist.new.Reg(50, 0, 50, name=r+"SUEP_pt_avg_b_"+label, label=r"SUEP Components $p_T$ avg (Boosted Frame)").Weight(),
                 r+"SUEP_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"SUEP_eta_"+label, label=r"SUEP $\eta$").Weight(),
                 r+"SUEP_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"SUEP_phi_"+label, label=r"SUEP $\phi$").Weight(),
                 r+"SUEP_mass_"+label : Hist.new.Reg(150, 0, 2000, name=r+"SUEP_mass_"+label, label="SUEP Mass [GeV]").Weight(),
                 r+"SUEP_delta_mass_genMass_"+label : Hist.new.Reg(400, -2000, 2000, name=r+"SUEP_delta_mass_genMass_"+label, label="SUEP Mass - genSUEP Mass [GeV]").Weight(),
                 r+"SUEP_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"SUEP_S1_"+label, label='$Sph_1$').Weight(),
-                r+"SUEP_girth": Hist.new.Reg(50, 0, 1.0, name=r+"SUEP_girth_"+label, label=r"SUEP Girth").Weight(),
-                r+"SUEP_rho0_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho0_"+label, label=r"SUEP $\rho_0$").Weight(),
-                r+"SUEP_rho1_"+label : Hist.new.Reg(50, 0, 20, name=r+"SUEP_rho1_"+label, label=r"SUEP $\rho_1$").Weight(),
             })
     
     ###########################################################################################################################
@@ -201,18 +199,14 @@ def create_output_file(label, abcd, sys):
                 r+"ISR_nconst_"+label : Hist.new.Reg(199, 0, 500, name=r+"ISR_nconst_"+label, label="# Tracks in ISR").Weight(),
                 r+"ISR_pt_"+label : Hist.new.Reg(100, 0, 2000, name=r+"ISR_pt_"+label, label=r"ISR $p_T$ [GeV]").Weight(),
                 r+"ISR_pt_avg_"+label : Hist.new.Reg(500, 0, 500, name=r+"ISR_pt_avg_"+label, label=r"ISR Components $p_T$ Avg.").Weight(),
-                r+"ISR_pt_avg_b_"+label : Hist.new.Reg(100, 0, 100, name=r+"ISR_pt_avg_b_"+label, label=r"ISR Components $p_T$ avg (Boosted Frame)").Weight(),
                 r+"ISR_eta_"+label : Hist.new.Reg(100,-5,5, name=r+"ISR_eta_"+label, label=r"ISR $\eta$").Weight(),
                 r+"ISR_phi_"+label : Hist.new.Reg(100,-6.5,6.5, name=r+"ISR_phi_"+label, label=r"ISR $\phi$").Weight(),
                 r+"ISR_mass_"+label : Hist.new.Reg(150, 0, 4000, name=r+"ISR_mass_"+label, label="ISR Mass [GeV]").Weight(),
                 r+"ISR_S1_"+label : Hist.new.Reg(100, 0, 1, name=r+"ISR_S1_"+label, label='$Sph_1$').Weight(),
-                r+"ISR_girth": Hist.new.Reg(50, 0, 1.0, name=r+"ISR_girth_"+label, label=r"ISR Girth").Weight(),
-                r+"ISR_rho0_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho0_"+label, label=r"ISR $\rho_0$").Weight(),
-                r+"ISR_rho1_"+label : Hist.new.Reg(100, 0, 20, name=r+"ISR_rho1_"+label, label=r"ISR $\rho_1$").Weight(),
             })
     
     ###########################################################################################################################
-    if label == 'GNN':
+    if label == 'GNN' and options.doInf:
         
         # 2D histograms
         for model in abcd['models']:
@@ -232,7 +226,7 @@ def create_output_file(label, abcd, sys):
                 output.update({r+model+"_"+label : Hist.new.Reg(100, 0, 1, name=r+model+"_"+label, label="GNN Output").Weight()})
             
     ###########################################################################################################################
-    if label == 'GNNInverted':
+    if label == 'GNNInverted' and options.doInf:
         
         # 2D histograms
         for model in abcd['models']:
@@ -354,6 +348,7 @@ if options.isMC: xsection = getXSection(options.dataset, options.era, SUEP=False
 # event weights
 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(options.era)   
 trig_bins, trig_weights, trig_weights_up, trig_weights_down = triggerSF.triggerSF(options.era)
+#Higgs pT reweighting is implemented later when df is defined
 
 # custom per region weights
 scaling_weights = None
@@ -440,9 +435,11 @@ for ifile in tqdm(files):
     # ---- Make plots
     #####################################################################################
     event_weight = np.ones(df.shape[0])
+    higgs_bins, higgs_weights, higgs_weights_up, higgs_weights_down = higgs_reweight.higgs_reweight(df['SUEP_genPt'])
     if options.doSyst:
         sys_loop = ["", "puweights_up", "puweights_down", "trigSF_up", "trigSF_down", 
-                    "PSWeight_ISR_up", "PSWeight_ISR_down", "PSWeight_FSR_up", "PSWeight_FSR_down"]
+                    "PSWeight_ISR_up", "PSWeight_ISR_down", "PSWeight_FSR_up", "PSWeight_FSR_down",
+                   "higgs_weights_up", "higgs_weights_down"]
     else:
         sys_loop = [""]
     for sys in sys_loop:
@@ -478,7 +475,20 @@ for ifile in tqdm(files):
             if sys in df.keys():
                 df['event_weight'] *= df[sys]
 
-        # 4) scaling weights
+        # 4) Higgs_pt weights
+        if options.isMC == 1 and 'SUEP-m125' in options.dataset:
+            gen_pt = np.array(df['SUEP_genPt']).astype(int)
+            gen_bin = np.digitize(gen_pt,higgs_bins)-1
+            if "higgs_weights_up" in sys:
+                 higgs_weight = higgs_weights_up[gen_bin]
+            elif "higgs_weights_down" in sys:
+                 higgs_weight = higgs_weights_up[gen_bin]
+            else:
+                 higgs_weight = higgs_weights[gen_bin]
+            df['event_weight'] *= higgs_weight
+
+
+        # 5) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling
         if options.isMC == 1 and scaling_weights is not None:
             df = apply_scaling_weights(df.copy(), scaling_weights,
@@ -522,7 +532,7 @@ if options.doSyst:
         output = new_output | output
         
 # do the GNN systematic
-if options.doSyst:
+if options.doSyst and options.doInf:
     
     # load in the json file containing the corrections for each year/model
     fGNNsyst = '../data/GNN/GNNsyst.json'
