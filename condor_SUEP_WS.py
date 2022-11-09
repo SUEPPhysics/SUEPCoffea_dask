@@ -4,10 +4,8 @@ import os
 # Import coffea specific features
 from coffea.processor import futures_executor, run_uproot_job
 
-from workflows.merger import *
-
 # SUEP Repo Specific
-from workflows.SUEP_coffea import *
+from workflows import SUEP_coffea, merger
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -25,7 +23,7 @@ out_dir = os.getcwd()
 modules_era = []
 
 modules_era.append(
-    SUEP_cluster(
+    SUEP_coffea.SUEP_cluster(
         isMC=options.isMC,
         era=int(options.era),
         scouting=0,
@@ -53,4 +51,4 @@ for instance in modules_era:
         chunksize=100000,
     )
 
-merge(options)
+merger.merge(options)

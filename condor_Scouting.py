@@ -4,11 +4,8 @@ import os
 # Import coffea specific features
 from coffea.processor import futures_executor, run_uproot_job
 
-from workflows.merger import *
-
 # SUEP Repo Specific
-from workflows.root_rewrite import *
-from workflows.SUEP_coffea import *
+from workflows import SUEP_coffea, merger, root_rewrite
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -25,10 +22,10 @@ options = parser.parse_args()
 out_dir = os.getcwd()
 modules_era = []
 
-rewrite(options.infile)
+root_rewrite.rewrite(options.infile)
 
 modules_era.append(
-    SUEP_cluster(
+    SUEP_coffea.SUEP_cluster(
         isMC=options.isMC,
         era=int(options.era),
         scouting=1,
@@ -58,4 +55,4 @@ for instance in modules_era:
     )
 
 os.system("rm rewrite.root")
-merge(options)
+merger.merge(options)

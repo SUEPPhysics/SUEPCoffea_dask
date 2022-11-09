@@ -5,8 +5,6 @@ import os
 import coffea
 from coffea.processor import futures_executor, run_uproot_job
 
-from workflows.merger import *
-
 # SUEP Repo Specific
 from workflows.SUEP_coffea_cutflow import cutflow_cluster
 
