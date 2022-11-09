@@ -1,4 +1,6 @@
+import numpy as np
 import hist
+import boost_histogram as bh
 
 def generate_up_histograms(output_labels, plots):
     """
@@ -40,11 +42,11 @@ def make_up_symmetric_variation(h_nom, h_down):
     if len(h_nom_npy) == 2:
         variation = h_nom_npy[0] - h_down_npy[0]
         h_out = hist.Hist(hist.axis.Variable(h_nom_npy[1]), storage=bh.storage.Weight())
-        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
+        new_z = np.where(h_nom_npy[0] + variation > 0, h_nom_npy[0] + variation, 0)
         h_out[:] = np.stack([new_z, new_z], axis=-1)
-    elif len(nom_out) == 3:
-        variation = nom_out[0] - h_down_npy[0]
-        h_out = hist.Hist(hist.axis.Variable(nom_out[1]), hist.axis.Variable(nom_out[2]), storage=bh.storage.Weight())
-        new_z = np.where(nom_out[0] + variation > 0, nom_out[0] + variation, 0)
+    elif len(h_nom_npy) == 3:
+        variation = h_nom_npy[0] - h_down_npy[0]
+        h_out = hist.Hist(hist.axis.Variable(h_nom_npy[1]), hist.axis.Variable(h_nom_npy[2]), storage=bh.storage.Weight())
+        new_z = np.where(h_nom_npy[0] + variation > 0, h_nom_npy[0] + variation, 0)
         h_out[:,:] = np.stack([new_z, new_z], axis=-1)
-    return h
+    return h_out
