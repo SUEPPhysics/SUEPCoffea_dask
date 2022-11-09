@@ -123,7 +123,7 @@ python runner.py --wf SUEP --executor dask/lxplus --isMC=1 --era=2018
 
 The fastjet package is already included in the relevant singularity image and it's not required to install it in the local environment
 
-Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instuctions see
+Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instructions see
 https://coffea-casa.readthedocs.io/en/latest/cc_user.html
 
 After setting up and checking out this repository (either via the online terminal or git widget utility run with

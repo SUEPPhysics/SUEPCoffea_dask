@@ -191,7 +191,7 @@ def h5load(ifile, label):
 
 def check_proxy(time_min=100):
     """
-    Checks for existance of proxy with at least time_min
+    Checks for existence of proxy with at least time_min
     left on it.
     If it's inactive or below time_min, it will regenerate
     it with 140 hours.

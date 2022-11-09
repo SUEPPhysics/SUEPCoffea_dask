@@ -6,9 +6,8 @@ import time
 
 import numpy as np
 import uproot
-from coffea import hist, processor
-from coffea.nanoevents import NanoEventsFactory
-from coffea.util import load, save
+from coffea import processor
+from coffea.util import save
 
 
 def validate(file):
@@ -186,7 +185,7 @@ if __name__ == "__main__":
             sample_dict = dict([(args.only, sample_dict[args.only])])
         if "*" in args.only:  # wildcard for datasets
             _new_dict = {}
-            print("Will only proces the following datasets:")
+            print("Will only process the following datasets:")
             for k, v in sample_dict.items():
                 if k.lstrip("/").startswith(args.only.rstrip("*")):
                     print("    ", k)
@@ -306,8 +305,7 @@ if __name__ == "__main__":
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
-        from parsl.providers import (CondorProvider, LocalProvider,
-                                     SlurmProvider)
+        from parsl.providers import CondorProvider, LocalProvider, SlurmProvider
 
         if "slurm" in args.executor:
             htex_config = Config(

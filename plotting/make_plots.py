@@ -12,6 +12,7 @@ from copy import deepcopy
 import higgs_reweight
 import numpy as np
 import pandas as pd
+
 # Import our own functions
 import pileup_weight
 import triggerSF
@@ -49,7 +50,7 @@ parser.add_argument(
 )
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument("--merged", type=int, default=1, help="Use merged files")
-# some info about the files, highly encouraged to specify everytime
+# some info about the files, highly encouraged to specify every time
 parser.add_argument("-e", "--era", type=int, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
@@ -907,7 +908,7 @@ for ifile in tqdm(files):
         if options.isMC == 1 and options.scouting != 1:
             ht = np.array(df["ht"]).astype(int)
             ht_bin = np.digitize(ht, trig_bins) - 1  # digitize the values to bins
-            ht_bin = np.clip(ht_bin, 0, 49)  # Set overlflow to last SF
+            ht_bin = np.clip(ht_bin, 0, 49)  # Set overflow to last SF
             if "trigSF_up" in sys:
                 trigSF = trig_weights_up[ht_bin]
             elif "trigSF_down" in sys:

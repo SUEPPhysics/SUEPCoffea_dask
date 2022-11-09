@@ -4,8 +4,6 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
-import time
 
 from plotting.plot_utils import check_proxy
 
@@ -131,7 +129,7 @@ def main():
     redirector = "root://submit50.mit.edu/"
 
     # define which file you want to run, the output file name and extension that it produces
-    # these will be transfered back to outdir/outdir_condor
+    # these will be transferred back to outdir/outdir_condor
     if options.scout == 1:
         condor_file = "condor_Scouting.py"
         outfile = "out"

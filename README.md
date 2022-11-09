@@ -27,7 +27,7 @@ If you do not have the requirements set up then you can also run this through th
 singularity shell -B ${PWD}:/work /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 ```
 
-If there are files in other folders that are necessary (The folder with your NTuples for example) you can bind additional folders like with the following which will allow one to access the files in the /mnt directory:
+If there are files in other folders that are necessary (The folder with your NTuples for example) you can bind additional folders like with the following which will allow one to access the files in the `/mnt` directory:
 
 ```bash
 export SINGULARITY_BIND="/mnt"
@@ -35,35 +35,35 @@ export SINGULARITY_BIND="/mnt"
 
 ## Manually control condor jobs rather than Dask
 
-The kraken_run.py file which will submit Condor jobs for all the files in specified datasets. This submission currenty uses xrdfs to find the files stored on Kraken. An example submission can be seen below:
+The `kraken_run.py` file which will submit Condor jobs for all the files in specified datasets. This submission currently uses `xrdfs` to find the files stored on Kraken. An example submission can be seen below:
 
-```
+```bash
 python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --input=filelist/list_2018_MC_A01.txt
 ```
 
-The submission will name a directory in the output directory after the tage name you input. If the tag already exists use the `--force` option if you are trying to resubmit/overwrite.
+The submission will name a directory in the output directory after the tag name you input. If the tag already exists use the `--force` option if you are trying to resubmit/overwrite.
 
-Note that this submission will look for the dataset xsec in xsections\_<era>.yaml.
+Note that this submission will look for the dataset `xsec` in `xsections_<era>.yaml`.
 
-To monitor and resubmit jobs we can use the monitor.py file.
+To monitor and resubmit jobs we can use the `monitor.py` file.
 
-```
+```bash
 python monitor.py --tag=<tag name> --input=filelist/list_2018_MC_A01.txt
 ```
 
 To resubmit you must specify to resubmit like below:
 
-```
+```bash
 python monitor.py --tag=<tag name> --input=filelist/list_2018_MC_A01.txt -r=1
 ```
 
-To automatically resubmit your jobs multiple times, we can use the resubmit.py file.
+To automatically resubmit your jobs multiple times, we can use the `resubmit.py` file.
 
-```
+```bash
 python resubmit.py --tag=<tag name> --resubmits=10 --hours=1
 ```
 
-This will call monitor.py 10 times, resubmitting the files each time (i.e., -r=1) and waiting 1 hour between each call. N.B.: all jobs that are still running after the number of hours specified will be removed.
+This will call `monitor.py` 10 times, resubmitting the files each time (i.e., -r=1) and waiting 1 hour between each call. N.B.: all jobs that are still running after the number of hours specified will be removed.
 
 ### SUEP Coffea Scouting
 
@@ -89,7 +89,7 @@ Explained here is an example workflow. Each of these scripts should have more de
 
 1. Find datasets to run (specified in a .txt file in `filelist/`), and lists of the .root files for the datasets (usually in `/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00` as specified in `kraken_run.py`).
 2. Run `kraken_run.py` to submit these jobs to HTCondor. Make sure to set the correct output and log directories in the python script.
-3. These usually take a couple hours, which you can monitor using HTCondor. We don't expect perfect efficiency here, as normal in batch submission systems, but 80-90% is typical: if it's much less, the errors need to be investigated using the logs produced (found in `logdir`, specified in step 2). You can check how many of them have successfully finished using `python monitor.py -r=0`. Once a good amount of them have finished running (succesfully or not), usually after a couple hours, kill the currently running jobs, and resubmit using `python monitor.py -r=1`.
+3. These usually take a couple hours, which you can monitor using HTCondor. We don't expect perfect efficiency here, as normal in batch submission systems, but 80-90% is typical: if it's much less, the errors need to be investigated using the logs produced (found in `logdir`, specified in step 2). You can check how many of them have successfully finished using `python monitor.py -r=0`. Once a good amount of them have finished running (successfully or not), usually after a couple hours, kill the currently running jobs, and resubmit using `python monitor.py -r=1`.
 4. Repeat step 3. until you have achieved desired completion rate (suggested: >95% for MC, >99% for data).
 
 **(Optional) Merge and Move NTuples**
