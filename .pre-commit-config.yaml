@@ -9,13 +9,12 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: end-of-file-fixer
-        exclude: "data/jetmet"
       - id: mixed-line-ending
       - id: name-tests-test
         args: ["--pytest-test-first"]
       - id: requirements-txt-fixer
       - id: trailing-whitespace
-        exclude: "data/jetmet"
+    exclude: "data/jetmet"
 
   - repo: https://github.com/psf/black
     rev: "22.10.0"
