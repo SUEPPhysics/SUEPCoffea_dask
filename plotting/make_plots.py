@@ -396,7 +396,7 @@ for ifile in tqdm(files):
     # remove file at the end of loop   
     if options.xrootd: os.system('rm ' + options.dataset+'.hdf5')    
 
-logging.warning("Number of files that failed to be read:" + str(nfailed))
+logging.warning("Number of files that failed to be read: " + str(nfailed))
 ### End plotting loop ###################################################################
 
 # not needed anymore
