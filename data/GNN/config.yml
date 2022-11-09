@@ -2,16 +2,16 @@ dataset:
   obj: bPfcand
   coords: cyl
   test:
-  - /work/submit/lavezzo/private_samples//val/
+    - /work/submit/lavezzo/private_samples//val/
   train:
-  - /work/submit/lavezzo/private_samples/
+    - /work/submit/lavezzo/private_samples/
   validation:
-  - /work/submit/lavezzo/private_samples//val/
+    - /work/submit/lavezzo/private_samples//val/
 evaluation_pref:
   batch_size: 50
   names_classes:
-  - SUEP
-  - QCD
+    - SUEP
+    - QCD
   workers: 0
 model_pref:
   hidden_dim: 16
