@@ -1,10 +1,9 @@
-import os, sys
 import argparse
-import logging
-import pwd
-import subprocess
-import shutil
 import getpass
+import logging
+import os
+import shutil
+import subprocess
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -64,56 +63,70 @@ queue jobid, fileid from {jobdir}/inputfiles.dat
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Famous Submitter')
-    parser.add_argument("-i"   , "--input" , type=str, default="data.txt" , help="input datasets", required=True)
-    parser.add_argument("-t"   , "--tag"   , type=str, default="IronMan"  , help="production tag", required=True)
-    parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
-    parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
-    parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
-    parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
-    parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
-    parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
-    parser.add_argument("--redo-proxy"     , action="store_true"          , help="redo the voms proxy")
+    parser = argparse.ArgumentParser(description="Famous Submitter")
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        default="data.txt",
+        help="input datasets",
+        required=True,
+    )
+    parser.add_argument(
+        "-t", "--tag", type=str, default="IronMan", help="production tag", required=True
+    )
+    parser.add_argument("-isMC", "--isMC", type=int, default=1, help="")
+    parser.add_argument("-q", "--queue", type=str, default="espresso", help="")
+    parser.add_argument("-e", "--era", type=str, default="2017", help="")
+    parser.add_argument(
+        "-f", "--force", action="store_true", help="recreate files and jobs"
+    )
+    parser.add_argument("-s", "--submit", action="store_true", help="submit only")
+    parser.add_argument(
+        "-dry", "--dryrun", action="store_true", help="running without submission"
+    )
+    parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
 
     options = parser.parse_args()
 
     # Making sure that the proxy is good
-    proxy_base = 'x509up_u{}'.format(os.getuid())
-    home_base  = os.environ['HOME']
-    proxy_copy = os.path.join(home_base,proxy_base)
+    proxy_base = f"x509up_u{os.getuid()}"
+    home_base = os.environ["HOME"]
+    proxy_copy = os.path.join(home_base, proxy_base)
     username = getpass.getuser()
-    outdir = '/eos/cms/store/user/' + username + '/SUEP/{tag}/{sample}/'
-
+    outdir = "/eos/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
 
     regenerate_proxy = False
     if not os.path.isfile(proxy_copy):
-        logging.warning('--- proxy file does not exist')
+        logging.warning("--- proxy file does not exist")
         regenerate_proxy = True
     else:
         lifetime = subprocess.check_output(
-            ['voms-proxy-info', '--file', proxy_copy, '--timeleft']
+            ["voms-proxy-info", "--file", proxy_copy, "--timeleft"]
         )
         lifetime = float(lifetime)
-        lifetime = lifetime / (60*60)
-        logging.info("--- proxy lifetime is {} hours".format(lifetime))
-        if lifetime < 139.00: # we want at least 3 hours
+        lifetime = lifetime / (60 * 60)
+        logging.info(f"--- proxy lifetime is {lifetime} hours")
+        if lifetime < 139.00:  # we want at least 3 hours
             logging.warning("--- proxy has expired !")
             regenerate_proxy = True
 
     if regenerate_proxy:
         redone_proxy = False
         while not redone_proxy:
-            status = os.system('voms-proxy-init -voms cms --hours=140')
+            status = os.system("voms-proxy-init -voms cms --hours=140")
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
-        shutil.copyfile('/tmp/'+proxy_base,  proxy_copy)
+        shutil.copyfile("/tmp/" + proxy_base, proxy_copy)
 
-    with open(options.input, 'r') as stream:
-        for sample in stream.read().split('\n'):
-            if '#' in sample: continue
-            if len(sample.split('/')) <= 1: continue
+    with open(options.input) as stream:
+        for sample in stream.read().split("\n"):
+            if "#" in sample:
+                continue
+            if len(sample.split("/")) <= 1:
+                continue
             sample_name = sample.split("/")[-1]
-            jobs_dir = '_'.join(['jobs', options.tag, sample_name])
+            jobs_dir = "_".join(["jobs", options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
             print(sample_name)
             if os.path.isdir(jobs_dir):
@@ -121,28 +134,40 @@ def main():
                     logging.error(" " + jobs_dir + " already exist !")
                     continue
                 else:
-                    logging.warning(" " + jobs_dir + " already exists, forcing its deletion!")
+                    logging.warning(
+                        " " + jobs_dir + " already exists, forcing its deletion!"
+                    )
                     shutil.rmtree(jobs_dir)
                     os.mkdir(jobs_dir)
             else:
                 os.mkdir(jobs_dir)
-            
+
             if not options.submit:
                 # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-                input_list = "/afs/cern.ch/user/c/cfreer/Rawfiles_A01/{}/RawFiles.00".format(sample_name)
-                Raw_list = open(input_list, "r")
-                with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
-                     for i in Raw_list:
-                         full_file = i.split(" ")[0]
-                         just_file = full_file.split("/")[-1]
-                         infiles.write(full_file+"\t"+just_file.split(".root")[0]+"\n")
-                     infiles.close()
- 
-            eosoutdir =  outdir.format(tag=options.tag,sample=sample_name)
+                input_list = (
+                    "/afs/cern.ch/user/c/cfreer/Rawfiles_A01/{}/RawFiles.00".format(
+                        sample_name
+                    )
+                )
+                Raw_list = open(input_list)
+                with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
+                    for i in Raw_list:
+                        full_file = i.split(" ")[0]
+                        just_file = full_file.split("/")[-1]
+                        infiles.write(
+                            full_file + "\t" + just_file.split(".root")[0] + "\n"
+                        )
+                    infiles.close()
+
+            eosoutdir = outdir.format(tag=options.tag, sample=sample_name)
             # crete a directory on eos
-            if '/eos/cms' in eosoutdir:
-                eosoutdir = eosoutdir.replace('/eos/cms', 'root://eoscms.cern.ch/')
-                os.system("eos mkdir -p {}".format(eosoutdir.replace('root://eoscms.cern.ch/','')))
+            if "/eos/cms" in eosoutdir:
+                eosoutdir = eosoutdir.replace("/eos/cms", "root://eoscms.cern.ch/")
+                os.system(
+                    "eos mkdir -p {}".format(
+                        eosoutdir.replace("root://eoscms.cern.ch/", "")
+                    )
+                )
             else:
                 raise NameError(eosoutdir)
 
@@ -151,41 +176,44 @@ def main():
                     proxy=proxy_base,
                     ismc=options.isMC,
                     era=options.era,
-                    outdir=eosoutdir,          
-                    dataset=sample_name
+                    outdir=eosoutdir,
+                    dataset=sample_name,
                 )
                 scriptfile.write(script)
                 scriptfile.close()
 
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
-                    transfer_file= ",".join([
-                        "../condor_SUEP_WS.py",
-                        "../workflows",
-                        "../data",
-                    ]),
+                    transfer_file=",".join(
+                        [
+                            "../condor_SUEP_WS.py",
+                            "../workflows",
+                            "../data",
+                        ]
+                    ),
                     just_file=just_file,
                     jobdir=jobs_dir,
                     proxy=proxy_base,
-                    queue=options.queue
+                    queue=options.queue,
                 )
                 condorfile.write(condor)
                 condorfile.close()
-                
+
             if options.dryrun:
                 continue
- 
+
             htc = subprocess.Popen(
                 "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
-                shell  = True,
-                stdin  = subprocess.PIPE,
-                stdout = subprocess.PIPE,
-                stderr = subprocess.PIPE,
-                close_fds=True
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True,
             )
             out, err = htc.communicate()
             exit_status = htc.returncode
-            logging.info("condor submission status : {}".format(exit_status))
+            logging.info(f"condor submission status : {exit_status}")
+
 
 if __name__ == "__main__":
     main()
