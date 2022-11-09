@@ -14,6 +14,7 @@ repos:
         args: ["--pytest-test-first"]
       - id: requirements-txt-fixer
       - id: trailing-whitespace
+        exclude: "data/jetmet"
 
   - repo: https://github.com/psf/black
     rev: "22.10.0"
@@ -71,4 +72,4 @@ repos:
     rev: "v3.0.0-alpha.4"
     hooks:
       - id: prettier
-        types_or: [yaml, markdown, json] 
+        types_or: [yaml, markdown, json]
