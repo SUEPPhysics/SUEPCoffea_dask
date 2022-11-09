@@ -7,10 +7,7 @@ from numba import jit
 vector.register_awkward()
 
 import torch
-import torch.nn.functional as F
 from torch import nn
-from torch.nn import Linear, Sequential
-from torch_geometric.nn import DataParallel
 from torch_geometric.nn.conv import DynamicEdgeConv
 from torch_geometric.nn.pool import avg_pool_x
 
@@ -81,7 +78,6 @@ def DGNNMethod(
     if self.do_inf:
 
         import yaml
-        from torch_geometric.data import Data
 
         device = torch.device("cpu")
 

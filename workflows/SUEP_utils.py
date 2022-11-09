@@ -1,7 +1,6 @@
 import awkward as ak
 import fastjet
 import numpy as np
-import pandas as pd
 import vector
 
 vector.register_awkward()

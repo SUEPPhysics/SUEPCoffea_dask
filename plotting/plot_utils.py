@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import pandas as pd
-import sympy
 from sympy import diff, sqrt, symbols
 
 default_colors = {

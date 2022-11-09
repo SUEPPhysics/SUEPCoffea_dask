@@ -2,10 +2,8 @@ import argparse
 import getpass
 import logging
 import os
-import pwd
 import shutil
 import subprocess
-import sys
 
 logging.basicConfig(level=logging.DEBUG)
 

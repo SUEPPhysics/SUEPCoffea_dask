@@ -305,7 +305,7 @@ if __name__ == "__main__":
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
-        from parsl.providers import CondorProvider, LocalProvider, SlurmProvider
+        from parsl.providers import CondorProvider, SlurmProvider
 
         if "slurm" in args.executor:
             htex_config = Config(

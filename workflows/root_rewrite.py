@@ -1,4 +1,3 @@
-import awkward as ak
 import uproot
 
 # mass is expected as an input in NanoAODSchema methods. Must rewrite "m" to "mass" in order to catch the 4-vector until vector is implemented in coffea

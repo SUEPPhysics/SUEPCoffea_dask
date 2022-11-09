@@ -1,16 +1,9 @@
 import argparse
-import glob
-import json
 import os
-import sys
-import time
 
 # Import coffea specific features
 import coffea
-import numpy
-import pandas as pd
-from coffea.processor import futures_executor, iterative_executor, run_uproot_job
-from tqdm import tqdm
+from coffea.processor import futures_executor, run_uproot_job
 
 from workflows.merger import *
 

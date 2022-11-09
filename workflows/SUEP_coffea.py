@@ -4,14 +4,13 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
-from typing import List, Optional
+from typing import Optional
 
 import awkward as ak
-import fastjet
 import numpy as np
 import pandas as pd
 import vector
-from coffea import lumi_tools, processor
+from coffea import processor
 
 vector.register_awkward()
 
@@ -25,7 +24,6 @@ import workflows.ZH_utils as ZH_utils
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 
 

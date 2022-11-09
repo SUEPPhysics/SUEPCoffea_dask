@@ -1,6 +1,5 @@
 import argparse
 import getpass
-import glob
 import multiprocessing
 import os
 import subprocess

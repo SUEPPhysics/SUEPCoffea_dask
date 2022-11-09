@@ -11,7 +11,6 @@ from copy import deepcopy
 
 import higgs_reweight
 import numpy as np
-import pandas as pd
 
 # Import our own functions
 import pileup_weight
