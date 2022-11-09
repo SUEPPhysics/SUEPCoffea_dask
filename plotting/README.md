@@ -34,6 +34,7 @@ python multithread.py --tag=<tag> --xrootd=0 --code=plot --inputList=<filelist>
 This will parallelize the plotting for each dataset, producing one pkl file for each dataset.
 
 ### Plotting
+
 The outputs of make_plots.py are .pkl files containing boost histograms. You can open these in your own scripts and notebooks to view them,
 but a notebook, `plot.ipynb`, is provided with many useful functionalities. By specifying which pkl files you want to import using a tag,
 the notebook will automatically load all the pkl files into one nested dictionary (`plots`), with dimensions (sample x plots),
@@ -41,9 +42,11 @@ where sample is either one of the \<dataset\>s, as well as all the combined QCD 
 plots by QCD bin, 1d slices of 2d hists, and other useful plotting functions are defined within.
 
 ## The Plotter: make_plots.py and helper scripts
+
 The following scripts are used to produce the histograms from the pandas DataFrames, apply normalizations, cross sections, and systematics.
+
 1. `make_plots.py`: the main script to initialize and produce the histograms, define ABCD regions, apply selections, and more.
-2. `CMS_corrections/*.py`:  all the systematics, called from the main script
+2. `CMS_corrections/*.py`: all the systematics, called from the main script
 3. `fill_utils.py`: a set of general helper functions for the main script
 
 ### make_plots.py
@@ -100,7 +103,7 @@ The main script relies from many functions in the helper script, `fill_utils.py`
     1. Grab only events that don't have NaN for the input method variables.
     2. Blind for data! Use SR to define signal regions and cut it out of df.
     3. Apply selections as defined in the 'selections' in the dict.
-    
+
 #### fill_utils.py: auto_fill()
 
     1. Plot variables from the DataFrame.
@@ -112,6 +115,7 @@ The main script relies from many functions in the helper script, `fill_utils.py`
        3b. Input method variables
 
 #### Weights, Cross sections, and Systematics
+
 The cross section and reweighting is done in `make_plots.py` directly, with some helper functions in `fill_utils.py`.
 The systematics can be found in `CMS_corrections/*.py`, and are applied in `make_plots.py` on MC.
 
@@ -125,9 +129,9 @@ The systematics can be found in `CMS_corrections/*.py`, and are applied in `make
 
 5. **GNN syst**: A systematic applied to GNN output on SUEP MC, defnied in `GNN_syst.py`. Obtained from the data vs. QCD difference when running the GNN on ISR jets instead of SUEPs. Practically, in the config for method `GNN`, need to add:
 
-    a) `fGNNsyst`: path to a json file containing the bin corrections. Expected form is a nested dictionary of dimensions: (year x GNN_model x bin_syst_list). The bin_syst_list is a list of floats that correspond to a certain % correction on a predefined set of bins.
+   a) `fGNNsyst`: path to a json file containing the bin corrections. Expected form is a nested dictionary of dimensions: (year x GNN_model x bin_syst_list). The bin_syst_list is a list of floats that correspond to a certain % correction on a predefined set of bins.
 
-    b) `GNNsyst_bins`: set of bins corresponding to systematics as found in the file `fGNNsyst`.
+   b) `GNNsyst_bins`: set of bins corresponding to systematics as found in the file `fGNNsyst`.
 
 6. **Higgs reweight**: applied only to event weight for SUEP's with mass of 125 GeV (Higgs case), as a function of the gen pT of the SUEP. Defined in `higgs_rewight.py`
 
