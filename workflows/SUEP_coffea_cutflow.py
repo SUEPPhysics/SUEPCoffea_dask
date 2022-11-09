@@ -17,6 +17,7 @@ vector.register_awkward()
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
+
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.jetmet_utils import apply_jecs

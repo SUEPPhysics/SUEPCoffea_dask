@@ -9,11 +9,11 @@ import time
 import coffea
 import numpy
 import pandas as pd
-from coffea.processor import (futures_executor, iterative_executor,
-                              run_uproot_job)
+from coffea.processor import futures_executor, iterative_executor, run_uproot_job
 from tqdm import tqdm
 
 from workflows.merger import *
+
 # SUEP Repo Specific
 from workflows.SUEP_coffea_cutflow import cutflow_cluster
 
