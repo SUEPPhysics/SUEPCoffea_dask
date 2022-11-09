@@ -1,3 +1,4 @@
+exclude: "data/jetmet"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v4.3.0"
@@ -14,7 +15,6 @@ repos:
         args: ["--pytest-test-first"]
       - id: requirements-txt-fixer
       - id: trailing-whitespace
-    exclude: "data/jetmet"
 
   - repo: https://github.com/psf/black
     rev: "22.10.0"
