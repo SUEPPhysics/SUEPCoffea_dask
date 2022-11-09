@@ -17,7 +17,7 @@ from CMS_corrections import triggerSF
 from CMS_corrections import higgs_reweight
 from CMS_corrections import track_killing
 from CMS_corrections import GNN_syst
-import plot_utils
+import fill_utils
 
 logging.basicConfig(level=logging.INFO)
 
@@ -126,10 +126,9 @@ if options.doInf:
     })
 
 # output histos
-def create_output_file(label, abcd, sys):
+def create_output_file(label, abcd):
 
     # don't recreate histograms if called multiple times with the same output label
-    if len(sys) > 0: label += "_" + sys
     if label in output["labels"]: return output
     else: output["labels"].append(label)
     
@@ -246,50 +245,7 @@ def create_output_file(label, abcd, sys):
     ###########################################################################################################################
                       
     return output
-
-#############################################################################################################
-            
-def plotter(df, output, abcd, label_out, sys, blind=True, isMC=False):
-    """
-    INPUTS:
-        df: input file DataFrame.
-        output: dictionary of histograms to be filled.
-        abcd: definitions of ABCD regions, signal region, event selections.
-        label_out: label associated with the output (e.g. "ISRRemoval"), as keys in 
-                   the config dictionary.
-        
-    OUTPUTS: 
-        output: dict, now with updated histograms.
-        
-    EXPLANATION: see READM.md for explanation.
-    """
-
-    input_method = abcd['input_method']
-    if len(sys) > 0: label_out = label_out + "_" + sys
-    
-    # 1. keep only events that passed this method
-    df = df[~df[abcd['xvar']].isnull()]
-    
-    # 2. blind
-    if blind and not isMC:       
-        SR = abcd['SR']
-        if len(SR) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
-        df = df.loc[~(plot_utils.make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False) & plot_utils.make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False))]
-        
-        if 'SR2' in abcd.keys():
-            SR2 = abcd['SR2']
-            if len(SR2) != 2: sys.exit(label_out+": Make sure you have correctly defined your signal region. Exiting.")
-            df = df.loc[~(plot_utils.make_selection(df, SR2[0][0], SR2[0][1], SR2[0][2], apply=False) & plot_utils.make_selection(df, SR2[1][0], SR2[1][1], SR2[1][2], apply=False))]
      
-    # 3. apply selections
-    for sel in abcd['selections']: 
-        df = plot_utils.make_selection(df, sel[0], sel[1], sel[2], apply=True)
-    
-    # auto fill all histograms in the output dictionary
-    plot_utils.auto_fill(df, output, abcd, label_out, isMC=isMC, do_abcd=True)
-           
-    return output
-        
 #############################################################################################################
 
 # variables that will be filled
@@ -315,21 +271,21 @@ else:
 
 # get cross section
 xsection = 1.0
-if options.isMC: xsection = plot_utils.getXSection(options.dataset, options.era, SUEP=False)
+if options.isMC: xsection = fill_utils.getXSection(options.dataset, options.era, SUEP=False)
 
 # custom per region weights
 scaling_weights = None
-if options.weights is not None: scaling_weights = plot_utils.read_in_weights(options.weights)
+if options.weights is not None: scaling_weights = fill_utils.read_in_weights(options.weights)
 
 # systematics
 if options.isMC and options.doSyst:
             
     # track systematics: need to use the track_down version of the variables
-    new_config_track_killing = plot_utils.get_track_killing_config(config)
+    new_config_track_killing = fill_utils.get_track_killing_config(config)
     
     # jet systematics: just change ht to ht_SYS (e.g. ht -> ht_JEC_JES_up)
     jet_corrections = ['JEC', 'JEC_JER_up', 'JEC_JER_down', 'JEC_JES_up', 'JEC_JES_down']
-    new_config_jet_corrections = plot_utils.get_jet_corrections_config(config, jet_corrections)
+    new_config_jet_corrections = fill_utils.get_jet_corrections_config(config, jet_corrections)
 
     config = config | new_config_jet_corrections
     config = config | new_config_track_killing
@@ -348,9 +304,9 @@ for ifile in tqdm(files):
         if os.path.exists(options.dataset+'.hdf5'): os.system('rm ' + options.dataset+'.hdf5')
         xrd_file = redirector + ifile
         os.system("xrdcp -s {} {}.hdf5".format(xrd_file, options.dataset))
-        df, metadata = plot_utils.h5load(options.dataset+'.hdf5', 'vars')   
+        df, metadata = fill_utils.h5load(options.dataset+'.hdf5', 'vars')   
     else:
-        df, metadata = plot_utils.h5load(ifile, 'vars')   
+        df, metadata = fill_utils.h5load(ifile, 'vars')   
  
     # check if file is corrupted
     if type(df) == int: 
@@ -420,8 +376,18 @@ for ifile in tqdm(files):
             if 'track_down' in label_out and sys != "": continue # don't run other systematics when doing track killing systematic
             if options.isMC and sys != "":
                 if any([j in label_out for j in jet_corrections]): continue # don't run other systematics when doing jet systematics
-            output.update(create_output_file(label_out, config_out, sys))
-            output = plotter(df.copy(), output, config_out, label_out, sys, isMC=options.isMC, blind=options.blind)
+            
+            # rename if we have applied a systematic
+            if len(sys) > 0: label_out = label_out + "_" + sys
+            
+            # initialize new hists, if needed
+            output.update(create_output_file(label_out, config_out))
+            
+            # prepare the DataFrame for plotting: blind, selections
+            df_plot = fill_utils.prepareDataFrame(df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind)
+            
+             # auto fill all histograms
+            fill_utils.auto_fill(df_plot, output, config_out, label_out, isMC=options.isMC, do_abcd=True)
         
     #####################################################################################
     # ---- End
@@ -445,11 +411,11 @@ if options.isMC and options.doSyst:
         
     if options.doInf:
         # do the GNN systematic
-        GNN_syst.apply_GNN_syst(outputs, config['GNN']['fGNNsyst'], config['GNN']['models'], config['GNN']['GNNsyst_bins'], options.era, out_label='GNN')
+        GNN_syst.apply_GNN_syst(output, config['GNN']['fGNNsyst'], config['GNN']['models'], config['GNN']['GNNsyst_bins'], options.era, out_label='GNN')
 
 # apply normalization
 if options.isMC:
-    outputs = plot_utils.apply_normalization(outputs, xsection, total_gensumweight)
+    outputs = fill_utils.apply_normalization(output, xsection, total_gensumweight)
         
 logging.info("Saving outputs.")
 
