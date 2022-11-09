@@ -1,6 +1,5 @@
-import numpy as np
 import uproot
-
+import numpy as np
 
 def triggerSF(era):
     if era == 2018:
@@ -10,12 +9,12 @@ def triggerSF(era):
     elif era == 2016:
         f_weight = uproot.open("../data/trigSF/trigSF_2016.root")
     else:
-        print("no TriggerSFs because no year was selected for function triggerSF")
+        print('no TriggerSFs because no year was selected for function triggerSF')
 
-    hist = f_weight["TriggerSF"].to_boost()
+    hist = f_weight['TriggerSF'].to_boost()
     bins = hist.axes[0].edges
     weights = hist.values()
     weights_up = hist.values() + hist.variances()
-    weights_down = np.clip((hist.values() - hist.variances()), 0, 15)
+    weights_down = np.clip((hist.values() - hist.variances()),0,15)
 
     return bins, weights, weights_up, weights_down
