@@ -1,5 +1,8 @@
 ### SUEP Coffea
 
+[![Actions Status](https://github.com/chrispap95/hcaloms/workflows/CI/badge.svg)](https://github.com/SUEPPhysics/SUEPCoffea_dask/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 This code runs the SUEP analysis using the coffea framework. We use fastjet with awkward array inputs for jet clustering.
 
 Three separate analyses and their documentation are here:
