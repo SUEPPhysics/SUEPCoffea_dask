@@ -71,4 +71,4 @@ repos:
     rev: "v3.0.0-alpha.4"
     hooks:
       - id: prettier
-        types_or: [yaml, markdown, json]
+        types_or: [yaml, markdown, json] 
