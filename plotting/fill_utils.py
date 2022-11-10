@@ -224,7 +224,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
                     
                 # 3b. Plot method variables
                 for plot in method_plot_labels: 
-                    if r+key.replace(input_method, label_out) not in list(output.keys()): continue
+                    if r+plot.replace(input_method, label_out) not in list(output.keys()): continue
                     output[r+plot.replace(input_method, label_out)].fill(df_r[plot], weight=df_r['event_weight'])  
                 
                 iRegion += 1

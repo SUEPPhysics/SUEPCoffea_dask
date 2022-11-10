@@ -40,9 +40,10 @@ parser.add_argument('--isMC', type=int, help="Is this MC or data", required=True
 parser.add_argument('--scouting', type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument('--doSyst', type=int, default=0, help="make systematic plots")
-parser.add_argument('--doInf', type=int, default=1, help="")
+parser.add_argument('--doInf', type=int, default=1, help="make GNN plots")
+parser.add_argument('--doABCD', type=int, default=0, help="make plots for each ABCD+ region")
 parser.add_argument('--blind', type=int, default=1, help="Blind the data (default=True)")
-parser.add_argument('--weights', default=None, help="Pass the filename of the weights, e.g. --weights weights.npy")
+parser.add_argument('--weights', default='None', help="Pass the filename of the weights, e.g. --weights weights.npy")
 options = parser.parse_args()
 
 ###################################################################################################################
@@ -275,9 +276,9 @@ if options.isMC: xsection = fill_utils.getXSection(options.dataset, options.era,
 
 # custom per region weights
 scaling_weights = None
-if options.weights is not None: scaling_weights = fill_utils.read_in_weights(options.weights)
+if options.weights is not None and options.weights != "None": scaling_weights = fill_utils.read_in_weights(options.weights)
 
-# systematics
+# add new output methods for track killing and jet energy systematics
 if options.isMC and options.doSyst:
             
     # track systematics: need to use the track_down version of the variables
@@ -387,7 +388,7 @@ for ifile in tqdm(files):
             df_plot = fill_utils.prepareDataFrame(df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind)
             
              # auto fill all histograms
-            fill_utils.auto_fill(df_plot, output, config_out, label_out, isMC=options.isMC, do_abcd=True)
+            fill_utils.auto_fill(df_plot, output, config_out, label_out, isMC=options.isMC, do_abcd=options.doABCD)
         
     #####################################################################################
     # ---- End
