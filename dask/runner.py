@@ -236,9 +236,6 @@ if __name__ == "__main__":
             syst_var="",
             sample=args.dataset,
         )
-    # elif args.workflow == "fattag":
-    #     from workflows.fatjet_tagger import NanoProcessor
-    #     processor_instance = NanoProcessor()
     else:
         raise NotImplemented
 
@@ -253,9 +250,9 @@ if __name__ == "__main__":
             try:
                 _x509_localpath = (
                     [
-                        l
-                        for l in os.popen("voms-proxy-info").read().split("\n")
-                        if l.startswith("path")
+                        line
+                        for line in os.popen("voms-proxy-info").read().split("\n")
+                        if line.startswith("path")
                     ][0]
                     .split(":")[-1]
                     .strip()
