@@ -462,7 +462,7 @@ def create_output_file(label, abcd):
                         label="# Tracks in ISR",
                     ).Weight(),
                     "{}ISR_S1_{}".format(r, label): Hist.new.Reg(
-                        100, -1, 2, name="{}ISR_S1_{}".format(r, label) label="$Sph_1$"
+                        100, -1, 2, name="{}ISR_S1_{}".format(r, label), label="$Sph_1$"
                     ).Weight(),
                 }
             )
