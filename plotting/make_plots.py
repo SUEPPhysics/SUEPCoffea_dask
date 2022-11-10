@@ -181,8 +181,7 @@ def create_output_file(label, abcd):
     yvar_regions = abcd["yvar_regions"]
     output.update(
         {
-            "ABCDvars_"
-            + label: Hist.new.Reg(100, yvar_regions[0], yvar_regions[-1], name=xvar)
+            "ABCDvars_{}".format(label): Hist.new.Reg(100, yvar_regions[0], yvar_regions[-1], name=xvar)
             .Reg(100, xvar_regions[0], xvar_regions[-1], name=yvar)
             .Weight()
         }
@@ -198,83 +197,50 @@ def create_output_file(label, abcd):
     for r in regions_list:
         output.update(
             {
-                r
-                + "ht_"
-                + label: Hist.new.Reg(
-                    100, 0, 10000, name=r + "ht_" + label, label="HT"
+                "{}ht_{}".format(r, label): Hist.new.Reg(
+                    100, 0, 10000, name="{}ht_{}".format(r, label), label="HT"
                 ).Weight(),
-                r
-                + "ht_JEC_"
-                + label: Hist.new.Reg(
-                    100, 0, 10000, name=r + "ht_JEC_" + label, label="HT JEC"
+                "{}ht_JEC_{}".format(r, label): Hist.new.Reg(
+                    100, 0, 10000, name="{}ht_JEC_{}".format(r, label), label="HT JEC"
                 ).Weight(),
-                r
-                + "ht_JEC_JER_up_"
-                + label: Hist.new.Reg(
-                    100, 0, 10000, name=r + "ht_JEC_JER_up_" + label, label="HT JEC up"
+                "{}ht_JEC_JER_up_{}".format(r, label): Hist.new.Reg(
+                    100, 0, 10000, name="{}ht_JEC_JER_up_{}".format(r, label), label="HT JEC up"
                 ).Weight(),
-                r
-                + "ht_JEC_JER_down_"
-                + label: Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=r + "ht_JEC_JER_down_" + label,
+                "{}ht_JEC_JER_down_{}".format(r, label): Hist.new.Reg(
+                    100, 0, 10000,
+                    name="{}ht_JEC_JER_down_{}".format(r, label),
                     label="HT JEC JER down",
                 ).Weight(),
-                r
-                + "ht_JEC_JES_up_"
-                + label: Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=r + "ht_JEC_JES_up_" + label,
+                "{}ht_JEC_JES_up_{}".format(r, label): Hist.new.Reg(
+                    100, 0, 10000,
+                    name="{}ht_JEC_JES_up_{}".format(r, label),
                     label="HT JEC JES up",
                 ).Weight(),
-                r
-                + "ht_JEC_JES_down_"
-                + label: Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=r + "ht_JEC_JES_down_" + label,
+                "{}ht_JEC_JES_down_{}".format(r, label): Hist.new.Reg(
+                    100, 0, 10000,
+                    name="{}ht_JEC_JES_down_{}".format(r, label),
                     label="HT JEC JES down",
                 ).Weight(),
-                r
-                + "ntracks_"
+                "{}ntracks_{}".format(r, label)
                 + label: Hist.new.Reg(
-                    101, 0, 500, name=r + "ntracks_" + label, label="# Tracks in Event"
+                    101, 0, 500, name="{}ntracks_{}".format(r, label) + label, label="# Tracks in Event"
                 ).Weight(),
-                r
-                + "ngood_fastjets_"
-                + label: Hist.new.Reg(
-                    9,
-                    0,
-                    10,
-                    name=r + "ngood_fastjets_" + label,
+                "{}ngood_fastjets_{}".format(r, label): Hist.new.Reg(
+                    9, 0, 10,
+                    name="{}ngood_fastjets_{}".format(r, label),
                     label="# FastJets in Event",
                 ).Weight(),
-                r
-                + "PV_npvs_"
-                + label: Hist.new.Reg(
-                    199, 0, 200, name=r + "PV_npvs_" + label, label="# PVs in Event "
+                "{}PV_npvs_{}".format(r, label): Hist.new.Reg(
+                    199, 0, 200, name="{}PV_npvs_{}".format(r, label), label="# PVs in Event "
                 ).Weight(),
-                r
-                + "Pileup_nTrueInt_"
-                + label: Hist.new.Reg(
-                    199,
-                    0,
-                    200,
-                    name=r + "Pileup_nTrueInt_" + label,
+                "{}Pileup_nTrueInt_{}".format(r, label): Hist.new.Reg(
+                    199, 0, 200,
+                    name="{}Pileup_nTrueInt_{}".format(r, label),
                     label="# True Interactions in Event ",
                 ).Weight(),
-                r
-                + "ngood_ak4jets_"
-                + label: Hist.new.Reg(
-                    19,
-                    0,
-                    20,
-                    name=r + "ngood_ak4jets_" + label,
+                "{}ngood_ak4jets_{}".format(r, label): Hist.new.Reg(
+                    19, 0, 20,
+                    name="{}ngood_ak4jets_{}".format(r, label),
                     label="# ak4jets in Event",
                 ).Weight(),
             }
@@ -285,23 +251,20 @@ def create_output_file(label, abcd):
         # 2D histograms
         output.update(
             {
-                "2D_SUEP_S1_vs_ntracks_"
-                + label: Hist.new.Reg(
-                    100, 0, 1.0, name="SUEP_S1_" + label, label="$Sph_1$"
+                "2D_SUEP_S1_vs_ntracks_{}".format(label): Hist.new.Reg(
+                    100, 0, 1.0, name="SUEP_S1_{}".format(label), label="$Sph_1$"
                 )
-                .Reg(100, 0, 500, name="ntracks_" + label, label="# Tracks")
+                .Reg(100, 0, 500, name="ntracks_{}".format(label), label="# Tracks")
                 .Weight(),
-                "2D_SUEP_S1_vs_SUEP_nconst_"
-                + label: Hist.new.Reg(
-                    100, 0, 1.0, name="SUEP_S1_" + label, label="$Sph_1$"
+                "2D_SUEP_S1_vs_SUEP_nconst_{}".format(label): Hist.new.Reg(
+                    100, 0, 1.0, name="SUEP_S1_{}".format(label), label="$Sph_1$"
                 )
-                .Reg(200, 0, 500, name="nconst_" + label, label="# Constituents")
+                .Reg(200, 0, 500, name="nconst_{}".format(label), label="# Constituents")
                 .Weight(),
-                "2D_SUEP_nconst_vs_SUEP_pt_avg_"
-                + label: Hist.new.Reg(
-                    200, 0, 500, name="SUEP_nconst_" + label, label="# Const"
+                "2D_SUEP_nconst_vs_SUEP_pt_avg_{}".format(label): Hist.new.Reg(
+                    200, 0, 500, name="SUEP_nconst_{}".format(label), label="# Const"
                 )
-                .Reg(200, 0, 500, name="SUEP_pt_avg_" + label, label="$p_T Avg$")
+                .Reg(200, 0, 500, name="SUEP_pt_avg_{}".format(label), label="$p_T Avg$")
                 .Weight(),
             }
         )
@@ -310,78 +273,46 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    r
-                    + "SUEP_nconst_"
-                    + label: Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=r + "SUEP_nconst_" + label,
+                    "{}SUEP_nconst_{}".format(r,label): Hist.new.Reg(
+                        199, 0, 500,
+                        name="{}SUEP_nconst_{}".format(r,label),
                         label="# Tracks in SUEP",
                     ).Weight(),
-                    r
-                    + "SUEP_pt_"
-                    + label: Hist.new.Reg(
-                        100,
-                        0,
-                        2000,
-                        name=r + "SUEP_pt_" + label,
+                    "{}SUEP_pt_{}".format(r,label): Hist.new.Reg(
+                        100, 0, 2000,
+                        name="{}SUEP_pt_{}".format(r,label),
                         label=r"SUEP $p_T$ [GeV]",
                     ).Weight(),
-                    r
-                    + "SUEP_delta_pt_genPt_"
-                    + label: Hist.new.Reg(
-                        400,
-                        -2000,
-                        2000,
-                        name=r + "SUEP_delta_pt_genPt_" + label,
+                    "{}SUEP_delta_pt_genPt_{}".format(r,label): Hist.new.Reg(
+                        400, -2000, 2000,
+                        name="{}SUEP_delta_pt_genPt_{}".format(r,label),
                         label="SUEP $p_T$ - genSUEP $p_T$ [GeV]",
                     ).Weight(),
-                    r
-                    + "SUEP_pt_avg_"
-                    + label: Hist.new.Reg(
-                        200,
-                        0,
-                        500,
-                        name=r + "SUEP_pt_avg_" + label,
+                    "{}SUEP_pt_avg_{}".format(r,label): Hist.new.Reg(
+                        200, 0, 500,
+                        name="{}SUEP_pt_avg_{}".format(r,label),
                         label=r"SUEP Components $p_T$ Avg.",
                     ).Weight(),
-                    r
-                    + "SUEP_eta_"
-                    + label: Hist.new.Reg(
-                        100, -5, 5, name=r + "SUEP_eta_" + label, label=r"SUEP $\eta$"
+                    "{}SUEP_eta_{}".format(r,label): Hist.new.Reg(
+                        100, -5, 5, name="{}SUEP_eta_{}".format(r,label), label=r"SUEP $\eta$"
                     ).Weight(),
-                    r
-                    + "SUEP_phi_"
-                    + label: Hist.new.Reg(
-                        100,
-                        -6.5,
-                        6.5,
-                        name=r + "SUEP_phi_" + label,
+                    "{}SUEP_phi_{}".format(r,label): Hist.new.Reg(
+                        100, -6.5, 6.5,
+                        name="{}SUEP_phi_{}".format(r,label),
                         label=r"SUEP $\phi$",
                     ).Weight(),
-                    r
-                    + "SUEP_mass_"
-                    + label: Hist.new.Reg(
-                        150,
-                        0,
-                        2000,
-                        name=r + "SUEP_mass_" + label,
+                    "{}SUEP_mass_{}".format(r,label): Hist.new.Reg(
+                        150, 0, 2000,
+                        name="{}SUEP_mass_{}".format(r,label),
                         label="SUEP Mass [GeV]",
                     ).Weight(),
-                    r
-                    + "SUEP_delta_mass_genMass_"
-                    + label: Hist.new.Reg(
-                        400,
-                        -2000,
-                        2000,
-                        name=r + "SUEP_delta_mass_genMass_" + label,
+                    "{}SUEP_delta_mass_genMass_{}".format(r,label): Hist.new.Reg(
+                        400, -2000, 2000,
+                        name="{}SUEP_delta_mass_genMass_{}".format(r,label),
                         label="SUEP Mass - genSUEP Mass [GeV]",
                     ).Weight(),
-                    r
-                    + "SUEP_S1_"
-                    + label: Hist.new.Reg(
-                        100, 0, 1, name=r + "SUEP_S1_" + label, label="$Sph_1$"
+                    "{}SUEP_S1_{}".format(r,label): Hist.new.Reg(
+                        100, 0, 1, name="{}SUEP_S1_{}".format(r,label), label="$Sph_1$"
                     ).Weight(),
                 }
             )
@@ -390,21 +321,18 @@ def create_output_file(label, abcd):
         output.update(
             {
                 # 2D histograms
-                "2D_ISR_S1_vs_ntracks_"
-                + label: Hist.new.Reg(
-                    100, 0, 1.0, name="ISR_S1_" + label, label="$Sph_1$"
+                "2D_ISR_S1_vs_ntracks_{}".format(label): Hist.new.Reg(
+                    100, 0, 1.0, name="ISR_S1_{}".format(label), label="$Sph_1$"
                 )
-                .Reg(200, 0, 500, name="ntracks_" + label, label="# Tracks")
+                .Reg(200, 0, 500, name="ntracks_{}".format(label), label="# Tracks")
                 .Weight(),
-                "2D_ISR_S1_vs_ISR_nconst_"
-                + label: Hist.new.Reg(
-                    100, 0, 1.0, name="ISR_S1_" + label, label="$Sph_1$"
+                "2D_ISR_S1_vs_ISR_nconst_{}".format(label): Hist.new.Reg(
+                    100, 0, 1.0, name="ISR_S1_{}".format(label), label="$Sph_1$"
                 )
-                .Reg(200, 0, 500, name="nconst_" + label, label="# Constituents")
+                .Reg(200, 0, 500, name="nconst_{}".format(label), label="# Constituents")
                 .Weight(),
-                "2D_ISR_nconst_vs_ISR_pt_avg_"
-                + label: Hist.new.Reg(200, 0, 500, name="ISR_nconst_" + label)
-                .Reg(500, 0, 500, name="ISR_pt_avg_" + label)
+                "2D_ISR_nconst_vs_ISR_pt_avg_{}".format(label): Hist.new.Reg(200, 0, 500, name="ISR_nconst_{}".format(label))
+                .Reg(500, 0, 500, name="ISR_pt_avg_{}".format(label))
                 .Weight(),
             }
         )
@@ -412,56 +340,34 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    r
-                    + "ISR_nconst_"
-                    + label: Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=r + "ISR_nconst_" + label,
+                    "{}ISR_nconst_{}".format(r, label): Hist.new.Reg(
+                        199, 0, 500,
+                        name="{}ISR_nconst_{}".format(r,label),
                         label="# Tracks in ISR",
                     ).Weight(),
-                    r
-                    + "ISR_pt_"
-                    + label: Hist.new.Reg(
-                        100,
-                        0,
-                        2000,
-                        name=r + "ISR_pt_" + label,
+                    "{}ISR_pt_{}".format(r, label): Hist.new.Reg(
+                        100, 0, 2000,
+                        name="{}ISR_pt_{}".format(r,label),
                         label=r"ISR $p_T$ [GeV]",
                     ).Weight(),
-                    r
-                    + "ISR_pt_avg_"
-                    + label: Hist.new.Reg(
-                        500,
-                        0,
-                        500,
-                        name=r + "ISR_pt_avg_" + label,
+                    "{}ISR_pt_avg_{}".format(r, label): Hist.new.Reg(
+                        500, 0, 500,
+                        name="{}ISR_pt_avg_{}".format(r,label),
                         label=r"ISR Components $p_T$ Avg.",
                     ).Weight(),
-                    r
-                    + "ISR_eta_"
-                    + label: Hist.new.Reg(
-                        100, -5, 5, name=r + "ISR_eta_" + label, label=r"ISR $\eta$"
+                    "{}ISR_eta_{}".format(r, label): Hist.new.Reg(
+                        100, -5, 5, name="{}ISR_eta_{}".format(r,label), label=r"ISR $\eta$"
                     ).Weight(),
-                    r
-                    + "ISR_phi_"
-                    + label: Hist.new.Reg(
-                        100, -6.5, 6.5, name=r + "ISR_phi_" + label, label=r"ISR $\phi$"
+                    "{}ISR_phi_{}".format(r, label): Hist.new.Reg(
+                        100, -6.5, 6.5, name="{}ISR_phi_{}".format(r,label), label=r"ISR $\phi$"
                     ).Weight(),
-                    r
-                    + "ISR_mass_"
-                    + label: Hist.new.Reg(
-                        150,
-                        0,
-                        4000,
-                        name=r + "ISR_mass_" + label,
+                    "{}ISR_mass_{}".format(r, label): Hist.new.Reg(
+                        150, 0, 4000,
+                        name="{}ISR_mass_{}".format(r,label),
                         label="ISR Mass [GeV]",
                     ).Weight(),
-                    r
-                    + "ISR_S1_"
-                    + label: Hist.new.Reg(
-                        100, 0, 1, name=r + "ISR_S1_" + label, label="$Sph_1$"
+                    "{}ISR_S1_{}".format(r, label): Hist.new.Reg(
+                        100, 0, 1, name="{}ISR_S1_{}".format(r,label), label="$Sph_1$"
                     ).Weight(),
                 }
             )
@@ -473,32 +379,25 @@ def create_output_file(label, abcd):
         for model in abcd["models"]:
             output.update(
                 {
-                    "2D_SUEP_S1_vs_"
-                    + model
-                    + "_"
-                    + label: Hist.new.Reg(
-                        100, 0, 1.0, name="SUEP_S1_" + label, label="$Sph_1$"
+                    "2D_SUEP_S1_vs_{}_{}".format(model, label): Hist.new.Reg(
+                        100, 0, 1.0, name="SUEP_S1_{}".format(label), label="$Sph_1$"
                     )
-                    .Reg(100, 0, 1, name=model + "_" + label, label="GNN Output")
+                    .Reg(100, 0, 1, name="{}_{}".format(model, label), label="GNN Output")
                     .Weight(),
-                    "2D_SUEP_nconst_vs_"
-                    + model
-                    + "_"
-                    + label: Hist.new.Reg(
-                        200, 0, 500, name="SUEP_nconst_" + label, label="# Const"
+                    "2D_SUEP_nconst_vs_{}_{}".format(model, label): Hist.new.Reg(
+                        200, 0, 500, name="SUEP_nconst_{}".format(label), label="# Const"
                     )
-                    .Reg(100, 0, 1, name=model + "_" + label, label="GNN Output")
+                    .Reg(100, 0, 1, name="{}_{}".format(model, label), label="GNN Output")
                     .Weight(),
                 }
             )
 
         output.update(
             {
-                "2D_SUEP_nconst_vs_SUEP_S1_"
-                + label: Hist.new.Reg(
-                    200, 0, 500, name="SUEP_nconst_" + label, label="# Const"
+                "2D_SUEP_nconst_vs_SUEP_S1_{}".format(label): Hist.new.Reg(
+                    200, 0, 500, name="SUEP_nconst_{}".format(label), label="# Const"
                 )
-                .Reg(100, 0, 1, name="SUEP_S1_" + label, label="$Sph_1$")
+                .Reg(100, 0, 1, name="SUEP_S1_{}".format(label), label="$Sph_1$")
                 .Weight(),
             }
         )
@@ -506,30 +405,21 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    r
-                    + "SUEP_nconst_"
-                    + label: Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=r + "SUEP_nconst" + label,
+                    "{}SUEP_nconst_{}".format(r, label): Hist.new.Reg(
+                        199, 0, 500,
+                        name="{}SUEP_nconst{}".format(r, label),
                         label="# Tracks in SUEP",
                     ).Weight(),
-                    r
-                    + "SUEP_S1_"
-                    + label: Hist.new.Reg(
-                        100, -1, 2, name=r + "SUEP_S1_" + label, label="$Sph_1$"
+                    "{}SUEP_S1_{}".format(r, label): Hist.new.Reg(
+                        100, -1, 2, name="{}SUEP_S1_{}".format(r, label), label="$Sph_1$"
                     ).Weight(),
                 }
             )
             for model in abcd["models"]:
                 output.update(
                     {
-                        r
-                        + model
-                        + "_"
-                        + label: Hist.new.Reg(
-                            100, 0, 1, name=r + model + "_" + label, label="GNN Output"
+                        "{}{}_{}".format(r, model, label): Hist.new.Reg(
+                            100, 0, 1, name="{}{}_{}".format(r, model, label), label="GNN Output"
                         ).Weight()
                     }
                 )
@@ -541,31 +431,24 @@ def create_output_file(label, abcd):
         for model in abcd["models"]:
             output.update(
                 {
-                    "2D_ISR_S1_vs_"
-                    + model
-                    + "_"
-                    + label: Hist.new.Reg(
-                        100, 0, 1.0, name="ISR_S1_" + label, label="$Sph_1$"
+                    "2D_ISR_S1_vs_{}_{}".format(model, label): Hist.new.Reg(
+                        100, 0, 1.0, name="ISR_S1_{}".format(label), label="$Sph_1$"
                     )
-                    .Reg(100, 0, 1, name=model + "_" + label, label="GNN Output")
+                    .Reg(100, 0, 1, name="{}_{}".format(mode, label), label="GNN Output")
                     .Weight(),
-                    "2D_ISR_nconst_vs_"
-                    + model
-                    + "_"
-                    + label: Hist.new.Reg(
-                        200, 0, 500, name="ISR_nconst_" + label, label="# Const"
+                    "2D_ISR_nconst_vs_{}_{}".format(model, label): Hist.new.Reg(
+                        200, 0, 500, name="ISR_nconst_{}".format(label), label="# Const"
                     )
-                    .Reg(100, 0, 1, name=model + "_" + label, label="GNN Output")
+                    .Reg(100, 0, 1, name="{}_{}".format(mode, label), label="GNN Output")
                     .Weight(),
                 }
             )
         output.update(
             {
-                "2D_ISR_nconst_vs_ISR_S1_"
-                + label: Hist.new.Reg(
-                    200, 0, 500, name="ISR_nconst_" + label, label="# Const"
+                "2D_ISR_nconst_vs_ISR_S1_{}".format(label): Hist.new.Reg(
+                    200, 0, 500, name="ISR_nconst_{}".format(label), label="# Const"
                 )
-                .Reg(100, 0, 1, name="ISR_S1_" + label, label="$Sph_1$")
+                .Reg(100, 0, 1, name="ISR_S1_{}".format(label), label="$Sph_1$")
                 .Weight()
             }
         )
@@ -573,30 +456,21 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    r
-                    + "ISR_nconst_"
-                    + label: Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=r + "ISR_nconst" + label,
+                    "{}ISR_nconst_{}".format(r, label): Hist.new.Reg(
+                        199, 0, 500,
+                        name="{}ISR_nconst{}".format(r, label)
                         label="# Tracks in ISR",
                     ).Weight(),
-                    r
-                    + "ISR_S1_"
-                    + label: Hist.new.Reg(
-                        100, -1, 2, name=r + "ISR_S1_" + label, label="$Sph_1$"
+                    "{}ISR_S1_{}".format(r, label): Hist.new.Reg(
+                        100, -1, 2, name="{}ISR_S1_{}".format(r, label) label="$Sph_1$"
                     ).Weight(),
                 }
             )
             for model in abcd["models"]:
                 output.update(
                     {
-                        r
-                        + model
-                        + "_"
-                        + label: Hist.new.Reg(
-                            100, 0, 1, name=r + model + "_" + label, label="GNN Output"
+                        "{}{}_{}".format(r, model, label): Hist.new.Reg(
+                            100, 0, 1, name="{}{}_{}".format(r, model, label), label="GNN Output"
                         ).Weight()
                     }
                 )
