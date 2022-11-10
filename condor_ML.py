@@ -2,6 +2,7 @@ import argparse
 import os
 
 # Import coffea specific features
+from coffea import processor
 from coffea.processor import futures_executor, run_uproot_job
 
 # SUEP Repo Specific
@@ -48,7 +49,7 @@ for instance in modules_era:
             "schema": processor.NanoAODSchema,
             "xrootdtimeout": 10,
         },
-        chunksize=1,
+        chunksize=10000,
     )
 
 
