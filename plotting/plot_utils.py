@@ -324,11 +324,7 @@ def plot_ratio(
         y, x = h.to_numpy()
         x_mid = h.axes.centers[0]
         y_errs = np.sqrt(h.variances())
-        ax1.stairs(
-            h.values(), 
-            x, 
-            color=c,
-            label=label1)
+        ax1.stairs(h.values(), x, color=c, label=label1)
         ax1.errorbar(
             x_mid,
             y,
@@ -341,7 +337,7 @@ def plot_ratio(
 
     # Set parameters that will be used to make the plots prettier
     if log:
-        ax1.set_yscale("log")  
+        ax1.set_yscale("log")
     if type(xlim) is not str:
         xmin = xlim[0]
         xmax = xlim[1]
@@ -351,14 +347,22 @@ def plot_ratio(
         for h in hlist:
             xvals = h.axes.centers[0]
             yvals = h.values()
-            i_xmin = np.min([i for i, x in enumerate(yvals > 0) if x]) if len(xvals[yvals > 0]) else x1[0]
-            i_xmax = np.max([i for i, x in enumerate(yvals > 0) if x]) if len(xvals[yvals > 0]) else x1[-1]
-            xmins.append(xvals[i_xmin] - h.axes.widths[0][0]/2)
-            xmaxs.append(xvals[i_xmax] + h.axes.widths[0][-1]/2)
+            i_xmin = (
+                np.min([i for i, x in enumerate(yvals > 0) if x])
+                if len(xvals[yvals > 0])
+                else x1[0]
+            )
+            i_xmax = (
+                np.max([i for i, x in enumerate(yvals > 0) if x])
+                if len(xvals[yvals > 0])
+                else x1[-1]
+            )
+            xmins.append(xvals[i_xmin] - h.axes.widths[0][0] / 2)
+            xmaxs.append(xvals[i_xmax] + h.axes.widths[0][-1] / 2)
         xmin = min(xmins)
         xmax = max(xmaxs)
-        xrange = xmax - xmin        
-        ax1.set_xlim([xmin - xrange*0.1, xmax + xrange*0.1])
+        xrange = xmax - xmin
+        ax1.set_xlim([xmin - xrange * 0.1, xmax + xrange * 0.1])
 
     ax1.set_ylabel("Events", y=1, ha="right")
 
@@ -367,13 +371,24 @@ def plot_ratio(
 
     # calculate the ratio, with poisson errors, and plot them
     for i, (c, h) in enumerate(zip(cmap, hlist)):
-        if i == 0: continue
-        ratio = np.divide(h.values(), hlist[0].values(), out=np.ones_like(h.values()), where=hlist[0].values()!=0)
+        if i == 0:
+            continue
+        ratio = np.divide(
+            h.values(),
+            hlist[0].values(),
+            out=np.ones_like(h.values()),
+            where=hlist[0].values() != 0,
+        )
         ratio_err = hist.intervals.ratio_uncertainty(h.values(), hlist[0].values())
         ax2.errorbar(
-            hlist[0].axes.centers[0], ratio, yerr=ratio_err, color=c, fmt="o", linestyle="none"
-        )    
-    
+            hlist[0].axes.centers[0],
+            ratio,
+            yerr=ratio_err,
+            color=c,
+            fmt="o",
+            linestyle="none",
+        )
+
     ax2.axhline(1, ls="--", color="gray")
     ax2.set_ylabel("Ratio", y=1, ha="right")
 
