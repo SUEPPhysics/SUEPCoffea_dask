@@ -3,10 +3,11 @@ import os
 
 # Import coffea specific features
 import coffea
-from coffea.processor import futures_executor, run_uproot_job
 
 # SUEP Repo Specific
 from coffea import processor
+from coffea.processor import futures_executor, run_uproot_job
+
 from workflows.SUEP_coffea_cutflow import cutflow_cluster
 
 # Begin argparse

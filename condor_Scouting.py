@@ -1,11 +1,12 @@
 import argparse
 import os
 
+# SUEP Repo Specific
+from coffea import processor
+
 # Import coffea specific features
 from coffea.processor import futures_executor, run_uproot_job
 
-# SUEP Repo Specific
-from coffea import processor
 from workflows import SUEP_coffea, merger, root_rewrite
 
 # Begin argparse
