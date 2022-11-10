@@ -9,6 +9,11 @@ import uproot
 from coffea import processor
 from coffea.util import save
 
+# Make this script work from current directory
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+
 
 def validate(file):
     try:
@@ -153,6 +158,10 @@ def get_main_parser():
         "--doSyst", type=int, default=1, help="Turn systematics on or off"
     )
     parser.add_argument(
+        "--scouting", action="store_true", help="Turn processing for scouting on"
+    )
+    parser.add_argument("--doInf", action="store_true", help="Turn inference on")
+    parser.add_argument(
         "--dataset", type=str, default="X", help="Dataset to find xsection"
     )
     return parser
@@ -235,6 +244,11 @@ if __name__ == "__main__":
             do_syst=1,
             syst_var="",
             sample=args.dataset,
+            weight_syst="",
+            flag=False,
+            scouting=args.scouting,
+            do_inf=args.doInf,
+            output_location=current,
         )
     else:
         raise NotImplemented
