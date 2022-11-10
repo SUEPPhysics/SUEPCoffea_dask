@@ -458,7 +458,7 @@ def create_output_file(label, abcd):
                 {
                     "{}ISR_nconst_{}".format(r, label): Hist.new.Reg(
                         199, 0, 500,
-                        name="{}ISR_nconst{}".format(r, label)
+                        name="{}ISR_nconst{}".format(r, label),
                         label="# Tracks in ISR",
                     ).Weight(),
                     "{}ISR_S1_{}".format(r, label): Hist.new.Reg(
