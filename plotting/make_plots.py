@@ -285,16 +285,12 @@ def create_output_file(label, abcd):
                 f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(
-                    200, 0, 500, name=f"nconst_{label}", label="# Constituents"
-                )
+                .Reg(200, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
                 f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Reg(
                     200, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
                 )
-                .Reg(
-                    200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$"
-                )
+                .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
             }
         )
@@ -377,9 +373,7 @@ def create_output_file(label, abcd):
                 f"2D_ISR_S1_vs_ISR_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(
-                    200, 0, 500, name=f"nconst_{label}", label="# Constituents"
-                )
+                .Reg(200, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
                 f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Reg(
                     200, 0, 500, name=f"ISR_nconst_{label}"
@@ -450,9 +444,7 @@ def create_output_file(label, abcd):
                     f"2D_SUEP_S1_vs_{model}_{label}": Hist.new.Reg(
                         100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
                     )
-                    .Reg(
-                        100, 0, 1, name=f"{model}_{label}", label="GNN Output"
-                    )
+                    .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
                     f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Reg(
                         200,
@@ -461,9 +453,7 @@ def create_output_file(label, abcd):
                         name=f"SUEP_nconst_{label}",
                         label="# Const",
                     )
-                    .Reg(
-                        100, 0, 1, name=f"{model}_{label}", label="GNN Output"
-                    )
+                    .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
                 }
             )
@@ -520,16 +510,12 @@ def create_output_file(label, abcd):
                     f"2D_ISR_S1_vs_{model}_{label}": Hist.new.Reg(
                         100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
                     )
-                    .Reg(
-                        100, 0, 1, name=f"{mode}_{label}", label="GNN Output"
-                    )
+                    .Reg(100, 0, 1, name=f"{mode}_{label}", label="GNN Output")
                     .Weight(),
                     f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Reg(
                         200, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
                     )
-                    .Reg(
-                        100, 0, 1, name=f"{mode}_{label}", label="GNN Output"
-                    )
+                    .Reg(100, 0, 1, name=f"{mode}_{label}", label="GNN Output")
                     .Weight(),
                 }
             )
