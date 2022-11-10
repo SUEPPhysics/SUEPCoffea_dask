@@ -50,6 +50,10 @@ parser.add_argument(
 )
 parser.add_argument("--merged", type=int, default=1, help="Merged (default=True)")
 parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
+parser.add_argument("--doInf", type=int, default=0, help="make ML plots")
+parser.add_argument(
+    "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
+)
 options = parser.parse_args()
 
 
@@ -100,7 +104,7 @@ for sample in input_list:
         results.append(pool.apply_async(call_process, (cmd,)))
 
     elif options.code == "plot":
-        cmd = "python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC={} --era={} --scouting={} --doSyst={} --merged={}".format(
+        cmd = "python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC={} --era={} --scouting={} --doSyst={} --merged={} --doInf={} --doABCD={}".format(
             options.tag,
             options.output,
             sample,
@@ -111,6 +115,8 @@ for sample in input_list:
             options.scout,
             options.doSyst,
             options.merged,
+            options.doInf,
+            options.doABCD,
         )
         results.append(pool.apply_async(call_process, (cmd,)))
 
