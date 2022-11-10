@@ -54,7 +54,7 @@ parser.add_argument(
 )
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument("--merged", type=int, default=1, help="Use merged files")
-# some info about the files, highly encouraged to specify everytime
+# some info about the files, highly encouraged to specify every time
 parser.add_argument("-e", "--era", type=int, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
