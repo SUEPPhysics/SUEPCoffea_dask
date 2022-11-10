@@ -216,13 +216,13 @@ class ML_cluster(processor.ProcessorABC):
         # convert to this format
         l1event_feat, l1event_feat_names = self.store_event_features(out_vars)
 
-        l1pfcand_cyl = SUEP_utils.convert_coords('cyl', SUEP_cluster_tracks, npfcands)
-        l1pfcand_cart = SUEP_utils.convert_coords('cart', SUEP_cluster_tracks, npfcands)
-        l1pfcand_p4 = SUEP_utils.convert_coords('p4', SUEP_cluster_tracks, npfcands)
+        l1pfcand_cyl = SUEP_utils.convert_coords("cyl", SUEP_cluster_tracks, npfcands)
+        l1pfcand_cart = SUEP_utils.convert_coords("cart", SUEP_cluster_tracks, npfcands)
+        l1pfcand_p4 = SUEP_utils.convert_coords("p4", SUEP_cluster_tracks, npfcands)
 
-        l1bpfcand_cyl = SUEP_utils.convert_coords('cyl', SUEP_tracks_b_CL, npfcands)
-        l1bpfcand_cart = SUEP_utils.convert_coords('cart', SUEP_tracks_b_CL, npfcands)
-        l1bpfcand_p4 = SUEP_utils.convert_coords('p4', SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_cyl = SUEP_utils.convert_coords("cyl", SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_cart = SUEP_utils.convert_coords("cart", SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_p4 = SUEP_utils.convert_coords("p4", SUEP_tracks_b_CL, npfcands)
 
         # save to file
         outFile = (

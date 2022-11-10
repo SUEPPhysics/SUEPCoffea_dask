@@ -475,6 +475,7 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
         (SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks),
     )
 
+
 def convert_coords(coords, tracks, nobj):
     allowed_coords = ["cyl", "cart", "p4"]
     if coords.lower() not in allowed_coords:
