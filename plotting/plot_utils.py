@@ -311,7 +311,7 @@ def bin_midpoints(bins):
 
 
 def plot_ratio(
-    h1, h2, plot_label=None, label1=None, label2=None, xlim="default", log=True
+    hlist, plot_label=None, label1=None, label2=None, xlim="default", log=True
 ):
 
     # Set up variables for the stacked histogram
@@ -319,98 +319,69 @@ def plot_ratio(
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
-    y1, x1 = h1.to_numpy()
-    y1_errs = np.sqrt(h1.variances())
-    ax1.stairs(y1, x1, color="maroon", label=label1)
-    x1_mid = bin_midpoints(x1)
-    ax1.errorbar(
-        x1_mid,
-        y1,
-        yerr=y1_errs,
-        color="maroon".upper(),
-        fmt="",
-        drawstyle="default",
-        linestyle="",
-    )
-
-    y2, x2 = h2.to_numpy()
-    y2_errs = np.sqrt(h2.variances())
-    ax1.stairs(y2, x2, color="blue", label=label2)
-    x2_mid = bin_midpoints(x2)
-    ax1.errorbar(
-        x2_mid,
-        y2,
-        yerr=y2_errs,
-        color="blue".upper(),
-        fmt="",
-        drawstyle="default",
-        linestyle="",
-    )
+    cmap = plt.cm.rainbow(np.linspace(0, 1, len(hlist)))
+    for c, h in zip(cmap, hlist):
+        y, x = h.to_numpy()
+        x_mid = h.axes.centers[0]
+        y_errs = np.sqrt(h.variances())
+        ax1.stairs(
+            h.values(), 
+            x, 
+            color=c,
+            label=label1)
+        ax1.errorbar(
+            x_mid,
+            y,
+            yerr=y_errs,
+            color=c,
+            fmt="",
+            drawstyle="default",
+            linestyle="",
+        )
 
     # Set parameters that will be used to make the plots prettier
     if log:
-        ax1.set_yscale("log")
-    ymax = max([max(y1), max(y2)]) * 1.5
-    ymin = min([min(y1), min(y2)]) * 0.5
-    ax1.set_ylim([ymin, ymax])
+        ax1.set_yscale("log")  
     if type(xlim) is not str:
         xmin = xlim[0]
         xmax = xlim[1]
         ax1.set_xlim([xmin, xmax])
     else:
-        xmin1 = (
-            np.min([i for i, x in enumerate(y1 > 0) if x])
-            if len(x1_mid[y1 > 0])
-            else x1[0]
-        )
-        xmin2 = (
-            np.min([i for i, x in enumerate(y1 > 0) if x])
-            if len(x2_mid[y2 > 0])
-            else x2[0]
-        )
-        xmax1 = (
-            np.max([i for i, x in enumerate(y1 > 0) if x])
-            if len(x1_mid[y1 > 0])
-            else x1[-1]
-        )
-        xmax2 = (
-            np.max([i for i, x in enumerate(y2 > 0) if x])
-            if len(x2_mid[y2 > 0])
-            else x2[-1]
-        )
-        xmin = min([x1[xmin1], x2[xmin2]])
-        xmax = max([x1[xmax1 + 1], x2[xmax2 + 1]])
-        x_range = xmax - xmin
-        ax1.set_xlim([xmin, xmax])
+        xmins, xmaxs = [], []
+        for h in hlist:
+            xvals = h.axes.centers[0]
+            yvals = h.values()
+            i_xmin = np.min([i for i, x in enumerate(yvals > 0) if x]) if len(xvals[yvals > 0]) else x1[0]
+            i_xmax = np.max([i for i, x in enumerate(yvals > 0) if x]) if len(xvals[yvals > 0]) else x1[-1]
+            xmins.append(xvals[i_xmin] - h.axes.widths[0][0]/2)
+            xmaxs.append(xvals[i_xmax] + h.axes.widths[0][-1]/2)
+        xmin = min(xmins)
+        xmax = max(xmaxs)
+        xrange = xmax - xmin        
+        ax1.set_xlim([xmin - xrange*0.1, xmax + xrange*0.1])
 
     ax1.set_ylabel("Events", y=1, ha="right")
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
 
-    # calculate the upper and lower errors
-    # suppress errors where the denonminator is 0
-    y1 = np.where(y1 > 0, y1, -1)
-    yerrors_up = np.where(y1 > 0, y2 / y1 - (y2 - y2_errs) / (y1 + y1_errs), np.nan)
-    yerrors_low = np.where(y1 > 0, (y2 + y2_errs) / (y1 - y1_errs) - y2 / y1, np.nan)
-    ratio_errs = [yerrors_up, yerrors_low]
-    ratios = np.where((y2 > 0) & (y1 > 0), y2 / y1, 1)
-
-    ax2.errorbar(
-        x1_mid, ratios, yerr=ratio_errs, color="black", fmt="o", linestyle="none"
-    )
+    # calculate the ratio, with poisson errors, and plot them
+    for i, (c, h) in enumerate(zip(cmap, hlist)):
+        if i == 0: continue
+        ratio = np.divide(h.values(), hlist[0].values(), out=np.ones_like(h.values()), where=hlist[0].values()!=0)
+        ratio_err = hist.intervals.ratio_uncertainty(h.values(), hlist[0].values())
+        ax2.errorbar(
+            hlist[0].axes.centers[0], ratio, yerr=ratio_err, color=c, fmt="o", linestyle="none"
+        )    
+    
     ax2.axhline(1, ls="--", color="gray")
-    ax2.set_ylim(0.4, 1.6)
     ax2.set_ylabel("Ratio", y=1, ha="right")
 
     if plot_label is None:
         plot_label = h1.axes[0].label
     ax2.set_xlabel(plot_label, y=1)
 
-    residuals = ratios - 1
-    residuals_errs = ratio_errs
-
-    return fig, (ax1, ax2), (residuals, residuals_errs)
+    return fig, (ax1, ax2)
 
 
 def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=False):
