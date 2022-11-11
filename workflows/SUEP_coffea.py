@@ -339,7 +339,11 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
-            self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
+            if self.accum is False:
+                self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
+            else:
+                for c in self.columns:
+                    self.out_vars[c] = np.nan
             return
 
         #####################################################################################
@@ -455,7 +459,9 @@ class SUEP_cluster(processor.ProcessorABC):
                 + ".hdf5",
             )
         else:
-            # TODO: Add some stuff here to ensure healthy & consistent output
+            # Convert output to the desired format when the accumulator is used
+            for c in out_vars_keys:
+                output[c] = self.out_vars[c].to_list()
             output = {dataset: self.out_vars}
         return output
 
