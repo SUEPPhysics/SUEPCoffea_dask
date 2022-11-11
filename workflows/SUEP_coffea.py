@@ -39,7 +39,9 @@ class SUEP_cluster(processor.ProcessorABC):
         weight_syst: bool,
         flag: bool,
         do_inf: bool,
+        accum: Optional[bool],
         output_location: Optional[str],
+        trigger: Optional[str],
     ) -> None:
         self._flag = flag
         self.output_location = output_location
@@ -56,6 +58,8 @@ class SUEP_cluster(processor.ProcessorABC):
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
         self.doOF = False
+        self.accum = False if accum is False or None else True
+        self.trigger = trigger
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
@@ -89,7 +93,7 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def jet_awkward(self, Jets):
-        """ "
+        """
         Create awkward array of jets. Applies basic selections.
         Returns: awkward array of dimensions (events x jets x 4 momentum)
         """
@@ -108,12 +112,23 @@ class SUEP_cluster(processor.ProcessorABC):
     def eventSelection(self, events):
         """
         Applies trigger, returns events.
+        Default is PFHT triggers. Can use selection variable for customization.
         """
+        # NOTE: Might be a good idea to make this a 'match-case' statement
+        # once we can move to Python 3.10 for good.
         if self.scouting != 1:
-            if self.era == 2016:
-                trigger = events.HLT.PFHT900 == 1
+            if self.trigger == "TripleMu":
+                if self.era == 2018:
+                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+                elif self.era == 2017:
+                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+                else:
+                    trigger = events.HLT.TripleMu_5_3_3 == 1
             else:
-                trigger = events.HLT.PFHT1050 == 1
+                if self.era == 2016:
+                    trigger = events.HLT.PFHT900 == 1
+                else:
+                    trigger = events.HLT.PFHT1050 == 1
             events = events[trigger]
 
         return events
@@ -423,7 +438,7 @@ class SUEP_cluster(processor.ProcessorABC):
         elif self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
 
-        # run the anlaysis with the track systematics applied
+        # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
             self.analysis(events, do_syst=True, col_label="_track_down")
 
@@ -431,13 +446,17 @@ class SUEP_cluster(processor.ProcessorABC):
         self.analysis(events)
 
         # save the out_vars object as a Pandas DataFrame
-        pandas_utils.save_dfs(
-            self,
-            [self.out_vars],
-            ["vars"],
-            events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-            + ".hdf5",
-        )
+        if self.accum is False:
+            pandas_utils.save_dfs(
+                self,
+                [self.out_vars],
+                ["vars"],
+                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+                + ".hdf5",
+            )
+        else:
+            # TODO: Add some stuff here to ensure healthy & consistent output
+            output = {dataset: self.out_vars}
         return output
 
     def postprocess(self, accumulator):
