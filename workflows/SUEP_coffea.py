@@ -461,7 +461,7 @@ class SUEP_cluster(processor.ProcessorABC):
             )
         else:
             # Convert output to the desired format when the accumulator is used
-            for c in out_vars_keys:
+            for c in self.columns:
                 output[c] = self.out_vars[c].to_list()
             output = {dataset: self.out_vars}
         return output
