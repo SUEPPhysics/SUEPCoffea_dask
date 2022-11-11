@@ -249,6 +249,8 @@ if __name__ == "__main__":
             scouting=args.scouting,
             do_inf=args.doInf,
             output_location=current,
+            accum=True,
+            trigger="TripleMu",
         )
     else:
         raise NotImplemented
