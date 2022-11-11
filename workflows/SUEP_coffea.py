@@ -39,9 +39,9 @@ class SUEP_cluster(processor.ProcessorABC):
         weight_syst: bool,
         flag: bool,
         do_inf: bool,
-        accum: Optional[bool],
         output_location: Optional[str],
-        trigger: Optional[str],
+        accum: Optional[bool] = None,
+        trigger: Optional[str] = None,
     ) -> None:
         self._flag = flag
         self.output_location = output_location
