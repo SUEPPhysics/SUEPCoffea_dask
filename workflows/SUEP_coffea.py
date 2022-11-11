@@ -342,6 +342,7 @@ class SUEP_cluster(processor.ProcessorABC):
             if self.accum is False:
                 self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
             else:
+                self.initializeColumns(col_label)
                 for c in self.columns:
                     self.out_vars[c] = np.nan
             return
