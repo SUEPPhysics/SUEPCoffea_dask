@@ -16,7 +16,6 @@ from coffea import processor
 vector.register_awkward()
 
 # Importing SUEP specific functions
-import workflows.ML_utils as ML_utils
 import workflows.SUEP_utils as SUEP_utils
 from workflows.SUEP_coffea import SUEP_cluster
 
@@ -217,13 +216,13 @@ class ML_cluster(processor.ProcessorABC):
         # convert to this format
         l1event_feat, l1event_feat_names = self.store_event_features(out_vars)
 
-        l1pfcand_cyl = ML_utils.convert_cyl(SUEP_cluster_tracks, npfcands)
-        l1pfcand_cart = ML_utils.convert_cart(SUEP_cluster_tracks, npfcands)
-        l1pfcand_p4 = ML_utils.convert_p4(SUEP_cluster_tracks, npfcands)
+        l1pfcand_cyl = SUEP_utils.convert_coords("cyl", SUEP_cluster_tracks, npfcands)
+        l1pfcand_cart = SUEP_utils.convert_coords("cart", SUEP_cluster_tracks, npfcands)
+        l1pfcand_p4 = SUEP_utils.convert_coords("p4", SUEP_cluster_tracks, npfcands)
 
-        l1bpfcand_cyl = ML_utils.convert_cyl(SUEP_tracks_b_CL, npfcands)
-        l1bpfcand_cart = ML_utils.convert_cart(SUEP_tracks_b_CL, npfcands)
-        l1bpfcand_p4 = ML_utils.convert_p4(SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_cyl = SUEP_utils.convert_coords("cyl", SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_cart = SUEP_utils.convert_coords("cart", SUEP_tracks_b_CL, npfcands)
+        l1bpfcand_p4 = SUEP_utils.convert_coords("p4", SUEP_tracks_b_CL, npfcands)
 
         # save to file
         outFile = (
