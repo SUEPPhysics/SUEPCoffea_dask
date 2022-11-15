@@ -720,7 +720,7 @@ for ifile in tqdm(files):
                     higgs_weights_down,
                 )
                 df["event_weight"] *= higgs_weight
-                
+
         # 5) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling
         if scaling_weights is not None:

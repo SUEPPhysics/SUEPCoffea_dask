@@ -311,16 +311,15 @@ def bin_midpoints(bins):
     return np.array(midpoints)
 
 
-def plot_ratio(
-    hlist, labels=None, plot_label=None, xlim="default", log=True
-):
+def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
     # Set up variables for the stacked histogram
     fig = plt.figure(figsize=(12, 10))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
-    
-    if labels is None: labels = [None]*len(hlist)
+
+    if labels is None:
+        labels = [None] * len(hlist)
 
     cmap = plt.cm.rainbow(np.linspace(0, 1, len(hlist)))
     for c, h, l in zip(cmap, hlist, labels):
