@@ -615,6 +615,7 @@ if options.isMC and options.doSyst:
 logging.info("Setup ready, filling histograms now.")
 
 ### Plotting loop #######################################################################
+files = ['../out.hdf5']
 for ifile in tqdm(files):
 
     #####################################################################################
@@ -653,7 +654,7 @@ for ifile in tqdm(files):
     # MC to agree with data in one variable. Usage:
     # df['event_weight'] *= another event weight, etc
     #####################################################################################
-    if options.isMC and options.doSyst:
+    if options.isMC:
         puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
             options.era
         )
@@ -669,6 +670,8 @@ for ifile in tqdm(files):
             higgs_weights_up,
             higgs_weights_down,
         ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
+
+    if options.isMC and options.doSyst:
         sys_loop = [
             "",
             "puweights_up",
@@ -679,6 +682,8 @@ for ifile in tqdm(files):
             "PSWeight_ISR_down",
             "PSWeight_FSR_up",
             "PSWeight_FSR_down",
+            "prefire_up",
+            "prefire_down",
             "higgs_weights_up",
             "higgs_weights_down",
         ]
@@ -689,7 +694,7 @@ for ifile in tqdm(files):
         # prepare new event weight
         df["event_weight"] = np.ones(df.shape[0])
 
-        if options.isMC == 1 and options.doSyst:
+        if options.isMC == 1:
 
             if options.scouting != 1:
 
@@ -709,7 +714,13 @@ for ifile in tqdm(files):
                 if "PSWeight" in sys and sys in df.keys():
                     df["event_weight"] *= df[sys]
 
-            # 4) Higgs_pt weights
+                # 3) prefire weights
+                if options.era == 2016 or options.era == 2017:
+                    if "prefire" in sys and sys in df.keys():
+                        df["event_weight"] *= df[sys]
+                    else:
+                        df["event_weight"] *= df["prefire_nom"]
+            # 5) Higgs_pt weights
             if "SUEP-m125" in options.dataset:
                 higgs_weight = higgs_reweight.get_higgs_weight(
                     df,
@@ -721,7 +732,7 @@ for ifile in tqdm(files):
                 )
                 df["event_weight"] *= higgs_weight
 
-        # 5) scaling weights
+        # 6) scaling weights
         # N.B.: these aren't part of the systematics, just an optional scaling
         if scaling_weights is not None:
             df = apply_scaling_weights(
