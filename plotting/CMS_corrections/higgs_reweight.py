@@ -129,7 +129,7 @@ def get_higgs_weight(
     if "higgs_weights_up" in sys:
         higgs_weight = higgs_weights_up[gen_bin]
     elif "higgs_weights_down" in sys:
-        higgs_weight = higgs_weights_up[gen_bin]
+        higgs_weight = higgs_weights_down[gen_bin]
     else:
         higgs_weight = higgs_weights[gen_bin]
     return higgs_weight
