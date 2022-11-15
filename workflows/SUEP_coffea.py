@@ -24,6 +24,7 @@ import workflows.ZH_utils as ZH_utils
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
+from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 
 
@@ -256,7 +257,7 @@ class SUEP_cluster(processor.ProcessorABC):
                         "Pileup_nTrueInt" + out_label
                     ] = events.Pileup.nTrueInt
                     GetPSWeights(self, events)  # Parton Shower weights
-                    # GetPrefireWeights(self, events)#Prefire weights (commented out until A02 is ready)
+                    GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = events.PV.npvs
                 self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
 
