@@ -14,14 +14,14 @@ Additional corrections for CMS analyses are stored in the CMS_corrections direct
 
 See table below:
 
-| Correction        | Channels       | Status                                         |
-| ----------------- | -------------- | ---------------------------------------------- |
-| Golden JSON       | ggF, ML and ZH | - [x]                                          |
-| JECs              | ggF, ML and ZH | - [x]                                          |
-| Parton Shower     | ggF, ML and ZH | - [x]                                          |
-| Track killing     | ggF, ML and ZH | - [x] (Percentages for scouting need updating) |
-| Prefire           | ggF, ML and ZH | - [x]                                          |
-| Lepton SF         | ZH             | - [ ]                                          |
+| Correction    | Channels       | Status                                         |
+| ------------- | -------------- | ---------------------------------------------- |
+| Golden JSON   | ggF, ML and ZH | - [x]                                          |
+| JECs          | ggF, ML and ZH | - [x]                                          |
+| Parton Shower | ggF, ML and ZH | - [x]                                          |
+| Track killing | ggF, ML and ZH | - [x] (Percentages for scouting need updating) |
+| Prefire       | ggF, ML and ZH | - [x]                                          |
+| Lepton SF     | ZH             | - [ ]                                          |
 
 Other uncertainties are added on the fly while making histograms in the plotting directory:
 

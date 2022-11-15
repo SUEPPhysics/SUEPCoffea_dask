@@ -615,7 +615,7 @@ if options.isMC and options.doSyst:
 logging.info("Setup ready, filling histograms now.")
 
 ### Plotting loop #######################################################################
-files = ['../out.hdf5']
+files = ["../out.hdf5"]
 for ifile in tqdm(files):
 
     #####################################################################################
