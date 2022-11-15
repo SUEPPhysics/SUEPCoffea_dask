@@ -7,6 +7,7 @@ from collections import defaultdict
 
 import boost_histogram as bh
 import hist
+import hist.intervals
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
@@ -310,21 +311,22 @@ def bin_midpoints(bins):
     return np.array(midpoints)
 
 
-def plot_ratio(
-    hlist, plot_label=None, label1=None, label2=None, xlim="default", log=True
-):
+def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
     # Set up variables for the stacked histogram
     fig = plt.figure(figsize=(12, 10))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
+    if labels is None:
+        labels = [None] * len(hlist)
+
     cmap = plt.cm.rainbow(np.linspace(0, 1, len(hlist)))
-    for c, h in zip(cmap, hlist):
+    for c, h, l in zip(cmap, hlist, labels):
         y, x = h.to_numpy()
         x_mid = h.axes.centers[0]
         y_errs = np.sqrt(h.variances())
-        ax1.stairs(h.values(), x, color=c, label=label1)
+        ax1.stairs(h.values(), x, color=c, label=l)
         ax1.errorbar(
             x_mid,
             y,
@@ -350,12 +352,12 @@ def plot_ratio(
             i_xmin = (
                 np.min([i for i, x in enumerate(yvals > 0) if x])
                 if len(xvals[yvals > 0])
-                else x1[0]
+                else 0
             )
             i_xmax = (
                 np.max([i for i, x in enumerate(yvals > 0) if x])
                 if len(xvals[yvals > 0])
-                else x1[-1]
+                else -1
             )
             xmins.append(xvals[i_xmin] - h.axes.widths[0][0] / 2)
             xmaxs.append(xvals[i_xmax] + h.axes.widths[0][-1] / 2)
@@ -393,7 +395,7 @@ def plot_ratio(
     ax2.set_ylabel("Ratio", y=1, ha="right")
 
     if plot_label is None:
-        plot_label = h1.axes[0].label
+        plot_label = hlist[0].axes[0].label
     ax2.set_xlabel(plot_label, y=1)
 
     return fig, (ax1, ax2)

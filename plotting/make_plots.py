@@ -233,12 +233,11 @@ def create_output_file(label, abcd):
                     name=f"{r}ht_JEC_JES_down_{label}",
                     label="HT JEC JES down",
                 ).Weight(),
-                f"{r}ntracks_{label}"
-                + label: Hist.new.Reg(
+                f"{r}ntracks_{label}": Hist.new.Reg(
                     101,
                     0,
                     500,
-                    name=f"{r}ntracks_{label}" + label,
+                    name=f"{r}ntracks_{label}",
                     label="# Tracks in Event",
                 ).Weight(),
                 f"{r}ngood_fastjets_{label}": Hist.new.Reg(
@@ -285,10 +284,10 @@ def create_output_file(label, abcd):
                 f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(200, 0, 500, name=f"nconst_{label}", label="# Constituents")
+                .Int(0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
-                f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Reg(
-                    200, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
+                f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Int(
+                    0, 500, name=f"SUEP_nconst_{label}", label="# Const"
                 )
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
@@ -299,8 +298,7 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                        40,
+                    f"{r}SUEP_nconst_{label}": Hist.new.Int(
                         0,
                         500,
                         name=f"{r}SUEP_nconst_{label}",
@@ -373,10 +371,10 @@ def create_output_file(label, abcd):
                 f"2D_ISR_S1_vs_ISR_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(200, 0, 500, name=f"nconst_{label}", label="# Constituents")
+                .Int(0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
-                f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Reg(
-                    200, 0, 500, name=f"ISR_nconst_{label}"
+                f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Int(
+                    0, 500, name=f"ISR_nconst_{label}"
                 )
                 .Reg(500, 0, 500, name=f"ISR_pt_avg_{label}")
                 .Weight(),
@@ -386,8 +384,7 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    f"{r}ISR_nconst_{label}": Hist.new.Reg(
-                        199,
+                    f"{r}ISR_nconst_{label}": Hist.new.Int(
                         0,
                         500,
                         name=f"{r}ISR_nconst_{label}",
@@ -446,8 +443,7 @@ def create_output_file(label, abcd):
                     )
                     .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
-                    f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Reg(
-                        200,
+                    f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Int(
                         0,
                         500,
                         name=f"SUEP_nconst_{label}",
@@ -460,8 +456,8 @@ def create_output_file(label, abcd):
 
         output.update(
             {
-                f"2D_SUEP_nconst_vs_SUEP_S1_{label}": Hist.new.Reg(
-                    200, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
+                f"2D_SUEP_nconst_vs_SUEP_S1_{label}": Hist.new.Int(
+                    0, 500, name=f"SUEP_nconst_{label}", label="# Const"
                 )
                 .Reg(100, 0, 1, name=f"SUEP_S1_{label}", label="$Sph_1$")
                 .Weight(),
@@ -471,8 +467,7 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                        199,
+                    f"{r}SUEP_nconst_{label}": Hist.new.Int(
                         0,
                         500,
                         name=f"{r}SUEP_nconst{label}",
@@ -512,8 +507,8 @@ def create_output_file(label, abcd):
                     )
                     .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
-                    f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Reg(
-                        200, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
+                    f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Int(
+                        0, 500, name=f"ISR_nconst_{label}", label="# Const"
                     )
                     .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
@@ -521,8 +516,8 @@ def create_output_file(label, abcd):
             )
         output.update(
             {
-                f"2D_ISR_nconst_vs_ISR_S1_{label}": Hist.new.Reg(
-                    200, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
+                f"2D_ISR_nconst_vs_ISR_S1_{label}": Hist.new.Int(
+                    0, 500, name=f"ISR_nconst_{label}", label="# Const"
                 )
                 .Reg(100, 0, 1, name=f"ISR_S1_{label}", label="$Sph_1$")
                 .Weight()
@@ -532,8 +527,7 @@ def create_output_file(label, abcd):
         for r in regions_list:
             output.update(
                 {
-                    f"{r}ISR_nconst_{label}": Hist.new.Reg(
-                        199,
+                    f"{r}ISR_nconst_{label}": Hist.new.Int(
                         0,
                         500,
                         name=f"{r}ISR_nconst{label}",
@@ -695,7 +689,7 @@ for ifile in tqdm(files):
         # prepare new event weight
         df["event_weight"] = np.ones(df.shape[0])
 
-        if options.isMC == 1:
+        if options.isMC == 1 and options.doSyst:
 
             if options.scouting != 1:
 
@@ -727,19 +721,19 @@ for ifile in tqdm(files):
                 )
                 df["event_weight"] *= higgs_weight
 
-            # 5) scaling weights
-            # N.B.: these aren't part of the systematics, just an optional scaling
-            if scaling_weights is not None:
-                df = apply_scaling_weights(
-                    df.copy(),
-                    scaling_weights,
-                    config["Cluster"]["x_var_regions"],
-                    config["Cluster"]["x_var_regions"],
-                    regions="ABCDEFGHI",
-                    x_var="SUEP_S1_CL",
-                    y_var="SUEP_nconst_CL",
-                    z_var="ht",
-                )
+        # 5) scaling weights
+        # N.B.: these aren't part of the systematics, just an optional scaling
+        if scaling_weights is not None:
+            df = apply_scaling_weights(
+                df.copy(),
+                scaling_weights,
+                config["Cluster"]["x_var_regions"],
+                config["Cluster"]["x_var_regions"],
+                regions="ABCDEFGHI",
+                x_var="SUEP_S1_CL",
+                y_var="SUEP_nconst_CL",
+                z_var="ht",
+            )
 
         for label_out, config_out in config.items():
             if "track_down" in label_out and sys != "":
