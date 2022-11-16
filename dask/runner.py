@@ -207,6 +207,7 @@ if __name__ == "__main__":
 
     # Scan if files can be opened
     if args.validate:
+        # NOTE: Need to move these imports to a function
         start = time.time()
         from p_tqdm import p_map
 
@@ -236,6 +237,7 @@ if __name__ == "__main__":
 
     # load workflow
     if args.workflow == "SUEP":
+        # NOTE: Need to move these imports to a function
         from workflows.SUEP_coffea import SUEP_cluster
 
         processor_instance = SUEP_cluster(
@@ -312,6 +314,7 @@ if __name__ == "__main__":
             maxchunks=args.max,
         )
     elif "parsl" in args.executor:
+        # NOTE: Need to move these imports to a function
         import parsl
         from parsl.addresses import address_by_hostname, address_by_query
         from parsl.channels import LocalChannel
@@ -377,6 +380,7 @@ if __name__ == "__main__":
         )
 
     elif "dask" in args.executor:
+        # NOTE: Need to move these imports to a function
         from dask_jobqueue import HTCondorCluster, SLURMCluster
         from distributed import Client
 
@@ -394,6 +398,7 @@ if __name__ == "__main__":
                 env_extra=env_extra,
             )
         elif "lxplus" in args.executor:
+            # NOTE: Need to move these imports to a function
             n_port = 8786
             if not check_port(8786):
                 raise RuntimeError(
@@ -421,6 +426,7 @@ if __name__ == "__main__":
                 env_extra=env_extra,
             )
         elif "mit" in args.executor:
+            # NOTE: Need to move these imports to a function
             # n_port = 8786
             # if not check_port(8786):
             #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
