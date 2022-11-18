@@ -19,9 +19,53 @@ def validate(file):
     try:
         fin = uproot.open(file)
         return fin["Events"].num_entries
-    except:
+    except RuntimeError:
         print(f"Corrupted file: {file}")
         return
+
+
+def validation(args, sample_dict):
+    start = time.time()
+    from p_tqdm import p_map
+
+    all_invalid = []
+    for sample in sample_dict.keys():
+        _rmap = p_map(
+            validate,
+            sample_dict[sample],
+            num_cpus=args.workers,
+            desc=f"Validating {sample[:20]}...",
+        )
+        _results = list(_rmap)
+        counts = np.sum([r for r in _results if np.isreal(r)])
+        all_invalid += [r for r in _results if type(r) == str]
+        print("Events:", np.sum(counts))
+    print("Bad files:")
+    for fi in all_invalid:
+        print(f"  {fi}")
+    end = time.time()
+    print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))
+    if input("Remove bad files? (y/n)") == "y":
+        print("Removing:")
+        for fi in all_invalid:
+            print(f"Removing: {fi}")
+            os.system(f"rm {fi}")
+    sys.exit(0)
+
+
+def loadder(args):
+    with open(args.samplejson) as f:
+        sample_dict = json.load(f)
+    for key in sample_dict.keys():
+        sample_dict[key] = sample_dict[key][: args.limit]
+    if args.executor == "dask/casa":
+        for key in sample_dict.keys():
+            print(key)
+            sample_dict[key] = [
+                path.replace("xrootd.cmsaf.mit.edu", "xcache")
+                for path in sample_dict[key]
+            ]
+    return sample_dict
 
 
 def check_port(port):
@@ -31,7 +75,7 @@ def check_port(port):
     try:
         sock.bind(("0.0.0.0", port))
         available = True
-    except:
+    except RuntimeError:
         available = False
     sock.close()
     return available
@@ -167,6 +211,272 @@ def get_main_parser():
     return parser
 
 
+def specificProcessing(args, sample_dict):
+    if args.only in sample_dict.keys():  # is dataset
+        sample_dict = dict([(args.only, sample_dict[args.only])])
+    if "*" in args.only:  # wildcard for datasets
+        _new_dict = {}
+        print("Will only process the following datasets:")
+        for k, v in sample_dict.items():
+            if k.lstrip("/").startswith(args.only.rstrip("*")):
+                print("    ", k)
+                _new_dict[k] = v
+        sample_dict = _new_dict
+    else:  # is file
+        for key in sample_dict.keys():
+            if args.only in sample_dict[key]:
+                sample_dict = dict([(key, [args.only])])
+    return sample_dict
+
+
+def parslExecutor(args, env_extra, condor_extra):
+    import parsl
+    from parsl.addresses import address_by_hostname, address_by_query
+    from parsl.channels import LocalChannel
+    from parsl.config import Config
+    from parsl.executors import HighThroughputExecutor
+    from parsl.launchers import SrunLauncher
+    from parsl.providers import CondorProvider, SlurmProvider
+
+    if "slurm" in args.executor:
+        htex_config = Config(
+            executors=[
+                HighThroughputExecutor(
+                    label="coffea_parsl_slurm",
+                    address=address_by_hostname(),
+                    prefetch_capacity=0,
+                    provider=SlurmProvider(
+                        channel=LocalChannel(script_dir="logs_parsl"),
+                        launcher=SrunLauncher(),
+                        max_blocks=(args.scaleout) + 10,
+                        init_blocks=args.scaleout,
+                        partition="all",
+                        worker_init="\n".join(env_extra),
+                        walltime="00:120:00",
+                    ),
+                )
+            ],
+            retries=20,
+        )
+    elif "condor" in args.executor:
+        htex_config = Config(
+            executors=[
+                HighThroughputExecutor(
+                    label="coffea_parsl_condor",
+                    address=address_by_query(),
+                    # max_workers=1,
+                    provider=CondorProvider(
+                        nodes_per_block=1,
+                        init_blocks=1,
+                        max_blocks=1,
+                        worker_init="\n".join(env_extra + condor_extra),
+                        walltime="00:20:00",
+                    ),
+                )
+            ]
+        )
+    else:
+        raise NotImplementedError
+
+    parsl.load(htex_config)
+
+    output = processor.run_uproot_job(
+        sample_dict,
+        treename="Events",
+        processor_instance=processor_instance,
+        executor=processor.parsl_executor,
+        executor_args={
+            "skipbadfiles": True,
+            "schema": processor.NanoAODSchema,
+            "config": None,
+        },
+        chunksize=args.chunk,
+        maxchunks=args.max,
+    )
+    return output
+
+
+def daskExecutor(args, env_extra, condor_extra):
+    from dask_jobqueue import HTCondorCluster, SLURMCluster
+    from distributed import Client
+
+    from dask.distributed import performance_report
+
+    if "lpc" in args.executor:
+        env_extra = [
+            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+        ]
+        from lpcjobqueue import LPCCondorCluster
+
+        cluster = LPCCondorCluster(
+            transfer_input_files="/srv/workflows/",
+            ship_env=True,
+            env_extra=env_extra,
+        )
+    elif "lxplus" in args.executor:
+        # NOTE: Need to move these imports to a function
+        n_port = 8786
+        if not check_port(8786):
+            raise RuntimeError(
+                "Port '8786' is not occupied on this node. Try another one."
+            )
+        import socket
+
+        cluster = HTCondorCluster(
+            cores=1,
+            memory="4GB",  # hardcoded
+            disk="1GB",
+            death_timeout="60",
+            nanny=False,
+            scheduler_options={"port": n_port, "host": socket.gethostname()},
+            job_extra={
+                "log": "dask_out/dask_job_output.log",
+                "output": "dask_out/dask_job_output.out",
+                "error": "dask_out/dask_job_output.err",
+                "should_transfer_files": "Yes",
+                "when_to_transfer_output": "ON_EXIT",
+                "+SingularityImage": '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
+                "+JobFlavour": '"workday"',
+            },
+            extra=[f"--worker-port {n_port}"],
+            env_extra=env_extra,
+        )
+    elif "mit" in args.executor:
+        # NOTE: Need to move these imports to a function
+        # n_port = 8786
+        # if not check_port(8786):
+        #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
+        import socket
+
+        cluster = HTCondorCluster(
+            cores=1,
+            memory="4GB",  # hardcoded
+            disk="1GB",
+            death_timeout="60",
+            nanny=False,
+            scheduler_options={
+                # 'port': n_port,
+                "dashboard_address": 8000,
+                "host": socket.gethostname(),
+            },
+            job_extra={
+                "log": "dask_out/dask_job_output.log",
+                "output": "dask_out/dask_job_output.out",
+                "error": "dask_out/dask_job_output.err",
+                "should_transfer_files": "Yes",
+                "when_to_transfer_output": "ON_EXIT",
+                "+SingularityImage": '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
+            },
+            # extra = ['--worker-port {}'.format(n_port)],
+            env_extra=env_extra,
+        )
+    elif "slurm" in args.executor:
+        cluster = SLURMCluster(
+            queue="all",
+            cores=args.workers,
+            processes=args.workers,
+            memory="200 GB",
+            retries=10,
+            walltime="00:30:00",
+            env_extra=env_extra,
+        )
+    elif "condor" in args.executor:
+        cluster = HTCondorCluster(
+            cores=args.workers,
+            memory="4GB",
+            disk="4GB",
+            env_extra=env_extra,
+        )
+
+    if args.executor == "dask/casa":
+        client = Client("tls://localhost:8786")
+        import shutil
+
+        shutil.make_archive("workflows", "zip", base_dir="workflows")
+        client.upload_file("workflows.zip")
+    else:
+        cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
+        client = Client(cluster)
+        print("Waiting for at least one worker...")
+        client.wait_for_workers(1)
+    with performance_report(filename="dask_out/dask-report.html"):
+        output = processor.run_uproot_job(
+            sample_dict,
+            treename="Events",
+            processor_instance=processor_instance,
+            executor=processor.dask_executor,
+            executor_args={
+                "client": client,
+                "skipbadfiles": args.skipbadfiles,
+                "schema": processor.NanoAODSchema,
+                # 'xrootdtimeout': 10,
+                "retries": 3,
+            },
+            chunksize=args.chunk,
+            maxchunks=args.max,
+        )
+    return output
+
+
+def nativeExecutors(args):
+    if args.executor == "iterative":
+        _exec = processor.iterative_executor
+    else:
+        _exec = processor.futures_executor
+    output = processor.run_uproot_job(
+        sample_dict,
+        treename="Events",
+        processor_instance=processor_instance,
+        executor=_exec,
+        executor_args={
+            "skipbadfiles": args.skipbadfiles,
+            "schema": processor.NanoAODSchema,
+            "workers": args.workers,
+        },
+        chunksize=args.chunk,
+        maxchunks=args.max,
+    )
+    return output
+
+
+def exportCert(args):
+    """
+    dask/parsl needs to export x509 to read over xrootd
+    dask/lpc uses custom jobqueue provider that handles x509
+    """
+    if args.voms is not None:
+        _x509_path = args.voms
+    else:
+        try:
+            _x509_localpath = (
+                [
+                    line
+                    for line in os.popen("voms-proxy-info").read().split("\n")
+                    if line.startswith("path")
+                ][0]
+                .split(":")[-1]
+                .strip()
+            )
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "x509 proxy could not be parsed, try creating it with 'voms-proxy-init'"
+            ) from exc
+        _x509_path = os.environ["HOME"] + f'/.{_x509_localpath.split("/")[-1]}'
+        os.system(f"cp {_x509_localpath} {_x509_path}")
+
+    env_extra = [
+        "export XRD_RUNFORKHANDLER=1",
+        "export XRD_STREAMTIMEOUT=10",
+        f"export X509_USER_PROXY={_x509_path}",
+        f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
+        f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+    ]
+    condor_extra = [
+        f'source {os.environ["HOME"]}/.bashrc',
+    ]
+    return env_extra, condor_extra
+
+
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
@@ -176,64 +486,15 @@ if __name__ == "__main__":
         )
 
     # load dataset
-    with open(args.samplejson) as f:
-        sample_dict = json.load(f)
-    for key in sample_dict.keys():
-        sample_dict[key] = sample_dict[key][: args.limit]
-    if args.executor == "dask/casa":
-        for key in sample_dict.keys():
-            print(key)
-            sample_dict[key] = [
-                path.replace("xrootd.cmsaf.mit.edu", "xcache")
-                for path in sample_dict[key]
-            ]
+    sample_dict = loadder(args)
 
     # For debugging
     if args.only is not None:
-        if args.only in sample_dict.keys():  # is dataset
-            sample_dict = dict([(args.only, sample_dict[args.only])])
-        if "*" in args.only:  # wildcard for datasets
-            _new_dict = {}
-            print("Will only process the following datasets:")
-            for k, v in sample_dict.items():
-                if k.lstrip("/").startswith(args.only.rstrip("*")):
-                    print("    ", k)
-                    _new_dict[k] = v
-            sample_dict = _new_dict
-        else:  # is file
-            for key in sample_dict.keys():
-                if args.only in sample_dict[key]:
-                    sample_dict = dict([(key, [args.only])])
+        sample_dict = specificProcessing(args, sample_dict)
 
     # Scan if files can be opened
     if args.validate:
-        # NOTE: Need to move these imports to a function
-        start = time.time()
-        from p_tqdm import p_map
-
-        all_invalid = []
-        for sample in sample_dict.keys():
-            _rmap = p_map(
-                validate,
-                sample_dict[sample],
-                num_cpus=args.workers,
-                desc=f"Validating {sample[:20]}...",
-            )
-            _results = list(_rmap)
-            counts = np.sum([r for r in _results if np.isreal(r)])
-            all_invalid += [r for r in _results if type(r) == str]
-            print("Events:", np.sum(counts))
-        print("Bad files:")
-        for fi in all_invalid:
-            print(f"  {fi}")
-        end = time.time()
-        print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))
-        if input("Remove bad files? (y/n)") == "y":
-            print("Removing:")
-            for fi in all_invalid:
-                print(f"Removing: {fi}")
-                os.system(f"rm {fi}")
-        sys.exit(0)
+        validation(args, sample_dict)
 
     # load workflow
     if args.workflow == "SUEP":
@@ -255,250 +516,20 @@ if __name__ == "__main__":
             trigger="TripleMu",
         )
     else:
-        raise NotImplemented
+        raise NotImplementedError
 
+    env_extra, condor_extra = None, None
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
-        """
-        dask/parsl needs to export x509 to read over xrootd
-        dask/lpc uses custom jobqueue provider that handles x509
-        """
-        if args.voms is not None:
-            _x509_path = args.voms
-        else:
-            try:
-                _x509_localpath = (
-                    [
-                        line
-                        for line in os.popen("voms-proxy-info").read().split("\n")
-                        if line.startswith("path")
-                    ][0]
-                    .split(":")[-1]
-                    .strip()
-                )
-            except:
-                raise RuntimeError(
-                    "x509 proxy could not be parsed, try creating it with 'voms-proxy-init'"
-                )
-            _x509_path = os.environ["HOME"] + f'/.{_x509_localpath.split("/")[-1]}'
-            os.system(f"cp {_x509_localpath} {_x509_path}")
-
-        env_extra = [
-            "export XRD_RUNFORKHANDLER=1",
-            "export XRD_STREAMTIMEOUT=10",
-            f"export X509_USER_PROXY={_x509_path}",
-            f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
-            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-        ]
-        condor_extra = [
-            f'source {os.environ["HOME"]}/.bashrc',
-        ]
+        env_extra, condor_extra = exportCert(args)
 
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:
-        if args.executor == "iterative":
-            _exec = processor.iterative_executor
-        else:
-            _exec = processor.futures_executor
-        output = processor.run_uproot_job(
-            sample_dict,
-            treename="Events",
-            processor_instance=processor_instance,
-            executor=_exec,
-            executor_args={
-                "skipbadfiles": args.skipbadfiles,
-                "schema": processor.NanoAODSchema,
-                "workers": args.workers,
-            },
-            chunksize=args.chunk,
-            maxchunks=args.max,
-        )
+        output = nativeExecutors(args)
     elif "parsl" in args.executor:
-        # NOTE: Need to move these imports to a function
-        import parsl
-        from parsl.addresses import address_by_hostname, address_by_query
-        from parsl.channels import LocalChannel
-        from parsl.config import Config
-        from parsl.executors import HighThroughputExecutor
-        from parsl.launchers import SrunLauncher
-        from parsl.providers import CondorProvider, SlurmProvider
-
-        if "slurm" in args.executor:
-            htex_config = Config(
-                executors=[
-                    HighThroughputExecutor(
-                        label="coffea_parsl_slurm",
-                        address=address_by_hostname(),
-                        prefetch_capacity=0,
-                        provider=SlurmProvider(
-                            channel=LocalChannel(script_dir="logs_parsl"),
-                            launcher=SrunLauncher(),
-                            max_blocks=(args.scaleout) + 10,
-                            init_blocks=args.scaleout,
-                            partition="all",
-                            worker_init="\n".join(env_extra),
-                            walltime="00:120:00",
-                        ),
-                    )
-                ],
-                retries=20,
-            )
-        elif "condor" in args.executor:
-            htex_config = Config(
-                executors=[
-                    HighThroughputExecutor(
-                        label="coffea_parsl_condor",
-                        address=address_by_query(),
-                        # max_workers=1,
-                        provider=CondorProvider(
-                            nodes_per_block=1,
-                            init_blocks=1,
-                            max_blocks=1,
-                            worker_init="\n".join(env_extra + condor_extra),
-                            walltime="00:20:00",
-                        ),
-                    )
-                ]
-            )
-        else:
-            raise NotImplementedError
-
-        dfk = parsl.load(htex_config)
-
-        output = processor.run_uproot_job(
-            sample_dict,
-            treename="Events",
-            processor_instance=processor_instance,
-            executor=processor.parsl_executor,
-            executor_args={
-                "skipbadfiles": True,
-                "schema": processor.NanoAODSchema,
-                "config": None,
-            },
-            chunksize=args.chunk,
-            maxchunks=args.max,
-        )
-
+        output = parslExecutor(args)
     elif "dask" in args.executor:
-        # NOTE: Need to move these imports to a function
-        from dask_jobqueue import HTCondorCluster, SLURMCluster
-        from distributed import Client
-
-        from dask.distributed import performance_report
-
-        if "lpc" in args.executor:
-            env_extra = [
-                f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-            ]
-            from lpcjobqueue import LPCCondorCluster
-
-            cluster = LPCCondorCluster(
-                transfer_input_files="/srv/workflows/",
-                ship_env=True,
-                env_extra=env_extra,
-            )
-        elif "lxplus" in args.executor:
-            # NOTE: Need to move these imports to a function
-            n_port = 8786
-            if not check_port(8786):
-                raise RuntimeError(
-                    "Port '8786' is not occupied on this node. Try another one."
-                )
-            import socket
-
-            cluster = HTCondorCluster(
-                cores=1,
-                memory="4GB",  # hardcoded
-                disk="1GB",
-                death_timeout="60",
-                nanny=False,
-                scheduler_options={"port": n_port, "host": socket.gethostname()},
-                job_extra={
-                    "log": "dask_out/dask_job_output.log",
-                    "output": "dask_out/dask_job_output.out",
-                    "error": "dask_out/dask_job_output.err",
-                    "should_transfer_files": "Yes",
-                    "when_to_transfer_output": "ON_EXIT",
-                    "+SingularityImage": '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
-                    "+JobFlavour": '"workday"',
-                },
-                extra=[f"--worker-port {n_port}"],
-                env_extra=env_extra,
-            )
-        elif "mit" in args.executor:
-            # NOTE: Need to move these imports to a function
-            # n_port = 8786
-            # if not check_port(8786):
-            #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
-            import socket
-
-            cluster = HTCondorCluster(
-                cores=1,
-                memory="4GB",  # hardcoded
-                disk="1GB",
-                death_timeout="60",
-                nanny=False,
-                scheduler_options={
-                    #'port': n_port,
-                    "dashboard_address": 8000,
-                    "host": socket.gethostname(),
-                },
-                job_extra={
-                    "log": "dask_out/dask_job_output.log",
-                    "output": "dask_out/dask_job_output.out",
-                    "error": "dask_out/dask_job_output.err",
-                    "should_transfer_files": "Yes",
-                    "when_to_transfer_output": "ON_EXIT",
-                    "+SingularityImage": '"/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest"',
-                },
-                # extra = ['--worker-port {}'.format(n_port)],
-                env_extra=env_extra,
-            )
-        elif "slurm" in args.executor:
-            cluster = SLURMCluster(
-                queue="all",
-                cores=args.workers,
-                processes=args.workers,
-                memory="200 GB",
-                retries=10,
-                walltime="00:30:00",
-                env_extra=env_extra,
-            )
-        elif "condor" in args.executor:
-            cluster = HTCondorCluster(
-                cores=args.workers,
-                memory="4GB",
-                disk="4GB",
-                env_extra=env_extra,
-            )
-
-        if args.executor == "dask/casa":
-            client = Client("tls://localhost:8786")
-            import shutil
-
-            shutil.make_archive("workflows", "zip", base_dir="workflows")
-            client.upload_file("workflows.zip")
-        else:
-            cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
-            client = Client(cluster)
-            print("Waiting for at least one worker...")
-            client.wait_for_workers(1)
-        with performance_report(filename="dask_out/dask-report.html"):
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
-                executor=processor.dask_executor,
-                executor_args={
-                    "client": client,
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": processor.NanoAODSchema,
-                    #'xrootdtimeout': 10,
-                    "retries": 3,
-                },
-                chunksize=args.chunk,
-                maxchunks=args.max,
-            )
+        output = daskExecutor(args)
 
     save(output, args.output)
 
