@@ -43,11 +43,12 @@ default_colors = {
     "SUEP-m125-generic-htcut": "magenta",
 }
 
+# https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
-    "2016_apv": 19.5 * 1000,
-    "2016": 16.8 * 1000,
-    "2017": 41.5 * 1000,
-    "2018": 61000,
+    "2016_apv": 19497.914,
+    "2016": 16810.813,
+    "2017": 41471.589,
+    "2018":  59817.406 ,
 }
 
 # load file(s)
