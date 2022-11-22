@@ -397,6 +397,8 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
     if plot_label is None:
         plot_label = hlist[0].axes[0].label
+        if plot_label == 'Axis 0': plot_label =None
+    ax1.legend(loc='best')
     ax2.set_xlabel(plot_label, y=1)
 
     return fig, (ax1, ax2)

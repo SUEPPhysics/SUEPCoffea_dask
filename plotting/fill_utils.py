@@ -26,10 +26,10 @@ def h5load(ifile, label):
         return 0, 0
 
 
-def getXSection(dataset, year, SUEP=False):
+def getXSection(dataset, year, SUEP=False, path="../data/"):
     xsection = 1
     if not SUEP:
-        with open(f"../data/xsections_{year}.json") as file:
+        with open("{}/xsections_{}.json".format(path, year)) as file:
             MC_xsecs = json.load(file)
             try:
                 xsection *= MC_xsecs[dataset]["xsec"]
@@ -41,7 +41,7 @@ def getXSection(dataset, year, SUEP=False):
                 )
                 return 1
     else:
-        with open(f"../data/xsections_{year}_SUEP.json") as file:
+        with open("{}/xsections_{}_SUEP.json".format(path, year)) as file:
             MC_xsecs = json.load(file)
             try:
                 xsection *= MC_xsecs[dataset]
@@ -312,9 +312,11 @@ def get_track_killing_config(config):
         for iSel in range(len(new_config[label_out_new]["SR"])):
             new_config[label_out_new]["SR"][iSel][0] += "_track_down"
         for iSel in range(len(new_config[label_out_new]["selections"])):
+            # handle some exceptions by hand, for now
             if new_config[label_out_new]["selections"][iSel][0] in [
                 "ht",
                 "ngood_ak4jets",
+                "ht_JEC",
             ]:
                 continue
             new_config[label_out_new]["selections"][iSel][0] += "_track_down"
@@ -330,6 +332,8 @@ def get_jet_corrections_config(config, jet_corrections):
             new_config[label_out_new] = deepcopy(config[label_out])
             for iSel in range(len(new_config[label_out_new]["selections"])):
                 if "ht" == new_config[label_out_new]["selections"][iSel][0]:
+                    new_config[label_out_new]["selections"][iSel][0] += "_" + sys
+                elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
                     new_config[label_out_new]["selections"][iSel][0] += "_" + sys
     return new_config
 

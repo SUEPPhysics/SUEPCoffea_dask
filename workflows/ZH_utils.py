@@ -35,6 +35,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
         & (abs(events.Muon.dxy) <= 0.02)
         & (abs(events.Muon.dz) <= 0.1)
         & (events.Muon.pfIsoId >= 2)
+        & (abs(events.Muon.eta) < 2.4)
     )
     cutElectrons = (
         (events.Electron.cutBased >= 2)
@@ -43,6 +44,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
         & (abs(events.Electron.dxy) < 0.05 + 0.05 * (events.Electron.eta > 1.479))
         & (abs(events.Electron.dz) < 0.10 + 0.10 * (events.Electron.eta > 1.479))
         & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+        & (abs(events.Electron.eta) < 2.5)
     )
 
     ### Apply the cuts
