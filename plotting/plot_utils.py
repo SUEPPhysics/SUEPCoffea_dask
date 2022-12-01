@@ -863,7 +863,7 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
 
     # fill the histograms
     if histtype == "hist":
-        h_out = hist.Hist(hist.axis.Variable(bins), storage=hist.storage.Weight())
+        h_out = hist.Hist(hist.axis.Variable(bins, label=h_in.axes[0].label, name=h_in.axes[0].name), storage=hist.storage.Weight(), label=h_in.axes[0].label)
         h_out[:] = np.stack([z_vals, z_vars], axis=-1)
 
     elif histtype == "bh":
