@@ -11,9 +11,9 @@ def ClusterMethod(
     self,
     indices,
     tracks,
-    SUEP_cand,  # Only the JET (i.e. 'average' tracks)
+    SUEP_cand,  # SUEP jet candidate
     ISR_cand,
-    SUEP_cluster_tracks,  # The tracks within the JET
+    SUEP_cluster_tracks,  # The tracks within the Jet
     ISR_cluster_tracks,
     do_inverted=False,
     out_label=None,
@@ -72,8 +72,7 @@ def ClusterMethod(
         SUEP_cand.pt - self.out_vars["SUEP_genPt" + out_label][indices]
     )
 
-    # Calculate orientation difference between canditate and actual SUEP
-
+    # Calculate orientation difference between candidate and actual SUEP
     SUEP_genEta_diff_CL = (
         self.out_vars["SUEP_eta_CL" + out_label]
         - self.out_vars["SUEP_genEta" + out_label]
