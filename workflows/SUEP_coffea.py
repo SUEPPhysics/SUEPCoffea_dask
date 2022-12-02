@@ -199,7 +199,7 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks = ak.packed(Cleaned_cands)
         return tracks, Cleaned_cands
 
-    def storeEventVars(
+    def storeEventVars( ### THIS IS WHERE SELF.OUT_VARS IS FILLED
         self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, out_label=""
     ):
 
@@ -261,17 +261,35 @@ class SUEP_cluster(processor.ProcessorABC):
                 self.out_vars["PV_npvs" + out_label] = events.PV.npvs
                 self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
 
-        # get gen SUEP mass
+        # get gen SUEP mass 
         SUEP_genMass = len(events) * [0]
         SUEP_genPt = len(events) * [0]
+        
+        # get gen SUEP angular distribution
+        SUEP_genEta = len(events) * [0]
+        SUEP_genPhi = len(events) * [0]
+        
+        
         if self.isMC and not self.scouting:
             genParts = self.getGenTracks(events)
             genSUEP = genParts[(abs(genParts.pdgID) == 25)]
             # we need to grab the last SUEP in the chain for each event
             SUEP_genMass = [g[-1].mass if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genPt = [g[-1].pt if len(g) > 0 else 0 for g in genSUEP]
+            
+            SUEP_genPhi = [g[-1].phi if len(g) > 0 else 0 for g in genSUEP]
+            SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
+                       
+
         self.out_vars["SUEP_genMass" + out_label] = SUEP_genMass
         self.out_vars["SUEP_genPt" + out_label] = SUEP_genPt
+
+        self.out_vars["SUEP_genEta" + out_label] = SUEP_genEta
+        self.out_vars["SUEP_genPhi" + out_label] = SUEP_genPhi
+        
+
+        
+        
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -310,7 +328,7 @@ class SUEP_cluster(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
-    def analysis(self, events, do_syst=False, col_label=""):
+    def analysis(self, events, do_syst=False, col_label=""): ###THIS IS WHERE ACTUAL ANALYSIS HAPPENS?
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -388,7 +406,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
 
-        SUEP_utils.ClusterMethod(
+        SUEP_utils.ClusterMethod( ### HERE WE ADD VARIABLES CALCULATED FROM THE CLUSTER JET TO THE FINAL PANDAS DATAFRAME 
             self,
             indices,
             tracks,
@@ -400,7 +418,7 @@ class SUEP_cluster(processor.ProcessorABC):
             out_label=col_label,
         )
 
-        if self.do_inf:
+        if self.do_inf: 
             import workflows.ML_utils as ML_utils
 
             ML_utils.DGNNMethod(
@@ -414,7 +432,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 do_inverted=True,
             )
 
-    def process(self, events):
+    def process(self, events): ### HERE IS WHERE THE ACTUAL ACTUAL ANALYSIS IS HAPPENING
         output = self.accumulator.identity()
         dataset = events.metadata["dataset"]
 
