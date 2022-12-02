@@ -322,7 +322,7 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
     if labels is None:
         labels = [None] * len(hlist)
 
-    cmap = plt.cm.rainbow(np.linspace(0, 1, len(hlist)))
+    cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
     for c, h, l in zip(cmap, hlist, labels):
         y, x = h.to_numpy()
         x_mid = h.axes.centers[0]
@@ -407,7 +407,7 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
 def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=False):
 
-    fig = plt.figure(figsize=(20, 7))
+    fig = plt.figure()
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
     _ = plt.setp(ax1.get_xticklabels(), visible=False)
