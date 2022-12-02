@@ -11,9 +11,9 @@ def ClusterMethod(
     self,
     indices,
     tracks,
-    SUEP_cand,
+    SUEP_cand,  # Only the JET (i.e. 'average' tracks)
     ISR_cand,
-    SUEP_cluster_tracks,
+    SUEP_cluster_tracks,  # The tracks within the JET
     ISR_cluster_tracks,
     do_inverted=False,
     out_label=None,
@@ -37,7 +37,9 @@ def ClusterMethod(
 
     # SUEP tracks for this method are defined to be the ones from the cluster
     # that was picked to be the SUEP jet
-    SUEP_tracks_b = SUEP_cluster_tracks.boost_p4(boost_SUEP)
+    SUEP_tracks_b = SUEP_cluster_tracks.boost_p4(
+        boost_SUEP
+    )  ### boost the SUEP tracks to their restframe
 
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
@@ -69,6 +71,22 @@ def ClusterMethod(
     self.out_vars.loc[indices, "SUEP_delta_pt_genPt_CL" + out_label] = (
         SUEP_cand.pt - self.out_vars["SUEP_genPt" + out_label][indices]
     )
+
+    # Calculate orientation difference between canditate and actual SUEP
+
+    SUEP_genEta_diff_CL = (
+        self.out_vars["SUEP_eta_CL" + out_label]
+        - self.out_vars["SUEP_genEta" + out_label]
+    )
+    SUEP_genPhi_diff_CL = (
+        self.out_vars["SUEP_phi_CL" + out_label]
+        - self.out_vars["SUEP_genPhi" + out_label]
+    )
+    SUEP_genR_diff_CL = (SUEP_genEta_diff_CL**2 + SUEP_genPhi_diff_CL**2) ** 0.5
+
+    self.out_vars["SUEP_genEta_diff_CL" + out_label] = SUEP_genEta_diff_CL
+    self.out_vars["SUEP_genPhi_diff_CL" + out_label] = SUEP_genPhi_diff_CL
+    self.out_vars["SUEP_genR_diff_CL" + out_label] = SUEP_genR_diff_CL
 
     # inverted selection
     if do_inverted:
