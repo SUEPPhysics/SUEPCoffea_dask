@@ -199,7 +199,7 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks = ak.packed(Cleaned_cands)
         return tracks, Cleaned_cands
 
-    def storeEventVars( 
+    def storeEventVars(
         self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, out_label=""
     ):
 
@@ -270,7 +270,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.isMC and not self.scouting:
             genParts = self.getGenTracks(events)
             genSUEP = genParts[(abs(genParts.pdgID) == 25)]
-            
+
             # we need to grab the last SUEP in the chain for each event
             SUEP_genMass = [g[-1].mass if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genPt = [g[-1].pt if len(g) > 0 else 0 for g in genSUEP]
@@ -319,9 +319,7 @@ class SUEP_cluster(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
-    def analysis(
-        self, events, do_syst=False, col_label=""
-    ):  
+    def analysis(self, events, do_syst=False, col_label=""):
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -399,7 +397,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
 
-        SUEP_utils.ClusterMethod(  
+        SUEP_utils.ClusterMethod(
             self,
             indices,
             tracks,
@@ -425,9 +423,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 do_inverted=True,
             )
 
-    def process(
-        self, events
-    ):  
+    def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata["dataset"]
 
