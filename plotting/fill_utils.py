@@ -29,7 +29,7 @@ def h5load(ifile, label):
 def getXSection(dataset, year, SUEP=False, path="../data/"):
     xsection = 1
     if not SUEP:
-        with open("{}/xsections_{}.json".format(path, year)) as file:
+        with open(f"{path}/xsections_{year}.json") as file:
             MC_xsecs = json.load(file)
             try:
                 xsection *= MC_xsecs[dataset]["xsec"]
@@ -41,7 +41,7 @@ def getXSection(dataset, year, SUEP=False, path="../data/"):
                 )
                 return 1
     else:
-        with open("{}/xsections_{}_SUEP.json".format(path, year)) as file:
+        with open(f"{path}/xsections_{year}_SUEP.json") as file:
             MC_xsecs = json.load(file)
             try:
                 xsection *= MC_xsecs[dataset]

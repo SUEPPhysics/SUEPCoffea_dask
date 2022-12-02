@@ -48,7 +48,7 @@ lumis = {
     "2016_apv": 19497.914,
     "2016": 16810.813,
     "2017": 41471.589,
-    "2018":  59817.406 ,
+    "2018": 59817.406,
 }
 
 # load file(s)
@@ -397,8 +397,9 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
     if plot_label is None:
         plot_label = hlist[0].axes[0].label
-        if plot_label == 'Axis 0': plot_label =None
-    ax1.legend(loc='best')
+        if plot_label == "Axis 0":
+            plot_label = None
+    ax1.legend(loc="best")
     ax2.set_xlabel(plot_label, y=1)
 
     return fig, (ax1, ax2)
@@ -863,7 +864,11 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
 
     # fill the histograms
     if histtype == "hist":
-        h_out = hist.Hist(hist.axis.Variable(bins, label=h_in.axes[0].label, name=h_in.axes[0].name), storage=hist.storage.Weight(), label=h_in.axes[0].label)
+        h_out = hist.Hist(
+            hist.axis.Variable(bins, label=h_in.axes[0].label, name=h_in.axes[0].name),
+            storage=hist.storage.Weight(),
+            label=h_in.axes[0].label,
+        )
         h_out[:] = np.stack([z_vals, z_vars], axis=-1)
 
     elif histtype == "bh":

@@ -284,7 +284,7 @@ def create_output_file(label, abcd):
                 f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(199,0,500, name=f"nconst_{label}", label="# Constituents")
+                .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
                 f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Reg(
                     199, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
@@ -372,7 +372,7 @@ def create_output_file(label, abcd):
                 f"2D_ISR_S1_vs_ISR_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(199,0,500, name=f"nconst_{label}", label="# Constituents")
+                .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
                 f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Reg(
                     199, 0, 500, name=f"ISR_nconst_{label}"
@@ -512,8 +512,7 @@ def create_output_file(label, abcd):
                     .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
                     f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Reg(
-                        199,
-                        0,500, name=f"ISR_nconst_{label}", label="# Const"
+                        199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
                     )
                     .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                     .Weight(),
@@ -724,7 +723,7 @@ for ifile in tqdm(files):
                 #         df["event_weight"] *= df[sys]
                 #     else:
                 #         df["event_weight"] *= df["prefire_nom"]
-                        
+
             # 5) Higgs_pt weights
             if "SUEP-m125" in options.dataset:
                 higgs_weight = higgs_reweight.get_higgs_weight(
