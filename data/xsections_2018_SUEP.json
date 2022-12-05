@@ -1,1 +1,26 @@
-{ "125": 34.8, "400": 5.9, "750": 0.5, "1000": 0.17 }
+{
+	"SUEP-m125-darkPhoHad+RunIIAutumn18-private+MINIAODSIM": 34.8,
+	"SUEP-m125-darkPho+RunIIAutumn18-private+MINIAODSIM": 34.8,
+	"SUEP-m125-generic-htcut+RunIIAutumn18-private+MINIAODSIM": 0.1043,
+	"SUEP-m125-generic+RunIIAutumn18-private+MINIAODSIM": 34.8, 
+	"SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-darkPho+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md2-t0.5-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md2-t1-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md2-t2-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md2-t3-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md2-t4-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md3-t1.5-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md3-t3-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md3-t6-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md5-t10-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md5-t1-generic+RunIIAutumn18-private+MINIAODSIM": 5.9,
+	"SUEP-m400-md5-t5-generic+RunIIAutumn18-private+MINIAODSIM": 5.9, 
+	"SUEP-m750-darkPhoHad+RunIIAutumn18-private+MINIAODSIM": 0.5,
+	"SUEP-m750-darkPho+RunIIAutumn18-private+MINIAODSIM": 0.5,
+	"SUEP-m750-generic+RunIIAutumn18-private+MINIAODSIM": 0.5, 
+	"SUEP-m1000-darkPhoHad+RunIIAutumn18-private+MINIAODSIM": 0.17,
+	"SUEP-m1000-darkPho+RunIIAutumn18-private+MINIAODSIM": 0.17,
+	"SUEP-m1000-generic+RunIIAutumn18-private+MINIAODSIM": 0.17 
+}
