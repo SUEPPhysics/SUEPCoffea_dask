@@ -292,12 +292,12 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
                 iRegion += 1
 
 
-def apply_normalization(plots, xsection, total_gensumweight):
-    if total_gensumweight > 0.0:
+def apply_normalization(plots, norm):
+    if norm > 0.0:
         for plot in list(plots.keys()):
-            plots[plot] = plots[plot] * xsection / total_gensumweight
+            plots[plot] = plots[plot] * norm
     else:
-        logging.warning("Total gensumweight is 0")
+        logging.warning("Norm is 0")
     return plots
 
 

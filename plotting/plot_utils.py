@@ -51,6 +51,10 @@ lumis = {
     "2018": 59817.406,
 }
 
+def lumiLabel(year):
+    if year in ['2017', '2018']: return round(lumis[year]/1000,1)
+    elif year == '2016': return round((lumis[year] + lumis[year+'_apv'])/1000,1)
+
 # load file(s)
 def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
     plots = {}
