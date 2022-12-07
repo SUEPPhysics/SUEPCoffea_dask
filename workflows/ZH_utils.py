@@ -84,8 +84,8 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
                 ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25
             )
 
-            cutAnyMuons = (ak.num(selElectrons, axis=1) > 0) & (
-                ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25
+            cutAnyMuons = (ak.num(selMuons, axis=1) > 0) & (
+                ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25
             )
 
             cutAnyLeps = cutAnyElecs | cutAnyMuons
