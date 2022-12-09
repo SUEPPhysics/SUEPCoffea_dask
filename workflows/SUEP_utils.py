@@ -73,6 +73,7 @@ def ClusterMethod(
     )
 
     # Calculate orientation difference between candidate and actual SUEP
+
     SUEP_genEta_diff_CL = (
         self.out_vars["SUEP_eta_CL" + out_label]
         - self.out_vars["SUEP_genEta" + out_label]
