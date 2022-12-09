@@ -28,19 +28,45 @@ default_colors = {
     "data_2017": "maroon",
     "data_2016": "maroon",
     "data_allyears": "maroon",
-    "SUEP-m1000-darkPho": "red",
-    "SUEP-m1000-darkPhoHad": "red",
-    "SUEP-m1000-generic": "red",
-    "SUEP-m750-darkPho": "orange",
-    "SUEP-m750-darkPhoHad": "orange",
-    "SUEP-m750-generic": "orange",
-    "SUEP-m400-darkPho": "green",
-    "SUEP-m400-darkPhoHad": "green",
-    "SUEP-m400-generic": "green",
-    "SUEP-m125-darkPho": "cyan",
-    "SUEP-m125-darkPhoHad": "cyan",
-    "SUEP-m125-generic": "cyan",
-    "SUEP-m125-generic-htcut": "magenta",
+    "SUEP-m1000-darkPho_2018": "red",
+    "SUEP-m1000-darkPhoHad_2018": "red",
+    "SUEP-m1000-generic_2018": "red",
+    "SUEP-m750-darkPho_2018": "orange",
+    "SUEP-m750-darkPhoHad_2018": "orange",
+    "SUEP-m750-generic_2018": "orange",
+    "SUEP-m400-darkPho_2018": "green",
+    "SUEP-m400-darkPhoHad_2018": "green",
+    "SUEP-m400-generic_2018": "green",
+    "SUEP-m125-darkPho_2018": "cyan",
+    "SUEP-m125-darkPhoHad_2018": "cyan",
+    "SUEP-m125-generic_2018": "cyan",
+    "SUEP-m125-generic-htcut_2018": "magenta",
+    "SUEP-m1000-darkPho_2017": "red",
+    "SUEP-m1000-darkPhoHad_2017": "red",
+    "SUEP-m1000-generic_2017": "red",
+    "SUEP-m750-darkPho_2017": "orange",
+    "SUEP-m750-darkPhoHad_2017": "orange",
+    "SUEP-m750-generic_2017": "orange",
+    "SUEP-m400-darkPho_2017": "green",
+    "SUEP-m400-darkPhoHad_2017": "green",
+    "SUEP-m400-generic_2017": "green",
+    "SUEP-m125-darkPho_2017": "cyan",
+    "SUEP-m125-darkPhoHad_2017": "cyan",
+    "SUEP-m125-generic_2017": "cyan",
+    "SUEP-m125-generic-htcut_2017": "magenta",
+    "SUEP-m1000-darkPho_2016": "red",
+    "SUEP-m1000-darkPhoHad_2016": "red",
+    "SUEP-m1000-generic_2016": "red",
+    "SUEP-m750-darkPho_2016": "orange",
+    "SUEP-m750-darkPhoHad_2016": "orange",
+    "SUEP-m750-generic_2016": "orange",
+    "SUEP-m400-darkPho_2016": "green",
+    "SUEP-m400-darkPhoHad_2016": "green",
+    "SUEP-m400-generic_2016": "green",
+    "SUEP-m125-darkPho_2016": "cyan",
+    "SUEP-m125-darkPhoHad_2016": "cyan",
+    "SUEP-m125-generic_2016": "cyan",
+    "SUEP-m125-generic-htcut_2016": "magenta",
 }
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
@@ -51,8 +77,16 @@ lumis = {
     "2018": 59817.406,
 }
 
+
+def lumiLabel(year):
+    if year in ["2017", "2018"]:
+        return round(lumis[year] / 1000, 1)
+    elif year == "2016":
+        return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
+
+
 # load file(s)
-def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
+def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name):
@@ -67,8 +101,7 @@ def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
             continue
 
         # sets the lumi based on year
-        lumi = 1
-        if apply_lumis:
+        if auto_lumi:
             if "20UL16MiniAODv2" in infile_name:
                 lumi = lumis["2016"]
             if "20UL17MiniAODv2" in infile_name:
@@ -81,6 +114,10 @@ def loader(infile_names, apply_lumis=True, exclude_low_bins=False):
                 lumi = lumis["2018"]
             if "JetHT+Run" in infile_name:
                 lumi = 1
+        if year and not auto_lumi:
+            lumi = lumis[str(year)]
+        if year and auto_lumi:
+            raise Exception("Apply lumis automatically or based on year")
 
         # exclude low bins
         if exclude_low_bins:
@@ -322,7 +359,7 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
     if labels is None:
         labels = [None] * len(hlist)
 
-    cmap = plt.cm.rainbow(np.linspace(0, 1, len(hlist)))
+    cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
     for c, h, l in zip(cmap, hlist, labels):
         y, x = h.to_numpy()
         x_mid = h.axes.centers[0]
@@ -407,7 +444,7 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
 def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=False):
 
-    fig = plt.figure(figsize=(20, 7))
+    fig = plt.figure()
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
     _ = plt.setp(ax1.get_xticklabels(), visible=False)

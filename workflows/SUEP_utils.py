@@ -11,9 +11,9 @@ def ClusterMethod(
     self,
     indices,
     tracks,
-    SUEP_cand,  # Only the JET (i.e. 'average' tracks)
+    SUEP_cand,  # SUEP jet candidate
     ISR_cand,
-    SUEP_cluster_tracks,  # The tracks within the JET
+    SUEP_cluster_tracks,  # The tracks within the Jet
     ISR_cluster_tracks,
     do_inverted=False,
     out_label=None,

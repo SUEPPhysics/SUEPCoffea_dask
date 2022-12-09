@@ -813,7 +813,7 @@ if options.isMC and options.doSyst:
 
 # apply normalization
 if options.isMC:
-    outputs = fill_utils.apply_normalization(output, xsection, total_gensumweight)
+    outputs = fill_utils.apply_normalization(output, xsection / total_gensumweight)
 
 logging.info("Saving outputs.")
 
