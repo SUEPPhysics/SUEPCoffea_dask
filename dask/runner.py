@@ -535,7 +535,7 @@ def setupSUEP(args):
         flag=False,
         scouting=args.scouting,
         do_inf=args.doInf,
-        output_location=current,
+        output_location=os.getcwd(),
         accum=args.executor,
         trigger=args.trigger,
     )
