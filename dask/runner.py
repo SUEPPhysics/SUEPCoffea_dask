@@ -451,9 +451,9 @@ def nativeExecutors(args, processor_instance, sample_dict):
 
 
 def getWeights(args, sample_dict):
-    from workflows import genSumWeightExectractor
+    from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
-    genSumW_instance = genSumWeightExectractor.GenSumWeightExectractor()
+    genSumW_instance = GenSumWeightExtractor()
     genSumW = processor.run_uproot_job(
         sample_dict,
         treename="Runs",
