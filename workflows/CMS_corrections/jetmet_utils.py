@@ -1,4 +1,3 @@
-import os
 import awkward as ak
 import cachetools
 import numpy as np

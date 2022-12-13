@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 import uproot
-from coffea import processor, nanoevents
+from coffea import nanoevents, processor
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -301,9 +301,11 @@ def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra
 
 def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
     import shutil
+
     from dask_jobqueue import HTCondorCluster, SLURMCluster
-    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
     from distributed.diagnostics.plugin import UploadDirectory
+
+    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
 
     if "lpc" in args.executor:
         env_extra = [
