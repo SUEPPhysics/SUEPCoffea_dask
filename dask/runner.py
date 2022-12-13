@@ -6,8 +6,7 @@ import time
 
 import numpy as np
 import uproot
-from coffea import processor
-from coffea.util import save
+from coffea import processor, nanoevents
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -97,8 +96,8 @@ def get_main_parser():
     parser.add_argument(
         "-o",
         "--output",
-        default=r"hists.coffea",
-        help="Output histogram filename (default: %(default)s)",
+        default="output.hdf5",
+        help="Output file name (default: %(default)s)",
     )
     parser.add_argument(
         "--samples",
@@ -208,6 +207,10 @@ def get_main_parser():
     parser.add_argument(
         "--dataset", type=str, default="X", help="Dataset to find xsection"
     )
+    parser.add_argument(
+        "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
+    )
+    parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
     return parser
 
 
@@ -229,7 +232,7 @@ def specificProcessing(args, sample_dict):
     return sample_dict
 
 
-def parslExecutor(args, env_extra, condor_extra):
+def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
     import parsl
     from parsl.addresses import address_by_hostname, address_by_query
     from parsl.channels import LocalChannel
@@ -287,7 +290,7 @@ def parslExecutor(args, env_extra, condor_extra):
         executor=processor.parsl_executor,
         executor_args={
             "skipbadfiles": True,
-            "schema": processor.NanoAODSchema,
+            "schema": nanoevents.NanoAODSchema,
             "config": None,
         },
         chunksize=args.chunk,
@@ -296,11 +299,11 @@ def parslExecutor(args, env_extra, condor_extra):
     return output
 
 
-def daskExecutor(args, env_extra, condor_extra):
+def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
+    import shutil
     from dask_jobqueue import HTCondorCluster, SLURMCluster
-    from distributed import Client
-
-    from dask.distributed import performance_report
+    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
+    from distributed.diagnostics.plugin import UploadDirectory
 
     if "lpc" in args.executor:
         env_extra = [
@@ -389,9 +392,14 @@ def daskExecutor(args, env_extra, condor_extra):
         )
 
     if args.executor == "dask/casa":
-        client = Client("tls://localhost:8786")
-        import shutil
 
+        class SettingSitePath(WorkerPlugin):
+            def setup(self, worker: Worker):
+                sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
+
+        client = Client("tls://localhost:8786")
+        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_worker_plugin(SettingSitePath())
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
     else:
@@ -408,17 +416,18 @@ def daskExecutor(args, env_extra, condor_extra):
             executor_args={
                 "client": client,
                 "skipbadfiles": args.skipbadfiles,
-                "schema": processor.NanoAODSchema,
+                "schema": nanoevents.NanoAODSchema,
                 # 'xrootdtimeout': 10,
                 "retries": 3,
+                "use_dataframes": True,
             },
             chunksize=args.chunk,
             maxchunks=args.max,
         )
-    return output
+    return output.compute()
 
 
-def nativeExecutors(args):
+def nativeExecutors(args, processor_instance, sample_dict):
     if args.executor == "iterative":
         _exec = processor.iterative_executor
     else:
@@ -430,13 +439,30 @@ def nativeExecutors(args):
         executor=_exec,
         executor_args={
             "skipbadfiles": args.skipbadfiles,
-            "schema": processor.NanoAODSchema,
+            "schema": nanoevents.NanoAODSchema,
             "workers": args.workers,
         },
         chunksize=args.chunk,
         maxchunks=args.max,
     )
     return output
+
+
+def getWeights(args, sample_dict):
+    from workflows import genSumWeightExectractor
+
+    genSumW_instance = genSumWeightExectractor.GenSumWeightExectractor()
+    genSumW = processor.run_uproot_job(
+        sample_dict,
+        treename="Runs",
+        processor_instance=genSumW_instance,
+        executor=processor.iterative_executor,
+        executor_args={
+            "schema": nanoevents.BaseSchema,
+            "align_clusters": True,
+        },
+    )
+    return genSumW
 
 
 def exportCert(args):
@@ -477,6 +503,55 @@ def exportCert(args):
     return env_extra, condor_extra
 
 
+def setupAccumulator(args):
+    """
+    Return the accumulator for the workflow depending on the executor
+    - For dask: use dask DataFrame
+    - For local: use a dict with lists
+    - Otherwise: don't use any accumulator (MIT workflow)
+    """
+    if "dask" in args.executor:
+        return "dask"
+    elif "iterative" or "futures" in args.executor:
+        return "local"
+    return None
+
+
+def setupSUEP(args):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea import SUEP_cluster
+
+    processor_instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=1,
+        syst_var="",
+        sample=args.dataset,
+        weight_syst="",
+        flag=False,
+        scouting=args.scouting,
+        do_inf=args.doInf,
+        output_location=current,
+        accum=args.executor,
+        trigger=args.trigger,
+    )
+    return processor_instance
+
+
+def saveTohdf5(args, processor_instance, dataframe):
+    from workflows import pandas_utils
+
+    pandas_utils.save_dfs(
+        processor_instance,
+        dfs=[dataframe],
+        df_names=["vars"],
+        fname=args.output,
+    )
+    return
+
+
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
@@ -496,25 +571,12 @@ if __name__ == "__main__":
     if args.validate:
         validation(args, sample_dict)
 
+    # Setup the accumulator
+    accumulator = setupAccumulator(args)
+
     # load workflow
     if args.workflow == "SUEP":
-        # NOTE: Need to move these imports to a function
-        from workflows.SUEP_coffea import SUEP_cluster
-
-        processor_instance = SUEP_cluster(
-            isMC=args.isMC,
-            era=int(args.era),
-            do_syst=1,
-            syst_var="",
-            sample=args.dataset,
-            weight_syst="",
-            flag=False,
-            scouting=args.scouting,
-            do_inf=args.doInf,
-            output_location=current,
-            accum=True,
-            trigger="TripleMu",
-        )
+        processor_instance = setupSUEP(args)
     else:
         raise NotImplementedError
 
@@ -525,13 +587,23 @@ if __name__ == "__main__":
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:
-        output = nativeExecutors(args)
+        output = nativeExecutors(args, processor_instance, sample_dict)
     elif "parsl" in args.executor:
-        output = parslExecutor(args)
+        output = parslExecutor(
+            args, processor_instance, sample_dict, env_extra, condor_extra
+        )
     elif "dask" in args.executor:
-        output = daskExecutor(args)
+        output = daskExecutor(
+            args, processor_instance, sample_dict, env_extra, condor_extra
+        )
 
-    save(output, args.output)
+    if args.skimmed:
+        weights = getWeights(args, sample_dict)
+        print(weights)
+        for key in sample_dict.keys():
+            processor_instance.gensumweight = weights[key].value
+
+    saveTohdf5(args, processor_instance, output)
 
     print(output)
     print(f"Saving output to {args.output}")

@@ -59,7 +59,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
         self.doOF = False
-        self.accum = False if accum is False or None else True
+        self.accum = accum
         self.trigger = trigger
         self.out_vars = pd.DataFrame()
 
@@ -119,12 +119,12 @@ class SUEP_cluster(processor.ProcessorABC):
         # once we can move to Python 3.10 for good.
         if self.scouting != 1:
             if self.trigger == "TripleMu":
-                if self.era == 2018:
-                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+                if self.era == 2016:
+                    trigger = events.HLT.TripleMu_5_3_3 == 1
                 elif self.era == 2017:
                     trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
                 else:
-                    trigger = events.HLT.TripleMu_5_3_3 == 1
+                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
             else:
                 if self.era == 2016:
                     trigger = events.HLT.PFHT900 == 1
@@ -222,8 +222,15 @@ class SUEP_cluster(processor.ProcessorABC):
         ak4jets = self.jet_awkward(events.Jet)
 
         # work on JECs and systematics
+        prefix = ""
+        if "dask" in self.accum:
+            prefix = "dask-worker-space/"
         jets_c = apply_jecs(
-            isMC=self.isMC, Sample=self.sample, era=self.era, events=events
+            isMC=self.isMC,
+            Sample=self.sample,
+            era=self.era,
+            events=events,
+            prefix=prefix,
         )
         jets_jec = self.jet_awkward(jets_c)
         if self.isMC:
@@ -340,12 +347,13 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
-            if self.accum is False:
-                self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
-            else:
+            if self.accum:
                 self.initializeColumns(col_label)
                 for c in self.columns:
                     self.out_vars[c] = np.nan
+                return
+
+            self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
             return
 
         #####################################################################################
@@ -451,21 +459,26 @@ class SUEP_cluster(processor.ProcessorABC):
         # run the analysis
         self.analysis(events)
 
-        # save the out_vars object as a Pandas DataFrame
-        if self.accum is False:
-            pandas_utils.save_dfs(
-                self,
-                [self.out_vars],
-                ["vars"],
-                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-                + ".hdf5",
-            )
-        else:
+        # output result to dask dataframe accumulator
+        if "dask" in self.accum:
+            return self.out_vars
+
+        # output result to iterative/futures accumulator
+        if "iterative" or "futures" in self.accum:
             # Convert output to the desired format when the accumulator is used
             for c in self.columns:
                 output[c] = self.out_vars[c].to_list()
             output = {dataset: self.out_vars}
-        return output
+            return output
+
+        # save the out_vars object as a Pandas DataFrame
+        pandas_utils.save_dfs(
+            self,
+            [self.out_vars],
+            ["vars"],
+            events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+            + ".hdf5",
+        )
 
     def postprocess(self, accumulator):
         return accumulator
