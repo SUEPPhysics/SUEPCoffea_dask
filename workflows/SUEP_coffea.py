@@ -479,6 +479,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events.behavior["__events_factory__"]._partition_key.replace("/", "_")
             + ".hdf5",
         )
+        return output
 
     def postprocess(self, accumulator):
         return accumulator
