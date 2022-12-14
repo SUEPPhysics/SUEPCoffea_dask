@@ -555,38 +555,10 @@ def saveTohdf5(args, processor_instance, dataframe):
     return
 
 
-if __name__ == "__main__":
-    parser = get_main_parser()
-    args = parser.parse_args()
-    if args.output == parser.get_default("output"):
-        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
-
-    # load dataset
-    sample_dict = loadder(args)
-
-    # For debugging
-    if args.only is not None:
-        sample_dict = specificProcessing(args, sample_dict)
-
-    # Scan if files can be opened
-    if args.validate:
-        validation(args, sample_dict)
-
-    # Setup the accumulator
-    accumulator = setupAccumulator(args)
-
-    # load workflow
-    if args.workflow == "SUEP":
-        processor_instance = setupSUEP(args)
-    else:
-        raise NotImplementedError
-
-    env_extra, condor_extra = None, None
-    if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
-        env_extra, condor_extra = exportCert(args)
-
-    #########
-    # Execute
+def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
+    """
+    Main function to execute the workflow
+    """
     if args.executor in ["futures", "iterative"]:
         output = nativeExecutors(args, processor_instance, sample_dict)
         for key in sample_dict.keys():
@@ -599,13 +571,53 @@ if __name__ == "__main__":
         output = daskExecutor(
             args, processor_instance, sample_dict, env_extra, condor_extra
         )
+    else:
+        raise NotImplementedError
+    return output
 
+
+if __name__ == "__main__":
+    parser = get_main_parser()
+    args = parser.parse_args()
+    if args.output == parser.get_default("output"):
+        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
+
+    # Load dataset
+    sample_dict = loadder(args)
+
+    # For debugging
+    if args.only:
+        sample_dict = specificProcessing(args, sample_dict)
+
+    # Scan if files can be opened
+    if args.validate:
+        validation(args, sample_dict)
+
+    # Setup the accumulator
+    accumulator = setupAccumulator(args)
+
+    # Load workflow
+    if args.workflow == "SUEP":
+        processor_instance = setupSUEP(args)
+    else:
+        raise NotImplementedError
+
+    # Setup x509 for dask/parsl
+    env_extra, condor_extra = None, None
+    if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
+        env_extra, condor_extra = exportCert(args)
+
+    # Execute the workflow
+    output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
+
+    # Calculate the gen sum weight for skimmed samples
     if args.skimmed:
         weights = getWeights(args, sample_dict)
         print(weights)
         for key in sample_dict.keys():
             processor_instance.gensumweight = weights[key].value
 
+    # Save the output
     saveTohdf5(args, processor_instance, output)
 
     print(output)
