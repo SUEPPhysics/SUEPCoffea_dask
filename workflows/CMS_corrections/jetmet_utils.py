@@ -5,7 +5,7 @@ from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
 from coffea.lookup_tools import extractor
 
 
-def apply_jecs(isMC, Sample, era, events):
+def apply_jecs(isMC, Sample, era, events, prefix=""):
 
     # Find the Collection we want to look at
     if isMC:
@@ -62,8 +62,8 @@ def apply_jecs(isMC, Sample, era, events):
             print("WARNING: Unable to find the correct JECs for Data!")
 
     # Start working here
-    jec_path = "data/jetmet/JEC/" + jecdir + "/"
-    jer_path = "data/jetmet/JER/" + jerdir + "/"
+    jec_path = prefix + "data/jetmet/JEC/" + jecdir + "/"
+    jer_path = prefix + "data/jetmet/JER/" + jerdir + "/"
 
     # Defined the weight sets we want to use
     ext_ak4 = extractor()

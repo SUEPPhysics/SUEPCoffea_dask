@@ -1,18 +1,28 @@
+# Data files
 *.coffea
+*.root
+*.dat
+*.pkl
+*.hdf5
+
+# Checkpoints & cache directories
 .ipynb_checkpoints/
 workflows/__pycache__/
-dask-report.html
 dask-worker-space/
-*.root
+.vscode/
+*.pyc
+
+# Log & txt files
+dask-report.html
 *.log
 *.err
 *.out
-*.pkl
-*.hdf5
-*.sh
 *.sub
-*.dat
+*.txt
+
+# Shell scripts (do we really want to exclude those???)
+*.sh
+
+# Image files
 *.png
 *.pdf
-*.txt
-*.pyc
