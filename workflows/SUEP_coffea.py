@@ -466,7 +466,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # output result to iterative/futures accumulator
         if "iterative" or "futures" in self.accum:
             # Convert output to the desired format when the accumulator is used
-            for c in self.columns:
+            for c in self.out_vars.columns:
                 output[c] = self.out_vars[c].to_list()
             output = {dataset: self.out_vars}
             return output

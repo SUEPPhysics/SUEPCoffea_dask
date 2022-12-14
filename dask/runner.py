@@ -5,6 +5,7 @@ import sys
 import time
 
 import numpy as np
+import pandas as pd
 import uproot
 from coffea import nanoevents, processor
 
@@ -590,6 +591,8 @@ if __name__ == "__main__":
     # Execute
     if args.executor in ["futures", "iterative"]:
         output = nativeExecutors(args, processor_instance, sample_dict)
+        for key in sample_dict.keys():
+            output = pd.DataFrame.from_dict(output[key])
     elif "parsl" in args.executor:
         output = parslExecutor(
             args, processor_instance, sample_dict, env_extra, condor_extra
