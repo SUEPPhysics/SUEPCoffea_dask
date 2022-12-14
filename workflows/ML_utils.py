@@ -1,20 +1,19 @@
 import awkward as ak
 import numpy as np
 import onnxruntime as ort
+import torch
 import vector
 from numba import jit
-
-vector.register_awkward()
-
-import torch
 from torch import nn
 from torch_geometric.nn.conv import DynamicEdgeConv
 from torch_geometric.nn.pool import avg_pool_x
 
 import workflows.SUEP_utils as SUEP_utils
 
+vector.register_awkward()
 
-def SSDMethod(self, indices, events, out_label=""):
+
+def SSDMethod(self, indices, inf_cands, out_label=""):
     #####################################################################################
     # ---- ML Analysis
     # Each event is converted into an input for the ML models. Using ONNX, we run

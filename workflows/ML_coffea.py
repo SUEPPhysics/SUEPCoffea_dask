@@ -13,11 +13,11 @@ import pandas as pd
 import vector
 from coffea import processor
 
-vector.register_awkward()
-
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
 from workflows.SUEP_coffea import SUEP_cluster
+
+vector.register_awkward()
 
 
 class ML_cluster(processor.ProcessorABC):
@@ -58,7 +58,7 @@ class ML_cluster(processor.ProcessorABC):
 
     def process(self, events):
         output = self.accumulator.identity()
-        dataset = events.metadata["dataset"]
+        dataset = events.metadata["dataset"]  # noqa: F841
         if self.isMC and self.scouting == 1:
             self.gensumweight = ak.count(events.PFcand.pt)
         elif self.isMC:
@@ -128,7 +128,7 @@ class ML_cluster(processor.ProcessorABC):
 
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
-        columns = ["SUEP_nconst_CL", "SUEP_S1_CL"]
+        # columns = ["SUEP_nconst_CL", "SUEP_S1_CL"]
 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
@@ -171,7 +171,7 @@ class ML_cluster(processor.ProcessorABC):
         # no cut needed, but still define new variables for this method
         # so we don't mix things up
         SUEP_cand_CL = SUEP_cand
-        ISR_cand_CL = ISR_cand
+        # ISR_cand_CL = ISR_cand
         tracks_CL = tracks
 
         # boost into frame of SUEP

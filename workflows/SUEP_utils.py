@@ -1,7 +1,6 @@
 import awkward as ak
 import fastjet
 import numpy as np
-import pandas as pd
 import vector
 
 vector.register_awkward()
@@ -39,7 +38,7 @@ def ClusterMethod(
     # that was picked to be the SUEP jet
     SUEP_tracks_b = SUEP_cluster_tracks.boost_p4(
         boost_SUEP
-    )  ### boost the SUEP tracks to their restframe
+    )  # boost the SUEP tracks to their restframe
 
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
@@ -56,7 +55,7 @@ def ClusterMethod(
     self.out_vars.loc[indices, "SUEP_pt_avg_CL" + out_label] = ak.mean(
         SUEP_tracks.pt, axis=-1
     )
-    deltaR = SUEP_tracks.deltaR(SUEP_cand)
+    # deltaR = SUEP_tracks.deltaR(SUEP_cand)
     # self.out_vars.loc[indices, "SUEP_rho0_CL"+out_label] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
     # self.out_vars.loc[indices, "SUEP_rho1_CL"+out_label] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
 
@@ -120,7 +119,7 @@ def ClusterMethod(
         self.out_vars.loc[indices, "ISR_pt_avg_CL" + out_label] = ak.mean(
             ISR_tracks.pt, axis=-1
         )
-        deltaR = ISR_tracks.deltaR(ISR_cand)
+        # deltaR = ISR_tracks.deltaR(ISR_cand)
         # self.out_vars.loc[indices, "ISR_rho0_CL"+out_label] = rho(0, ISR_cand, ISR_tracks, deltaR)
         # self.out_vars.loc[indices, "ISR_rho1_CL"+out_label] = rho(1, ISR_cand, ISR_tracks, deltaR)
 
@@ -187,7 +186,7 @@ def ISRRemovalMethod(self, indices, tracks, SUEP_cand, ISR_cand):
         # unboost for these
         SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
         self.out_vars.loc[indices, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks.pt, axis=-1)
-        deltaR = SUEP_tracks.deltaR(SUEP_cand)
+        # deltaR = SUEP_tracks.deltaR(SUEP_cand)
         # self.out_vars.loc[indices, "SUEP_rho0_IRM"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
         # self.out_vars.loc[indices, "SUEP_rho1_IRM"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
 
@@ -494,7 +493,7 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
     )
 
 
-def convert_coords(coords, tracks, nobj):
+def convert_coords(self, coords, tracks, nobj):
     allowed_coords = ["cyl", "cart", "p4"]
     if coords.lower() not in allowed_coords:
         raise Exception(self.coords + " is not supported in GNN_convertEvents.")

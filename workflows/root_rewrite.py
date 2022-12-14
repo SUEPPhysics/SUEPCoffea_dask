@@ -25,7 +25,7 @@ def rewrite(infile):
         )
     to_write = to_write[:-1] + "}"
 
-    f_new = uproot.recreate("rewrite.root")
+    f_new = uproot.recreate("rewrite.root")  # noqa: F841
 
     exec(to_write)
 
