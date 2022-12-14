@@ -46,7 +46,7 @@ def save_dfs(self, dfs, df_names, fname):
             else:
                 metadata = dict(era=self.era, mc=self.isMC, sample=self.sample)
 
-            store_fin = h5store(self, store, out, fname, gname, **metadata)
+            h5store(self, store, out, fname, gname, **metadata)
 
         store.close()
         dump_table(self, fname, self.output_location, subdirs)
