@@ -12,8 +12,7 @@ import pandas as pd
 import vector
 from coffea import processor
 
-vector.register_awkward()
-
+# IO utils
 import workflows.pandas_utils as pandas_utils
 
 # Importing SUEP specific functions
@@ -26,6 +25,9 @@ from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
+
+# Set vector behavior
+vector.register_awkward()
 
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -263,7 +265,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 jets_jec_JESUp.pt, axis=-1
             ).to_list()
             self.out_vars["ht_JEC" + out_label + "_JES_down"] = ak.sum(
-                jets_jec.pt, axis=-1
+                jets_jec_JESDown.pt, axis=-1
             ).to_list()
 
             if self.era == 2016 and self.scouting == 0:

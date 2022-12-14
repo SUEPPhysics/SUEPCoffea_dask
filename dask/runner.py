@@ -559,9 +559,7 @@ if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
     if args.output == parser.get_default("output"):
-        args.output = (
-            f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
-        )
+        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
 
     # load dataset
     sample_dict = loadder(args)
