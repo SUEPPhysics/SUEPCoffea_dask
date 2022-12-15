@@ -5,8 +5,8 @@ import os
 import subprocess
 import sys
 
+import fill_utils
 import pandas as pd
-from plot_utils import *
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description="Famous Submitter")
@@ -40,6 +40,7 @@ result = result.decode("utf-8")
 files = result.split("\n")
 files = [f for f in files if (".hdf5" in f) and ("merged" not in f)]
 
+
 # SAVE OUTPUTS
 def save_dfs(df_tot, output):
     if type(df_tot) == int:
@@ -52,7 +53,7 @@ def save_dfs(df_tot, output):
 
 
 def move(q, infile, outfile):
-    returncode = q.get()
+    _ = q.get()
     result = subprocess.run(["xrdcp", "-s", infile, outfile, "-f"])
     q.put(result.returncode)
     # return result
@@ -94,7 +95,7 @@ def time_limited_move(infile, outfile, time_limit=60, max_attempts=5):
 df_tot = 0
 metadata_tot = 0
 i_out = 0
-for ifile, file in enumerate(tqdm(files)):
+for _ifile, file in enumerate(tqdm(files)):
 
     if os.path.exists(dataset + ".hdf5"):
         subprocess.run(["rm", dataset + ".hdf5"])
@@ -108,13 +109,13 @@ for ifile, file in enumerate(tqdm(files)):
     if result == 0:
         sys.exit("Result of xrootd transfer was 0: " + xrd_file)
 
-    df, metadata = h5load(dataset + ".hdf5", "vars")
+    df, metadata = fill_utils.h5load(dataset + ".hdf5", "vars")
 
     # corrupted
     if type(df) == int:
         continue
 
-    ### MERGE METADATA
+    # MERGE METADATA
     if options.isMC:
         if type(metadata_tot) == int:
             metadata_tot = metadata
@@ -130,7 +131,7 @@ for ifile, file in enumerate(tqdm(files)):
         subprocess.run(["rm", dataset + ".hdf5"])
         continue
 
-    ### MERGE DF VARS
+    # MERGE DF VARS
     if type(df_tot) == int:
         df_tot = df
     else:

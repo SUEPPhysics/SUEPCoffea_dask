@@ -5,6 +5,25 @@ from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
 from coffea.lookup_tools import extractor
 
 
+def get_dir_mc(Sample, era):
+    if era == 2016:
+        jecdir = "Summer19UL16_V7_MC"
+        if "APV" in Sample:
+            jerdir = "Summer20UL16APV_JRV3_MC"
+        else:
+            jerdir = "Summer20UL16_JRV3_MC"
+    elif era == 2017:
+        jecdir = "Summer19UL17_V5_MC"
+        jerdir = "Summer19UL17_JRV3_MC"
+    elif era == 2018:
+        jecdir = "Summer19UL18_V5_MC"
+        jerdir = "Summer19UL18_JRV2_MC"
+    else:
+        print("WARNING: Unable to find the correct JECs for MC!")
+
+    return jecdir, jerdir
+
+
 def get_dir_data(Sample, era):
     if era == 2016:
         if "APV" in Sample:
@@ -41,25 +60,6 @@ def get_dir_data(Sample, era):
             print("WARNING: The JECs for the 2018 data era do not seem to exist!")
     else:
         print("WARNING: Unable to find the correct JECs for Data!")
-
-    return jecdir, jerdir
-
-
-def get_dir_mc(Sample, era):
-    if era == 2016:
-        jecdir = "Summer19UL16_V7_MC"
-        if "APV" in Sample:
-            jerdir = "Summer20UL16APV_JRV3_MC"
-        else:
-            jerdir = "Summer20UL16_JRV3_MC"
-    elif era == 2017:
-        jecdir = "Summer19UL17_V5_MC"
-        jerdir = "Summer19UL17_JRV3_MC"
-    elif era == 2018:
-        jecdir = "Summer19UL18_V5_MC"
-        jerdir = "Summer19UL18_JRV2_MC"
-    else:
-        print("WARNING: Unable to find the correct JECs for MC!")
 
     return jecdir, jerdir
 

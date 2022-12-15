@@ -26,7 +26,6 @@ repos:
     hooks:
       - id: pycln
 
-  # Flake8 is a lot of extra work so turn off for now...
   - repo: https://github.com/pycqa/flake8
     rev: "5.0.4"
     hooks:

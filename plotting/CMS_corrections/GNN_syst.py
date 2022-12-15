@@ -1,11 +1,7 @@
 import json
 import logging
-import sys
 
-import hist
-
-sys.path.append("..")
-import plot_utils
+from .. import plot_utils
 
 
 def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
