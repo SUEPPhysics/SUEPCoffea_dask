@@ -8,11 +8,10 @@ from collections import defaultdict
 import boost_histogram as bh
 import hist
 import hist.intervals
+import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
-import pandas as pd
-import sympy
 from sympy import diff, sqrt, symbols
 
 default_colors = {
@@ -313,8 +312,8 @@ def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
 
     cmap = plt.cm.rainbow(np.linspace(0, 1, len(labels)))
 
-    ylist, elist = [], []
-    for l, h, c in zip(labels, hlist, cmap):
+    ylist = []
+    for lbl, h, c in zip(labels, hlist, cmap):
         y, x = h.to_numpy()
         e = np.sqrt(h.variances())
         x = x[:-1]
@@ -325,16 +324,16 @@ def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
 
         # ax.step(x[:-1],values, label=label, color=color, lw=lw)
         ax.errorbar(
-            x, y, yerr=e, label=l, lw=lw, color=c, fmt="", drawstyle="steps-mid"
+            x, y, yerr=e, label=lbl, lw=lw, color=c, fmt="", drawstyle="steps-mid"
         )
     ax.set_xlabel(hlist[0].axes[0].label)
     ax.set_ylabel("Events")
 
 
-def plot2d(h, ax, log=False, cmap="RdYlBu"):
+def plot2d(h, fig, ax, log=False, cmap="RdYlBu"):
     w, x, y = h.to_numpy()
     if log:
-        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap, norm=matplotlib.colors.LogNorm())
+        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap, norm=colors.LogNorm())
     else:
         mesh = ax.pcolormesh(x, y, w.T, cmap=cmap)
     ax.set_xlabel(h.axes[0].label)
@@ -471,7 +470,7 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         xmax1 = np.argwhere(y1 > 0)[-1] if any(y1 > 0) else [0]
         xmax2 = np.argwhere(y2 > 0)[-1] if any(y2 > 0) else [0]
         xmin = min(np.concatenate((xmin1, xmin2)))
-        xmax = max(np.concatenate((xmax2, xmax2)))
+        xmax = max(np.concatenate((xmax1, xmax2)))
         x1 = x1[xmin : xmax + 1]
         x2 = x2[xmin : xmax + 1]
         y1 = y1[xmin : xmax + 1]
