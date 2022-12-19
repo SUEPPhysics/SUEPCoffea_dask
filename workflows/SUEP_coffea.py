@@ -12,8 +12,7 @@ import pandas as pd
 import vector
 from coffea import processor
 
-vector.register_awkward()
-
+# IO utils
 import workflows.pandas_utils as pandas_utils
 
 # Importing SUEP specific functions
@@ -26,6 +25,9 @@ from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
+
+# Set vector behavior
+vector.register_awkward()
 
 
 class SUEP_cluster(processor.ProcessorABC):
@@ -41,6 +43,8 @@ class SUEP_cluster(processor.ProcessorABC):
         flag: bool,
         do_inf: bool,
         output_location: Optional[str],
+        accum: Optional[bool] = None,
+        trigger: Optional[str] = None,
     ) -> None:
         self._flag = flag
         self.output_location = output_location
@@ -57,6 +61,8 @@ class SUEP_cluster(processor.ProcessorABC):
         self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
         self.doOF = False
+        self.accum = accum
+        self.trigger = trigger
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
@@ -90,7 +96,7 @@ class SUEP_cluster(processor.ProcessorABC):
         return self._accumulator
 
     def jet_awkward(self, Jets):
-        """ "
+        """
         Create awkward array of jets. Applies basic selections.
         Returns: awkward array of dimensions (events x jets x 4 momentum)
         """
@@ -109,12 +115,23 @@ class SUEP_cluster(processor.ProcessorABC):
     def eventSelection(self, events):
         """
         Applies trigger, returns events.
+        Default is PFHT triggers. Can use selection variable for customization.
         """
+        # NOTE: Might be a good idea to make this a 'match-case' statement
+        # once we can move to Python 3.10 for good.
         if self.scouting != 1:
-            if self.era == 2016:
-                trigger = events.HLT.PFHT900 == 1
+            if self.trigger == "TripleMu":
+                if self.era == 2016:
+                    trigger = events.HLT.TripleMu_5_3_3 == 1
+                elif self.era == 2017:
+                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+                else:
+                    trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
             else:
-                trigger = events.HLT.PFHT1050 == 1
+                if self.era == 2016:
+                    trigger = events.HLT.PFHT900 == 1
+                else:
+                    trigger = events.HLT.PFHT1050 == 1
             events = events[trigger]
 
         return events
@@ -207,8 +224,15 @@ class SUEP_cluster(processor.ProcessorABC):
         ak4jets = self.jet_awkward(events.Jet)
 
         # work on JECs and systematics
+        prefix = ""
+        if "dask" in self.accum:
+            prefix = "dask-worker-space/"
         jets_c = apply_jecs(
-            isMC=self.isMC, Sample=self.sample, era=self.era, events=events
+            isMC=self.isMC,
+            Sample=self.sample,
+            era=self.era,
+            events=events,
+            prefix=prefix,
         )
         jets_jec = self.jet_awkward(jets_c)
         if self.isMC:
@@ -336,6 +360,12 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
+            if self.accum:
+                self.initializeColumns(col_label)
+                for c in self.columns:
+                    self.out_vars[c] = np.nan
+                return
+
             self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
             return
 
@@ -435,12 +465,24 @@ class SUEP_cluster(processor.ProcessorABC):
         elif self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
 
-        # run the anlaysis with the track systematics applied
+        # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
             self.analysis(events, do_syst=True, col_label="_track_down")
 
         # run the analysis
         self.analysis(events)
+
+        # output result to dask dataframe accumulator
+        if "dask" in self.accum:
+            return self.out_vars
+
+        # output result to iterative/futures accumulator
+        if "iterative" or "futures" in self.accum:
+            # Convert output to the desired format when the accumulator is used
+            for c in self.out_vars.columns:
+                output[c] = self.out_vars[c].to_list()
+            output = {dataset: self.out_vars}
+            return output
 
         # save the out_vars object as a Pandas DataFrame
         pandas_utils.save_dfs(
