@@ -3,7 +3,7 @@ import os
 
 # Import coffea specific features
 from coffea import processor
-from coffea.processor import futures_executor, run_uproot_job, Runner
+from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
 from workflows import SUEP_coffea, merger
@@ -35,23 +35,26 @@ modules_era.append(
         flag=False,
         do_inf=options.doInf,
         output_location=out_dir,
-        accum='pandas_merger'
+        accum="pandas_merger",
     )
 )
 
 for instance in modules_era:
-    
+
     runner = processor.Runner(
-        executor = processor.FuturesExecutor(compression=None, workers = 2),
-        schema = processor.NanoAODSchema,
-        xrootdtimeout = 60,
-        chunksize=10000
+        executor=processor.FuturesExecutor(compression=None, workers=2),
+        schema=processor.NanoAODSchema,
+        xrootdtimeout=60,
+        chunksize=10000,
     )
-    
-    runner.automatic_retries(retries=3, skipbadfiles=False, func=runner.run,
+
+    runner.automatic_retries(
+        retries=3,
+        skipbadfiles=False,
+        func=runner.run,
         fileset={options.dataset: [options.infile]},
         treename="Events",
         processor_instance=instance,
     )
-    
+
     merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")

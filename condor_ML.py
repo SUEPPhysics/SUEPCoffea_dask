@@ -41,13 +41,16 @@ modules_era.append(
 for instance in modules_era:
 
     runner = processor.Runner(
-        executor = processor.FuturesExecutor(compression=None, workers = 2),
-        schema = processor.NanoAODSchema,
-        xrootdtimeout = 60,
-        chunksize=10000
+        executor=processor.FuturesExecutor(compression=None, workers=2),
+        schema=processor.NanoAODSchema,
+        xrootdtimeout=60,
+        chunksize=10000,
     )
 
-    runner.automatic_retries(retries=3, skipbadfiles=False, func=runner.run,
+    runner.automatic_retries(
+        retries=3,
+        skipbadfiles=False,
+        func=runner.run,
         fileset={options.dataset: [options.infile]},
         treename="Events",
         processor_instance=instance,

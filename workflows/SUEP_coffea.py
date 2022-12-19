@@ -325,7 +325,7 @@ class SUEP_cluster(processor.ProcessorABC):
             "dphi_SUEP_ISR_CL",
         ]
         self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
-        
+
         self.columns_ML, self.columns_ML_ISR = [], []
         if self.do_inf:
             self.columns_ML = ["SUEP_" + m + "_GNN" for m in self.dgnn_model_names] + [
@@ -334,7 +334,7 @@ class SUEP_cluster(processor.ProcessorABC):
             ]
             self.columns_ML += [m + "_ssd" for m in self.ssd_models]
             self.columns_ML_ISR = [c.replace("SUEP", "ISR") for c in self.columns_ML]
-            
+
         self.columns = (
             self.columns_CL
             + self.columns_CL_ISR
@@ -361,7 +361,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
-            if self.accum == 'pandas_merger':
+            if self.accum == "pandas_merger":
                 self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
             elif self.accum:
                 self.initializeColumns(col_label)
@@ -485,14 +485,16 @@ class SUEP_cluster(processor.ProcessorABC):
                 output = {dataset: self.out_vars}
                 return output
 
-            if 'pandas_merger' == self.accum:
-        
+            if "pandas_merger" == self.accum:
+
                 # save the out_vars object as a Pandas DataFrame
                 pandas_utils.save_dfs(
                     self,
                     [self.out_vars],
                     ["vars"],
-                    events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+                    events.behavior["__events_factory__"]._partition_key.replace(
+                        "/", "_"
+                    )
                     + ".hdf5",
                 )
                 return output

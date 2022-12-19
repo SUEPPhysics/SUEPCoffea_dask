@@ -67,16 +67,16 @@ default_colors = {
     "SUEP-m125-darkPhoHad_2016": "cyan",
     "SUEP-m125-generic_2016": "cyan",
     "SUEP-m125-generic-htcut_2016": "magenta",
-    "M125_2018": 'cyan',
-    "M200_2018": 'blue',
-    "M300_2018": 'lightseagreen',
-    "M400_2018": 'green',
-    "M500_2018": 'darkgreen',
-    "M600_2018": 'lawngreen',
-    "M700_2018": 'goldenrod',
-    "M800_2018": 'orange',
-    "M900_2018": 'sienna',
-    "M1000_2018": 'red'
+    "M125_2018": "cyan",
+    "M200_2018": "blue",
+    "M300_2018": "lightseagreen",
+    "M400_2018": "green",
+    "M500_2018": "darkgreen",
+    "M600_2018": "lawngreen",
+    "M700_2018": "goldenrod",
+    "M800_2018": "orange",
+    "M900_2018": "sienna",
+    "M1000_2018": "red",
 }
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
@@ -171,9 +171,14 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
             sample = "data"
 
         elif "SUEP" in infile_name:
-            if '+' in infile_name: sample = infile_name.split("/")[-1].split("+")[0]
-            elif 'new_generic' in infile_name: sample = infile_name.split("/")[-1].split("_")[1] # hack for Carlos naming convention
-            else: sample = infile_name.split("/")
+            if "+" in infile_name:
+                sample = infile_name.split("/")[-1].split("+")[0]
+            elif "new_generic" in infile_name:
+                sample = infile_name.split("/")[-1].split("_")[
+                    1
+                ]  # hack for Carlos naming convention
+            else:
+                sample = infile_name.split("/")
         else:
             sample = infile_name
 
@@ -611,7 +616,9 @@ def plot_all_regions(
             y_errs = np.sqrt(h.variances())
             y_errs = y_errs[xmin : xmax + 1]
             if i == 0:
-                ax.step(x, y, color=default_colors.get(sample), label=label, where="mid")
+                ax.step(
+                    x, y, color=default_colors.get(sample), label=label, where="mid"
+                )
             else:
                 ax.step(x, y, color=default_colors.get(sample), where="mid")
 
@@ -926,17 +933,21 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
 
     return h_out
 
+
 def linearFit2DHist(h):
     z_values = h.values().flatten()
     x_centers = h.axes[0].centers
     y_centers = h.axes[1].centers
     x_values = np.array([])
     y_values = np.array([])
-    for i in range(len(x_centers)): x_values = np.concatenate((x_values, np.ones_like(y_centers)*x_centers[i]))
-    for i in range(len(x_centers)): y_values = np.concatenate((y_values, y_centers))
+    for i in range(len(x_centers)):
+        x_values = np.concatenate((x_values, np.ones_like(y_centers) * x_centers[i]))
+    for i in range(len(x_centers)):
+        y_values = np.concatenate((y_values, y_centers))
     p = np.poly1d(np.polyfit(x_values, y_values, 1, w=z_values, cov=False))
     logging.info("Linear fit result:", p)
     return p
+
 
 def nested_dict(n, type):
     if n == 1:
