@@ -43,18 +43,20 @@ modules_era.append(
 
 processor.NanoAODSchema.mixins["PFcand"] = "PFCand"
 for instance in modules_era:
-    output = run_uproot_job(
-        {instance.sample: ["rewrite.root"]},
-        treename="tree",
-        processor_instance=instance,
-        executor=futures_executor,
-        executor_args={
-            "workers": 1,
-            "schema": processor.NanoAODSchema,
-            "xrootdtimeout": 10,
-        },
-        chunksize=100000,
+    
+    runner = processor.Runner(
+        executor = processor.FuturesExecutor(compression=None, workers = 2),
+        schema = processor.NanoAODSchema,
+        xrootdtimeout = 60,
+        chunksize=10000
     )
+    
+    runner.automatic_retries(retries=3, skipbadfiles=False, func=runner.run,
+        fileset={options.dataset: [options.infile]},
+        treename="Events",
+        processor_instance=instance,
+    )
+    
+    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
 
 os.system("rm rewrite.root")
-merger.merge(options)

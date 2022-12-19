@@ -45,6 +45,7 @@ for instance in modules_era:
         executor = processor.FuturesExecutor(compression=None, workers = 2),
         schema = processor.NanoAODSchema,
         xrootdtimeout = 60,
+        chunksize=10000
     )
     
     runner.automatic_retries(retries=3, skipbadfiles=False, func=runner.run,
