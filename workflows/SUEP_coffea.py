@@ -241,7 +241,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 jets_jec_JESUp.pt, axis=-1
             ).to_list()
             self.out_vars["ht_JEC" + out_label + "_JES_down"] = ak.sum(
-                jets_jec.pt, axis=-1
+                jets_jec_JESDown.pt, axis=-1
             ).to_list()
 
             if self.era == 2016 and self.scouting == 0:
@@ -300,14 +300,16 @@ class SUEP_cluster(processor.ProcessorABC):
             "dphi_SUEP_ISR_CL",
         ]
         self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
+        
         self.columns_ML, self.columns_ML_ISR = [], []
         if self.do_inf:
-            self.columns_ML = [m + "_GNN" for m in self.dgnn_model_names] + [
+            self.columns_ML = ["SUEP_" + m + "_GNN" for m in self.dgnn_model_names] + [
                 "SUEP_S1_GNN",
                 "SUEP_nconst_GNN",
             ]
             self.columns_ML += [m + "_ssd" for m in self.ssd_models]
             self.columns_ML_ISR = [c.replace("SUEP", "ISR") for c in self.columns_ML]
+            
         self.columns = (
             self.columns_CL
             + self.columns_CL_ISR
