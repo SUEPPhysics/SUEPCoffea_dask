@@ -44,7 +44,10 @@ class pandas_accumulator(AccumulatorABC):
                 % (self._empty.shape, other._empty.shape)
             )
         self._value = pd.concat((self._value, other._value))
-    
+        
+    def loc(self, indices, key, value):
+        self._value.loc[indices, key] = value
+        
     def __setitem__(self, key, value):
         if not isinstance(key, str):
             raise ValueError("Column name must be a string not %r." % type(key))

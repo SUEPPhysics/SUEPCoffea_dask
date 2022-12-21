@@ -367,7 +367,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
             if self.accum == "pandas_merger":
-                self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
+                return self.accumulator
             elif self.accum:
                 self.initializeColumns(col_label)
                 for c in self.columns:
@@ -434,18 +434,17 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
 
-        # debug
-        # SUEP_utils.ClusterMethod(
-        #     self,
-        #     indices,
-        #     tracks,
-        #     SUEP_cand,
-        #     ISR_cand,
-        #     SUEP_cluster_tracks,
-        #     ISR_cluster_tracks,
-        #     do_inverted=True,
-        #     out_label=col_label,
-        # )
+        SUEP_utils.ClusterMethod(
+            self,
+            indices,
+            tracks,
+            SUEP_cand,
+            ISR_cand,
+            SUEP_cluster_tracks,
+            ISR_cluster_tracks,
+            do_inverted=True,
+            out_label=col_label,
+        )
 
         if self.do_inf:
             import workflows.ML_utils as ML_utils
@@ -494,17 +493,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 return output
 
             if "pandas_merger" == self.accum:
-
-                # save the out_vars object as a Pandas DataFrame
-                # pandas_utils.save_dfs(
-                #     self,
-                #     [self.out_vars],
-                #     ["vars"],
-                #     events.behavior["__events_factory__"]._partition_key.replace(
-                #         "/", "_"
-                #     )
-                #     + ".hdf5",
-                # )
                 return self.accumulator
 
     def postprocess(self, accumulator):
