@@ -62,6 +62,31 @@ queue jobid, fileid from {jobdir}/inputfiles.dat
 """
 
 
+def proxy_regeneration(proxy_copy, proxy_base):
+    regenerate_proxy = False
+    if not os.path.isfile(proxy_copy):
+        logging.warning("--- proxy file does not exist")
+        regenerate_proxy = True
+    else:
+        lifetime = subprocess.check_output(
+            ["voms-proxy-info", "--file", proxy_copy, "--timeleft"]
+        )
+        lifetime = float(lifetime)
+        lifetime = lifetime / (60 * 60)
+        logging.info(f"--- proxy lifetime is {lifetime} hours")
+        if lifetime < 139.00:  # we want at least 3 hours
+            logging.warning("--- proxy has expired !")
+            regenerate_proxy = True
+
+    if regenerate_proxy:
+        redone_proxy = False
+        while not redone_proxy:
+            status = os.system("voms-proxy-init -voms cms --hours=140")
+            if os.WEXITSTATUS(status) == 0:
+                redone_proxy = True
+        shutil.copyfile("/tmp/" + proxy_base, proxy_copy)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
     parser.add_argument(
@@ -96,28 +121,7 @@ def main():
     username = getpass.getuser()
     outdir = "/eos/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
 
-    regenerate_proxy = False
-    if not os.path.isfile(proxy_copy):
-        logging.warning("--- proxy file does not exist")
-        regenerate_proxy = True
-    else:
-        lifetime = subprocess.check_output(
-            ["voms-proxy-info", "--file", proxy_copy, "--timeleft"]
-        )
-        lifetime = float(lifetime)
-        lifetime = lifetime / (60 * 60)
-        logging.info(f"--- proxy lifetime is {lifetime} hours")
-        if lifetime < 139.00:  # we want at least 3 hours
-            logging.warning("--- proxy has expired !")
-            regenerate_proxy = True
-
-    if regenerate_proxy:
-        redone_proxy = False
-        while not redone_proxy:
-            status = os.system("voms-proxy-init -voms cms --hours=140")
-            if os.WEXITSTATUS(status) == 0:
-                redone_proxy = True
-        shutil.copyfile("/tmp/" + proxy_base, proxy_copy)
+    proxy_regeneration(proxy_copy, proxy_base)
 
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
