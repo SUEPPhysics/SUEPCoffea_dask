@@ -68,10 +68,10 @@ def dump_table(
             import XRootD.client
 
             xrootd = True
-        except ImportError:
+        except ImportError as exc:
             raise ImportError(
                 "Install XRootD python bindings with: conda install -c conda-forge xroot"
-            )
+            ) from exc
     local_file = (
         os.path.abspath(os.path.join(".", fname))
         if xrootd
