@@ -36,26 +36,12 @@ def main():
         required=False,
     )
     parser.add_argument(
-        "-ms",
-        "--movesample",
-        type=int,
-        default=0,
-        help="Move each sample after submitting it (accomplishes it during the buffer time between samples set by default in monitor.py).",
-    )
-    parser.add_argument(
         "-i",
         "--input",
         type=str,
         default="data.txt",
         help="input datasets",
         required=True,
-    )
-    parser.add_argument(
-        "-m",
-        "--move",
-        type=int,
-        default=0,
-        help="Move all samples after all submissions (during the buffer specified by -hours).",
     )
     parser.add_argument(
         "-dry", "--dryrun", type=int, default=0, help="running without submission"
@@ -68,7 +54,6 @@ def main():
 
     username = os.environ["USER"]
     dataDir = f"/mnt/T3_US_MIT/hadoop/scratch/{username}/SUEP/{tag}/"
-    moveDir = f"/work/submit/{username}/SUEP/{tag}/"
 
     # Making sure that the proxy is good
     lifetime = check_proxy(time_min=200)
