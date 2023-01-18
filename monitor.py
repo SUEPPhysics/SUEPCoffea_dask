@@ -25,8 +25,6 @@ def main():
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
     options = parser.parse_args()
 
-    proxy_base = f"x509up_u{os.getuid()}"
-    home_base = os.environ["HOME"]
     username = os.environ["USER"]
     out_dir = (
         "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
