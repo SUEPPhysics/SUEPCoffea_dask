@@ -1,10 +1,9 @@
 import json
 import logging
+import sys
 from collections import defaultdict
 from copy import deepcopy
 
-import boost_histogram as bh
-import hist
 import numpy as np
 import pandas as pd
 
@@ -21,7 +20,7 @@ def h5load(ifile, label):
             except KeyError:
                 print("No key", label, ifile)
                 return 0, 0
-    except:
+    except BaseException:
         print("Some error occurred", ifile)
         return 0, 0
 
@@ -35,7 +34,7 @@ def getXSection(dataset, year, SUEP=False, path="../data/"):
                 xsection *= MC_xsecs[dataset]["xsec"]
                 xsection *= MC_xsecs[dataset]["kr"]
                 xsection *= MC_xsecs[dataset]["br"]
-            except:
+            except KeyError:
                 print(
                     "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
                 )
@@ -45,7 +44,7 @@ def getXSection(dataset, year, SUEP=False, path="../data/"):
             MC_xsecs = json.load(file)
             try:
                 xsection *= MC_xsecs[dataset]
-            except:
+            except KeyError:
                 print(
                     "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
                 )
@@ -169,9 +168,9 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
 
     # 2. blind
     if blind and not isMC:
-        df = blind_DataFrame(df, abcd["SR"])
+        df = blind_DataFrame(df, label_out, abcd["SR"])
         if "SR2" in abcd.keys():
-            df = blind_DataFrame(df, abcd["SR2"])
+            df = blind_DataFrame(df, label_out, abcd["SR2"])
 
     # 3. apply selections
     for sel in abcd["selections"]:
@@ -303,7 +302,7 @@ def apply_normalization(plots, norm):
 
 def get_track_killing_config(config):
     new_config = {}
-    for label_out, config_out in config.items():
+    for label_out, _config_out in config.items():
         label_out_new = label_out + "_track_down"
         new_config[label_out_new] = deepcopy(config[label_out])
         new_config[label_out_new]["input_method"] += "_track_down"
@@ -326,15 +325,15 @@ def get_track_killing_config(config):
 
 def get_jet_corrections_config(config, jet_corrections):
     new_config = {}
-    for sys in jet_corrections:
-        for label_out, config_out in config.items():
-            label_out_new = label_out + "_" + sys
+    for correction in jet_corrections:
+        for label_out, _config_out in config.items():
+            label_out_new = label_out + "_" + correction
             new_config[label_out_new] = deepcopy(config[label_out])
             for iSel in range(len(new_config[label_out_new]["selections"])):
                 if "ht" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + sys
+                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
                 elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + sys
+                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
     return new_config
 
 
@@ -345,7 +344,7 @@ def read_in_weights(fweights):
     return scaling_weights
 
 
-def blind_DataFrame(df, SR):
+def blind_DataFrame(df, label_out, SR):
     if len(SR) != 2:
         sys.exit(
             label_out
