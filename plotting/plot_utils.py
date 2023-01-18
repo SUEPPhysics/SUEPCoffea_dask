@@ -84,6 +84,57 @@ def lumiLabel(year):
         return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
 
 
+def findLumi(year, auto_lumi, infile_name):
+    if auto_lumi:
+        if "20UL16MiniAODv2" in infile_name:
+            lumi = lumis["2016"]
+        if "20UL17MiniAODv2" in infile_name:
+            lumi = lumis["2017"]
+        if "20UL16MiniAODAPVv2" in infile_name:
+            lumi = lumis["2016_apv"]
+        if "20UL18" in infile_name:
+            lumi = lumis["2018"]
+        if "SUEP-m" in infile_name:
+            lumi = lumis["2018"]
+        if "JetHT+Run" in infile_name:
+            lumi = 1
+    if year and not auto_lumi:
+        lumi = lumis[str(year)]
+    if year and auto_lumi:
+        raise Exception("Apply lumis automatically or based on year")
+    return lumi
+
+
+def fillSample(infile_name, plots, lumi):
+    if "QCD_Pt" in infile_name:
+        sample = "QCD_Pt"
+
+        # include this block to import the QCD bins individually
+        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        plots[temp_sample] = openpkl(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
+    elif "QCD_HT" in infile_name:
+        sample = "QCD_HT"
+
+        # include this block to import the QCD bins individually
+        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
+        plots[temp_sample] = openpkl(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
+    elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
+        sample = "data"
+
+    elif "SUEP-m" in infile_name:
+        sample = infile_name.split("/")[-1].split("+")[0]
+    else:
+        sample = infile_name
+    return sample, plots
+
+
 # load file(s)
 def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
     plots = {}
@@ -100,23 +151,7 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
             continue
 
         # sets the lumi based on year
-        if auto_lumi:
-            if "20UL16MiniAODv2" in infile_name:
-                lumi = lumis["2016"]
-            if "20UL17MiniAODv2" in infile_name:
-                lumi = lumis["2017"]
-            if "20UL16MiniAODAPVv2" in infile_name:
-                lumi = lumis["2016_apv"]
-            if "20UL18" in infile_name:
-                lumi = lumis["2018"]
-            if "SUEP-m" in infile_name:
-                lumi = lumis["2018"]
-            if "JetHT+Run" in infile_name:
-                lumi = 1
-        if year and not auto_lumi:
-            lumi = lumis[str(year)]
-        if year and auto_lumi:
-            raise Exception("Apply lumis automatically or based on year")
+        lumi = findLumi(year, auto_lumi, infile_name)
 
         # exclude low bins
         if exclude_low_bins:
@@ -137,32 +172,7 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
             # if '170to300' in infile_name: continue
 
         # plots[sample] sample is filled here
-        if "QCD_Pt" in infile_name:
-            sample = "QCD_Pt"
-
-            # include this block to import the QCD bins individually
-            temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-            plots[temp_sample] = openpkl(infile_name)
-            for plot in list(plots[temp_sample].keys()):
-                plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-        elif "QCD_HT" in infile_name:
-            sample = "QCD_HT"
-
-            # include this block to import the QCD bins individually
-            temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-            temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-            plots[temp_sample] = openpkl(infile_name)
-            for plot in list(plots[temp_sample].keys()):
-                plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-        elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
-            sample = "data"
-
-        elif "SUEP-m" in infile_name:
-            sample = infile_name.split("/")[-1].split("+")[0]
-        else:
-            sample = infile_name
+        sample, plots = fillSample(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
             plots[sample] = openpkl(infile_name)
@@ -176,11 +186,13 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
     return plots
 
 
-def combineYears(inplots, tag="QCD_HT", years=["2018", "2017", "2016"]):
+def combineYears(inplots, tag="QCD_HT", years=None):
     """
     Combines all samples in plots with a certain tag and with certain
     years. Returns combined plots.
     """
+    if not years:
+        years = ["2018", "2017", "2016"]
     outPlots = {}
     yearsAdded = []
     initialize = True
@@ -570,7 +582,7 @@ def plot_all_regions(
 
         # get args for min and max
         xmins, xmaxs = [], []
-        for x, y in zip(xs, ys):
+        for _x, y in zip(xs, ys):
             xmin = np.argwhere(y > 0)[0] if any(y > 0) else [1e6]
             xmax = np.argwhere(y > 0)[-1] if any(y > 0) else [1e-6]
             xmins.append(xmin)
