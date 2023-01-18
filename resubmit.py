@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import shutil
 import subprocess
 import time
 
@@ -9,11 +8,13 @@ from plotting.plot_utils import check_proxy
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def cleanCorruptedFiles(out_dir_sample):
     for file in os.listdir(out_dir_sample):
         size = os.path.getsize(out_dir_sample + "/" + file)
         if size == 0:
             subprocess.run(["rm", out_dir_sample + "/" + file])
+
 
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
@@ -113,6 +114,7 @@ def main():
             logging.info("Sleeping for " + str(round(sleepTime - mod)) + " seconds")
             logging.info("(" + str(round(nHours - mod * 1.0 / 3600, 2)) + " hours)...")
         time.sleep(sleepTime - mod)
+
 
 if __name__ == "__main__":
     main()
