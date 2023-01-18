@@ -9,28 +9,11 @@ from termcolor import colored
 
 logging.basicConfig(level=logging.DEBUG)
 
-
-def isFileGood(fname, label="ch"):
-    try:
-        with pd.HDFStore(fname) as store:
-            data = store[label]
-        return 1
-    except:
-        return 0
-
-
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
     parser.add_argument("-i", "--input", type=str, default="input", required=True)
     parser.add_argument("-t", "--tag", type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
-    parser.add_argument(
-        "-m",
-        "--move",
-        type=int,
-        default=0,
-        help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.",
-    )
     options = parser.parse_args()
 
     redirector = "root://t3serv017.mit.edu/"
@@ -101,7 +84,7 @@ def main():
             logging.info(jobs_dir)
 
             # We write the original list. inputfiles.dat will now contain missing files. Compare with original list
-            if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
+            if not os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat"):
                 copyfile(
                     jobs_dir + "/" + "inputfiles.dat",
                     jobs_dir + "/" + "original_inputfiles.dat",
@@ -165,45 +148,6 @@ def main():
                 out, err = htc.communicate()
                 exit_status = htc.returncode
                 logging.info(f"condor submission status : {exit_status}")
-
-            if options.move:
-
-                if not os.path.isdir(move_dir.format(sample_name)):
-                    os.system("mkdir " + move_dir.format(sample_name))
-
-                # delete files that are corrupted (i.e., empty)
-                for file in os.listdir(move_dir.format(sample_name)):
-                    size = os.path.getsize(move_dir.format(sample_name) + "/" + file)
-                    if size == 0:
-                        subprocess.run(
-                            ["rm", move_dir.format(sample_name) + "/" + file]
-                        )
-
-                # get list of files already in /work
-                movedFiles = os.listdir(move_dir.format(sample_name))
-
-                # get list of files in T3
-                allFiles = os.listdir(out_dir.format(sample_name))
-
-                # get list of files missing from /work that are in T3
-                filesToMove = list(set(allFiles) - set(movedFiles))
-
-                # move those files
-                logging.info(
-                    "Moving "
-                    + str(len(filesToMove))
-                    + " files to "
-                    + move_dir.format(sample_name)
-                )
-                for file in filesToMove:
-                    subprocess.run(
-                        [
-                            "xrdcp",
-                            redirector + "/" + out_dir_xrd + file,
-                            move_dir.format(sample_name) + "/",
-                        ]
-                    )
-
 
 if __name__ == "__main__":
     main()
