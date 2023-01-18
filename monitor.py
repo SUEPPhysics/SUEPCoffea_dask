@@ -3,15 +3,18 @@ import logging
 import os
 import subprocess
 from shutil import copyfile
+
 from termcolor import colored
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 def cleanCorruptedFiles(out_dir_sample):
     for file in os.listdir(out_dir_sample):
         size = os.path.getsize(out_dir_sample + "/" + file)
         if size == 0:
             subprocess.run(["rm", out_dir_sample + "/" + file])
+
 
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
@@ -33,7 +36,7 @@ def main():
     if options.resubmit:
         lifetime = check_proxy(time_min=100)
         logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
-    
+
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
             if len(sample) <= 1 or "#" in sample:
