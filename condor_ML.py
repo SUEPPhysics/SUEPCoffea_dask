@@ -3,7 +3,6 @@ import os
 
 # Import coffea specific features
 from coffea import processor
-from coffea.processor import futures_executor, run_uproot_job
 
 # SUEP Repo Specific
 from workflows import ML_coffea, merger
