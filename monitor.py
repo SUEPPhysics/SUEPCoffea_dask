@@ -9,6 +9,7 @@ from termcolor import colored
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
     parser.add_argument("-i", "--input", type=str, default="input", required=True)
@@ -148,6 +149,7 @@ def main():
                 out, err = htc.communicate()
                 exit_status = htc.returncode
                 logging.info(f"condor submission status : {exit_status}")
+
 
 if __name__ == "__main__":
     main()

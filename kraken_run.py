@@ -128,7 +128,7 @@ def main():
     redirector = "root://submit50.mit.edu/"
     proxy_base = f"x509up_u{os.getuid()}"
     home_base = os.environ["HOME"]
-    
+
     # define which file you want to run, the output file name and extension that it produces
     # these will be transferred back to outdir/outdir_condor
     if options.scout == 1:
@@ -161,7 +161,7 @@ def main():
             sample_name = sample.split("/")[-1]
             jobs_dir = "_".join([logdir + "jobs", options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
-            
+
             # set up the jobs directory
             if os.path.isdir(jobs_dir):
                 if not options.force:
@@ -186,19 +186,17 @@ def main():
                     sample_name
                 )
             Raw_list = open(input_list)
-            
+
             # write list of files to inputfiles.dat
             nfiles = 0
             with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
                 for i in Raw_list:
                     full_file = i.split(" ")[0]
                     just_file = full_file.split("/")[-1]
-                    infiles.write(
-                        full_file + "\t" + just_file.split(".root")[0] + "\n"
-                    )
+                    infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
                 infiles.close()
-                    
+
             fin_outdir = outdir.format(tag=options.tag, sample=sample_name)
             fin_outdir_condor = outdir_condor.format(
                 tag=options.tag, sample=sample_name
