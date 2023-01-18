@@ -225,8 +225,9 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # work on JECs and systematics
         prefix = ""
-        if "dask" in self.accum:
-            prefix = "dask-worker-space/"
+        if self.accum:
+            if "dask" in self.accum:
+                prefix = "dask-worker-space/"
         jets_c = apply_jecs(
             isMC=self.isMC,
             Sample=self.sample,
@@ -324,14 +325,16 @@ class SUEP_cluster(processor.ProcessorABC):
             "dphi_SUEP_ISR_CL",
         ]
         self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
+
         self.columns_ML, self.columns_ML_ISR = [], []
         if self.do_inf:
-            self.columns_ML = [m + "_GNN" for m in self.dgnn_model_names] + [
+            self.columns_ML = ["SUEP_" + m + "_GNN" for m in self.dgnn_model_names] + [
                 "SUEP_S1_GNN",
                 "SUEP_nconst_GNN",
             ]
             self.columns_ML += [m + "_ssd" for m in self.ssd_models]
             self.columns_ML_ISR = [c.replace("SUEP", "ISR") for c in self.columns_ML]
+
         self.columns = (
             self.columns_CL
             + self.columns_CL_ISR
@@ -358,13 +361,12 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
-            if self.accum:
+            if self.accum == "pandas_merger":
+                self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
+            elif self.accum:
                 self.initializeColumns(col_label)
                 for c in self.columns:
                     self.out_vars[c] = np.nan
-                return
-
-            self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
             return
 
         #####################################################################################
@@ -471,26 +473,31 @@ class SUEP_cluster(processor.ProcessorABC):
         self.analysis(events)
 
         # output result to dask dataframe accumulator
-        if "dask" in self.accum:
-            return self.out_vars
+        if self.accum:
+            if "dask" in self.accum:
+                return self.out_vars
 
-        # output result to iterative/futures accumulator
-        if "iterative" or "futures" in self.accum:
-            # Convert output to the desired format when the accumulator is used
-            for c in self.out_vars.columns:
-                output[c] = self.out_vars[c].to_list()
-            output = {dataset: self.out_vars}
-            return output
+            # output result to iterative/futures accumulator
+            if "iterative" in self.accum or "futures" in self.accum:
+                # Convert output to the desired format when the accumulator is used
+                for c in self.out_vars.columns:
+                    output[c] = self.out_vars[c].to_list()
+                output = {dataset: self.out_vars}
+                return output
 
-        # save the out_vars object as a Pandas DataFrame
-        pandas_utils.save_dfs(
-            self,
-            [self.out_vars],
-            ["vars"],
-            events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-            + ".hdf5",
-        )
-        return output
+            if "pandas_merger" == self.accum:
+
+                # save the out_vars object as a Pandas DataFrame
+                pandas_utils.save_dfs(
+                    self,
+                    [self.out_vars],
+                    ["vars"],
+                    events.behavior["__events_factory__"]._partition_key.replace(
+                        "/", "_"
+                    )
+                    + ".hdf5",
+                )
+                return output
 
     def postprocess(self, accumulator):
         return accumulator

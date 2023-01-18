@@ -31,8 +31,8 @@ def h5load(ifile, label):
         return 0, 0
 
 
-def merge(options):
-    files = glob.glob("condor_*.hdf5")
+def merge(options, pattern="condor_*.hdf5", outFile="out.hdf5"):
+    files = glob.glob(pattern)
     if len(files) == 0:
         print("No .hdf5 files found")
         sys.exit()
@@ -68,7 +68,7 @@ def merge(options):
     if df_tot is None:
         print("No events in df_tot.")
         df_tot = pd.DataFrame(["empty"], columns=["empty"])
-    store = pd.HDFStore("out.hdf5")
+    store = pd.HDFStore(outFile)
     store.put("vars", df_tot)
     store.get_storer("vars").attrs.metadata = metadata_tot
     store.close()

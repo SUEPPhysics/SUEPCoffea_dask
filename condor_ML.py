@@ -39,18 +39,24 @@ modules_era.append(
 )
 
 for instance in modules_era:
-    output = run_uproot_job(
-        {instance.sample: [options.infile]},
-        treename="Events",
-        processor_instance=instance,
-        executor=futures_executor,
-        executor_args={
-            "workers": 1,
-            "schema": processor.NanoAODSchema,
-            "xrootdtimeout": 10,
-        },
+
+    runner = processor.Runner(
+        executor=processor.FuturesExecutor(compression=None, workers=1),
+        schema=processor.NanoAODSchema,
+        xrootdtimeout=60,
         chunksize=10000,
     )
+
+    runner.automatic_retries(
+        retries=3,
+        skipbadfiles=False,
+        func=runner.run,
+        fileset={options.dataset: [options.infile]},
+        treename="Events",
+        processor_instance=instance,
+    )
+
+    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
 
 
 merger.merge_ML(options)

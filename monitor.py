@@ -76,12 +76,19 @@ def main():
 
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
+            if len(sample) <= 1:
+                continue
             if "#" in sample:
                 continue
-            if len(sample.split("/")) <= 1:
+
+            if "/" in sample and len(sample.split("/")) <= 1:
                 continue
 
-            sample_name = sample.split("/")[-1]
+            if "/" in sample:
+                sample_name = sample.split("/")[-1]
+            else:
+                sample_name = sample
+
             jobs_dir = "_".join(["jobs", options.tag, sample_name])
             jobs_dir = jobs_base_dir + jobs_dir
 
