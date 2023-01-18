@@ -3,18 +3,20 @@ import logging
 import os
 import subprocess
 from shutil import copyfile
+
 from termcolor import colored
 
 from plotting.plot_utils import check_proxy
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def cleanCorruptedFiles(out_dir_sample):
     for file in os.listdir(out_dir_sample):
         size = os.path.getsize(out_dir_sample + "/" + file)
         if size == 0:
             subprocess.run(["rm", out_dir_sample + "/" + file])
-            
+
 
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
