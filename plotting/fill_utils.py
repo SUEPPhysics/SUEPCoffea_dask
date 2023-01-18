@@ -179,6 +179,24 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
     return df
 
 
+def fill_2d_distributions(output, df, label_out, input_method):
+    keys = list(output.keys())
+    keys_2Dhists = [k for k in keys if "2D" in k]
+    for key in keys_2Dhists:
+        if not key.endswith(label_out):
+            continue
+        string = key[
+            len("2D") + 1 : -(len(label_out) + 1)
+        ]  # cut out "2D_" and output label
+        var1 = string.split("_vs_")[0]
+        var2 = string.split("_vs_")[1]
+        if var1 not in list(df.keys()):
+            var1 += "_" + input_method
+        if var2 not in list(df.keys()):
+            var2 += "_" + input_method
+        output[key].fill(df[var1], df[var2], weight=df["event_weight"])
+
+
 def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
 
     input_method = abcd["input_method"]
@@ -209,21 +227,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
         )
 
     # 2. fill some 2D distributions
-    keys = list(output.keys())
-    keys_2Dhists = [k for k in keys if "2D" in k]
-    for key in keys_2Dhists:
-        if not key.endswith(label_out):
-            continue
-        string = key[
-            len("2D") + 1 : -(len(label_out) + 1)
-        ]  # cut out "2D_" and output label
-        var1 = string.split("_vs_")[0]
-        var2 = string.split("_vs_")[1]
-        if var1 not in list(df.keys()):
-            var1 += "_" + input_method
-        if var2 not in list(df.keys()):
-            var2 += "_" + input_method
-        output[key].fill(df[var1], df[var2], weight=df["event_weight"])
+    fill_2d_distributions(df, output, label_out, input_method)
 
     # 3. divide the dfs by region
     if do_abcd:
