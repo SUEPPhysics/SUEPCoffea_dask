@@ -953,7 +953,7 @@ def linearFit2DHist(h):
     y_values = np.array([])
     for i in range(len(x_centers)):
         x_values = np.concatenate((x_values, np.ones_like(y_centers) * x_centers[i]))
-    for i in range(len(x_centers)):
+    for _i in range(len(x_centers)):
         y_values = np.concatenate((y_values, y_centers))
     p = np.poly1d(np.polyfit(x_values, y_values, 1, w=z_values, cov=False))
     logging.info("Linear fit result:", p)
