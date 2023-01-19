@@ -581,6 +581,7 @@ def create_output_file(label, abcd):
 
 def calculate_systematic(
     df,
+    config,
     syst,
     options,
     puweights,
@@ -648,8 +649,7 @@ def calculate_systematic(
         df = fill_utils.apply_scaling_weights(
             df.copy(),
             scaling_weights,
-            config["Cluster"]["x_var_regions"],
-            config["Cluster"]["x_var_regions"],
+            config["Cluster"],
             regions="ABCDEFGHI",
             x_var="SUEP_S1_CL",
             y_var="SUEP_nconst_CL",

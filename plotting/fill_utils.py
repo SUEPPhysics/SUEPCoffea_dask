@@ -98,8 +98,7 @@ def make_selection(df, variable, operator, value, apply=True):
 def apply_scaling_weights(
     df,
     scaling_weights,
-    x_var_regions,
-    y_var_regions,
+    abcd,
     regions="ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     x_var="SUEP_S1_CL",
     y_var="SUEP_nconst_CL",
@@ -107,7 +106,7 @@ def apply_scaling_weights(
 ):
     """
     df: input DataFrame to scale
-    *_var_regions: x/y ABCD regions
+    abcd: dictionary of options, as in make_plots.py
     scaling_weights: nested dictionary, region x (bins or ratios)
     regions: string of ordered regions, used to apply corrections
     *_var: x/y are of the ABCD plane, z of the scaling histogram
@@ -130,8 +129,8 @@ def apply_scaling_weights(
             r = regions[iRegion]
 
             # from the weights
-            bins = weights[r]["bins"]
-            ratios = weights[r]["ratios"]
+            bins = scaling_weights[r]["bins"]
+            ratios = scaling_weights[r]["ratios"]
 
             # ht bins
             for k in range(len(bins) - 1):
