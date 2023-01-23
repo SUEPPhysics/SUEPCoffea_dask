@@ -815,6 +815,7 @@ for ifile in tqdm(files):
         # prepare new event weight
         calculate_systematic(
             df,
+            config,
             syst,
             options,
             puweights,
