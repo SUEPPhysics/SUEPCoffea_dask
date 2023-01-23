@@ -67,9 +67,9 @@ def get_dir_data(Sample, era):
 def apply_jecs(isMC, Sample, era, events, prefix=""):
     # Get the correct JECs
     if isMC:
-        jecdir, jerdir = get_dir_mc(isMC, Sample, era)
+        jecdir, jerdir = get_dir_mc(Sample, era)
     else:
-        jecdir, jerdir = get_dir_data(isMC, Sample, era)
+        jecdir, jerdir = get_dir_data(Sample, era)
 
     # Start working here
     jec_path = prefix + "data/jetmet/JEC/" + jecdir + "/"
