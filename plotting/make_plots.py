@@ -49,7 +49,7 @@ parser.add_argument(
     "--save",
     type=str,
     help="Use specific output directory. Overrides MIT-specific paths.",
-    equired=False,
+    required=False,
 )
 parser.add_argument(
     "--xrootd",
