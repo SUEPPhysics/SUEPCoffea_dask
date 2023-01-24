@@ -317,7 +317,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
         cluster = LPCCondorCluster(
             transfer_input_files="/srv/workflows/",
             ship_env=True,
-            env_extra=env_extra,
+            job_script_prologue=env_extra,
         )
     elif "lxplus" in args.executor:
         # NOTE: Need to move these imports to a function
