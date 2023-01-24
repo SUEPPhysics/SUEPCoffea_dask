@@ -45,6 +45,13 @@ parser.add_argument(
     "-f", "--file", type=str, default="", help="Use specific input file"
 )
 parser.add_argument(
+    "-s",
+    "--save",
+    type=str,
+    help="Use specific output directory. Overrides MIT-specific paths.",
+    equired=False,
+)
+parser.add_argument(
     "--xrootd",
     type=int,
     default=0,
@@ -77,6 +84,8 @@ options = parser.parse_args()
 ###################################################################################################################
 
 outDir = f"/work/submit/{getpass.getuser()}/SUEP/outputs/"
+if options.save is not None:
+    outDir = options.save
 # define these if --xrootd 0
 dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
     getpass.getuser(), options.tag, options.dataset
