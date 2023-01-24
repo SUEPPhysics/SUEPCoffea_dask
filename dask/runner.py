@@ -316,9 +316,27 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
 
         cluster = LPCCondorCluster(
             transfer_input_files="/srv/workflows/",
-            ship_env=True,
-            job_script_prologue=env_extra,
+            shared_temp_directory="/tmp",
+            worker_extra_args=[
+                "--worker-port 10000:10070",
+                "--nanny-port 10070:10100",
+                "--no-dashboard",
+            ],
+            job_script_prologue=[],
+            scheduler_options={"dashboard_address": ":44890"},
         )
+        cluster.adapt(minimum=1, maximum=50)
+        client = Client(cluster)
+
+        class SettingSitePath(WorkerPlugin):
+            def setup(self, worker: Worker):
+                sys.path.insert(0, os.getcwd() + "/workflows/")
+
+        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_worker_plugin(SettingSitePath())
+        shutil.make_archive("workflows", "zip", base_dir="workflows")
+        client.upload_file("workflows.zip")
+
     elif "lxplus" in args.executor:
         # NOTE: Need to move these imports to a function
         n_port = 8786
