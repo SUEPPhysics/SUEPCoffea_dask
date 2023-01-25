@@ -128,7 +128,6 @@ class ML_cluster(processor.ProcessorABC):
 
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
-        # columns = ["SUEP_nconst_CL", "SUEP_S1_CL"]
 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
