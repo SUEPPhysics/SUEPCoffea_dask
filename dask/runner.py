@@ -309,9 +309,6 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
     from dask.distributed import Client, Worker, WorkerPlugin, performance_report
 
     if "lpc" in args.executor:
-        env_extra = [
-            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-        ]
         from lpcjobqueue import LPCCondorCluster
 
         cluster = LPCCondorCluster(
@@ -325,7 +322,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             job_script_prologue=[],
             scheduler_options={"dashboard_address": ":44890"},
         )
-        cluster.adapt(minimum=1, maximum=50)
+        cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
         client = Client(cluster)
 
         class SettingSitePath(WorkerPlugin):
@@ -336,7 +333,19 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
         client.register_worker_plugin(SettingSitePath())
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
+        print("Waiting for at least one worker...")
+        client.wait_for_workers(1)
+    elif "casa" in args.executor:
 
+        class SettingSitePath(WorkerPlugin):
+            def setup(self, worker: Worker):
+                sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
+
+        client = Client("tls://localhost:8786")
+        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_worker_plugin(SettingSitePath())
+        shutil.make_archive("workflows", "zip", base_dir="workflows")
+        client.upload_file("workflows.zip")
     elif "lxplus" in args.executor:
         # NOTE: Need to move these imports to a function
         n_port = 8786
@@ -411,23 +420,9 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             disk="4GB",
             env_extra=env_extra,
         )
-
-    if args.executor == "dask/casa":
-
-        class SettingSitePath(WorkerPlugin):
-            def setup(self, worker: Worker):
-                sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
-
-        client = Client("tls://localhost:8786")
-        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_worker_plugin(SettingSitePath())
-        shutil.make_archive("workflows", "zip", base_dir="workflows")
-        client.upload_file("workflows.zip")
     else:
-        cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
-        client = Client(cluster)
-        print("Waiting for at least one worker...")
-        client.wait_for_workers(1)
+        raise RuntimeError(f"Unknown executor: I don't know '{args.executor}'.")
+
     with performance_report(filename="dask_out/dask-report.html"):
         output = processor.run_uproot_job(
             sample_dict,
