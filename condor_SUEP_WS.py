@@ -6,8 +6,7 @@ from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea, merger
-from workflows import pandas_utils
+from workflows import SUEP_coffea, merger, pandas_utils
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -57,20 +56,15 @@ for instance in modules_era:
         treename="Events",
         processor_instance=instance,
     )
-    
-    gensumweight = output['out']['gensumweight']
-    df = output['out']['vars'].value
-        
+
+    gensumweight = output["out"]["gensumweight"]
+    df = output["out"]["vars"].value
+
     metadata = dict(
         gensumweight=gensumweight,
         era=options.era,
         mc=options.isMC,
         sample=options.dataset,
     )
-    
-    pandas_utils.save_dfs(
-        [df],
-        ["vars"],
-        "out.hdf5",
-        metadata=metadata
-    )
+
+    pandas_utils.save_dfs([df], ["vars"], "out.hdf5", metadata=metadata)

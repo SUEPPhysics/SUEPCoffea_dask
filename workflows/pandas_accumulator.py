@@ -44,10 +44,10 @@ class pandas_accumulator(AccumulatorABC):
                 % (self._empty.shape, other._empty.shape)
             )
         self._value = pd.concat((self._value, other._value))
-        
+
     def loc(self, indices, key, value):
         self._value.loc[indices, key] = value
-        
+
     def __setitem__(self, key, value):
         if not isinstance(key, str):
             raise ValueError("Column name must be a string not %r." % type(key))
@@ -57,7 +57,7 @@ class pandas_accumulator(AccumulatorABC):
         if not isinstance(key, str):
             raise ValueError("Column name must be a string not %r." % type(key))
         if key not in self._value.keys():
-            raise KeyError("Key {} does not exist in accumulator".format(key))
+            raise KeyError(f"Key {key} does not exist in accumulator")
         return self._value[key]
 
     @property

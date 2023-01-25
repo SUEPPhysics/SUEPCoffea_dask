@@ -28,10 +28,10 @@ def h5store(
     store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(dfs, df_names, fname, output_location='./', metadata={}):
+def save_dfs(dfs, df_names, fname, output_location="./", metadata={}):
     subdirs = []
     store = pd.HDFStore(fname)
-    
+
     # pandas to hdf5
     for out, gname in zip(dfs, df_names):
         store_fin = h5store(store, out, fname, gname, **metadata)
@@ -40,9 +40,7 @@ def save_dfs(dfs, df_names, fname, output_location='./', metadata={}):
     dump_table(fname, output_location, subdirs)
 
 
-def dump_table(
-    fname: str, location: str, subdirs: Optional[List[str]] = None
-) -> None:
+def dump_table(fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
     subdirs = subdirs or []
     xrd_prefix = "root://"
     pfx_len = len(xrd_prefix)

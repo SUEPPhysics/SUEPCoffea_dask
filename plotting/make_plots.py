@@ -775,7 +775,7 @@ for ifile in tqdm(files):
             df_plot = fill_utils.prepareDataFrame(
                 df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
             )
-            
+
             # FIXME: some issue with column initialization in SUEPCoffea.py that we need to fix.
             if df_plot is None:
                 nfailed += 1
