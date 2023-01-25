@@ -634,11 +634,11 @@ def calculate_systematic(
                 df["event_weight"] *= df[syst]
 
             # 3) prefire weights
-            # if options.era == 2016 or options.era == 2017:
-            #     if "prefire" in sys and sys in df.keys():
-            #          df["event_weight"] *= df[sys]
-            #     else:
-            #          df["event_weight"] *= df["prefire_nom"]
+            if options.era == 2016 or options.era == 2017:
+                if "prefire" in syst and syst in df.keys():
+                    df["event_weight"] *= df[syst]
+                else:
+                    df["event_weight"] *= df["prefire_nom"]
 
         # 5) Higgs_pt weights
         if "SUEP-m125" in options.dataset:
