@@ -165,6 +165,7 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
     """
 
     # 1. keep only events that passed this method
+    if abcd['xvar'] not in df.columns: return None
     df = df[~df[abcd["xvar"]].isnull()]
 
     # 2. blind
