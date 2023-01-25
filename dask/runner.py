@@ -421,7 +421,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             env_extra=env_extra,
         )
     else:
-        raise RuntimeError(f"Unknown executor: I don't know '{args.executor}'.")
+        raise NotImplementedError(f"I don't know anything about {args.executor}.")
 
     with performance_report(filename="dask_out/dask-report.html"):
         output = processor.run_uproot_job(
