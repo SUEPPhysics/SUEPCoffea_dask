@@ -517,6 +517,13 @@ def create_output_file(label, abcd):
                         name=f"{r}SUEP_nconst_{label}",
                         label="# Constituents",
                     ).Weight(),
+                    f"{r}SUEP_genMass_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        1200,
+                        name=f"{r}SUEP_genMass_{label}",
+                        label="Gen Mass of SUEP ($m_S$) [GeV]",
+                    ).Weight(),
                     f"{r}SUEP_pt_{label}": Hist.new.Reg(
                         100,
                         0,
@@ -822,6 +829,7 @@ for ifile in tqdm(files):
 
     for syst in sys_loop:
         # prepare new event weight
+
         calculate_systematic(
             df,
             config,

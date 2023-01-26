@@ -22,42 +22,25 @@ def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
 
 
 def h5store(
-    self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float
+    store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float
 ) -> None:
     store.put(gname, df)
     store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(self, dfs, df_names, fname):
-    # fname = "out.hdf5"
+def save_dfs(dfs, df_names, fname, output_location="./", metadata={}):
     subdirs = []
     store = pd.HDFStore(fname)
-    if self.output_location is not None:
-        # pandas to hdf5
-        for out, gname in zip(dfs, df_names):
-            if self.isMC:
-                metadata = dict(
-                    gensumweight=self.gensumweight,
-                    era=self.era,
-                    mc=self.isMC,
-                    sample=self.sample,
-                )
-                # metadata.update({gensumweight:self.gensumweight})
-            else:
-                metadata = dict(era=self.era, mc=self.isMC, sample=self.sample)
 
-            h5store(self, store, out, fname, gname, **metadata)
+    # pandas to hdf5
+    for out, gname in zip(dfs, df_names):
+        store_fin = h5store(store, out, fname, gname, **metadata)
 
-        store.close()
-        dump_table(self, fname, self.output_location, subdirs)
-    else:
-        print("self.output_location is None")
-        store.close()
+    store.close()
+    dump_table(fname, output_location, subdirs)
 
 
-def dump_table(
-    self, fname: str, location: str, subdirs: Optional[List[str]] = None
-) -> None:
+def dump_table(fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
     subdirs = subdirs or []
     xrd_prefix = "root://"
     pfx_len = len(xrd_prefix)

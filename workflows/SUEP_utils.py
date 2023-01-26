@@ -42,50 +42,65 @@ def ClusterMethod(
 
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-    self.out_vars.loc[indices, "SUEP_nconst_CL" + out_label] = ak.num(SUEP_tracks_b)
-    self.out_vars.loc[indices, "SUEP_pt_avg_b_CL" + out_label] = ak.mean(
-        SUEP_tracks_b.pt, axis=-1
+
+    # debug
+    self.accumulator["vars"].loc(
+        indices, "SUEP_nconst_CL" + out_label, ak.num(SUEP_tracks_b)
     )
-    self.out_vars.loc[indices, "SUEP_S1_CL" + out_label] = 1.5 * (
-        eigs[:, 1] + eigs[:, 0]
+    self.accumulator["vars"].loc(
+        indices, "SUEP_nconst_CL" + out_label, ak.num(SUEP_tracks_b)
+    )
+    self.accumulator["vars"].loc(
+        indices, "SUEP_pt_avg_b_CL" + out_label, ak.mean(SUEP_tracks_b.pt, axis=-1)
+    )
+    self.accumulator["vars"].loc(
+        indices, "SUEP_S1_CL" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
     )
 
     # unboost for these
     SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
-    self.out_vars.loc[indices, "SUEP_pt_avg_CL" + out_label] = ak.mean(
-        SUEP_tracks.pt, axis=-1
+    self.accumulator["vars"].loc(
+        indices, "SUEP_pt_avg_CL" + out_label, ak.mean(SUEP_tracks.pt, axis=-1)
     )
+
     # deltaR = SUEP_tracks.deltaR(SUEP_cand)
-    # self.out_vars.loc[indices, "SUEP_rho0_CL"+out_label] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
-    # self.out_vars.loc[indices, "SUEP_rho1_CL"+out_label] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
+    # self.accumulator['vars'].loc(indices, "SUEP_rho0_CL"+out_label, rho(0, SUEP_cand, SUEP_tracks, deltaR)
+    # self.accumulator['vars'].loc(indices, "SUEP_rho1_CL"+out_label, rho(1, SUEP_cand, SUEP_tracks, deltaR)
 
-    self.out_vars.loc[indices, "SUEP_pt_CL" + out_label] = SUEP_cand.pt
-    self.out_vars.loc[indices, "SUEP_eta_CL" + out_label] = SUEP_cand.eta
-    self.out_vars.loc[indices, "SUEP_phi_CL" + out_label] = SUEP_cand.phi
-    self.out_vars.loc[indices, "SUEP_mass_CL" + out_label] = SUEP_cand.mass
+    self.accumulator["vars"].loc(indices, "SUEP_pt_CL" + out_label, SUEP_cand.pt)
+    self.accumulator["vars"].loc(indices, "SUEP_eta_CL" + out_label, SUEP_cand.eta)
+    self.accumulator["vars"].loc(indices, "SUEP_phi_CL" + out_label, SUEP_cand.phi)
+    self.accumulator["vars"].loc(indices, "SUEP_mass_CL" + out_label, SUEP_cand.mass)
 
-    self.out_vars.loc[indices, "SUEP_delta_mass_genMass_CL" + out_label] = (
-        SUEP_cand.mass - self.out_vars["SUEP_genMass" + out_label][indices]
+    self.accumulator["vars"].loc(
+        indices,
+        "SUEP_delta_mass_genMass_CL" + out_label,
+        (
+            SUEP_cand.mass
+            - self.accumulator["vars"]["SUEP_genMass" + out_label][indices]
+        ),
     )
-    self.out_vars.loc[indices, "SUEP_delta_pt_genPt_CL" + out_label] = (
-        SUEP_cand.pt - self.out_vars["SUEP_genPt" + out_label][indices]
+    self.accumulator["vars"].loc(
+        indices,
+        "SUEP_delta_pt_genPt_CL" + out_label,
+        (SUEP_cand.pt - self.accumulator["vars"]["SUEP_genPt" + out_label][indices]),
     )
 
     # Calculate orientation difference between candidate and actual SUEP
 
     SUEP_genEta_diff_CL = (
-        self.out_vars["SUEP_eta_CL" + out_label]
-        - self.out_vars["SUEP_genEta" + out_label]
+        self.accumulator["vars"]["SUEP_eta_CL" + out_label]
+        - self.accumulator["vars"]["SUEP_genEta" + out_label]
     )
     SUEP_genPhi_diff_CL = (
-        self.out_vars["SUEP_phi_CL" + out_label]
-        - self.out_vars["SUEP_genPhi" + out_label]
+        self.accumulator["vars"]["SUEP_phi_CL" + out_label]
+        - self.accumulator["vars"]["SUEP_genPhi" + out_label]
     )
     SUEP_genR_diff_CL = (SUEP_genEta_diff_CL**2 + SUEP_genPhi_diff_CL**2) ** 0.5
 
-    self.out_vars["SUEP_genEta_diff_CL" + out_label] = SUEP_genEta_diff_CL
-    self.out_vars["SUEP_genPhi_diff_CL" + out_label] = SUEP_genPhi_diff_CL
-    self.out_vars["SUEP_genR_diff_CL" + out_label] = SUEP_genR_diff_CL
+    self.accumulator["vars"]["SUEP_genEta_diff_CL" + out_label] = SUEP_genEta_diff_CL
+    self.accumulator["vars"]["SUEP_genPhi_diff_CL" + out_label] = SUEP_genPhi_diff_CL
+    self.accumulator["vars"]["SUEP_genR_diff_CL" + out_label] = SUEP_genR_diff_CL
 
     # inverted selection
     if do_inverted:
@@ -106,27 +121,30 @@ def ClusterMethod(
 
         # ISR jet variables
         eigs = sphericity(ISR_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-        self.out_vars.loc[indices, "ISR_nconst_CL" + out_label] = ak.num(ISR_tracks_b)
-        self.out_vars.loc[indices, "ISR_pt_avg_b_CL" + out_label] = ak.mean(
-            ISR_tracks_b.pt, axis=-1
+        self.accumulator["vars"].loc(
+            indices, "ISR_nconst_CL" + out_label, ak.num(ISR_tracks_b)
         )
-        self.out_vars.loc[indices, "ISR_S1_CL" + out_label] = 1.5 * (
-            eigs[:, 1] + eigs[:, 0]
+        self.accumulator["vars"].loc(
+            indices, "ISR_pt_avg_b_CL" + out_label, ak.mean(ISR_tracks_b.pt, axis=-1)
+        )
+        self.accumulator["vars"].loc(
+            indices, "ISR_S1_CL" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
         )
 
         # unboost for these
         ISR_tracks = ISR_tracks_b.boost_p4(ISR_cand)
-        self.out_vars.loc[indices, "ISR_pt_avg_CL" + out_label] = ak.mean(
-            ISR_tracks.pt, axis=-1
+        self.accumulator["vars"].loc(
+            indices, "ISR_pt_avg_CL" + out_label, ak.mean(ISR_tracks.pt, axis=-1)
         )
-        # deltaR = ISR_tracks.deltaR(ISR_cand)
-        # self.out_vars.loc[indices, "ISR_rho0_CL"+out_label] = rho(0, ISR_cand, ISR_tracks, deltaR)
-        # self.out_vars.loc[indices, "ISR_rho1_CL"+out_label] = rho(1, ISR_cand, ISR_tracks, deltaR)
 
-        self.out_vars.loc[indices, "ISR_pt_CL" + out_label] = ISR_cand.pt
-        self.out_vars.loc[indices, "ISR_eta_CL" + out_label] = ISR_cand.eta
-        self.out_vars.loc[indices, "ISR_phi_CL" + out_label] = ISR_cand.phi
-        self.out_vars.loc[indices, "ISR_mass_CL" + out_label] = ISR_cand.mass
+        # deltaR = ISR_tracks.deltaR(ISR_cand)
+        # self.accumulator['vars'].loc(indices, "ISR_rho0_CL"+out_label, rho(0, ISR_cand, ISR_tracks, deltaR)
+        # self.accumulator['vars'].loc(indices, "ISR_rho1_CL"+out_label, rho(1, ISR_cand, ISR_tracks, deltaR)
+
+        self.accumulator["vars"].loc(indices, "ISR_pt_CL" + out_label, ISR_cand.pt)
+        self.accumulator["vars"].loc(indices, "ISR_eta_CL" + out_label, ISR_cand.eta)
+        self.accumulator["vars"].loc(indices, "ISR_phi_CL" + out_label, ISR_cand.phi)
+        self.accumulator["vars"].loc(indices, "ISR_mass_CL" + out_label, ISR_cand.mass)
 
 
 def ISRRemovalMethod(self, indices, tracks, SUEP_cand, ISR_cand):
