@@ -6,7 +6,7 @@ from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea, merger
+from workflows import SUEP_coffea, merger, pandas_utils
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -48,7 +48,7 @@ for instance in modules_era:
         chunksize=10000,
     )
 
-    runner.automatic_retries(
+    output = runner.automatic_retries(
         retries=3,
         skipbadfiles=False,
         func=runner.run,
@@ -57,4 +57,14 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
+    gensumweight = output["out"]["gensumweight"]
+    df = output["out"]["vars"].value
+
+    metadata = dict(
+        gensumweight=gensumweight,
+        era=options.era,
+        mc=options.isMC,
+        sample=options.dataset,
+    )
+
+    pandas_utils.save_dfs([df], ["vars"], "out.hdf5", metadata=metadata)
