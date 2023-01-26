@@ -112,7 +112,6 @@ def main():
     parser.add_argument(
         "-f", "--force", action="store_true", help="recreate files and jobs"
     )
-    parser.add_argument("-s", "--submit", action="store_true", help="submit only")
     parser.add_argument(
         "-dry", "--dryrun", action="store_true", help="running without submission"
     )
@@ -127,6 +126,8 @@ def main():
     workdir = os.getcwd()
     logdir = "/work/submit/" + username + "/SUEP/logs/"
     redirector = "root://submit50.mit.edu/"
+    proxy_base = f"x509up_u{os.getuid()}"
+    home_base = os.environ["HOME"]
 
     # define which file you want to run, the output file name and extension that it produces
     # these will be transferred back to outdir/outdir_condor
@@ -150,42 +151,18 @@ def main():
     # Making sure that the proxy is good
     lifetime = check_proxy(time_min=100)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
-    proxy_base = f"x509up_u{os.getuid()}"
-    home_base = os.environ["HOME"]
     proxy_copy = os.path.join(home_base, proxy_base)
 
     with open(options.input) as stream:
 
-        # count total number of files to submit
-        nJobs = 0
         for sample in stream.read().split("\n"):
-            if "#" in sample:
-                continue
-            if len(sample.split("/")) <= 1:
-                continue
-            sample_name = sample.split("/")[-1]
-            if options.scout == 1:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
-                    sample_name
-                )
-            else:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
-                    sample_name
-                )
-            Raw_list = open(input_list)
-            nJobs += len(Raw_list.readlines())
-        logging.info("-- Submitting a total of " + str(nJobs) + " jobs.")
-
-    with open(options.input) as stream:
-
-        for sample in stream.read().split("\n"):
-            if "#" in sample:
-                continue
-            if len(sample.split("/")) <= 1:
+            if "#" in sample or len(sample.split("/")) <= 1:
                 continue
             sample_name = sample.split("/")[-1]
             jobs_dir = "_".join([logdir + "jobs", options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
+
+            # set up the jobs directory
             if os.path.isdir(jobs_dir):
                 if not options.force:
                     logging.error(" " + jobs_dir + " already exist !")
@@ -199,33 +176,34 @@ def main():
             else:
                 os.mkdir(jobs_dir)
 
-            if not options.submit:
-                # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-                if options.scout == 1:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
-                        sample_name
-                    )
-                else:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
-                        sample_name
-                    )
-                Raw_list = open(input_list)
-                nfiles = 0
-                with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
-                    for i in Raw_list:
-                        full_file = i.split(" ")[0]
-                        just_file = full_file.split("/")[-1]
-                        infiles.write(
-                            full_file + "\t" + just_file.split(".root")[0] + "\n"
-                        )
-                        nfiles += 1
-                    infiles.close()
+            # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
+            if options.scout == 1:
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
+                    sample_name
+                )
+            else:
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
+                    sample_name
+                )
+            Raw_list = open(input_list)
+
+            # write list of files to inputfiles.dat
+            nfiles = 0
+            with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
+                for i in Raw_list:
+                    full_file = i.split(" ")[0]
+                    just_file = full_file.split("/")[-1]
+                    infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
+                    nfiles += 1
+                infiles.close()
+
             fin_outdir = outdir.format(tag=options.tag, sample=sample_name)
             fin_outdir_condor = outdir_condor.format(
                 tag=options.tag, sample=sample_name
             )
             os.system(f"mkdir -p {fin_outdir}")
 
+            # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 script = script_TEMPLATE.format(
                     proxy=proxy_base,
@@ -243,6 +221,7 @@ def main():
                 scriptfile.write(script)
                 scriptfile.close()
 
+            # write condor submission script
             with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
                 condor = condor_TEMPLATE.format(
                     transfer_file=",".join(
@@ -262,9 +241,11 @@ def main():
                 condorfile.write(condor)
                 condorfile.close()
 
+            # don't submit if it's a dryrun
             if options.dryrun:
                 continue
 
+            # submit!
             htc = subprocess.Popen(
                 "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
                 shell=True,

@@ -4,19 +4,18 @@ import os
 import subprocess
 from shutil import copyfile
 
-import pandas as pd
 from termcolor import colored
+
+from plotting.plot_utils import check_proxy
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-def isFileGood(fname, label="ch"):
-    try:
-        with pd.HDFStore(fname) as store:
-            data = store[label]
-        return 1
-    except:
-        return 0
+def cleanCorruptedFiles(out_dir_sample):
+    for file in os.listdir(out_dir_sample):
+        size = os.path.getsize(out_dir_sample + "/" + file)
+        if size == 0:
+            subprocess.run(["rm", out_dir_sample + "/" + file])
 
 
 def main():
@@ -24,61 +23,22 @@ def main():
     parser.add_argument("-i", "--input", type=str, default="input", required=True)
     parser.add_argument("-t", "--tag", type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
-    parser.add_argument(
-        "-m",
-        "--move",
-        type=int,
-        default=0,
-        help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.",
-    )
     options = parser.parse_args()
 
-    redirector = "root://t3serv017.mit.edu/"
-    proxy_base = f"x509up_u{os.getuid()}"
-    home_base = os.environ["HOME"]
     username = os.environ["USER"]
-    proxy_copy = os.path.join(home_base, proxy_base)
     out_dir = (
         "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
     )
-    out_dir_xrd = "/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
-    move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
-    jobs_base_dir = "/work/submit/" + username + "/SUEP/logs/"
+    jobs_dir = "/work/submit/" + username + "/SUEP/logs/"
 
-    if options.move:
-        if not os.path.isdir("/work/submit/" + username + "/SUEP/" + options.tag):
-            subprocess.run(
-                ["mkdir", "/work/submit/" + username + "/SUEP/" + options.tag]
-            )
-
-    regenerate_proxy = False
-    if not os.path.isfile(proxy_copy):
-        logging.warning("--- proxy file does not exist")
-        regenerate_proxy = True
-    else:
-        lifetime = subprocess.check_output(
-            ["voms-proxy-info", "--file", proxy_copy, "--timeleft"]
-        )
-        lifetime = float(lifetime)
-        lifetime = lifetime / (60 * 60)
-        logging.info(f"--- proxy lifetime is {lifetime} hours")
-        if lifetime < 10.0:  # we want at least 100 hours
-            logging.warning("--- proxy has expired !")
-            regenerate_proxy = True
-
-    if regenerate_proxy:
-        redone_proxy = False
-        while not redone_proxy:
-            status = os.system("voms-proxy-init -voms cms")
-            if os.WEXITSTATUS(status) == 0:
-                redone_proxy = True
-        copyfile("/tmp/" + proxy_base, proxy_copy)
+    # Making sure that the proxy is good
+    if options.resubmit:
+        lifetime = check_proxy(time_min=100)
+        logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
-            if len(sample) <= 1:
-                continue
-            if "#" in sample:
+            if len(sample) <= 1 or "#" in sample:
                 continue
 
             if "/" in sample and len(sample.split("/")) <= 1:
@@ -89,32 +49,29 @@ def main():
             else:
                 sample_name = sample
 
-            jobs_dir = "_".join(["jobs", options.tag, sample_name])
-            jobs_dir = jobs_base_dir + jobs_dir
+            jobs_dir_sample = "_".join(["jobs", options.tag, sample_name])
+            jobs_dir_sample = jobs_dir + jobs_dir_sample
+            out_dir_sample = out_dir.format(sample_name)
 
             # delete files that are corrupted (i.e., empty)
-            for file in os.listdir(out_dir.format(sample_name)):
-                size = os.path.getsize(out_dir.format(sample_name) + "/" + file)
-                if size == 0:
-                    subprocess.run(["rm", out_dir.format(sample_name) + "/" + file])
-
-            logging.info(jobs_dir)
+            cleanCorruptedFiles(out_dir_sample)
+            logging.info(jobs_dir_sample)
 
             # We write the original list. inputfiles.dat will now contain missing files. Compare with original list
-            if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
+            if not os.path.isfile(jobs_dir_sample + "/" + "original_inputfiles.dat"):
                 copyfile(
-                    jobs_dir + "/" + "inputfiles.dat",
-                    jobs_dir + "/" + "original_inputfiles.dat",
+                    jobs_dir_sample + "/" + "inputfiles.dat",
+                    jobs_dir_sample + "/" + "original_inputfiles.dat",
                 )
 
             # Find out the jobs that run vs the ones that failed
             jobs = [
                 line.rstrip()
-                for line in open(jobs_dir + "/" + "original_inputfiles.dat")
+                for line in open(jobs_dir_sample + "/" + "original_inputfiles.dat")
             ]
 
             njobs = len(jobs)
-            complete_list = os.listdir(out_dir.format(sample_name))
+            complete_list = os.listdir(out_dir_sample)
             nfile = len(complete_list)
 
             # Print out the results
@@ -149,13 +106,13 @@ def main():
                 jobs_resubmit = [
                     item for item in jobs if item.split("\t")[-1] not in file_names
                 ]
-                resubmit_file = open(jobs_dir + "/" + "inputfiles.dat", "w")
+                resubmit_file = open(jobs_dir_sample + "/" + "inputfiles.dat", "w")
                 for redo_file in jobs_resubmit:
                     resubmit_file.write(redo_file + "\n")
                 resubmit_file.close()
 
                 htc = subprocess.Popen(
-                    "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
+                    "condor_submit " + os.path.join(jobs_dir_sample, "condor.sub"),
                     shell=True,
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
@@ -165,44 +122,6 @@ def main():
                 out, err = htc.communicate()
                 exit_status = htc.returncode
                 logging.info(f"condor submission status : {exit_status}")
-
-            if options.move:
-
-                if not os.path.isdir(move_dir.format(sample_name)):
-                    os.system("mkdir " + move_dir.format(sample_name))
-
-                # delete files that are corrupted (i.e., empty)
-                for file in os.listdir(move_dir.format(sample_name)):
-                    size = os.path.getsize(move_dir.format(sample_name) + "/" + file)
-                    if size == 0:
-                        subprocess.run(
-                            ["rm", move_dir.format(sample_name) + "/" + file]
-                        )
-
-                # get list of files already in /work
-                movedFiles = os.listdir(move_dir.format(sample_name))
-
-                # get list of files in T3
-                allFiles = os.listdir(out_dir.format(sample_name))
-
-                # get list of files missing from /work that are in T3
-                filesToMove = list(set(allFiles) - set(movedFiles))
-
-                # move those files
-                logging.info(
-                    "Moving "
-                    + str(len(filesToMove))
-                    + " files to "
-                    + move_dir.format(sample_name)
-                )
-                for file in filesToMove:
-                    subprocess.run(
-                        [
-                            "xrdcp",
-                            redirector + "/" + out_dir_xrd + file,
-                            move_dir.format(sample_name) + "/",
-                        ]
-                    )
 
 
 if __name__ == "__main__":

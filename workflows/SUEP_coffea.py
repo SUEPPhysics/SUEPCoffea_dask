@@ -12,9 +12,6 @@ import pandas as pd
 import vector
 from coffea import processor
 
-# IO utils
-import workflows.pandas_utils as pandas_utils
-
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
 import workflows.ZH_utils as ZH_utils

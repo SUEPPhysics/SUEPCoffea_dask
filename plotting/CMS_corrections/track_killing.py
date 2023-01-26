@@ -16,7 +16,6 @@ def generate_up_histograms(output_labels, plots):
     Outputs:
         updated plots dictionary
     """
-    sys = "track_up"
     for label_out in output_labels:
         if "track_down" in label_out:
             continue

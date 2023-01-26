@@ -18,7 +18,6 @@ def track_killing(self, tracks):
         block1_percent = year_percent[str(self.era)]
         block2_percent = 0.01
 
-    block0_indices = tracks.pt <= 1
     block1_indices = (tracks.pt > 1) & (tracks.pt < 20)
     block2_indices = tracks.pt >= 20
 

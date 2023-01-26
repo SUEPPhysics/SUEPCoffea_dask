@@ -26,7 +26,7 @@ def h5load(ifile, label):
             except KeyError:
                 print("No key", label, ifile)
                 return 0, 0
-    except:
+    except BaseException:
         print("Some error occurred", ifile)
         return 0, 0
 
@@ -39,16 +39,16 @@ def merge(options, pattern="condor_*.hdf5", outFile="out.hdf5"):
 
     df_tot = None
     metadata_tot = None
-    for ifile, file in enumerate(files):
+    for _ifile, file in enumerate(files):
 
         df, metadata = h5load(file, "vars")
 
-        ### Error out here
+        # Error out here
         if type(df) == int:
             print("Something screwed up.")
             sys.exit()
 
-        ### MERGE METADATA
+        # MERGE METADATA
         if metadata_tot is None:
             metadata_tot = metadata
         elif options.isMC:
@@ -58,7 +58,7 @@ def merge(options, pattern="condor_*.hdf5", outFile="out.hdf5"):
         if "empty" in list(df.keys()):
             continue
 
-        ### MERGE DF
+        # MERGE DF
         if df_tot is None:
             df_tot = df
         else:
@@ -90,7 +90,7 @@ def merge_ML(options):
 
     output = {}
     firstFile = True
-    for ifile, file in enumerate(files):
+    for _ifile, file in enumerate(files):
         f = h5py.File(file, "r")
 
         # skip if empty

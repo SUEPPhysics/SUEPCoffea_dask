@@ -3,10 +3,9 @@ import os
 
 # Import coffea specific features
 from coffea import processor
-from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea, merger, pandas_utils
+from workflows import SUEP_coffea, pandas_utils
 
 # Begin argparse
 parser = argparse.ArgumentParser("")

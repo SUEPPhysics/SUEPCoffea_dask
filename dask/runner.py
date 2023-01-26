@@ -309,16 +309,43 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
     from dask.distributed import Client, Worker, WorkerPlugin, performance_report
 
     if "lpc" in args.executor:
-        env_extra = [
-            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-        ]
         from lpcjobqueue import LPCCondorCluster
 
         cluster = LPCCondorCluster(
             transfer_input_files="/srv/workflows/",
-            ship_env=True,
-            env_extra=env_extra,
+            shared_temp_directory="/tmp",
+            worker_extra_args=[
+                "--worker-port 10000:10070",
+                "--nanny-port 10070:10100",
+                "--no-dashboard",
+            ],
+            job_script_prologue=[],
+            scheduler_options={"dashboard_address": ":44890"},
         )
+        cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
+        client = Client(cluster)
+
+        class SettingSitePath(WorkerPlugin):
+            def setup(self, worker: Worker):
+                sys.path.insert(0, os.getcwd() + "/workflows/")
+
+        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_worker_plugin(SettingSitePath())
+        shutil.make_archive("workflows", "zip", base_dir="workflows")
+        client.upload_file("workflows.zip")
+        print("Waiting for at least one worker...")
+        client.wait_for_workers(1)
+    elif "casa" in args.executor:
+
+        class SettingSitePath(WorkerPlugin):
+            def setup(self, worker: Worker):
+                sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
+
+        client = Client("tls://localhost:8786")
+        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
+        client.register_worker_plugin(SettingSitePath())
+        shutil.make_archive("workflows", "zip", base_dir="workflows")
+        client.upload_file("workflows.zip")
     elif "lxplus" in args.executor:
         # NOTE: Need to move these imports to a function
         n_port = 8786
@@ -393,23 +420,9 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             disk="4GB",
             env_extra=env_extra,
         )
-
-    if args.executor == "dask/casa":
-
-        class SettingSitePath(WorkerPlugin):
-            def setup(self, worker: Worker):
-                sys.path.insert(0, os.getcwd() + "/dask-worker-space/")
-
-        client = Client("tls://localhost:8786")
-        client.register_worker_plugin(UploadDirectory(os.getcwd() + "/data"))
-        client.register_worker_plugin(SettingSitePath())
-        shutil.make_archive("workflows", "zip", base_dir="workflows")
-        client.upload_file("workflows.zip")
     else:
-        cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
-        client = Client(cluster)
-        print("Waiting for at least one worker...")
-        client.wait_for_workers(1)
+        raise NotImplementedError(f"I don't know anything about {args.executor}.")
+
     with performance_report(filename="dask_out/dask-report.html"):
         output = processor.run_uproot_job(
             sample_dict,
@@ -555,38 +568,10 @@ def saveTohdf5(args, processor_instance, dataframe):
     return
 
 
-if __name__ == "__main__":
-    parser = get_main_parser()
-    args = parser.parse_args()
-    if args.output == parser.get_default("output"):
-        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
-
-    # load dataset
-    sample_dict = loadder(args)
-
-    # For debugging
-    if args.only is not None:
-        sample_dict = specificProcessing(args, sample_dict)
-
-    # Scan if files can be opened
-    if args.validate:
-        validation(args, sample_dict)
-
-    # Setup the accumulator
-    accumulator = setupAccumulator(args)
-
-    # load workflow
-    if args.workflow == "SUEP":
-        processor_instance = setupSUEP(args)
-    else:
-        raise NotImplementedError
-
-    env_extra, condor_extra = None, None
-    if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
-        env_extra, condor_extra = exportCert(args)
-
-    #########
-    # Execute
+def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
+    """
+    Main function to execute the workflow
+    """
     if args.executor in ["futures", "iterative"]:
         output = nativeExecutors(args, processor_instance, sample_dict)
         for key in sample_dict.keys():
@@ -599,13 +584,53 @@ if __name__ == "__main__":
         output = daskExecutor(
             args, processor_instance, sample_dict, env_extra, condor_extra
         )
+    else:
+        raise NotImplementedError
+    return output
 
+
+if __name__ == "__main__":
+    parser = get_main_parser()
+    args = parser.parse_args()
+    if args.output == parser.get_default("output"):
+        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
+
+    # Load dataset
+    sample_dict = loadder(args)
+
+    # For debugging
+    if args.only:
+        sample_dict = specificProcessing(args, sample_dict)
+
+    # Scan if files can be opened
+    if args.validate:
+        validation(args, sample_dict)
+
+    # Setup the accumulator
+    accumulator = setupAccumulator(args)
+
+    # Load workflow
+    if args.workflow == "SUEP":
+        processor_instance = setupSUEP(args)
+    else:
+        raise NotImplementedError
+
+    # Setup x509 for dask/parsl
+    env_extra, condor_extra = None, None
+    if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
+        env_extra, condor_extra = exportCert(args)
+
+    # Execute the workflow
+    output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
+
+    # Calculate the gen sum weight for skimmed samples
     if args.skimmed:
         weights = getWeights(args, sample_dict)
         print(weights)
         for key in sample_dict.keys():
             processor_instance.gensumweight = weights[key].value
 
+    # Save the output
     saveTohdf5(args, processor_instance, output)
 
     print(output)

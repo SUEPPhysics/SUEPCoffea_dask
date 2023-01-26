@@ -8,11 +8,10 @@ from collections import defaultdict
 import boost_histogram as bh
 import hist
 import hist.intervals
+import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
-import pandas as pd
-import sympy
 from sympy import diff, sqrt, symbols
 
 default_colors = {
@@ -95,6 +94,64 @@ def lumiLabel(year):
         return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
 
 
+def findLumi(year, auto_lumi, infile_name):
+    if auto_lumi:
+        if "20UL16MiniAODv2" in infile_name:
+            lumi = lumis["2016"]
+        if "20UL17MiniAODv2" in infile_name:
+            lumi = lumis["2017"]
+        if "20UL16MiniAODAPVv2" in infile_name:
+            lumi = lumis["2016_apv"]
+        if "20UL18" in infile_name:
+            lumi = lumis["2018"]
+        if "SUEP-m" in infile_name:
+            lumi = lumis["2018"]
+        if "JetHT+Run" in infile_name:
+            lumi = 1
+    if year and not auto_lumi:
+        lumi = lumis[str(year)]
+    if year and auto_lumi:
+        raise Exception("Apply lumis automatically or based on year")
+    return lumi
+
+
+def fillSample(infile_name, plots, lumi):
+    if "QCD_Pt" in infile_name:
+        sample = "QCD_Pt"
+
+        # include this block to import the QCD bins individually
+        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        plots[temp_sample] = openpkl(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
+    elif "QCD_HT" in infile_name:
+        sample = "QCD_HT"
+
+        # include this block to import the QCD bins individually
+        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
+        plots[temp_sample] = openpkl(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
+    elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
+        sample = "data"
+
+    elif "SUEP" in infile_name:
+        if "+" in infile_name:
+            sample = infile_name.split("/")[-1].split("+")[0]
+        elif "new_generic" in infile_name:
+            sample = infile_name.split("/")[-1].split("_")[
+                1
+            ]  # hack for Carlos naming convention
+        else:
+            sample = infile_name.split("/")
+    else:
+        sample = infile_name
+    return sample, plots
+
+
 # load file(s)
 def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
     plots = {}
@@ -111,23 +168,7 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
             continue
 
         # sets the lumi based on year
-        if auto_lumi:
-            if "20UL16MiniAODv2" in infile_name:
-                lumi = lumis["2016"]
-            if "20UL17MiniAODv2" in infile_name:
-                lumi = lumis["2017"]
-            if "20UL16MiniAODAPVv2" in infile_name:
-                lumi = lumis["2016_apv"]
-            if "20UL18" in infile_name:
-                lumi = lumis["2018"]
-            if "SUEP-m" in infile_name:
-                lumi = lumis["2018"]
-            if "JetHT+Run" in infile_name:
-                lumi = 1
-        if year and not auto_lumi:
-            lumi = lumis[str(year)]
-        if year and auto_lumi:
-            raise Exception("Apply lumis automatically or based on year")
+        lumi = findLumi(year, auto_lumi, infile_name)
 
         # exclude low bins
         if exclude_low_bins:
@@ -148,39 +189,7 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
             # if '170to300' in infile_name: continue
 
         # plots[sample] sample is filled here
-        if "QCD_Pt" in infile_name:
-            sample = "QCD_Pt"
-
-            # include this block to import the QCD bins individually
-            temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-            plots[temp_sample] = openpkl(infile_name)
-            for plot in list(plots[temp_sample].keys()):
-                plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-        elif "QCD_HT" in infile_name:
-            sample = "QCD_HT"
-
-            # include this block to import the QCD bins individually
-            temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-            temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-            plots[temp_sample] = openpkl(infile_name)
-            for plot in list(plots[temp_sample].keys()):
-                plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-        elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
-            sample = "data"
-
-        elif "SUEP" in infile_name:
-            if "+" in infile_name:
-                sample = infile_name.split("/")[-1].split("+")[0]
-            elif "new_generic" in infile_name:
-                sample = infile_name.split("/")[-1].split("_")[
-                    1
-                ]  # hack for Carlos naming convention
-            else:
-                sample = infile_name.split("/")
-        else:
-            sample = infile_name
+        sample, plots = fillSample(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
             plots[sample] = openpkl(infile_name)
@@ -194,11 +203,13 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
     return plots
 
 
-def combineYears(inplots, tag="QCD_HT", years=["2018", "2017", "2016"]):
+def combineYears(inplots, tag="QCD_HT", years=None):
     """
     Combines all samples in plots with a certain tag and with certain
     years. Returns combined plots.
     """
+    if not years:
+        years = ["2018", "2017", "2016"]
     outPlots = {}
     yearsAdded = []
     initialize = True
@@ -330,8 +341,8 @@ def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
 
     cmap = plt.cm.rainbow(np.linspace(0, 1, len(labels)))
 
-    ylist, elist = [], []
-    for l, h, c in zip(labels, hlist, cmap):
+    ylist = []
+    for lbl, h, c in zip(labels, hlist, cmap):
         y, x = h.to_numpy()
         e = np.sqrt(h.variances())
         x = x[:-1]
@@ -342,16 +353,16 @@ def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
 
         # ax.step(x[:-1],values, label=label, color=color, lw=lw)
         ax.errorbar(
-            x, y, yerr=e, label=l, lw=lw, color=c, fmt="", drawstyle="steps-mid"
+            x, y, yerr=e, label=lbl, lw=lw, color=c, fmt="", drawstyle="steps-mid"
         )
     ax.set_xlabel(hlist[0].axes[0].label)
     ax.set_ylabel("Events")
 
 
-def plot2d(h, ax, log=False, cmap="RdYlBu"):
+def plot2d(h, fig, ax, log=False, cmap="RdYlBu"):
     w, x, y = h.to_numpy()
     if log:
-        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap, norm=matplotlib.colors.LogNorm())
+        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap, norm=colors.LogNorm())
     else:
         mesh = ax.pcolormesh(x, y, w.T, cmap=cmap)
     ax.set_xlabel(h.axes[0].label)
@@ -488,7 +499,7 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         xmax1 = np.argwhere(y1 > 0)[-1] if any(y1 > 0) else [0]
         xmax2 = np.argwhere(y2 > 0)[-1] if any(y2 > 0) else [0]
         xmin = min(np.concatenate((xmin1, xmin2)))
-        xmax = max(np.concatenate((xmax2, xmax2)))
+        xmax = max(np.concatenate((xmax1, xmax2)))
         x1 = x1[xmin : xmax + 1]
         x2 = x2[xmin : xmax + 1]
         y1 = y1[xmin : xmax + 1]
@@ -588,7 +599,7 @@ def plot_all_regions(
 
         # get args for min and max
         xmins, xmaxs = [], []
-        for x, y in zip(xs, ys):
+        for _x, y in zip(xs, ys):
             xmin = np.argwhere(y > 0)[0] if any(y > 0) else [1e6]
             xmax = np.argwhere(y > 0)[-1] if any(y > 0) else [1e-6]
             xmins.append(xmin)
@@ -942,7 +953,7 @@ def linearFit2DHist(h):
     y_values = np.array([])
     for i in range(len(x_centers)):
         x_values = np.concatenate((x_values, np.ones_like(y_centers) * x_centers[i]))
-    for i in range(len(x_centers)):
+    for _i in range(len(x_centers)):
         y_values = np.concatenate((y_values, y_centers))
     p = np.poly1d(np.polyfit(x_values, y_values, 1, w=z_values, cov=False))
     logging.info("Linear fit result:", p)

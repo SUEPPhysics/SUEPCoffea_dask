@@ -1,4 +1,4 @@
 [flake8]
-max-complexity = 12
+max-complexity = 14
 extend-select = B9
-extend-ignore = E203, E501, E722, B950
+extend-ignore = E203, E501, E722, B950, B905

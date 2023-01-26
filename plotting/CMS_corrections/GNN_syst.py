@@ -1,11 +1,12 @@
+import inspect
 import json
 import logging
+import os
 import sys
 
-import hist
-
-sys.path.append("..")
-import plot_utils
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
 
 
 def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
@@ -24,6 +25,7 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
     Outputs:
         Updated plots dictionary
     """
+    import plot_utils
 
     # load in the json file containing the corrections for each year/model
     with open(fGNNsyst) as f:

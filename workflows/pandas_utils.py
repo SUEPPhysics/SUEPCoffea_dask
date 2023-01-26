@@ -28,13 +28,15 @@ def h5store(
     store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(dfs, df_names, fname, output_location="./", metadata={}):
+def save_dfs(dfs, df_names, fname, output_location="./", metadata=None):
+    if metadata is None:
+        metadata = {}
     subdirs = []
     store = pd.HDFStore(fname)
 
     # pandas to hdf5
     for out, gname in zip(dfs, df_names):
-        store_fin = h5store(store, out, fname, gname, **metadata)
+        _ = h5store(store, out, fname, gname, **metadata)
 
     store.close()
     dump_table(fname, output_location, subdirs)
@@ -51,10 +53,10 @@ def dump_table(fname: str, location: str, subdirs: Optional[List[str]] = None) -
             import XRootD.client
 
             xrootd = True
-        except ImportError:
+        except ImportError as exc:
             raise ImportError(
                 "Install XRootD python bindings with: conda install -c conda-forge xroot"
-            )
+            ) from exc
     local_file = (
         os.path.abspath(os.path.join(".", fname))
         if xrootd

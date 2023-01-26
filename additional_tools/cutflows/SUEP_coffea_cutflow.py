@@ -12,14 +12,15 @@ import pandas as pd
 import vector
 from coffea import processor
 
-vector.register_awkward()
-
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.SUEP_coffea import SUEP_cluster
+from workflows.SUEP_utils import sphericity
+
+vector.register_awkward()
 
 
 class cutflow_cluster(processor.ProcessorABC):
