@@ -5,7 +5,7 @@ import os
 from coffea import processor
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea, merger, pandas_utils
+from workflows import SUEP_coffea, pandas_utils
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
