@@ -580,9 +580,7 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
             args, processor_instance, sample_dict, env_extra, condor_extra
         )
     elif "dask" in args.executor:
-        output = daskExecutor(
-            args, processor_instance, sample_dict, env_extra, condor_extra
-        )
+        output = daskExecutor(args, processor_instance, sample_dict, env_extra)
     else:
         raise NotImplementedError
     return output
@@ -620,7 +618,7 @@ if __name__ == "__main__":
         env_extra, condor_extra = exportCert(args)
 
     # Execute the workflow
-    output = execute(args, processor_instance, sample_dict, env_extra)
+    output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
     # Calculate the gen sum weight for skimmed samples
     if args.skimmed:
