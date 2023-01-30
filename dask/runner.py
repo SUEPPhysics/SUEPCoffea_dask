@@ -5,7 +5,6 @@ import sys
 import time
 
 import numpy as np
-import pandas as pd
 import uproot
 from coffea import nanoevents, processor
 
@@ -573,8 +572,6 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     if args.executor in ["futures", "iterative"]:
         output = nativeExecutors(args, processor_instance, sample_dict)
-        for key in sample_dict.keys():
-            output = pd.DataFrame.from_dict(output[key])
     elif "parsl" in args.executor:
         output = parslExecutor(
             args, processor_instance, sample_dict, env_extra, condor_extra
@@ -628,7 +625,7 @@ if __name__ == "__main__":
             processor_instance.gensumweight = weights[key].value
 
     # Save the output
-    saveTohdf5(args, output)
+    saveTohdf5(args, output["vars"].value)
 
+    print(f"Saving the following output to {args.output}")
     print(output)
-    print(f"Saving output to {args.output}")
