@@ -300,7 +300,7 @@ def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra
     return output
 
 
-def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
+def daskExecutor(args, processor_instance, sample_dict, env_extra):
     import shutil
 
     from dask_jobqueue import HTCondorCluster, SLURMCluster
@@ -464,7 +464,7 @@ def nativeExecutors(args, processor_instance, sample_dict):
     return output
 
 
-def getWeights(args, sample_dict):
+def getWeights(sample_dict):
     from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
     genSumW_instance = GenSumWeightExtractor()
@@ -556,11 +556,10 @@ def setupSUEP(args):
     return processor_instance
 
 
-def saveTohdf5(args, processor_instance, dataframe):
+def saveTohdf5(args, dataframe):
     from workflows import pandas_utils
 
     pandas_utils.save_dfs(
-        processor_instance,
         dfs=[dataframe],
         df_names=["vars"],
         fname=args.output,
@@ -621,17 +620,17 @@ if __name__ == "__main__":
         env_extra, condor_extra = exportCert(args)
 
     # Execute the workflow
-    output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
+    output = execute(args, processor_instance, sample_dict, env_extra)
 
     # Calculate the gen sum weight for skimmed samples
     if args.skimmed:
-        weights = getWeights(args, sample_dict)
+        weights = getWeights(sample_dict)
         print(weights)
         for key in sample_dict.keys():
             processor_instance.gensumweight = weights[key].value
 
     # Save the output
-    saveTohdf5(args, processor_instance, output)
+    saveTohdf5(args, output)
 
     print(output)
     print(f"Saving output to {args.output}")
