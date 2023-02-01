@@ -506,13 +506,11 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     Main function to execute the workflow
     """
     if args.executor in ["futures", "iterative"]:
-        executor = nativeExecutors(args, processor_instance, sample_dict)
+        executor = nativeExecutors(args)
     elif "parsl" in args.executor:
-        executor = parslExecutor(
-            args, processor_instance, sample_dict, env_extra, condor_extra
-        )
+        executor = parslExecutor(args, env_extra, condor_extra)
     elif "dask" in args.executor:
-        executor = daskExecutor(args, processor_instance, sample_dict, env_extra)
+        executor = daskExecutor(args, env_extra)
     else:
         raise NotImplementedError
 
