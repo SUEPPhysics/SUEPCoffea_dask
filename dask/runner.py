@@ -204,9 +204,7 @@ def get_main_parser():
         "--scouting", action="store_true", help="Turn processing for scouting on"
     )
     parser.add_argument("--doInf", action="store_true", help="Turn inference on")
-    parser.add_argument(
-        "--dataset", type=str, default="X", help="Dataset to find xsection"
-    )
+    parser.add_argument("--dataset", type=str, help="Dataset to find xsection")
     parser.add_argument(
         "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
     )
@@ -555,17 +553,6 @@ def setupSUEP(args):
     return processor_instance
 
 
-def saveTohdf5(args, dataframe):
-    from workflows import pandas_utils
-
-    pandas_utils.save_dfs(
-        dfs=[dataframe],
-        df_names=["vars"],
-        fname=args.output,
-    )
-    return
-
-
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -618,14 +605,32 @@ if __name__ == "__main__":
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
     # Calculate the gen sum weight for skimmed samples
+    gensumweight = output["gensumweight"].value
     if args.skimmed:
         weights = getWeights(sample_dict)
-        print(weights)
+        print(
+            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
+        )
         for key in sample_dict.keys():
-            processor_instance.gensumweight = weights[key].value
+            gensumweight = weights[key].value
+            output["gensumweight"].value = gensumweight
+
+    df = output["vars"].value
+
+    metadata = dict(
+        gensumweight=gensumweight,
+        era=processor_instance.era,
+        mc=processor_instance.isMC,
+        sample=processor_instance.sample,
+    )
 
     # Save the output
-    saveTohdf5(args, output["vars"].value)
+    if args.output is not None:
+        from workflows import pandas_utils
 
-    print(f"Saving the following output to {args.output}")
+        pandas_utils.save_dfs([df], ["vars"], args.output, metadata=metadata)
+        print(f"Saving the following output to {args.output}")
+    else:
+        print("Got the following output. Nothing else to do...")
+
     print(output)
