@@ -590,7 +590,7 @@ if __name__ == "__main__":
 
     # Load workflow
     if args.workflow == "SUEP":
-        processor_instance = setupSUEP(args)
+        processor_instance = setupSUEP(args, sample_dict)
     else:
         raise NotImplementedError
 
