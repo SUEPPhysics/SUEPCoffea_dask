@@ -281,20 +281,8 @@ def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra
 
     parsl.load(htex_config)
 
-    output = processor.run_uproot_job(
-        sample_dict,
-        treename="Events",
-        processor_instance=processor_instance,
-        executor=processor.parsl_executor,
-        executor_args={
-            "skipbadfiles": True,
-            "schema": nanoevents.NanoAODSchema,
-            "config": None,
-        },
-        chunksize=args.chunk,
-        maxchunks=args.max,
-    )
-    return output
+    executor = processor.ParslExecutor(config=htex_config)
+    return executor
 
 
 def daskExecutor(args, processor_instance, sample_dict, env_extra):
@@ -303,7 +291,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
     from dask_jobqueue import HTCondorCluster, SLURMCluster
     from distributed.diagnostics.plugin import UploadDirectory
 
-    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
+    from dask.distributed import Client, Worker, WorkerPlugin
 
     if "lpc" in args.executor:
         from lpcjobqueue import LPCCondorCluster
@@ -344,7 +332,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
     elif "lxplus" in args.executor:
-        # NOTE: Need to move these imports to a function
+        # NOTE: This is unmaintained, but kept for reference
         n_port = 8786
         if not check_port(8786):
             raise RuntimeError(
@@ -372,7 +360,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
             env_extra=env_extra,
         )
     elif "mit" in args.executor:
-        # NOTE: Need to move these imports to a function
+        # NOTE: This is unmaintained, but kept for reference
         # n_port = 8786
         # if not check_port(8786):
         #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
@@ -401,6 +389,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
             env_extra=env_extra,
         )
     elif "slurm" in args.executor:
+        # NOTE: This is unmaintained, but kept for reference
         cluster = SLURMCluster(
             queue="all",
             cores=args.workers,
@@ -411,6 +400,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
             env_extra=env_extra,
         )
     elif "condor" in args.executor:
+        # NOTE: This is unmaintained, but kept for reference
         cluster = HTCondorCluster(
             cores=args.workers,
             memory="4GB",
@@ -420,60 +410,31 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
     else:
         raise NotImplementedError(f"I don't know anything about {args.executor}.")
 
-    with performance_report(filename="dask_out/dask-report.html"):
-        output = processor.run_uproot_job(
-            sample_dict,
-            treename="Events",
-            processor_instance=processor_instance,
-            executor=processor.dask_executor,
-            executor_args={
-                "client": client,
-                "skipbadfiles": args.skipbadfiles,
-                "schema": nanoevents.NanoAODSchema,
-                # 'xrootdtimeout': 10,
-                "retries": 3,
-                "use_dataframes": True,
-            },
-            chunksize=args.chunk,
-            maxchunks=args.max,
-        )
-    return output.compute()
+    executor = processor.DaskExecutor(client=client, use_dataframes=True)
+    return executor
 
 
 def nativeExecutors(args, processor_instance, sample_dict):
-    if args.executor == "iterative":
-        _exec = processor.iterative_executor
-    else:
-        _exec = processor.futures_executor
-    output = processor.run_uproot_job(
-        sample_dict,
-        treename="Events",
-        processor_instance=processor_instance,
-        executor=_exec,
-        executor_args={
-            "skipbadfiles": args.skipbadfiles,
-            "schema": nanoevents.NanoAODSchema,
-            "workers": args.workers,
-        },
-        chunksize=args.chunk,
-        maxchunks=args.max,
-    )
-    return output
+    executor = processor.IterativeExecutor()
+    if args.executor == "futures":
+        executor = processor.FuturesExecutor(workers=args.workers)
+    return executor
 
 
 def getWeights(sample_dict):
     from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
     genSumW_instance = GenSumWeightExtractor()
-    genSumW = processor.run_uproot_job(
-        sample_dict,
+    genSumW_executor = processor.IterativeExecutor()
+    genSumW_run = processor.Runner(
+        executor=genSumW_executor,
+        schema=nanoevents.BaseSchema,
+        align_clusters=True,
+    )
+    genSumW = genSumW_run(
+        fileset=sample_dict,
         treename="Runs",
         processor_instance=genSumW_instance,
-        executor=processor.iterative_executor,
-        executor_args={
-            "schema": nanoevents.BaseSchema,
-            "align_clusters": True,
-        },
     )
     return genSumW
 
@@ -516,32 +477,18 @@ def exportCert(args):
     return env_extra, condor_extra
 
 
-def setupAccumulator(args):
-    """
-    Return the accumulator for the workflow depending on the executor
-    - For dask: use dask DataFrame
-    - For local: use a dict with lists
-    - Otherwise: don't use any accumulator (MIT workflow)
-    """
-    if "dask" in args.executor:
-        return "dask"
-    elif "iterative" or "futures" in args.executor:
-        return "local"
-    return None
-
-
-def setupSUEP(args):
+def setupSUEP(args, sample_dict):
     """
     Setup the SUEP workflow
     """
     from workflows.SUEP_coffea import SUEP_cluster
 
-    processor_instance = SUEP_cluster(
+    instance = SUEP_cluster(
         isMC=args.isMC,
         era=int(args.era),
         do_syst=1,
         syst_var="",
-        sample=args.dataset,
+        sample=sample_dict,
         weight_syst="",
         flag=False,
         scouting=args.scouting,
@@ -550,7 +497,7 @@ def setupSUEP(args):
         accum=args.executor,
         trigger=args.trigger,
     )
-    return processor_instance
+    return instance
 
 
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
@@ -558,15 +505,31 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     Main function to execute the workflow
     """
     if args.executor in ["futures", "iterative"]:
-        output = nativeExecutors(args, processor_instance, sample_dict)
+        executor = nativeExecutors(args, processor_instance, sample_dict)
     elif "parsl" in args.executor:
-        output = parslExecutor(
+        executor = parslExecutor(
             args, processor_instance, sample_dict, env_extra, condor_extra
         )
     elif "dask" in args.executor:
-        output = daskExecutor(args, processor_instance, sample_dict, env_extra)
+        executor = daskExecutor(args, processor_instance, sample_dict, env_extra)
     else:
         raise NotImplementedError
+
+    run = processor.Runner(
+        executor=executor,
+        chunksize=args.chunk,
+        maxchunks=args.max,
+        schema=nanoevents.NanoAODSchema,
+        skipbadfiles=args.skipbadfiles,
+    )
+    output = run(
+        fileset=sample_dict,
+        treename="Events",
+        processor_instance=processor_instance,
+    )
+
+    if "dask" in args.executor:
+        return output.compute()
     return output
 
 
@@ -586,9 +549,6 @@ if __name__ == "__main__":
     # Scan if files can be opened
     if args.validate:
         validation(args, sample_dict)
-
-    # Setup the accumulator
-    accumulator = setupAccumulator(args)
 
     # Load workflow
     if args.workflow == "SUEP":
