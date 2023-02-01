@@ -96,8 +96,9 @@ def get_main_parser():
     parser.add_argument(
         "-o",
         "--output",
-        default="output.hdf5",
-        help="Output file name (default: %(default)s)",
+        default=None,
+        help="Prefix for the output file name. The file name will have the form: <prefix>_<sample>.hdf5. (default: %(default)s)",
+        required=False,
     )
     parser.add_argument(
         "--samples",
@@ -230,7 +231,7 @@ def specificProcessing(args, sample_dict):
     return sample_dict
 
 
-def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
+def parslExecutor(args, env_extra, condor_extra):
     import parsl
     from parsl.addresses import address_by_hostname, address_by_query
     from parsl.channels import LocalChannel
@@ -285,7 +286,7 @@ def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra
     return executor
 
 
-def daskExecutor(args, processor_instance, sample_dict, env_extra):
+def daskExecutor(args, env_extra):
     import shutil
 
     from dask_jobqueue import HTCondorCluster, SLURMCluster
@@ -414,7 +415,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra):
     return executor
 
 
-def nativeExecutors(args, processor_instance, sample_dict):
+def nativeExecutors(args):
     executor = processor.IterativeExecutor()
     if args.executor == "futures":
         executor = processor.FuturesExecutor(workers=args.workers)
@@ -533,6 +534,41 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     return output
 
 
+def saveOutput(args, output, sample):
+    """
+    Save the output to file(s)
+    Will calculate weights if necessary
+    """
+    from workflows import pandas_utils
+
+    # Calculate the gen sum weight for skimmed samples
+    gensumweight = output["gensumweight"].value
+    if args.skimmed:
+        weights = getWeights(sample)
+        print(
+            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
+        )
+
+    gensumweight = weights[sample].value
+    output["gensumweight"].value = gensumweight
+
+    df = output["vars"].value
+
+    metadata = dict(
+        gensumweight=gensumweight,
+        era=processor_instance.era,
+        mc=processor_instance.isMC,
+        sample=sample,
+    )
+
+    # Save the output
+    if args.output is not None:
+        outputName = f"{args.output}_"
+    outputName = f"{outputName}{sample}.hdf5"
+    pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
+    print(f"Saving the following output to {outputName}")
+
+
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
@@ -543,10 +579,12 @@ if __name__ == "__main__":
     sample_dict = loadder(args)
 
     # For debugging
+    # NOTE: This has not been maintained for a while
     if args.only:
         sample_dict = specificProcessing(args, sample_dict)
 
     # Scan if files can be opened
+    # NOTE: This has not been maintained for a while
     if args.validate:
         validation(args, sample_dict)
 
@@ -564,33 +602,7 @@ if __name__ == "__main__":
     # Execute the workflow
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
-    # Calculate the gen sum weight for skimmed samples
-    gensumweight = output["gensumweight"].value
-    if args.skimmed:
-        weights = getWeights(sample_dict)
-        print(
-            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
-        )
-        for key in sample_dict.keys():
-            gensumweight = weights[key].value
-            output["gensumweight"].value = gensumweight
-
-    df = output["vars"].value
-
-    metadata = dict(
-        gensumweight=gensumweight,
-        era=processor_instance.era,
-        mc=processor_instance.isMC,
-        sample=processor_instance.sample,
-    )
-
     # Save the output
-    if args.output is not None:
-        from workflows import pandas_utils
-
-        pandas_utils.save_dfs([df], ["vars"], args.output, metadata=metadata)
-        print(f"Saving the following output to {args.output}")
-    else:
-        print("Got the following output. Nothing else to do...")
-
+    for sample in sample_dict:
+        saveOutput(args, output[sample], sample)
     print(output)
