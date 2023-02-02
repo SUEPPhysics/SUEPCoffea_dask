@@ -571,8 +571,8 @@ def saveOutput(args, output, sample_dict):
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
-    if args.output == parser.get_default("output"):
-        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
+    # if args.output == parser.get_default("output"):
+    #    args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
 
     # Load dataset
     sample_dict = loadder(args)
