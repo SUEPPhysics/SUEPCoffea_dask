@@ -564,8 +564,8 @@ def saveOutput(args, output, sample_dict):
         if args.output is not None:
             outputName = f"{args.output}_"
         outputName = f"{outputName}{sample}.hdf5"
-        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
         print(f"Saving the following output to {outputName}")
+        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
 
 if __name__ == "__main__":
