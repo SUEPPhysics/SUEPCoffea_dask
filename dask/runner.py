@@ -561,6 +561,7 @@ def saveOutput(args, output, sample_dict):
         )
 
         # Save the output
+        outputName = ""
         if args.output is not None:
             outputName = f"{args.output}_"
         outputName = f"{outputName}{sample}.hdf5"
