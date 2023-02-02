@@ -602,5 +602,5 @@ if __name__ == "__main__":
 
     # Save the output
     for sample in sample_dict:
-        saveOutput(args, output[sample], sample)
+        saveOutput(args, output, sample)
     print(output)
