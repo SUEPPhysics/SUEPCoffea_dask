@@ -532,7 +532,7 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     return output
 
 
-def saveOutput(args, output, sample):
+def saveOutput(args, output, sample_dict):
     """
     Save the output to file(s)
     Will calculate weights if necessary
@@ -542,29 +542,30 @@ def saveOutput(args, output, sample):
     # Calculate the gen sum weight for skimmed samples
     gensumweight = output["gensumweight"].value
     if args.skimmed:
-        weights = getWeights(sample)
+        weights = getWeights(sample_dict)
         print(
             f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
         )
 
-    gensumweight = weights[sample].value
-    output["gensumweight"].value = gensumweight
+    for sample in sample_dict:
+        gensumweight = weights[sample].value
+        output["gensumweight"].value = gensumweight
 
-    df = output["vars"].value
+        df = output["vars"].value
 
-    metadata = dict(
-        gensumweight=gensumweight,
-        era=processor_instance.era,
-        mc=processor_instance.isMC,
-        sample=sample,
-    )
+        metadata = dict(
+            gensumweight=gensumweight,
+            era=processor_instance.era,
+            mc=processor_instance.isMC,
+            sample=sample,
+        )
 
-    # Save the output
-    if args.output is not None:
-        outputName = f"{args.output}_"
-    outputName = f"{outputName}{sample}.hdf5"
-    pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
-    print(f"Saving the following output to {outputName}")
+        # Save the output
+        if args.output is not None:
+            outputName = f"{args.output}_"
+        outputName = f"{outputName}{sample}.hdf5"
+        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
+        print(f"Saving the following output to {outputName}")
 
 
 if __name__ == "__main__":
@@ -601,6 +602,5 @@ if __name__ == "__main__":
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
     # Save the output
-    for sample in sample_dict:
-        saveOutput(args, output, sample)
+    saveOutput(args, output, sample_dict)
     print(output)
