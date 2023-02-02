@@ -86,17 +86,17 @@ class SUEP_cluster(processor.ProcessorABC):
             self.eta_scale = self.eta_pix / (self.eta_span[1] - self.eta_span[0])
             self.phi_scale = self.phi_pix / (self.phi_span[1] - self.phi_span[0])
 
-        # Set up accumulators
-        self._accumulator = processor.dict_accumulator(
-            {
-                "gensumweight": processor.value_accumulator(float, 0),
-                "vars": pandas_accumulator(pd.DataFrame()),
-            }
-        )
-
     @property
-    def accumulator(self):
-        return self._accumulator
+    def accumulator(self, dataset):
+        accumulator = {
+            dataset: processor.dict_accumulator(
+                {
+                    "gensumweight": processor.value_accumulator(float, 0),
+                    "vars": pandas_accumulator(pd.DataFrame()),
+                }
+            )
+        }
+        return accumulator
 
     def jet_awkward(self, Jets):
         """
@@ -220,8 +220,15 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
 
     def storeEventVars(
-        self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, out_label=""
+        self,
+        events,
+        output,
+        tracks,
+        ak_inclusive_jets,
+        ak_inclusive_cluster,
+        out_label="",
     ):
+        dataset = events.metadata["dataset"]
 
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
@@ -252,56 +259,50 @@ class SUEP_cluster(processor.ProcessorABC):
             jets_jec_JESDown = jets_jec
 
         # save per event variables to a dataframe
-        self._accumulator["vars"]["ntracks" + out_label] = ak.num(tracks).to_list()
-        self._accumulator["vars"]["ngood_fastjets" + out_label] = ak.num(
+        output[dataset]["vars"]["ntracks" + out_label] = ak.num(tracks).to_list()
+        output[dataset]["vars"]["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
         if out_label == "":
-            self._accumulator["vars"]["ht" + out_label] = ak.sum(
+            output[dataset]["vars"]["ht" + out_label] = ak.sum(
                 ak4jets.pt, axis=-1
             ).to_list()
-            self._accumulator["vars"]["ht_JEC" + out_label] = ak.sum(
+            output[dataset]["vars"]["ht_JEC" + out_label] = ak.sum(
                 jets_jec.pt, axis=-1
             ).to_list()
-            self._accumulator["vars"]["ht_JEC" + out_label + "_JER_up"] = ak.sum(
+            output[dataset]["vars"]["ht_JEC" + out_label + "_JER_up"] = ak.sum(
                 jets_jec_JERUp.pt, axis=-1
             ).to_list()
-            self._accumulator["vars"]["ht_JEC" + out_label + "_JER_down"] = ak.sum(
+            output[dataset]["vars"]["ht_JEC" + out_label + "_JER_down"] = ak.sum(
                 jets_jec_JERDown.pt, axis=-1
             ).to_list()
-            self._accumulator["vars"]["ht_JEC" + out_label + "_JES_up"] = ak.sum(
+            output[dataset]["vars"]["ht_JEC" + out_label + "_JES_up"] = ak.sum(
                 jets_jec_JESUp.pt, axis=-1
             ).to_list()
-            self._accumulator["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
+            output[dataset]["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
 
             if self.era == 2016 and self.scouting == 0:
-                self._accumulator["vars"][
-                    "HLT_PFHT900" + out_label
-                ] = events.HLT.PFHT900
+                output[dataset]["vars"]["HLT_PFHT900" + out_label] = events.HLT.PFHT900
             elif self.scouting == 0:
-                self._accumulator["vars"][
+                output[dataset]["vars"][
                     "HLT_PFHT1050" + out_label
                 ] = events.HLT.PFHT1050
-            self._accumulator["vars"]["ngood_ak4jets" + out_label] = ak.num(
+            output[dataset]["vars"]["ngood_ak4jets" + out_label] = ak.num(
                 ak4jets
             ).to_list()
             if self.scouting == 1:
-                self._accumulator["vars"]["PV_npvs" + out_label] = ak.num(
-                    events.Vertex.x
-                )
+                output[dataset]["vars"]["PV_npvs" + out_label] = ak.num(events.Vertex.x)
             else:
                 if self.isMC:
-                    self._accumulator["vars"][
+                    output[dataset]["vars"][
                         "Pileup_nTrueInt" + out_label
                     ] = events.Pileup.nTrueInt
                     GetPSWeights(self, events)  # Parton Shower weights
                     GetPrefireWeights(self, events)  # Prefire weights
-                self._accumulator["vars"]["PV_npvs" + out_label] = events.PV.npvs
-                self._accumulator["vars"][
-                    "PV_npvsGood" + out_label
-                ] = events.PV.npvsGood
+                output[dataset]["vars"]["PV_npvs" + out_label] = events.PV.npvs
+                output[dataset]["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
@@ -319,10 +320,10 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_genPhi = [g[-1].phi if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
 
-        self._accumulator["vars"]["SUEP_genMass" + out_label] = SUEP_genMass
-        self._accumulator["vars"]["SUEP_genPt" + out_label] = SUEP_genPt
-        self._accumulator["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
-        self._accumulator["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
+        output[dataset]["vars"]["SUEP_genMass" + out_label] = SUEP_genMass
+        output[dataset]["vars"]["SUEP_genPt" + out_label] = SUEP_genPt
+        output[dataset]["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
+        output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -363,7 +364,7 @@ class SUEP_cluster(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
-    def analysis(self, events, do_syst=False, col_label=""):
+    def analysis(self, events, output, do_syst=False, col_label=""):
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -378,13 +379,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
-            if self.accum == "pandas_merger":
-                return self.accumulator
-            elif self.accum:
-                self.initializeColumns(col_label)
-                for c in self.columns:
-                    self.out_vars[c] = np.nan
-            return
+            return output
 
         #####################################################################################
         # ---- Track selection
@@ -414,7 +409,12 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         self.storeEventVars(
-            events, tracks, ak_inclusive_jets, ak_inclusive_cluster, out_label=col_label
+            events,
+            output,
+            tracks,
+            ak_inclusive_jets,
+            ak_inclusive_cluster,
+            out_label=col_label,
         )
 
         # indices of events in tracks, used to keep track which events pass selections
@@ -437,9 +437,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass clusterCut.")
-            for c in self.columns:
-                self.out_vars[c] = np.nan
-            return
+            return output
 
         tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(
             self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
@@ -473,30 +471,25 @@ class SUEP_cluster(processor.ProcessorABC):
             )
 
     def process(self, events):
-        # NOTE: the following variable could be passed potentially to output
-        # Commenting for now to avoid flakes8 error
-        # dataset = events.metadata["dataset"]
+        dataset = events.metadata["dataset"]
+        output = self.accumulator(dataset)
 
         # gen weights
         if self.isMC and self.scouting == 1:
             self.gensumweight = ak.num(events.PFcand.pt, axis=0)
-            self._accumulator["gensumweight"].add(self.gensumweight)
+            output[dataset]["gensumweight"].add(self.gensumweight)
         elif self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
-            self._accumulator["gensumweight"].add(self.gensumweight)
+            output[dataset]["gensumweight"].add(self.gensumweight)
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
-            self.analysis(events, do_syst=True, col_label="_track_down")
+            self.analysis(events, output, do_syst=True, col_label="_track_down")
 
         # run the analysis
-        self.analysis(events)
+        self.analysis(events, output)
 
-        # output result to dask dataframe accumulator
-        if "dask" in self.accum:
-            return self.out_vars
-
-        return self.accumulator
+        return output
 
     def postprocess(self, accumulator):
         return accumulator

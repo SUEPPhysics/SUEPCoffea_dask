@@ -411,7 +411,7 @@ def daskExecutor(args, env_extra):
     else:
         raise NotImplementedError(f"I don't know anything about {args.executor}.")
 
-    executor = processor.DaskExecutor(client=client, use_dataframes=True)
+    executor = processor.DaskExecutor(client=client)
     return executor
 
 
@@ -527,8 +527,6 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
         processor_instance=processor_instance,
     )
 
-    if "dask" in args.executor:
-        return output.compute()
     return output
 
 
