@@ -6,6 +6,7 @@ import uproot
 
 
 def rewrite(infile):
+
     f = uproot.open(infile)
     to_write = "f_new['tree'] = {"
     for entry in f["mmtree/tree"]:

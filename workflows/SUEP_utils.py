@@ -90,6 +90,7 @@ def ClusterMethod(
 
     # inverted selection
     if do_inverted:
+
         boost_ISR = ak.zip(
             {
                 "px": ISR_cand.px * -1,
@@ -279,6 +280,7 @@ def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
 
         # inverted selection
         if do_inverted:
+
             oneCOISRtrackCut = ak.num(ISR_tracks) > 1
 
             # output file if no events pass selections for ISR
@@ -288,6 +290,7 @@ def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
                 for c in self.columns_CO_ISR:
                     self.out_vars[c] = np.nan
             else:
+
                 # remove events with one ISR track
                 ISR_tracks = ISR_tracks[oneCOISRtrackCut]
                 indices = indices[oneCOISRtrackCut]
@@ -426,6 +429,7 @@ def rho(number, jet, tracks, deltaR, dr=0.05):
 
 
 def FastJetReclustering(tracks, r, minPt):
+
     jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, r)
     cluster = fastjet.ClusterSequence(tracks, jetdef)
 

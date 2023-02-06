@@ -31,6 +31,7 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
 
     # complex numbers for hist
     for model in models:
+
         # load the correct model for each year
         yearSyst = GNNsyst.get(str(era))
         if yearSyst is None:
