@@ -1,5 +1,4 @@
 def GetPSWeights(self, events):
-
     if len(events.PSWeight[0]) == 4:
         self.out_vars["PSWeight_ISR_up"] = events.PSWeight[:, 0]
         self.out_vars["PSWeight_ISR_down"] = events.PSWeight[:, 2]
