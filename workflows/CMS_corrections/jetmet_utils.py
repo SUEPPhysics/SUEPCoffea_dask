@@ -6,7 +6,6 @@ from coffea.lookup_tools import extractor
 
 
 def apply_jecs(isMC, Sample, era, events, prefix=""):
-
     # Find the Collection we want to look at
     if isMC:
         if era == 2016:
