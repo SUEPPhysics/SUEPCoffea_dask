@@ -165,9 +165,9 @@ if options.doInf:
         }
     )
 
+
 # output histos
 def create_output_file(label, abcd):
-
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:
         return output
@@ -435,7 +435,6 @@ def create_output_file(label, abcd):
 
     ###########################################################################################################################
     if label == "GNN" and options.doInf:
-
         # 2D histograms
         for model in abcd["models"]:
             output.update(
@@ -501,7 +500,6 @@ def create_output_file(label, abcd):
 
     ###########################################################################################################################
     if label == "GNNInverted" and options.doInf:
-
         # 2D histograms
         for model in abcd["models"]:
             output.update(
@@ -598,7 +596,6 @@ if options.weights is not None and options.weights != "None":
 
 # add new output methods for track killing and jet energy systematics
 if options.isMC and options.doSyst:
-
     # track systematics: need to use the track_down version of the variables
     new_config_track_killing = fill_utils.get_track_killing_config(config)
 
@@ -620,7 +617,6 @@ logging.info("Setup ready, filling histograms now.")
 
 ### Plotting loop #######################################################################
 for ifile in tqdm(files):
-
     #####################################################################################
     # ---- Load file
     #####################################################################################
@@ -698,9 +694,7 @@ for ifile in tqdm(files):
         df["event_weight"] = np.ones(df.shape[0])
 
         if options.isMC == 1:
-
             if options.scouting != 1:
-
                 # 1) pileup weights
                 pu = pileup_weight.get_pileup_weights(
                     df, sys, puweights, puweights_up, puweights_down

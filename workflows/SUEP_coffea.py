@@ -66,7 +66,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
-
             # ML settings
             self.batch_size = 1024
 
@@ -219,7 +218,6 @@ class SUEP_cluster(processor.ProcessorABC):
     def storeEventVars(
         self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, out_label=""
     ):
-
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
 
@@ -486,7 +484,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 return output
 
             if "pandas_merger" == self.accum:
-
                 # save the out_vars object as a Pandas DataFrame
                 pandas_utils.save_dfs(
                     self,
