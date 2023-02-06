@@ -155,6 +155,7 @@ def main():
     proxy_copy = os.path.join(home_base, proxy_base)
 
     with open(options.input) as stream:
+
         # count total number of files to submit
         nJobs = 0
         for sample in stream.read().split("\n"):
@@ -176,6 +177,7 @@ def main():
         logging.info("-- Submitting a total of " + str(nJobs) + " jobs.")
 
     with open(options.input) as stream:
+
         for sample in stream.read().split("\n"):
             if "#" in sample:
                 continue

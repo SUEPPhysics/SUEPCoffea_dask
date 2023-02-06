@@ -96,6 +96,7 @@ if options.xrootd:
     print(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 for sample in input_list:
+
     if options.code == "merge":
         cmd = "python3 merge_plots.py --tag={} --dataset={} --isMC={}".format(
             options.tag, sample, options.isMC

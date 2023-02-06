@@ -167,6 +167,7 @@ def main():
                 logging.info(f"condor submission status : {exit_status}")
 
             if options.move:
+
                 if not os.path.isdir(move_dir.format(sample_name)):
                     os.system("mkdir " + move_dir.format(sample_name))
 

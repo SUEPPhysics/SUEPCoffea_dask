@@ -102,6 +102,7 @@ for i in range(nResubmits):
                 subprocess.run(["rm", dataDir + subDir + "/" + file])
 
     if not options.dryrun:
+
         logging.info("Executing monitor.py for data...")
         os.system(
             "python3 monitor.py --tag={} --input={} -r=1 -m={}".format(
@@ -116,12 +117,14 @@ for i in range(nResubmits):
         )
 
     if options.move:
+
         if not os.path.isdir(moveDir):
             os.system("mkdir " + moveDir)
 
         subDirs = os.listdir(dataDir)
 
         for subDir in subDirs:
+
             if not os.path.isdir(moveDir + subDir):
                 os.system("mkdir " + moveDir + subDir)
 

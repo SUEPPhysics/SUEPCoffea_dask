@@ -181,6 +181,7 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
 
 
 def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
+
     input_method = abcd["input_method"]
 
     #####################################################################################
@@ -238,6 +239,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
             x_val_hi = xvar_regions[i + 1]
 
             for j in range(len(yvar_regions) - 1):
+
                 r = regions[iRegion] + "_"
 
                 y_val_lo = yvar_regions[j]
