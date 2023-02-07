@@ -74,7 +74,6 @@ def main():
             cleanCorruptedFiles(dataDir + "/" + subDir)
 
         if not options.dryrun:
-
             logging.info("Executing monitor.py...")
             os.system(
                 "python3 monitor.py --tag={} --input={} -r=1 -m={}".format(

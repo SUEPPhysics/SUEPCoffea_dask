@@ -23,7 +23,6 @@ def SSDMethod(self, indices, inf_cands, out_label=""):
     #####################################################################################
 
     if self.do_inf:
-
         pred_dict = {}
         ort_infs = {}
         options = ort.SessionOptions()
@@ -75,7 +74,6 @@ def DGNNMethod(
     #####################################################################################
 
     if self.do_inf:
-
         import yaml
 
         device = torch.device("cpu")
@@ -86,7 +84,6 @@ def DGNNMethod(
         assert len(self.dgnn_model_names) == len(self.configs)
 
         for model_name, config in zip(self.dgnn_model_names, self.configs):
-
             model_path = modelDir + model_name + ".pt"
 
             # initialize model with original configurations and import the weights
@@ -127,7 +124,6 @@ def DGNNMethod(
             )
 
             if do_inverted:
-
                 # run GNN inference on the SUEP tracks
                 results = run_inference_GNN(self, suep, ISR_tracks, ISR_cand)
                 self.out_vars.loc[
@@ -157,10 +153,8 @@ def DGNNMethod(
 
 
 def run_inference_GNN(self, model, tracks, SUEP_cand):
-
     results = np.array([])
     for i in range(0, len(tracks), self.batch_size):
-
         # define batch and convert objects in a coordinate frame
         batch = tracks[i : i + self.batch_size]
         this_batch_size = len(batch)
@@ -169,7 +163,6 @@ def run_inference_GNN(self, model, tracks, SUEP_cand):
 
         sigmoid = torch.nn.Sigmoid()
         with torch.no_grad():
-
             # count how many tracks per event are nonzero: dimensions of (events, tracks)
             Nlc = np.count_nonzero(batch[:, :, 0], axis=1)
 
@@ -231,7 +224,6 @@ class SUEPNet(nn.Module):
         )
 
     def forward(self, x_pf, batch_pf):
-
         x_pf_enc = self.pf_encode(x_pf)
 
         # create a representation of PFs to PFs
@@ -248,7 +240,6 @@ class SUEPNet(nn.Module):
 
 @jit(forceobj=True)
 def convert_to_images(self, events):
-
     # Turn the PFcand info into indexes on the image map
     idx_eta = ak.values_astype(
         np.floor((events.eta - self.eta_span[0]) * self.eta_scale), "int64"
@@ -262,7 +253,6 @@ def convert_to_images(self, events):
 
     to_infer = np.zeros((len(events), 1, self.eta_pix, self.phi_pix))
     for event_i in range(len(events)):
-
         # form image
         to_infer[event_i, 0, idx_eta[event_i], idx_phi[event_i]] = pt[event_i]
 
@@ -276,7 +266,6 @@ def convert_to_images(self, events):
 
 
 def run_inference_SSD(self, imgs, ort_sess):
-
     # Running the inference in batch mode
     input_name = ort_sess.get_inputs()[0].name
     cl_outputs = np.array([])
@@ -300,7 +289,6 @@ def softmax(data):
 
 
 def GNN_convertEvents(self, events, SUEP_cand, max_objects=1000):
-
     allowed_objects = ["pfcand", "bpfcand"]
     if self.obj.lower() not in allowed_objects:
         raise Exception(self.obj + " is not supported in GNN_convertEvents.")

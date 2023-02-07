@@ -616,9 +616,7 @@ def calculate_systematic(
     df["event_weight"] = np.ones(df.shape[0])
 
     if options.isMC == 1:
-
         if options.scouting != 1:
-
             # 1) pileup weights
             pu = pileup_weight.get_pileup_weights(
                 df, syst, puweights, puweights_up, puweights_down
@@ -739,7 +737,6 @@ if options.weights is not None and options.weights != "None":
 
 # add new output methods for track killing and jet energy systematics
 if options.isMC and options.doSyst:
-
     # track systematics: need to use the track_down version of the variables
     new_config_track_killing = fill_utils.get_track_killing_config(config)
 
@@ -761,7 +758,6 @@ logging.info("Setup ready, filling histograms now.")
 
 # Plotting loop #######################################################################
 for ifile in tqdm(files):
-
     #####################################################################################
     # ---- Load file
     #####################################################################################
