@@ -136,6 +136,14 @@ class SUEP_cluster(processor.ProcessorABC):
 
         return events
 
+    def selectByFilters(self, events):
+        ### Apply MET filter selection (see https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2)
+        if self.era == 2018 or self.era == 2017:
+            cutAnyFilter = (events.Flag.goodVertices) | (events.Flag.globalSuperTightHalo2016Filter) | (events.Flag.HBHENoiseFilter) | (events.Flag.HBHENoiseIsoFilter) | (events.Flag.EcalDeadCellTriggerPrimitiveFilter) | (events.Flag.BadPFMuonFilter) | (events.Flag.BadPFMuonDzFilter) | (events.Flag.eeBadScFilter) | (events.Flag.ecalBadCalibFilter)
+        if self.era == 2016:
+            cutAnyFilter = (events.Flag.goodVertices) | (events.Flag.globalSuperTightHalo2016Filter) | (events.Flag.HBHENoiseFilter) | (events.Flag.HBHENoiseIsoFilter) | (events.Flag.EcalDeadCellTriggerPrimitiveFilter) | (events.Flag.BadPFMuonFilter) | (events.Flag.BadPFMuonDzFilter) | (events.Flag.eeBadScFilter)
+        return events[cutAnyFilter]
+
     def getGenTracks(self, events):
         genParts = events.GenPart
         genParts = ak.zip(
@@ -357,6 +365,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events = applyGoldenJSON(self, events)
         events, electrons, muons = ZH_utils.selectByLeptons(self, events, lepveto=True)
         events = self.eventSelection(events)
+        events = self.selectByFilters(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
