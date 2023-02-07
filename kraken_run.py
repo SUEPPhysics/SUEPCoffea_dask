@@ -154,7 +154,6 @@ def main():
     proxy_copy = os.path.join(home_base, proxy_base)
 
     with open(options.input) as stream:
-
         for sample in stream.read().split("\n"):
             if "#" in sample or len(sample.split("/")) <= 1:
                 continue

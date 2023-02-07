@@ -5,7 +5,6 @@ import sys
 import time
 
 import numpy as np
-import pandas as pd
 import uproot
 from coffea import nanoevents, processor
 
@@ -97,8 +96,9 @@ def get_main_parser():
     parser.add_argument(
         "-o",
         "--output",
-        default="output.hdf5",
-        help="Output file name (default: %(default)s)",
+        default=None,
+        help="Prefix for the output file name. The file name will have the form: <prefix>_<sample>.hdf5. (default: %(default)s)",
+        required=False,
     )
     parser.add_argument(
         "--samples",
@@ -205,9 +205,7 @@ def get_main_parser():
         "--scouting", action="store_true", help="Turn processing for scouting on"
     )
     parser.add_argument("--doInf", action="store_true", help="Turn inference on")
-    parser.add_argument(
-        "--dataset", type=str, default="X", help="Dataset to find xsection"
-    )
+    parser.add_argument("--dataset", type=str, help="Dataset to find xsection")
     parser.add_argument(
         "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
     )
@@ -233,7 +231,7 @@ def specificProcessing(args, sample_dict):
     return sample_dict
 
 
-def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
+def parslExecutor(args, env_extra, condor_extra):
     import parsl
     from parsl.addresses import address_by_hostname, address_by_query
     from parsl.channels import LocalChannel
@@ -284,29 +282,17 @@ def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra
 
     parsl.load(htex_config)
 
-    output = processor.run_uproot_job(
-        sample_dict,
-        treename="Events",
-        processor_instance=processor_instance,
-        executor=processor.parsl_executor,
-        executor_args={
-            "skipbadfiles": True,
-            "schema": nanoevents.NanoAODSchema,
-            "config": None,
-        },
-        chunksize=args.chunk,
-        maxchunks=args.max,
-    )
-    return output
+    executor = processor.ParslExecutor(config=htex_config)
+    return executor
 
 
-def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
+def daskExecutor(args, env_extra):
     import shutil
 
     from dask_jobqueue import HTCondorCluster, SLURMCluster
     from distributed.diagnostics.plugin import UploadDirectory
 
-    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
+    from dask.distributed import Client, Worker, WorkerPlugin
 
     if "lpc" in args.executor:
         from lpcjobqueue import LPCCondorCluster
@@ -347,7 +333,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
         shutil.make_archive("workflows", "zip", base_dir="workflows")
         client.upload_file("workflows.zip")
     elif "lxplus" in args.executor:
-        # NOTE: Need to move these imports to a function
+        # NOTE: This is unmaintained, but kept for reference
         n_port = 8786
         if not check_port(8786):
             raise RuntimeError(
@@ -375,7 +361,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             env_extra=env_extra,
         )
     elif "mit" in args.executor:
-        # NOTE: Need to move these imports to a function
+        # NOTE: This is unmaintained, but kept for reference
         # n_port = 8786
         # if not check_port(8786):
         #    raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
@@ -404,6 +390,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             env_extra=env_extra,
         )
     elif "slurm" in args.executor:
+        # NOTE: This is unmaintained, but kept for reference
         cluster = SLURMCluster(
             queue="all",
             cores=args.workers,
@@ -414,6 +401,7 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
             env_extra=env_extra,
         )
     elif "condor" in args.executor:
+        # NOTE: This is unmaintained, but kept for reference
         cluster = HTCondorCluster(
             cores=args.workers,
             memory="4GB",
@@ -423,60 +411,31 @@ def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra)
     else:
         raise NotImplementedError(f"I don't know anything about {args.executor}.")
 
-    with performance_report(filename="dask_out/dask-report.html"):
-        output = processor.run_uproot_job(
-            sample_dict,
-            treename="Events",
-            processor_instance=processor_instance,
-            executor=processor.dask_executor,
-            executor_args={
-                "client": client,
-                "skipbadfiles": args.skipbadfiles,
-                "schema": nanoevents.NanoAODSchema,
-                # 'xrootdtimeout': 10,
-                "retries": 3,
-                "use_dataframes": True,
-            },
-            chunksize=args.chunk,
-            maxchunks=args.max,
-        )
-    return output.compute()
+    executor = processor.DaskExecutor(client=client, use_dataframes=True)
+    return executor
 
 
-def nativeExecutors(args, processor_instance, sample_dict):
-    if args.executor == "iterative":
-        _exec = processor.iterative_executor
-    else:
-        _exec = processor.futures_executor
-    output = processor.run_uproot_job(
-        sample_dict,
-        treename="Events",
-        processor_instance=processor_instance,
-        executor=_exec,
-        executor_args={
-            "skipbadfiles": args.skipbadfiles,
-            "schema": nanoevents.NanoAODSchema,
-            "workers": args.workers,
-        },
-        chunksize=args.chunk,
-        maxchunks=args.max,
-    )
-    return output
+def nativeExecutors(args):
+    executor = processor.IterativeExecutor()
+    if args.executor == "futures":
+        executor = processor.FuturesExecutor(workers=args.workers)
+    return executor
 
 
-def getWeights(args, sample_dict):
+def getWeights(sample_dict):
     from workflows.GenSumWeightExtract import GenSumWeightExtractor
 
     genSumW_instance = GenSumWeightExtractor()
-    genSumW = processor.run_uproot_job(
-        sample_dict,
+    genSumW_executor = processor.IterativeExecutor()
+    genSumW_run = processor.Runner(
+        executor=genSumW_executor,
+        schema=nanoevents.BaseSchema,
+        align_clusters=True,
+    )
+    genSumW = genSumW_run(
+        fileset=sample_dict,
         treename="Runs",
         processor_instance=genSumW_instance,
-        executor=processor.iterative_executor,
-        executor_args={
-            "schema": nanoevents.BaseSchema,
-            "align_clusters": True,
-        },
     )
     return genSumW
 
@@ -519,32 +478,18 @@ def exportCert(args):
     return env_extra, condor_extra
 
 
-def setupAccumulator(args):
-    """
-    Return the accumulator for the workflow depending on the executor
-    - For dask: use dask DataFrame
-    - For local: use a dict with lists
-    - Otherwise: don't use any accumulator (MIT workflow)
-    """
-    if "dask" in args.executor:
-        return "dask"
-    elif "iterative" or "futures" in args.executor:
-        return "local"
-    return None
-
-
-def setupSUEP(args):
+def setupSUEP(args, sample_dict):
     """
     Setup the SUEP workflow
     """
     from workflows.SUEP_coffea import SUEP_cluster
 
-    processor_instance = SUEP_cluster(
+    instance = SUEP_cluster(
         isMC=args.isMC,
         era=int(args.era),
         do_syst=1,
         syst_var="",
-        sample=args.dataset,
+        sample=sample_dict,
         weight_syst="",
         flag=False,
         scouting=args.scouting,
@@ -553,19 +498,7 @@ def setupSUEP(args):
         accum=args.executor,
         trigger=args.trigger,
     )
-    return processor_instance
-
-
-def saveTohdf5(args, processor_instance, dataframe):
-    from workflows import pandas_utils
-
-    pandas_utils.save_dfs(
-        processor_instance,
-        dfs=[dataframe],
-        df_names=["vars"],
-        fname=args.output,
-    )
-    return
+    return instance
 
 
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
@@ -573,45 +506,91 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     Main function to execute the workflow
     """
     if args.executor in ["futures", "iterative"]:
-        output = nativeExecutors(args, processor_instance, sample_dict)
-        for key in sample_dict.keys():
-            output = pd.DataFrame.from_dict(output[key])
+        executor = nativeExecutors(args)
     elif "parsl" in args.executor:
-        output = parslExecutor(
-            args, processor_instance, sample_dict, env_extra, condor_extra
-        )
+        executor = parslExecutor(args, env_extra, condor_extra)
     elif "dask" in args.executor:
-        output = daskExecutor(
-            args, processor_instance, sample_dict, env_extra, condor_extra
-        )
+        executor = daskExecutor(args, env_extra)
     else:
         raise NotImplementedError
+
+    run = processor.Runner(
+        executor=executor,
+        chunksize=args.chunk,
+        maxchunks=args.max,
+        schema=nanoevents.NanoAODSchema,
+        skipbadfiles=args.skipbadfiles,
+    )
+    output = run(
+        fileset=sample_dict,
+        treename="Events",
+        processor_instance=processor_instance,
+    )
+
+    if "dask" in args.executor:
+        return output.compute()
     return output
+
+
+def saveOutput(args, output, sample_dict):
+    """
+    Save the output to file(s)
+    Will calculate weights if necessary
+    """
+    from workflows import pandas_utils
+
+    # Calculate the gen sum weight for skimmed samples
+    gensumweight = output["gensumweight"].value
+    if args.skimmed:
+        weights = getWeights(sample_dict)
+        print(
+            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
+        )
+
+    for sample in sample_dict:
+        gensumweight = weights[sample].value
+        output["gensumweight"].value = gensumweight
+
+        df = output["vars"].value
+
+        metadata = dict(
+            gensumweight=gensumweight,
+            era=processor_instance.era,
+            mc=processor_instance.isMC,
+            sample=sample,
+        )
+
+        # Save the output
+        outputName = ""
+        if args.output is not None:
+            outputName = f"{args.output}_"
+        outputName = f"{outputName}{sample}.hdf5"
+        print(f"Saving the following output to {outputName}")
+        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
 
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
-    if args.output == parser.get_default("output"):
-        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
+    # if args.output == parser.get_default("output"):
+    #    args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
 
     # Load dataset
     sample_dict = loadder(args)
 
     # For debugging
+    # NOTE: This has not been maintained for a while
     if args.only:
         sample_dict = specificProcessing(args, sample_dict)
 
     # Scan if files can be opened
+    # NOTE: This has not been maintained for a while
     if args.validate:
         validation(args, sample_dict)
 
-    # Setup the accumulator
-    accumulator = setupAccumulator(args)
-
     # Load workflow
     if args.workflow == "SUEP":
-        processor_instance = setupSUEP(args)
+        processor_instance = setupSUEP(args, sample_dict)
     else:
         raise NotImplementedError
 
@@ -623,15 +602,6 @@ if __name__ == "__main__":
     # Execute the workflow
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
-    # Calculate the gen sum weight for skimmed samples
-    if args.skimmed:
-        weights = getWeights(args, sample_dict)
-        print(weights)
-        for key in sample_dict.keys():
-            processor_instance.gensumweight = weights[key].value
-
     # Save the output
-    saveTohdf5(args, processor_instance, output)
-
+    saveOutput(args, output, sample_dict)
     print(output)
-    print(f"Saving output to {args.output}")

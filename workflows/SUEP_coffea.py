@@ -64,7 +64,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
-
             # ML settings
             self.batch_size = 1024
 
@@ -222,7 +221,6 @@ class SUEP_cluster(processor.ProcessorABC):
     def storeEventVars(
         self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, out_label=""
     ):
-
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
 
@@ -473,8 +471,9 @@ class SUEP_cluster(processor.ProcessorABC):
             )
 
     def process(self, events):
-        output = self.accumulator.identity()
-        dataset = events.metadata["dataset"]
+        # NOTE: the following variable could be passed potentially to output
+        # Commenting for now to avoid flakes8 error
+        # dataset = events.metadata["dataset"]
 
         # gen weights
         if self.isMC and self.scouting == 1:
@@ -492,20 +491,10 @@ class SUEP_cluster(processor.ProcessorABC):
         self.analysis(events)
 
         # output result to dask dataframe accumulator
-        if self.accum:
-            if "dask" in self.accum:
-                return self.out_vars
+        if "dask" in self.accum:
+            return self.out_vars
 
-            # output result to iterative/futures accumulator
-            if "iterative" in self.accum or "futures" in self.accum:
-                # Convert output to the desired format when the accumulator is used
-                for c in self.out_vars.columns:
-                    output[c] = self.out_vars[c].to_list()
-                output = {dataset: self.out_vars}
-                return output
-
-            if "pandas_merger" == self.accum:
-                return self.accumulator
+        return self.accumulator
 
     def postprocess(self, accumulator):
         return accumulator
