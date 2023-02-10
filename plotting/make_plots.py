@@ -5,11 +5,9 @@ import logging
 import os
 import pickle
 import subprocess
-import sys
 
 import fill_utils
 import numpy as np
-import pandas as pd
 import uproot
 
 # Import our own functions
@@ -47,6 +45,13 @@ parser.add_argument(
     "-f", "--file", type=str, default="", help="Use specific input file"
 )
 parser.add_argument(
+    "-s",
+    "--save",
+    type=str,
+    help="Use specific output directory. Overrides MIT-specific paths.",
+    required=False,
+)
+parser.add_argument(
     "--xrootd",
     type=int,
     default=0,
@@ -79,6 +84,8 @@ options = parser.parse_args()
 ###################################################################################################################
 
 outDir = f"/work/submit/{getpass.getuser()}/SUEP/outputs/"
+if options.save is not None:
+    outDir = options.save
 # define these if --xrootd 0
 dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
     getpass.getuser(), options.tag, options.dataset
@@ -100,21 +107,30 @@ config = {
     "Cluster": {
         "input_method": "CL",
         "xvar": "SUEP_S1_CL",
-        "xvar_regions": [0.35, 0.4, 0.5, 1.0],
+        "xvar_regions": [0.2, 0.35, 0.5, 1.0],
         "yvar": "SUEP_nconst_CL",
-        "yvar_regions": [20, 40, 80, 1000],
+        "yvar_regions": [15, 47.5, 80, 1000],
         "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 80]],
         "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     },
     "ClusterInverted": {
         "input_method": "CL",
         "xvar": "ISR_S1_CL",
-        "xvar_regions": [0.35, 0.4, 0.5, 1.0],
+        "xvar_regions": [0.3, 0.425, 0.5, 1.0],
         "yvar": "ISR_nconst_CL",
-        "yvar_regions": [20, 40, 80, 1000],
-        "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
+        "yvar_regions": [10, 35, 60, 1000],
+        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
         "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     },
+    # "ClusterInverted": {
+    #     "input_method": "CL",
+    #     "xvar": "ISR_S1_CL",
+    #     "xvar_regions": [0.35, 0.4, 0.5, 1.0],
+    #     "yvar": "ISR_nconst_CL",
+    #     "yvar_regions": [20, 40, 80, 1000],
+    #     "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
+    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+    # },
     # 'ISRRemoval' : {
     #     'input_method' : 'IRM',
     #     'xvar' : 'SUEP_S1_IRM',
@@ -158,16 +174,221 @@ if options.doInf:
                     ["ISR_S1_GNNInverted", ">=", 10.0],
                     ["single_l5_bPfcand_S1_SUEPtracks_GNNInverted", ">=", 10.0],
                 ],
-                #'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
+                # 'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
                 "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 40]],
                 "models": ["single_l5_bPfcand_S1_SUEPtracks"],
             },
         }
     )
 
+
+def open_file(options, redirector, ifile):
+    if not options.xrootd:
+        return fill_utils.h5load(ifile, "vars")
+    if os.path.exists(options.dataset + ".hdf5"):
+        os.system("rm " + options.dataset + ".hdf5")
+    xrd_file = redirector + ifile
+    os.system(f"xrdcp -s {xrd_file} {options.dataset}.hdf5")
+    return fill_utils.h5load(options.dataset + ".hdf5", "vars")
+
+
+def create_output_clusterInverted(output, label, regions_list):
+    output.update(
+        {
+            # 2D histograms
+            f"2D_ISR_S1_vs_ntracks_{label}": Hist.new.Reg(
+                100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
+            )
+            .Reg(200, 0, 500, name=f"ntracks_{label}", label="# Tracks")
+            .Weight(),
+            f"2D_ISR_S1_vs_ISR_nconst_{label}": Hist.new.Reg(
+                100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
+            )
+            .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
+            .Weight(),
+            f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Reg(
+                199, 0, 500, name=f"ISR_nconst_{label}"
+            )
+            .Reg(500, 0, 500, name=f"ISR_pt_avg_{label}")
+            .Weight(),
+        }
+    )
+    # variables from the dataframe for all the events, and those in A, B, C regions
+    for r in regions_list:
+        output.update(
+            {
+                f"{r}ISR_nconst_{label}": Hist.new.Reg(
+                    199,
+                    0,
+                    500,
+                    name=f"{r}ISR_nconst_{label}",
+                    label="# Tracks in ISR",
+                ).Weight(),
+                f"{r}ISR_pt_{label}": Hist.new.Reg(
+                    100,
+                    0,
+                    2000,
+                    name=f"{r}ISR_pt_{label}",
+                    label=r"ISR $p_T$ [GeV]",
+                ).Weight(),
+                f"{r}ISR_pt_avg_{label}": Hist.new.Reg(
+                    500,
+                    0,
+                    500,
+                    name=f"{r}ISR_pt_avg_{label}",
+                    label=r"ISR Components $p_T$ Avg.",
+                ).Weight(),
+                f"{r}ISR_eta_{label}": Hist.new.Reg(
+                    100,
+                    -5,
+                    5,
+                    name=f"{r}ISR_eta_{label}",
+                    label=r"ISR $\eta$",
+                ).Weight(),
+                f"{r}ISR_phi_{label}": Hist.new.Reg(
+                    100,
+                    -6.5,
+                    6.5,
+                    name=f"{r}ISR_phi_{label}",
+                    label=r"ISR $\phi$",
+                ).Weight(),
+                f"{r}ISR_mass_{label}": Hist.new.Reg(
+                    150,
+                    0,
+                    4000,
+                    name=f"{r}ISR_mass_{label}",
+                    label="ISR Mass [GeV]",
+                ).Weight(),
+                f"{r}ISR_S1_{label}": Hist.new.Reg(
+                    100, 0, 1, name=f"{r}ISR_S1_{label}", label="$Sph_1$"
+                ).Weight(),
+            }
+        )
+
+
+def create_output_GNN(abcd, output, label, regions_list):
+    # 2D histograms
+    for model in abcd["models"]:
+        output.update(
+            {
+                f"2D_SUEP_S1_vs_{model}_{label}": Hist.new.Reg(
+                    100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+                )
+                .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
+                .Weight(),
+                f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Reg(
+                    199,
+                    0,
+                    500,
+                    name=f"SUEP_nconst_{label}",
+                    label="# Const",
+                )
+                .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
+                .Weight(),
+            }
+        )
+
+    output.update(
+        {
+            f"2D_SUEP_nconst_vs_SUEP_S1_{label}": Hist.new.Reg(
+                199, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
+            )
+            .Reg(100, 0, 1, name=f"SUEP_S1_{label}", label="$Sph_1$")
+            .Weight(),
+        }
+    )
+
+    for r in regions_list:
+        output.update(
+            {
+                f"{r}SUEP_nconst_{label}": Hist.new.Reg(
+                    199,
+                    0,
+                    500,
+                    name=f"{r}SUEP_nconst{label}",
+                    label="# Constituents",
+                ).Weight(),
+                f"{r}SUEP_S1_{label}": Hist.new.Reg(
+                    100,
+                    -1,
+                    2,
+                    name=f"{r}SUEP_S1_{label}",
+                    label="$Sph_1$",
+                ).Weight(),
+            }
+        )
+        for model in abcd["models"]:
+            output.update(
+                {
+                    f"{r}{model}_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        1,
+                        name=f"{r}{model}_{label}",
+                        label="GNN Output",
+                    ).Weight()
+                }
+            )
+
+
+def create_output_GNNInverted(abcd, output, label, regions_list):
+    # 2D histograms
+    for model in abcd["models"]:
+        output.update(
+            {
+                f"2D_ISR_S1_vs_{model}_{label}": Hist.new.Reg(
+                    100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
+                )
+                .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
+                .Weight(),
+                f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Reg(
+                    199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
+                )
+                .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
+                .Weight(),
+            }
+        )
+    output.update(
+        {
+            f"2D_ISR_nconst_vs_ISR_S1_{label}": Hist.new.Reg(
+                199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
+            )
+            .Reg(100, 0, 1, name=f"ISR_S1_{label}", label="$Sph_1$")
+            .Weight()
+        }
+    )
+
+    for r in regions_list:
+        output.update(
+            {
+                f"{r}ISR_nconst_{label}": Hist.new.Reg(
+                    199,
+                    0,
+                    500,
+                    name=f"{r}ISR_nconst{label}",
+                    label="# Tracks in ISR",
+                ).Weight(),
+                f"{r}ISR_S1_{label}": Hist.new.Reg(
+                    100, -1, 2, name=f"{r}ISR_S1_{label}", label="$Sph_1$"
+                ).Weight(),
+            }
+        )
+        for model in abcd["models"]:
+            output.update(
+                {
+                    f"{r}{model}_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        1,
+                        name=f"{r}{model}_{label}",
+                        label="GNN Output",
+                    ).Weight()
+                }
+            )
+
+
 # output histos
 def create_output_file(label, abcd):
-
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:
         return output
@@ -272,7 +493,7 @@ def create_output_file(label, abcd):
         )
 
     ###########################################################################################################################
-    if any([l in label for l in ["ISRRemoval", "Cluster", "Cone"]]):
+    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone"]]):
         # 2D histograms
         output.update(
             {
@@ -304,6 +525,13 @@ def create_output_file(label, abcd):
                         500,
                         name=f"{r}SUEP_nconst_{label}",
                         label="# Constituents",
+                    ).Weight(),
+                    f"{r}SUEP_genMass_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        1200,
+                        name=f"{r}SUEP_genMass_{label}",
+                        label="Gen Mass of SUEP ($m_S$) [GeV]",
                     ).Weight(),
                     f"{r}SUEP_pt_{label}": Hist.new.Reg(
                         100,
@@ -361,204 +589,130 @@ def create_output_file(label, abcd):
             )
     ###########################################################################################################################
     if "ClusterInverted" in label:
-        output.update(
-            {
-                # 2D histograms
-                f"2D_ISR_S1_vs_ntracks_{label}": Hist.new.Reg(
-                    100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
-                )
-                .Reg(200, 0, 500, name=f"ntracks_{label}", label="# Tracks")
-                .Weight(),
-                f"2D_ISR_S1_vs_ISR_nconst_{label}": Hist.new.Reg(
-                    100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
-                )
-                .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
-                .Weight(),
-                f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Reg(
-                    199, 0, 500, name=f"ISR_nconst_{label}"
-                )
-                .Reg(500, 0, 500, name=f"ISR_pt_avg_{label}")
-                .Weight(),
-            }
-        )
-        # variables from the dataframe for all the events, and those in A, B, C regions
-        for r in regions_list:
-            output.update(
-                {
-                    f"{r}ISR_nconst_{label}": Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=f"{r}ISR_nconst_{label}",
-                        label="# Tracks in ISR",
-                    ).Weight(),
-                    f"{r}ISR_pt_{label}": Hist.new.Reg(
-                        100,
-                        0,
-                        2000,
-                        name=f"{r}ISR_pt_{label}",
-                        label=r"ISR $p_T$ [GeV]",
-                    ).Weight(),
-                    f"{r}ISR_pt_avg_{label}": Hist.new.Reg(
-                        500,
-                        0,
-                        500,
-                        name=f"{r}ISR_pt_avg_{label}",
-                        label=r"ISR Components $p_T$ Avg.",
-                    ).Weight(),
-                    f"{r}ISR_eta_{label}": Hist.new.Reg(
-                        100,
-                        -5,
-                        5,
-                        name=f"{r}ISR_eta_{label}",
-                        label=r"ISR $\eta$",
-                    ).Weight(),
-                    f"{r}ISR_phi_{label}": Hist.new.Reg(
-                        100,
-                        -6.5,
-                        6.5,
-                        name=f"{r}ISR_phi_{label}",
-                        label=r"ISR $\phi$",
-                    ).Weight(),
-                    f"{r}ISR_mass_{label}": Hist.new.Reg(
-                        150,
-                        0,
-                        4000,
-                        name=f"{r}ISR_mass_{label}",
-                        label="ISR Mass [GeV]",
-                    ).Weight(),
-                    f"{r}ISR_S1_{label}": Hist.new.Reg(
-                        100, 0, 1, name=f"{r}ISR_S1_{label}", label="$Sph_1$"
-                    ).Weight(),
-                }
-            )
+        create_output_clusterInverted(output, label, regions_list)
 
     ###########################################################################################################################
     if label == "GNN" and options.doInf:
-
-        # 2D histograms
-        for model in abcd["models"]:
-            output.update(
-                {
-                    f"2D_SUEP_S1_vs_{model}_{label}": Hist.new.Reg(
-                        100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
-                    )
-                    .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
-                    .Weight(),
-                    f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=f"SUEP_nconst_{label}",
-                        label="# Const",
-                    )
-                    .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
-                    .Weight(),
-                }
-            )
-
-        output.update(
-            {
-                f"2D_SUEP_nconst_vs_SUEP_S1_{label}": Hist.new.Reg(
-                    199, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
-                )
-                .Reg(100, 0, 1, name=f"SUEP_S1_{label}", label="$Sph_1$")
-                .Weight(),
-            }
-        )
-
-        for r in regions_list:
-            output.update(
-                {
-                    f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=f"{r}SUEP_nconst{label}",
-                        label="# Constituents",
-                    ).Weight(),
-                    f"{r}SUEP_S1_{label}": Hist.new.Reg(
-                        100,
-                        -1,
-                        2,
-                        name=f"{r}SUEP_S1_{label}",
-                        label="$Sph_1$",
-                    ).Weight(),
-                }
-            )
-            for model in abcd["models"]:
-                output.update(
-                    {
-                        f"{r}{model}_{label}": Hist.new.Reg(
-                            100,
-                            0,
-                            1,
-                            name=f"{r}{model}_{label}",
-                            label="GNN Output",
-                        ).Weight()
-                    }
-                )
+        create_output_GNN(abcd, output, label, regions_list)
 
     ###########################################################################################################################
     if label == "GNNInverted" and options.doInf:
-
-        # 2D histograms
-        for model in abcd["models"]:
-            output.update(
-                {
-                    f"2D_ISR_S1_vs_{model}_{label}": Hist.new.Reg(
-                        100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
-                    )
-                    .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
-                    .Weight(),
-                    f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Reg(
-                        199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
-                    )
-                    .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
-                    .Weight(),
-                }
-            )
-        output.update(
-            {
-                f"2D_ISR_nconst_vs_ISR_S1_{label}": Hist.new.Reg(
-                    199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
-                )
-                .Reg(100, 0, 1, name=f"ISR_S1_{label}", label="$Sph_1$")
-                .Weight()
-            }
-        )
-
-        for r in regions_list:
-            output.update(
-                {
-                    f"{r}ISR_nconst_{label}": Hist.new.Reg(
-                        199,
-                        0,
-                        500,
-                        name=f"{r}ISR_nconst{label}",
-                        label="# Tracks in ISR",
-                    ).Weight(),
-                    f"{r}ISR_S1_{label}": Hist.new.Reg(
-                        100, -1, 2, name=f"{r}ISR_S1_{label}", label="$Sph_1$"
-                    ).Weight(),
-                }
-            )
-            for model in abcd["models"]:
-                output.update(
-                    {
-                        f"{r}{model}_{label}": Hist.new.Reg(
-                            100,
-                            0,
-                            1,
-                            name=f"{r}{model}_{label}",
-                            label="GNN Output",
-                        ).Weight()
-                    }
-                )
+        create_output_GNNInverted(abcd, output, label, regions_list)
 
     ###########################################################################################################################
 
     return output
+
+
+def calculate_systematic(
+    df,
+    config,
+    syst,
+    options,
+):
+    # prepare new event weight
+    df["event_weight"] = np.ones(df.shape[0])
+
+    if options.isMC == 1:
+
+        if options.scouting != 1:
+
+            # 1) pileup weights
+            puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
+                options.era
+            )
+            pu = pileup_weight.get_pileup_weights(
+                df, syst, puweights, puweights_up, puweights_down
+            )
+            df["event_weight"] *= pu
+
+            # 2) TriggerSF weights
+            (
+                trig_bins,
+                trig_weights,
+                trig_weights_up,
+                trig_weights_down,
+            ) = triggerSF.triggerSF(options.era)
+            trigSF = triggerSF.get_trigSF_weight(
+                df,
+                syst,
+                trig_bins,
+                trig_weights,
+                trig_weights_up,
+                trig_weights_down,
+            )
+            df["event_weight"] *= trigSF
+
+            # 3) PS weights
+            if "PSWeight" in syst and syst in df.keys():
+                df["event_weight"] *= df[syst]
+
+            # 3) prefire weights
+            # if options.era == 2016 or options.era == 2017:
+            #     if "prefire" in syst and syst in df.keys():
+            #         df["event_weight"] *= df[syst]
+            #     else"
+            #         df["event_weight"] *= df["prefire_nom"]
+
+        # 5) Higgs_pt weights
+        if "SUEP-m125" in options.dataset:
+            (
+                higgs_bins,
+                higgs_weights,
+                higgs_weights_up,
+                higgs_weights_down,
+            ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
+            higgs_weight = higgs_reweight.get_higgs_weight(
+                df,
+                syst,
+                higgs_bins,
+                higgs_weights,
+                higgs_weights_up,
+                higgs_weights_down,
+            )
+            df["event_weight"] *= higgs_weight
+
+    # 6) scaling weights
+    # N.B.: these aren't part of the systematics, just an optional scaling
+    if scaling_weights is not None:
+        df = fill_utils.apply_scaling_weights(
+            df.copy(),
+            scaling_weights,
+            config["Cluster"],
+            regions="ABCDEFGHI",
+            x_var="SUEP_S1_CL",
+            y_var="SUEP_nconst_CL",
+            z_var="ht",
+        )
+
+    for label_out, config_out in config.items():
+        if "track_down" in label_out and syst != "":
+            continue  # don't run other systematics when doing track killing systematic
+        if options.isMC and syst != "":
+            if any([j in label_out for j in jet_corrections]):
+                continue  # don't run other systematics when doing jet systematics
+
+        # rename if we have applied a systematic
+        if len(syst) > 0:
+            label_out = label_out + "_" + syst
+
+        # initialize new hists, if needed
+        output.update(create_output_file(label_out, config_out))
+        
+        # prepare the DataFrame for plotting: blind, selections
+        df_plot = fill_utils.prepareDataFrame(
+            df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
+        )
+
+        # auto fill all histograms
+        fill_utils.auto_fill(
+            df_plot,
+            output,
+            config_out,
+            label_out,
+            isMC=options.isMC,
+            do_abcd=options.doABCD,
+        )
 
 
 #############################################################################################################
@@ -618,7 +772,7 @@ if options.isMC and options.doSyst:
 
 logging.info("Setup ready, filling histograms now.")
 
-### Plotting loop #######################################################################
+# Plotting loop #######################################################################
 for ifile in tqdm(files):
 
     #####################################################################################
@@ -626,14 +780,7 @@ for ifile in tqdm(files):
     #####################################################################################
 
     # get the file
-    if options.xrootd:
-        if os.path.exists(options.dataset + ".hdf5"):
-            os.system("rm " + options.dataset + ".hdf5")
-        xrd_file = redirector + ifile
-        os.system(f"xrdcp -s {xrd_file} {options.dataset}.hdf5")
-        df, metadata = fill_utils.h5load(options.dataset + ".hdf5", "vars")
-    else:
-        df, metadata = fill_utils.h5load(ifile, "vars")
+    df, metadata = open_file(options, redirector, ifile)
 
     # check if file is corrupted
     if type(df) == int:
@@ -649,30 +796,6 @@ for ifile in tqdm(files):
         continue
     if df.shape[0] == 0:
         continue
-
-    #####################################################################################
-    # ---- Additional weights
-    # Currently applies pileup weights through nTrueInt
-    # and optionally (options.weights) scaling weights that are derived to force
-    # MC to agree with data in one variable. Usage:
-    # df['event_weight'] *= another event weight, etc
-    #####################################################################################
-    if options.isMC:
-        puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
-            options.era
-        )
-        (
-            trig_bins,
-            trig_weights,
-            trig_weights_up,
-            trig_weights_down,
-        ) = triggerSF.triggerSF(options.era)
-        (
-            higgs_bins,
-            higgs_weights,
-            higgs_weights_up,
-            higgs_weights_down,
-        ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
 
     if options.isMC and options.doSyst:
         sys_loop = [
@@ -693,91 +816,15 @@ for ifile in tqdm(files):
     else:
         sys_loop = [""]
 
-    for sys in sys_loop:
+    for syst in sys_loop:
         # prepare new event weight
-        df["event_weight"] = np.ones(df.shape[0])
 
-        if options.isMC == 1:
-
-            if options.scouting != 1:
-
-                # 1) pileup weights
-                pu = pileup_weight.get_pileup_weights(
-                    df, sys, puweights, puweights_up, puweights_down
-                )
-                df["event_weight"] *= pu
-
-                # 2) TriggerSF weights
-                trigSF = triggerSF.get_trigSF_weight(
-                    df, sys, trig_bins, trig_weights, trig_weights_up, trig_weights_down
-                )
-                df["event_weight"] *= trigSF
-
-                # 3) PS weights
-                if "PSWeight" in sys and sys in df.keys():
-                    df["event_weight"] *= df[sys]
-
-                # 3) prefire weights
-                # if options.era == 2016 or options.era == 2017:
-                #     if "prefire" in sys and sys in df.keys():
-                #         df["event_weight"] *= df[sys]
-                #     else:
-                #         df["event_weight"] *= df["prefire_nom"]
-
-            # 5) Higgs_pt weights
-            if "SUEP-m125" in options.dataset:
-                higgs_weight = higgs_reweight.get_higgs_weight(
-                    df,
-                    sys,
-                    higgs_bins,
-                    higgs_weights,
-                    higgs_weights_up,
-                    higgs_weights_down,
-                )
-                df["event_weight"] *= higgs_weight
-
-        # 6) scaling weights
-        # N.B.: these aren't part of the systematics, just an optional scaling
-        if scaling_weights is not None:
-            df = apply_scaling_weights(
-                df.copy(),
-                scaling_weights,
-                config["Cluster"]["x_var_regions"],
-                config["Cluster"]["x_var_regions"],
-                regions="ABCDEFGHI",
-                x_var="SUEP_S1_CL",
-                y_var="SUEP_nconst_CL",
-                z_var="ht",
-            )
-
-        for label_out, config_out in config.items():
-            if "track_down" in label_out and sys != "":
-                continue  # don't run other systematics when doing track killing systematic
-            if options.isMC and sys != "":
-                if any([j in label_out for j in jet_corrections]):
-                    continue  # don't run other systematics when doing jet systematics
-
-            # rename if we have applied a systematic
-            if len(sys) > 0:
-                label_out = label_out + "_" + sys
-
-            # initialize new hists, if needed
-            output.update(create_output_file(label_out, config_out))
-
-            # prepare the DataFrame for plotting: blind, selections
-            df_plot = fill_utils.prepareDataFrame(
-                df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
-            )
-
-            # auto fill all histograms
-            fill_utils.auto_fill(
-                df_plot,
-                output,
-                config_out,
-                label_out,
-                isMC=options.isMC,
-                do_abcd=options.doABCD,
-            )
+        calculate_systematic(
+            df,
+            config,
+            syst,
+            options
+        )
 
     #####################################################################################
     # ---- End
@@ -788,7 +835,7 @@ for ifile in tqdm(files):
         os.system("rm " + options.dataset + ".hdf5")
 
 logging.warning("Number of files that failed to be read: " + str(nfailed))
-### End plotting loop ###################################################################
+# End plotting loop ###################################################################
 
 # not needed anymore
 output.pop("labels")

@@ -1,10 +1,9 @@
 import json
 import logging
+import sys
 from collections import defaultdict
 from copy import deepcopy
 
-import boost_histogram as bh
-import hist
 import numpy as np
 import pandas as pd
 
@@ -21,7 +20,7 @@ def h5load(ifile, label):
             except KeyError:
                 print("No key", label, ifile)
                 return 0, 0
-    except:
+    except BaseException:
         print("Some error occurred", ifile)
         return 0, 0
 
@@ -35,7 +34,7 @@ def getXSection(dataset, year, SUEP=False, path="../data/"):
                 xsection *= MC_xsecs[dataset]["xsec"]
                 xsection *= MC_xsecs[dataset]["kr"]
                 xsection *= MC_xsecs[dataset]["br"]
-            except:
+            except KeyError:
                 print(
                     "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
                 )
@@ -45,7 +44,7 @@ def getXSection(dataset, year, SUEP=False, path="../data/"):
             MC_xsecs = json.load(file)
             try:
                 xsection *= MC_xsecs[dataset]
-            except:
+            except KeyError:
                 print(
                     "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
                 )
@@ -99,8 +98,7 @@ def make_selection(df, variable, operator, value, apply=True):
 def apply_scaling_weights(
     df,
     scaling_weights,
-    x_var_regions,
-    y_var_regions,
+    abcd,
     regions="ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     x_var="SUEP_S1_CL",
     y_var="SUEP_nconst_CL",
@@ -108,7 +106,7 @@ def apply_scaling_weights(
 ):
     """
     df: input DataFrame to scale
-    *_var_regions: x/y ABCD regions
+    abcd: dictionary of options, as in make_plots.py
     scaling_weights: nested dictionary, region x (bins or ratios)
     regions: string of ordered regions, used to apply corrections
     *_var: x/y are of the ABCD plane, z of the scaling histogram
@@ -131,8 +129,8 @@ def apply_scaling_weights(
             r = regions[iRegion]
 
             # from the weights
-            bins = weights[r]["bins"]
-            ratios = weights[r]["ratios"]
+            bins = scaling_weights[r]["bins"]
+            ratios = scaling_weights[r]["ratios"]
 
             # ht bins
             for k in range(len(bins) - 1):
@@ -165,19 +163,45 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
     """
 
     # 1. keep only events that passed this method
+    if abcd["xvar"] not in df.columns:
+        return None
     df = df[~df[abcd["xvar"]].isnull()]
 
     # 2. blind
     if blind and not isMC:
-        df = blind_DataFrame(df, abcd["SR"])
+        df = blind_DataFrame(df, label_out, abcd["SR"])
         if "SR2" in abcd.keys():
-            df = blind_DataFrame(df, abcd["SR2"])
+            df = blind_DataFrame(df, label_out, abcd["SR2"])
 
     # 3. apply selections
     for sel in abcd["selections"]:
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
     return df
+
+
+def fill_2d_distributions(df, output, label_out, input_method):
+    keys = list(output.keys())
+    keys_2Dhists = [k for k in keys if "2D" in k]
+    df_keys = list(df.keys())
+
+    for key in keys_2Dhists:
+        if not key.endswith(label_out):
+            continue
+        string = key[
+            len("2D") + 1 : -(len(label_out) + 1)
+        ]  # cut out "2D_" and output label
+        var1 = string.split("_vs_")[0]
+        var2 = string.split("_vs_")[1]
+        if var1 not in df_keys:
+            var1 += "_" + input_method
+            if var1 not in df_keys: 
+                continue
+        if var2 not in df_keys:
+            var2 += "_" + input_method
+            if var2 not in df_keys: 
+                continue
+        output[key].fill(df[var1], df[var2], weight=df["event_weight"])
 
 
 def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
@@ -210,21 +234,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
         )
 
     # 2. fill some 2D distributions
-    keys = list(output.keys())
-    keys_2Dhists = [k for k in keys if "2D" in k]
-    for key in keys_2Dhists:
-        if not key.endswith(label_out):
-            continue
-        string = key[
-            len("2D") + 1 : -(len(label_out) + 1)
-        ]  # cut out "2D_" and output label
-        var1 = string.split("_vs_")[0]
-        var2 = string.split("_vs_")[1]
-        if var1 not in list(df.keys()):
-            var1 += "_" + input_method
-        if var2 not in list(df.keys()):
-            var2 += "_" + input_method
-        output[key].fill(df[var1], df[var2], weight=df["event_weight"])
+    fill_2d_distributions(df, output, label_out, input_method)
 
     # 3. divide the dfs by region
     if do_abcd:
@@ -303,7 +313,7 @@ def apply_normalization(plots, norm):
 
 def get_track_killing_config(config):
     new_config = {}
-    for label_out, config_out in config.items():
+    for label_out, _config_out in config.items():
         label_out_new = label_out + "_track_down"
         new_config[label_out_new] = deepcopy(config[label_out])
         new_config[label_out_new]["input_method"] += "_track_down"
@@ -326,15 +336,15 @@ def get_track_killing_config(config):
 
 def get_jet_corrections_config(config, jet_corrections):
     new_config = {}
-    for sys in jet_corrections:
-        for label_out, config_out in config.items():
-            label_out_new = label_out + "_" + sys
+    for correction in jet_corrections:
+        for label_out, _config_out in config.items():
+            label_out_new = label_out + "_" + correction
             new_config[label_out_new] = deepcopy(config[label_out])
             for iSel in range(len(new_config[label_out_new]["selections"])):
                 if "ht" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + sys
+                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
                 elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + sys
+                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
     return new_config
 
 
@@ -345,7 +355,7 @@ def read_in_weights(fweights):
     return scaling_weights
 
 
-def blind_DataFrame(df, SR):
+def blind_DataFrame(df, label_out, SR):
     if len(SR) != 2:
         sys.exit(
             label_out
