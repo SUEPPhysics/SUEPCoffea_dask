@@ -104,9 +104,7 @@ def DGNNMethod(
 
             # run GNN inference on the SUEP tracks
             results = run_inference_GNN(self, suep, SUEP_tracks, SUEP_cand)
-            self.out_vars.loc[
-                indices, "SUEP_" + model_name + "_GNN" + out_label
-            ] = results
+            self.out_vars.loc[indices, "SUEP_" + model_name + "_GNN" + out_label] = results
 
             # calculate other obserables to store
             boost_SUEP = ak.zip(
