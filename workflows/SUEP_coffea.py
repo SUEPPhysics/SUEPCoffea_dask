@@ -123,20 +123,20 @@ class SUEP_cluster(processor.ProcessorABC):
         # NOTE: Might be a good idea to make this a 'match-case' statement
         # once we can move to Python 3.10 for good.
         if self.scouting != 1:
+            if self.era == 2016:
+                trigger = events.HLT.PFHT900 == 1
+            else:
+                trigger = events.HLT.PFHT1050 == 1
             if self.trigger == "TripleMu":
                 if self.era == 2016:
                     trigger = events.HLT.TripleMu_5_3_3 == 1
                 elif self.era == 2017:
                     trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
-                else:
+                elif self.era == 2018:
                     trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
-            else:
-                if self.era == 2016:
-                    trigger = events.HLT.PFHT900 == 1
                 else:
-                    trigger = events.HLT.PFHT1050 == 1
+                    raise ValueError("Invalid era")
             events = events[trigger]
-
         return events
 
     def getGenTracks(self, events):
