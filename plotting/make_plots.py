@@ -104,24 +104,42 @@ selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
 config = {
-    "Cluster": {
+    "Cluster70": {
         "input_method": "CL",
         "xvar": "SUEP_S1_CL",
-        "xvar_regions": [0.2, 0.35, 0.5, 1.0],
+        "xvar_regions": [0.3, 0.4, 0.5, 2.0],
         "yvar": "SUEP_nconst_CL",
-        "yvar_regions": [15, 47.5, 80, 1000],
-        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 80]],
+        "yvar_regions": [30, 50, 70, 1000],
+        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
         "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     },
-    "ClusterInverted": {
-        "input_method": "CL",
-        "xvar": "ISR_S1_CL",
-        "xvar_regions": [0.3, 0.425, 0.5, 1.0],
-        "yvar": "ISR_nconst_CL",
-        "yvar_regions": [10, 35, 60, 1000],
-        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
-        "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    },
+    # "Cluster75": {
+    #     "input_method": "CL",
+    #     "xvar": "SUEP_S1_CL",
+    #     "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+    #     "yvar": "SUEP_nconst_CL",
+    #     "yvar_regions": [25, 50, 75, 1000],
+    #     "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
+    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+    # },
+    # "Cluster80": {
+    #     "input_method": "CL",
+    #     "xvar": "SUEP_S1_CL",
+    #     "xvar_regions": [0.25, 0.35, 0.45, 2.0],
+    #     "yvar": "SUEP_nconst_CL",
+    #     "yvar_regions": [15, 47.5, 80, 1000],
+    #     "SR": [["SUEP_S1_CL", ">=", 0.45], ["SUEP_nconst_CL", ">=", 80]],
+    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+    # },
+    # "ClusterInverted": {
+    #     "input_method": "CL",
+    #     "xvar": "ISR_S1_CL",
+    #     "xvar_regions": [0.3, 0.425, 0.5, 1.0],
+    #     "yvar": "ISR_nconst_CL",
+    #     "yvar_regions": [10, 35, 60, 1000],
+    #     "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
+    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+    # },
     # "ClusterInverted": {
     #     "input_method": "CL",
     #     "xvar": "ISR_S1_CL",
@@ -204,10 +222,10 @@ def create_output_clusterInverted(output, label, regions_list):
             f"2D_ISR_S1_vs_ISR_nconst_{label}": Hist.new.Reg(
                 100, 0, 1.0, name=f"ISR_S1_{label}", label="$Sph_1$"
             )
-            .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
+            .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
             .Weight(),
             f"2D_ISR_nconst_vs_ISR_pt_avg_{label}": Hist.new.Reg(
-                199, 0, 500, name=f"ISR_nconst_{label}"
+                501, 0, 500, name=f"ISR_nconst_{label}"
             )
             .Reg(500, 0, 500, name=f"ISR_pt_avg_{label}")
             .Weight(),
@@ -218,7 +236,7 @@ def create_output_clusterInverted(output, label, regions_list):
         output.update(
             {
                 f"{r}ISR_nconst_{label}": Hist.new.Reg(
-                    199,
+                    501,
                     0,
                     500,
                     name=f"{r}ISR_nconst_{label}",
@@ -277,7 +295,7 @@ def create_output_GNN(abcd, output, label, regions_list):
                 .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                 .Weight(),
                 f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Reg(
-                    199,
+                    501,
                     0,
                     500,
                     name=f"SUEP_nconst_{label}",
@@ -291,7 +309,7 @@ def create_output_GNN(abcd, output, label, regions_list):
     output.update(
         {
             f"2D_SUEP_nconst_vs_SUEP_S1_{label}": Hist.new.Reg(
-                199, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
+                501, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
             )
             .Reg(100, 0, 1, name=f"SUEP_S1_{label}", label="$Sph_1$")
             .Weight(),
@@ -302,7 +320,7 @@ def create_output_GNN(abcd, output, label, regions_list):
         output.update(
             {
                 f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                    199,
+                    501,
                     0,
                     500,
                     name=f"{r}SUEP_nconst{label}",
@@ -342,7 +360,7 @@ def create_output_GNNInverted(abcd, output, label, regions_list):
                 .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                 .Weight(),
                 f"2D_ISR_nconst_vs_{model}_{label}": Hist.new.Reg(
-                    199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
+                    501, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
                 )
                 .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                 .Weight(),
@@ -351,7 +369,7 @@ def create_output_GNNInverted(abcd, output, label, regions_list):
     output.update(
         {
             f"2D_ISR_nconst_vs_ISR_S1_{label}": Hist.new.Reg(
-                199, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
+                501, 0, 500, name=f"ISR_nconst_{label}", label="# Const"
             )
             .Reg(100, 0, 1, name=f"ISR_S1_{label}", label="$Sph_1$")
             .Weight()
@@ -362,7 +380,7 @@ def create_output_GNNInverted(abcd, output, label, regions_list):
         output.update(
             {
                 f"{r}ISR_nconst_{label}": Hist.new.Reg(
-                    199,
+                    501,
                     0,
                     500,
                     name=f"{r}ISR_nconst{label}",
@@ -505,10 +523,10 @@ def create_output_file(label, abcd):
                 f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
                 )
-                .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
+                .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
                 f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Reg(
-                    199, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
+                    501, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
                 )
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
@@ -520,7 +538,7 @@ def create_output_file(label, abcd):
             output.update(
                 {
                     f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                        199,
+                        501,
                         0,
                         500,
                         name=f"{r}SUEP_nconst_{label}",
