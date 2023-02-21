@@ -364,7 +364,13 @@ class SUEP_cluster(processor.ProcessorABC):
         # golden jsons for offline data
         if not self.isMC and self.scouting != 1:
             events = applyGoldenJSON(self, events)
-        events, electrons, muons = ZH_utils.selectByLeptons(self, events, lepveto=True)
+
+        leptonVeto = True
+        if self.trigger == "TripleMu":
+            leptonVeto = False
+        events, electrons, muons = ZH_utils.selectByLeptons(
+            self, events, lepveto=leptonVeto
+        )
         events = self.eventSelection(events)
 
         # output empty dataframe if no events pass trigger
