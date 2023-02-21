@@ -313,6 +313,9 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
         output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
+        # nMuons
+        output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon)
+
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
