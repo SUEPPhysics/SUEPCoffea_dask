@@ -530,23 +530,15 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     return output
 
 
-def saveOutput(args, output, sample):
+def saveOutput(args, output, sample, gensumweight=None):
     """
     Save the output to file(s)
     Will calculate weights if necessary
     """
     from workflows import pandas_utils
 
-    # Calculate the gen sum weight for skimmed samples
-    gensumweight = output["gensumweight"].value
-    if args.skimmed:
-        weights = getWeights(sample)
-        print(
-            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
-        )
-
-    gensumweight = weights[sample].value
-    output["gensumweight"].value = gensumweight
+    if gensumweight is not None:
+        output["gensumweight"].value = gensumweight
 
     df = output["vars"].value
 
@@ -598,7 +590,17 @@ if __name__ == "__main__":
     # Execute the workflow
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
+    # Calculate the gen sum weight for skimmed samples
+    if args.skimmed:
+        weights = getWeights(sample_dict)
+        print(
+            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
+        )
+
     # Save the output
     for sample in sample_dict:
-        saveOutput(args, output[sample], sample)
+        if args.skimmed:
+            saveOutput(args, output[sample], sample, weights[sample].value)
+        else:
+            saveOutput(args, output[sample], sample)
     print(output)
