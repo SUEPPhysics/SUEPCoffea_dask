@@ -86,18 +86,6 @@ class SUEP_cluster(processor.ProcessorABC):
             self.eta_scale = self.eta_pix / (self.eta_span[1] - self.eta_span[0])
             self.phi_scale = self.phi_pix / (self.phi_span[1] - self.phi_span[0])
 
-    @property
-    def accumulator(self, dataset):
-        accumulator = {
-            dataset: processor.dict_accumulator(
-                {
-                    "gensumweight": processor.value_accumulator(float, 0),
-                    "vars": pandas_accumulator(pd.DataFrame()),
-                }
-            )
-        }
-        return accumulator
-
     def jet_awkward(self, Jets):
         """
         Create awkward array of jets. Applies basic selections.
@@ -472,7 +460,14 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         dataset = events.metadata["dataset"]
-        output = self.accumulator(self, dataset=dataset)
+        output = {
+            dataset: processor.dict_accumulator(
+                {
+                    "gensumweight": processor.value_accumulator(float, 0),
+                    "vars": pandas_accumulator(pd.DataFrame()),
+                }
+            )
+        }
 
         # gen weights
         if self.isMC and self.scouting == 1:
@@ -492,4 +487,4 @@ class SUEP_cluster(processor.ProcessorABC):
         return output
 
     def postprocess(self, accumulator):
-        return accumulator
+        pass
