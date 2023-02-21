@@ -5,7 +5,7 @@ import os
 import shlex
 import subprocess
 import time
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import ThreadPool, Pool
 
 import numpy as np
 from plot_utils import check_proxy
@@ -54,6 +54,9 @@ parser.add_argument("--doInf", type=int, default=0, help="make ML plots")
 parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
 )
+parser.add_argument(
+    "--blind", type=int, default=1, help="Blind the data (default=True)"
+)
 options = parser.parse_args()
 
 
@@ -78,11 +81,11 @@ def call_process(cmd):
     return (out, err)
 
 
-pool = ThreadPool(multiprocessing.cpu_count())
+pool = Pool(min(multiprocessing.cpu_count(),24), maxtasksperchild=1000)
 
 with open(options.inputList) as f:
     input_list = f.readlines()
-    input_list = [l.split("/")[-1].strip("\n") for l in input_list]
+    input_list = [lin.split("/")[-1].strip("\n") for lin in input_list]
 
 # if you want to limit what you run over modify the following:
 # input_list = [f for f in read_filelist('../filelist/list_2018_SUEP_A01.txt')]
@@ -104,10 +107,10 @@ for sample in input_list:
         results.append(pool.apply_async(call_process, (cmd,)))
 
     elif options.code == "plot":
-        cmd = "python3 make_plots.py --tag={} --output={} --dataset={} --xrootd={} --weights={} --isMC={} --era={} --scouting={} --doSyst={} --merged={} --doInf={} --doABCD={}".format(
+        cmd = """python3 make_plots.py --dataset={} --tag={} --output={} --xrootd={} --weights={} --isMC={} --era={} --scouting={} --doSyst={} --merged={} --doInf={} --doABCD={} --blind={}""".format(
+            sample,
             options.tag,
             options.output,
-            sample,
             options.xrootd,
             options.weights,
             options.isMC,
@@ -117,6 +120,7 @@ for sample in input_list:
             options.merged,
             options.doInf,
             options.doABCD,
+            options.blind
         )
         results.append(pool.apply_async(call_process, (cmd,)))
 
