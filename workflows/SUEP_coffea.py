@@ -472,7 +472,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         dataset = events.metadata["dataset"]
-        output = self.accumulator(dataset)
+        output = self.accumulator(dataset=dataset)
 
         # gen weights
         if self.isMC and self.scouting == 1:
