@@ -371,8 +371,6 @@ class SUEP_cluster(processor.ProcessorABC):
         if len(events) == 0:
             if self.debug:
                 print("No events passed trigger. Saving empty outputs.")
-            for c in self.columns:
-                output[dataset]["vars"][c] = np.nan
             return output
 
         #####################################################################################
