@@ -5,6 +5,7 @@ import sys
 import time
 
 import numpy as np
+import rich
 import uproot
 from coffea import nanoevents, processor
 
@@ -210,6 +211,8 @@ def get_main_parser():
         "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
     )
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
+    parser.add_argument("--debug", action="store_true", help="Turn debugging on")
+    parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     return parser
 
 
@@ -497,6 +500,7 @@ def setupSUEP(args, sample_dict):
         output_location=os.getcwd(),
         accum=args.executor,
         trigger=args.trigger,
+        debug=args.debug,
     )
     return instance
 
@@ -594,8 +598,9 @@ if __name__ == "__main__":
     if args.skimmed:
         weights = getWeights(sample_dict)
         print(
-            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
+            "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
         )
+        rich.pretty.pprint(weights)
 
     # Save the output
     for sample in sample_dict:
@@ -603,4 +608,5 @@ if __name__ == "__main__":
             saveOutput(args, output[sample], sample, weights[sample].value)
         else:
             saveOutput(args, output[sample], sample)
-    print(output)
+    if args.verbose:
+        rich.pretty.pprint(output)

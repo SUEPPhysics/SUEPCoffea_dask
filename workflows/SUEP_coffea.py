@@ -43,6 +43,7 @@ class SUEP_cluster(processor.ProcessorABC):
         output_location: Optional[str],
         accum: Optional[bool] = None,
         trigger: Optional[str] = None,
+        debug: Optional[bool] = None,
     ) -> None:
         self._flag = flag
         self.output_location = output_location
@@ -61,7 +62,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.doOF = False
         self.accum = accum
         self.trigger = trigger
-        self.out_vars = pd.DataFrame()
+        self.debug = debug
 
         if self.do_inf:
 
@@ -369,7 +370,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
-            print("No events passed trigger. Saving empty outputs.")
+            if self.debug:
+                print("No events passed trigger. Saving empty outputs.")
             for c in self.columns:
                 output[dataset]["vars"][c] = np.nan
             return output
@@ -429,7 +431,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
-            print("No events pass clusterCut.")
+            if self.debug:
+                print("No events pass clusterCut.")
             for c in self.columns:
                 output[dataset]["vars"][c] = np.nan
             return output
