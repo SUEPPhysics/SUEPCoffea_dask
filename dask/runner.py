@@ -533,6 +533,7 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
 
     return output
 
+
 def saveOutput(args, output, sample, gensumweight=None):
     """
     Save the output to file(s)

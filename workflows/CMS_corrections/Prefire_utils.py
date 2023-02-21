@@ -1,5 +1,4 @@
 def GetPrefireWeights(self, events, output):
-
     if self.era == 2016 or self.era == 2017:
         output["vars"]["prefire_nom"] = events.L1PreFiringWeight.Nom
         output["vars"]["prefire_up"] = events.L1PreFiringWeight.Up
