@@ -358,6 +358,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # Cut based on ak4 jets to replicate the trigger
         #####################################################################################
 
+        # get dataset name
+        dataset = events.metadata["dataset"]
+
         # golden jsons for offline data
         if not self.isMC and self.scouting != 1:
             events = applyGoldenJSON(self, events)
@@ -367,6 +370,8 @@ class SUEP_cluster(processor.ProcessorABC):
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             print("No events passed trigger. Saving empty outputs.")
+            for c in self.columns:
+                output[dataset]["vars"][c] = np.nan
             return output
 
         #####################################################################################
@@ -425,6 +430,8 @@ class SUEP_cluster(processor.ProcessorABC):
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass clusterCut.")
+            for c in self.columns:
+                output[dataset]["vars"][c] = np.nan
             return output
 
         tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(
@@ -434,6 +441,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         SUEP_utils.ClusterMethod(
             self,
+            output,
+            dataset,
             indices,
             tracks,
             SUEP_cand,

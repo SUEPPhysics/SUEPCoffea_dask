@@ -146,7 +146,7 @@ def ClusterMethod(
         output[dataset]["vars"].loc(indices, "ISR_mass_CL" + out_label, ISR_cand.mass)
 
 
-def ISRRemovalMethod(self, indices, tracks, SUEP_cand, ISR_cand):
+def ISRRemovalMethod(self, output, dataset, indices, tracks, SUEP_cand, ISR_cand):
     #####################################################################################
     # ---- ISR Removal Method (IRM)
     # In this method, we boost into the frame of the SUEP jet as selected previously
@@ -178,7 +178,7 @@ def ISRRemovalMethod(self, indices, tracks, SUEP_cand, ISR_cand):
     if not any(oneIRMtrackCut):
         print("No events in ISR Removal Method, oneIRMtrackCut.")
         for c in self.columns_IRM:
-            self.out_vars[c] = np.nan
+            output[dataset]["vars"][c] = np.nan
     else:
         # remove the events left with one track
         SUEP_tracks_b = SUEP_tracks_b[oneIRMtrackCut]
@@ -188,24 +188,28 @@ def ISRRemovalMethod(self, indices, tracks, SUEP_cand, ISR_cand):
         tracks = tracks[oneIRMtrackCut]
         indices = indices[oneIRMtrackCut]
 
-        self.out_vars.loc[indices, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(
+        output[dataset]["vars"].loc[indices, "SUEP_dphi_SUEP_ISR_IRM"] = ak.mean(
             abs(SUEP_cand.deltaphi(ISR_cand_IRM)), axis=-1
         )
 
         # SUEP jet variables
         eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-        self.out_vars.loc[indices, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b)
-        self.out_vars.loc[indices, "SUEP_pt_avg_b_IRM"] = ak.mean(
+        output[dataset]["vars"].loc[indices, "SUEP_nconst_IRM"] = ak.num(SUEP_tracks_b)
+        output[dataset]["vars"].loc[indices, "SUEP_pt_avg_b_IRM"] = ak.mean(
             SUEP_tracks_b.pt, axis=-1
         )
-        self.out_vars.loc[indices, "SUEP_S1_IRM"] = 1.5 * (eigs[:, 1] + eigs[:, 0])
+        output[dataset]["vars"].loc[indices, "SUEP_S1_IRM"] = 1.5 * (
+            eigs[:, 1] + eigs[:, 0]
+        )
 
         # unboost for these
         SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
-        self.out_vars.loc[indices, "SUEP_pt_avg_IRM"] = ak.mean(SUEP_tracks.pt, axis=-1)
+        output[dataset]["vars"].loc[indices, "SUEP_pt_avg_IRM"] = ak.mean(
+            SUEP_tracks.pt, axis=-1
+        )
         # deltaR = SUEP_tracks.deltaR(SUEP_cand)
-        # self.out_vars.loc[indices, "SUEP_rho0_IRM"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
-        # self.out_vars.loc[indices, "SUEP_rho1_IRM"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
+        # output[dataset]["vars"].loc[indices, "SUEP_rho0_IRM"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
+        # output[dataset]["vars"].loc[indices, "SUEP_rho1_IRM"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
 
         # redefine the jets using the tracks as selected by IRM
         SUEP = ak.zip(
@@ -217,13 +221,15 @@ def ISRRemovalMethod(self, indices, tracks, SUEP_cand, ISR_cand):
             },
             with_name="Momentum4D",
         )
-        self.out_vars.loc[indices, "SUEP_pt_IRM"] = SUEP.pt
-        self.out_vars.loc[indices, "SUEP_eta_IRM"] = SUEP.eta
-        self.out_vars.loc[indices, "SUEP_phi_IRM"] = SUEP.phi
-        self.out_vars.loc[indices, "SUEP_mass_IRM"] = SUEP.mass
+        output[dataset]["vars"].loc[indices, "SUEP_pt_IRM"] = SUEP.pt
+        output[dataset]["vars"].loc[indices, "SUEP_eta_IRM"] = SUEP.eta
+        output[dataset]["vars"].loc[indices, "SUEP_phi_IRM"] = SUEP.phi
+        output[dataset]["vars"].loc[indices, "SUEP_mass_IRM"] = SUEP.mass
 
 
-def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
+def ConeMethod(
+    self, output, dataset, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False
+):
     #####################################################################################
     # ---- Cone Method (CO)
     # In this method, all tracks outside a cone of abs(deltaR) of 1.6 (in lab frame)
@@ -240,10 +246,10 @@ def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
     if not any(oneCOtrackCut):
         print("No events in Cone Method, oneCOtrackCut.")
         for c in self.columns_CO:
-            self.out_vars[c] = np.nan
+            output[dataset]["vars"][c] = np.nan
         if do_inverted:
             for c in self.columns_CO_ISR:
-                self.out_vars[c] = np.nan
+                output[dataset]["vars"][c] = np.nan
     else:
         # remove the events left with one track
         SUEP_tracks = SUEP_tracks[oneCOtrackCut]
@@ -276,23 +282,27 @@ def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
 
         # SUEP jet variables
         eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-        self.out_vars.loc[indices, "SUEP_nconst_CO"] = ak.num(SUEP_tracks_b)
-        self.out_vars.loc[indices, "SUEP_pt_avg_b_CO"] = ak.mean(
+        output[dataset]["vars"].loc[indices, "SUEP_nconst_CO"] = ak.num(SUEP_tracks_b)
+        output[dataset]["vars"].loc[indices, "SUEP_pt_avg_b_CO"] = ak.mean(
             SUEP_tracks_b.pt, axis=-1
         )
-        self.out_vars.loc[indices, "SUEP_S1_CO"] = 1.5 * (eigs[:, 1] + eigs[:, 0])
+        output[dataset]["vars"].loc[indices, "SUEP_S1_CO"] = 1.5 * (
+            eigs[:, 1] + eigs[:, 0]
+        )
 
         # unboost for these
         SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
-        self.out_vars.loc[indices, "SUEP_pt_avg_CO"] = ak.mean(SUEP_tracks.pt, axis=-1)
+        output[dataset]["vars"].loc[indices, "SUEP_pt_avg_CO"] = ak.mean(
+            SUEP_tracks.pt, axis=-1
+        )
         deltaR = SUEP_tracks.deltaR(SUEP_cand)
-        # self.out_vars.loc[indices, "SUEP_rho0_CO"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
-        # self.out_vars.loc[indices, "SUEP_rho1_CO"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
+        # output[dataset]["vars"].loc[indices, "SUEP_rho0_CO"] = rho(0, SUEP_cand, SUEP_tracks, deltaR)
+        # output[dataset]["vars"].loc[indices, "SUEP_rho1_CO"] = rho(1, SUEP_cand, SUEP_tracks, deltaR)
 
-        self.out_vars.loc[indices, "SUEP_pt_CO"] = SUEP_cand.pt
-        self.out_vars.loc[indices, "SUEP_eta_CO"] = SUEP_cand.eta
-        self.out_vars.loc[indices, "SUEP_phi_CO"] = SUEP_cand.phi
-        self.out_vars.loc[indices, "SUEP_mass_CO"] = SUEP_cand.mass
+        output[dataset]["vars"].loc[indices, "SUEP_pt_CO"] = SUEP_cand.pt
+        output[dataset]["vars"].loc[indices, "SUEP_eta_CO"] = SUEP_cand.eta
+        output[dataset]["vars"].loc[indices, "SUEP_phi_CO"] = SUEP_cand.phi
+        output[dataset]["vars"].loc[indices, "SUEP_mass_CO"] = SUEP_cand.mass
 
         # inverted selection
         if do_inverted:
@@ -304,7 +314,7 @@ def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
             if not any(oneCOISRtrackCut):
                 print("No events in Inverted CO Removal Method, oneCOISRtrackCut.")
                 for c in self.columns_CO_ISR:
-                    self.out_vars[c] = np.nan
+                    output[dataset]["vars"][c] = np.nan
             else:
 
                 # remove events with one ISR track
@@ -335,34 +345,36 @@ def ConeMethod(self, indices, tracks, SUEP_cand, ISR_cand, do_inverted=False):
 
                 # ISR jet variables
                 eigs = sphericity(ISR_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-                self.out_vars.loc[indices, "ISR_nconst_CO"] = ak.num(ISR_tracks_b)
-                self.out_vars.loc[indices, "ISR_pt_avg_b_CO"] = ak.mean(
+                output[dataset]["vars"].loc[indices, "ISR_nconst_CO"] = ak.num(
+                    ISR_tracks_b
+                )
+                output[dataset]["vars"].loc[indices, "ISR_pt_avg_b_CO"] = ak.mean(
                     ISR_tracks_b.pt, axis=-1
                 )
-                self.out_vars.loc[indices, "ISR_pt_mean_scaled_CO"] = ak.mean(
+                output[dataset]["vars"].loc[indices, "ISR_pt_mean_scaled_CO"] = ak.mean(
                     ISR_tracks_b.pt, axis=-1
                 ) / ak.max(ISR_tracks_b.pt, axis=-1)
-                self.out_vars.loc[indices, "ISR_S1_CO"] = 1.5 * (
+                output[dataset]["vars"].loc[indices, "ISR_S1_CO"] = 1.5 * (
                     eigs[:, 1] + eigs[:, 0]
                 )
 
                 # unboost for these
                 ISR_tracks = ISR_tracks_b.boost_p4(ISR_cand)
-                self.out_vars.loc[indices, "ISR_pt_avg_CO"] = ak.mean(
+                output[dataset]["vars"].loc[indices, "ISR_pt_avg_CO"] = ak.mean(
                     ISR_tracks.pt, axis=-1
                 )
                 deltaR = ISR_tracks.deltaR(ISR_cand)
-                self.out_vars.loc[indices, "ISR_rho0_CO"] = rho(
+                output[dataset]["vars"].loc[indices, "ISR_rho0_CO"] = rho(
                     0, ISR_cand, ISR_tracks, deltaR
                 )
-                self.out_vars.loc[indices, "ISR_rho1_CO"] = rho(
+                output[dataset]["vars"].loc[indices, "ISR_rho1_CO"] = rho(
                     1, ISR_cand, ISR_tracks, deltaR
                 )
 
-                self.out_vars.loc[indices, "ISR_pt_CO"] = ISR_cand.pt
-                self.out_vars.loc[indices, "ISR_eta_CO"] = ISR_cand.eta
-                self.out_vars.loc[indices, "ISR_phi_CO"] = ISR_cand.phi
-                self.out_vars.loc[indices, "ISR_mass_CO"] = ISR_cand.mass
+                output[dataset]["vars"].loc[indices, "ISR_pt_CO"] = ISR_cand.pt
+                output[dataset]["vars"].loc[indices, "ISR_eta_CO"] = ISR_cand.eta
+                output[dataset]["vars"].loc[indices, "ISR_phi_CO"] = ISR_cand.phi
+                output[dataset]["vars"].loc[indices, "ISR_mass_CO"] = ISR_cand.mass
 
 
 def sphericity(particles, r):
