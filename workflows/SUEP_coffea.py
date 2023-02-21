@@ -287,8 +287,8 @@ class SUEP_cluster(processor.ProcessorABC):
                     output[dataset]["vars"][
                         "Pileup_nTrueInt" + out_label
                     ] = events.Pileup.nTrueInt
-                    GetPSWeights(self, events)  # Parton Shower weights
-                    GetPrefireWeights(self, events)  # Prefire weights
+                    GetPSWeights(events, output)  # Parton Shower weights
+                    GetPrefireWeights(self, events, output)  # Prefire weights
                 output[dataset]["vars"]["PV_npvs" + out_label] = events.PV.npvs
                 output[dataset]["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 
