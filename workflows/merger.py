@@ -40,7 +40,6 @@ def merge(options, pattern="condor_*.hdf5", outFile="out.hdf5"):
     df_tot = None
     metadata_tot = None
     for _ifile, file in enumerate(files):
-
         df, metadata = h5load(file, "vars")
 
         # Error out here
@@ -80,7 +79,6 @@ def merge(options, pattern="condor_*.hdf5", outFile="out.hdf5"):
 
 
 def merge_ML(options):
-
     files = glob.glob("*Events*.hdf5")
 
     # skip if no files

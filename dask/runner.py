@@ -533,7 +533,6 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
 
     return output
 
-
 def saveOutput(args, output, sample, gensumweight=None):
     """
     Save the output to file(s)
@@ -554,18 +553,19 @@ def saveOutput(args, output, sample, gensumweight=None):
     )
 
     # Save the output
+    outputName = ""
     if args.output is not None:
         outputName = f"{args.output}_"
     outputName = f"{outputName}{sample}.hdf5"
-    pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
     print(f"Saving the following output to {outputName}")
+    pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
 
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
-    if args.output == parser.get_default("output"):
-        args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
+    # if args.output == parser.get_default("output"):
+    #    args.output = f'{args.workflow}_{(args.samplejson).rstrip(".json")}.hdf5'
 
     # Load dataset
     sample_dict = loadder(args)

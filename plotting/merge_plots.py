@@ -96,7 +96,6 @@ df_tot = 0
 metadata_tot = 0
 i_out = 0
 for _ifile, file in enumerate(tqdm(files)):
-
     if os.path.exists(dataset + ".hdf5"):
         subprocess.run(["rm", dataset + ".hdf5"])
     xrd_file = redirector + file

@@ -65,7 +65,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.debug = debug
 
         if self.do_inf:
-
             # ML settings
             self.batch_size = 1024
 
