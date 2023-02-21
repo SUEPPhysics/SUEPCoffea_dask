@@ -314,34 +314,34 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
         # nMuons
-        output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon)
+        output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon).to_list()
         output[dataset]["vars"]["nMuons_highPurity" + out_label] = ak.num(
             events.Muon.highPurity
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_isPFcand" + out_label] = ak.num(
             events.Muon.isPFcand
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_looseId" + out_label] = ak.num(
             events.Muon.looseId
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_mediumId" + out_label] = ak.num(
             events.Muon.mediumId
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_tightId" + out_label] = ak.num(
             events.Muon.tightId
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_triggerIdLoose" + out_label] = ak.num(
             events.Muon.triggerIdLoose
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_isTracker" + out_label] = ak.num(
             events.Muon.isTracker
-        )
+        ).to_list()
         output[dataset]["vars"]["nMuons_pfIsoId" + out_label] = ak.num(
             events.Muon.pfIsoId
-        )
+        ).to_list()
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
             events.Muon.pt, axis=-1
-        )
+        ).to_list()
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
