@@ -5,9 +5,9 @@ import sys
 import time
 
 import numpy as np
-import rich
 import uproot
 from coffea import nanoevents, processor
+from rich import pretty
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -600,7 +600,7 @@ if __name__ == "__main__":
         print(
             "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
         )
-        rich.pretty.pprint(weights)
+        pretty.pprint(weights)
 
     # Save the output
     for sample in sample_dict:
@@ -609,4 +609,4 @@ if __name__ == "__main__":
         else:
             saveOutput(args, output[sample], sample)
     if args.verbose:
-        rich.pretty.pprint(output)
+        pretty.pprint(output)
