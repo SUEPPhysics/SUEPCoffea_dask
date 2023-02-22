@@ -226,7 +226,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def getLooseLeptons(self, events):
         
-        mlooseMuons = ak.zip(
+        looseMuons = ak.zip(
             {
                 "pt": events.Muon.pt,
                 "eta": events.Muon.eta,
