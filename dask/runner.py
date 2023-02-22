@@ -7,6 +7,7 @@ import time
 import numpy as np
 import uproot
 from coffea import nanoevents, processor
+from rich import pretty
 
 # Make this script work from current directory
 current = os.path.dirname(os.path.realpath(__file__))
@@ -210,6 +211,8 @@ def get_main_parser():
         "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
     )
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
+    parser.add_argument("--debug", action="store_true", help="Turn debugging on")
+    parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     return parser
 
 
@@ -411,7 +414,7 @@ def daskExecutor(args, env_extra):
     else:
         raise NotImplementedError(f"I don't know anything about {args.executor}.")
 
-    executor = processor.DaskExecutor(client=client, use_dataframes=True)
+    executor = processor.DaskExecutor(client=client)
     return executor
 
 
@@ -497,6 +500,7 @@ def setupSUEP(args, sample_dict):
         output_location=os.getcwd(),
         accum=args.executor,
         trigger=args.trigger,
+        debug=args.debug,
     )
     return instance
 
@@ -527,46 +531,35 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
         processor_instance=processor_instance,
     )
 
-    if "dask" in args.executor:
-        return output.compute()
     return output
 
 
-def saveOutput(args, output, sample_dict):
+def saveOutput(args, output, sample, gensumweight=None):
     """
     Save the output to file(s)
     Will calculate weights if necessary
     """
     from workflows import pandas_utils
 
-    # Calculate the gen sum weight for skimmed samples
-    gensumweight = output["gensumweight"].value
-    if args.skimmed:
-        weights = getWeights(sample_dict)
-        print(
-            f"You are using skimmed data! I was able to retrieve the following gensum weights:\n{weights}"
-        )
-
-    for sample in sample_dict:
-        gensumweight = weights[sample].value
+    if gensumweight is not None:
         output["gensumweight"].value = gensumweight
 
-        df = output["vars"].value
+    df = output["vars"].value
 
-        metadata = dict(
-            gensumweight=gensumweight,
-            era=processor_instance.era,
-            mc=processor_instance.isMC,
-            sample=sample,
-        )
+    metadata = dict(
+        gensumweight=output["gensumweight"].value,
+        era=processor_instance.era,
+        mc=processor_instance.isMC,
+        sample=sample,
+    )
 
-        # Save the output
-        outputName = ""
-        if args.output is not None:
-            outputName = f"{args.output}_"
-        outputName = f"{outputName}{sample}.hdf5"
-        print(f"Saving the following output to {outputName}")
-        pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
+    # Save the output
+    outputName = ""
+    if args.output is not None:
+        outputName = f"{args.output}_"
+    outputName = f"{outputName}{sample}.hdf5"
+    print(f"Saving the following output to {outputName}")
+    pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
 
 if __name__ == "__main__":
@@ -602,6 +595,23 @@ if __name__ == "__main__":
     # Execute the workflow
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
+    # Calculate the gen sum weight for skimmed samples
+    if args.skimmed:
+        weights = getWeights(sample_dict)
+        print(
+            "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
+        )
+        pretty.pprint(weights)
+
     # Save the output
-    saveOutput(args, output, sample_dict)
-    print(output)
+    for sample in sample_dict:
+        if args.skimmed:
+            saveOutput(args, output[sample], sample, weights[sample].value)
+        else:
+            saveOutput(
+                args,
+                output[sample],
+                sample,
+            )
+    if args.verbose:
+        pretty.pprint(output)
