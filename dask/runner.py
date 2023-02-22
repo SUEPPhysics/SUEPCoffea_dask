@@ -547,7 +547,7 @@ def saveOutput(args, output, sample, gensumweight=None):
     df = output["vars"].value
 
     metadata = dict(
-        gensumweight=gensumweight,
+        gensumweight=output["gensumweight"].value,
         era=processor_instance.era,
         mc=processor_instance.isMC,
         sample=sample,
@@ -608,6 +608,10 @@ if __name__ == "__main__":
         if args.skimmed:
             saveOutput(args, output[sample], sample, weights[sample].value)
         else:
-            saveOutput(args, output[sample], sample)
+            saveOutput(
+                args,
+                output[sample],
+                sample,
+            )
     if args.verbose:
         pretty.pprint(output)
