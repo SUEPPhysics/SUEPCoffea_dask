@@ -226,7 +226,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def getLooseLeptons(self, events):
         
-        muons = ak.zip(
+        mlooseMuons = ak.zip(
             {
                 "pt": events.Muon.pt,
                 "eta": events.Muon.eta,
@@ -237,7 +237,7 @@ class SUEP_cluster(processor.ProcessorABC):
             with_name="Momentum4D",
         )
 
-        electrons = ak.zip(
+        looseElectrons = ak.zip(
             {
                 "pt": events.Electron.pt,
                 "eta": events.Electron.eta,
@@ -266,8 +266,8 @@ class SUEP_cluster(processor.ProcessorABC):
         
         ### Apply the cuts
         # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
-        looseMuons = muons[cutLooseMuons]
-        looseElectrons = electrons[cutLooseElectrons]
+        looseMuons = looseMuons[cutLooseMuons]
+        looseElectrons = looseElectrons[cutLooseElectrons]
 
         return looseElectrons, looseMuons
     
