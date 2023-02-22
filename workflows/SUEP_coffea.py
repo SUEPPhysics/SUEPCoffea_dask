@@ -224,7 +224,7 @@ class SUEP_cluster(processor.ProcessorABC):
         tracks = ak.packed(Cleaned_cands)
         return tracks, Cleaned_cands
 
-    def getLeptons(self, events):
+    def getLooseLeptons(self, events):
         
         muons = ak.zip(
             {
@@ -248,14 +248,14 @@ class SUEP_cluster(processor.ProcessorABC):
             with_name="Momentum4D",
         )
         
-        cutMuons = (
+        cutLooseMuons = (
             (events.Muon.looseId)
             & (events.Muon.pt >= 1)
             & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
             & (abs(events.Muon.eta) < 2.4)
         )
-        cutElectrons = (
+        cutLooseElectrons = (
             (events.Electron.cutBased >= 1)
             & (events.Electron.pt >= 1)
             & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
@@ -266,10 +266,10 @@ class SUEP_cluster(processor.ProcessorABC):
         
         ### Apply the cuts
         # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
-        selMuons = muons[cutMuons]
-        selElectrons = electrons[cutElectrons]
+        looseMuons = muons[cutLooseMuons]
+        looseElectrons = electrons[cutLooseElectrons]
 
-        return selElectrons, selMuons
+        return looseElectrons, looseMuons
     
     def storeEventVars(
         self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, 
@@ -439,7 +439,7 @@ class SUEP_cluster(processor.ProcessorABC):
         else:
             tracks, Cleaned_cands = self.getTracks(events)
 
-        electrons, muons = self.getLeptons(events)
+        looseElectrons, looseMuons = self.getLooseLeptons(events)
         
         if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
@@ -459,7 +459,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         self.storeEventVars(
-            events, tracks, ak_inclusive_jets, ak_inclusive_cluster, electrons, muons, 
+            events, tracks, ak_inclusive_jets, ak_inclusive_cluster, looseElectrons, looseMuons, 
             out_label=col_label
         )
 
