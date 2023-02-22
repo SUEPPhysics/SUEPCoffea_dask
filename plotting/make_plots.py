@@ -483,6 +483,38 @@ def create_output_file(label, abcd):
             }
         )
 
+    # muon stuff
+    muonVariables = [
+        "",
+        "_highPurity",
+        "_isPFcand",
+        "_looseId",
+        "_mediumId",
+        "_tightId",
+        "_triggerIdLoose",
+        "_isTracker",
+        "_pfIsoId",
+    ]
+    for muonVariable in muonVariables:
+        output.update(
+            {
+                f"nMuons{muonVariable}_{label}": Hist.new.Reg(
+                    49,
+                    0,
+                    50,
+                    name=f"nMuons{muonVariable}_{label}",
+                    label=f"# muons{muonVariable} in Event",
+                ).Weight(),
+            }
+        )
+    output.update(
+        {
+            f"muon_pt_mean_{label}": Hist.new.Reg(
+                200, 0, 500, name=f"muon_pt_mean_{label}", label="mean muon pt in Event"
+            ).Weight(),
+        }
+    )
+
     ###########################################################################################################################
     if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone"]]):
         # 2D histograms
