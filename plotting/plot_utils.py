@@ -115,6 +115,30 @@ def findLumi(year, auto_lumi, infile_name):
     return lumi
 
 
+def formatNaming(file):
+    tokens = file.split('_')
+    temp = tokens[2]
+    mS = tokens[3]
+    mPhi = tokens[4]
+    decay = tokens[6]
+
+    if 'p' in temp:
+        temp = temp.replace('p', '.')
+        temp = 'T'+str(float(temp[1:]))
+
+    if '.' in mS:
+        mS = mS[:mS.find('.')]
+
+    if '.' in mPhi:
+        mPhi = 'mPhi'+str(float(mPhi[4:]))
+
+    if 'mode' in decay:
+        decay = decay[4:]
+
+    name = '_'.join([mS, temp, mPhi, decay])
+    return name
+
+
 def fillSample(infile_name, plots, lumi):
     if "QCD_Pt" in infile_name:
         sample = "QCD_Pt"
@@ -143,6 +167,8 @@ def fillSample(infile_name, plots, lumi):
             sample = infile_name.split("/")[-1].split("+")[0]
         elif "generic" in infile_name:
             sample = infile_name.split("/")[-1].split("_")[1]  # hack for Carlos naming convention
+        elif "GluGluToSUEP" in infile_name:
+            sample = formatNaming(infile_name.split('/')[-1])
         else:
             sample = infile_name.split("/")[-1]
     else:

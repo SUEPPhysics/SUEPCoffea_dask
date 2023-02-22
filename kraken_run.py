@@ -101,6 +101,7 @@ def main():
         "-doSyst", "--doSyst", type=int, default=1, help="Apply systematics."
     )
     parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
+    parser.add_argument("-p", "--private", type=int, default=0, help="Private SUEP samples.")
     parser.add_argument(
         "-ML", "--ML", type=int, default=0, help="ML samples production."
     )
@@ -181,11 +182,26 @@ def main():
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
                     sample_name
                 )
+                Raw_list = open(input_list)
+            elif options.private == 1:
+                # some wrangling to get them in the same format as the RawFiles.00
+                raw_input_list = os.listdir("/mnt/T2_US_MIT/hadoop/cms/store/user/bmaier/suep/official_private/{}/{}".format(
+                    options.era,
+                    sample_name
+                ))
+                Raw_list = []
+                for f in raw_input_list:
+                    new_f = 'root://xrootd.cmsaf.mit.edu//store/user/bmaier/suep/official_private/{}/{}/{} 0 0 1 1 1 1'.format(
+                        options.era,
+                        sample_name,
+                        f
+                    )
+                    Raw_list.append(new_f)
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
                     sample_name
                 )
-            Raw_list = open(input_list)
+                Raw_list = open(input_list)
 
             # write list of files to inputfiles.dat
             nfiles = 0

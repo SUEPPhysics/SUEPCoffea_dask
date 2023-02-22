@@ -4,10 +4,10 @@ import multiprocessing
 import os
 import subprocess
 import sys
-
 import pandas as pd
-from plot_utils import *
 from tqdm import tqdm
+
+import fill_utils
 
 parser = argparse.ArgumentParser(description="Famous Submitter")
 parser.add_argument(
@@ -32,7 +32,8 @@ localOutDir = localDataDir + "/merged/"
 outDir = dataDir + "/merged/"
 
 # create output dir
-os.mkdir(localOutDir)
+if not os.path.isdir(localOutDir):
+    os.mkdir(localOutDir)
 
 # list files in dir using xrootd
 result = subprocess.check_output(["xrdfs", redirector, "ls", dataDir])
@@ -108,7 +109,7 @@ for ifile, file in enumerate(tqdm(files)):
     if result == 0:
         sys.exit("Result of xrootd transfer was 0: " + xrd_file)
 
-    df, metadata = h5load(dataset + ".hdf5", "vars")
+    df, metadata = fill_utils.h5load(dataset + ".hdf5", "vars")
 
     # corrupted
     if type(df) == int:
