@@ -77,6 +77,11 @@ parser.add_argument(
     default="None",
     help="Pass the filename of the weights, e.g. --weights weights.npy",
 )
+parser.add_argument(
+    "--isSignal",
+    action="store_true",
+    help="Set this flag if you are running on signal",
+)
 options = parser.parse_args()
 
 ###################################################################################################################
@@ -728,7 +733,9 @@ else:
 # get cross section
 xsection = 1.0
 if options.isMC:
-    xsection = fill_utils.getXSection(options.dataset, options.era, SUEP=False)
+    xsection = fill_utils.getXSection(
+        options.dataset, options.era, SUEP=options.isSignal
+    )
 
 # custom per region weights
 scaling_weights = None
