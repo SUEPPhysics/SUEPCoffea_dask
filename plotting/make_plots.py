@@ -515,7 +515,7 @@ def create_output_file(label, abcd):
     output.update(
         {
             f"muon_pt_mean_{label}": Hist.new.Reg(
-                200, 0, 500, name=f"muon_pt_mean_{label}", label="mean muon pt in Event"
+                400, 0, 100, name=f"muon_pt_mean_{label}", label="mean muon pt in Event"
             ).Weight(),
         }
     )

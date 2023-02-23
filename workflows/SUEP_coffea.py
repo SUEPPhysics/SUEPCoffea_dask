@@ -315,29 +315,29 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # nMuons
         output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon).to_list()
-        output[dataset]["vars"]["nMuons_highPurity" + out_label] = ak.num(
-            events.Muon.highPurity
+        output[dataset]["vars"]["nMuons_highPurity" + out_label] = ak.sum(
+            events.Muon.highPurity, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_isPFcand" + out_label] = ak.num(
-            events.Muon.isPFcand
+        output[dataset]["vars"]["nMuons_isPFcand" + out_label] = ak.sum(
+            events.Muon.isPFcand, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_looseId" + out_label] = ak.num(
-            events.Muon.looseId
+        output[dataset]["vars"]["nMuons_looseId" + out_label] = ak.sum(
+            events.Muon.looseId, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_mediumId" + out_label] = ak.num(
-            events.Muon.mediumId
+        output[dataset]["vars"]["nMuons_mediumId" + out_label] = ak.sum(
+            events.Muon.mediumId, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_tightId" + out_label] = ak.num(
-            events.Muon.tightId
+        output[dataset]["vars"]["nMuons_tightId" + out_label] = ak.sum(
+            events.Muon.tightId, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_triggerIdLoose" + out_label] = ak.num(
-            events.Muon.triggerIdLoose
+        output[dataset]["vars"]["nMuons_triggerIdLoose" + out_label] = ak.sum(
+            events.Muon.triggerIdLoose, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_isTracker" + out_label] = ak.num(
-            events.Muon.isTracker
+        output[dataset]["vars"]["nMuons_isTracker" + out_label] = ak.sum(
+            events.Muon.isTracker, axis=-1
         ).to_list()
-        output[dataset]["vars"]["nMuons_pfIsoId" + out_label] = ak.num(
-            events.Muon.pfIsoId
+        output[dataset]["vars"]["nMuons_pfIsoId" + out_label] = ak.sum(
+            events.Muon.pfIsoId, axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
             events.Muon.pt, axis=-1
