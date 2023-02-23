@@ -143,7 +143,8 @@ class SUEP_cluster(processor.ProcessorABC):
         muons = muons[mask]
         selectByMuons = ak.num(muons) >= 4
         events = events[selectByMuons]
-        return events
+        muons = muons[selectByMuons]
+        return events, muons
 
     def getGenTracks(self, events):
         genParts = events.GenPart
@@ -230,6 +231,7 @@ class SUEP_cluster(processor.ProcessorABC):
         events,
         output,
         tracks,
+        muons,
         ak_inclusive_jets,
         ak_inclusive_cluster,
         out_label="",
@@ -334,70 +336,70 @@ class SUEP_cluster(processor.ProcessorABC):
         # nMuons
         output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon).to_list()
         output[dataset]["vars"]["nMuons_highPurity" + out_label] = ak.sum(
-            events.Muon.highPurity, axis=-1
+            muons.highPurity, axis=-1
         ).to_list()
         output[dataset]["vars"]["nMuons_isPFcand" + out_label] = ak.sum(
-            events.Muon.isPFcand, axis=-1
+            muons.isPFcand, axis=-1
         ).to_list()
         output[dataset]["vars"]["nMuons_looseId" + out_label] = ak.sum(
-            events.Muon.looseId, axis=-1
+            muons.looseId, axis=-1
         ).to_list()
         output[dataset]["vars"]["nMuons_mediumId" + out_label] = ak.sum(
-            events.Muon.mediumId, axis=-1
+            muons.mediumId, axis=-1
         ).to_list()
         output[dataset]["vars"]["nMuons_tightId" + out_label] = ak.sum(
-            events.Muon.tightId, axis=-1
+            muons.tightId, axis=-1
         ).to_list()
         output[dataset]["vars"]["nMuons_triggerIdLoose" + out_label] = ak.sum(
-            events.Muon.triggerIdLoose, axis=-1
+            muons.triggerIdLoose, axis=-1
         ).to_list()
         output[dataset]["vars"]["nMuons_isTracker" + out_label] = ak.sum(
-            events.Muon.isTracker, axis=-1
-        ).to_list()
-        output[dataset]["vars"]["nMuons_pfIsoId" + out_label] = ak.sum(
-            events.Muon.pfIsoId, axis=-1
+            muons.isTracker, axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
-            events.Muon.pt, axis=-1
+            muons.pt, axis=-1
         ).to_list()
         output[dataset]["vars"]["muons_2_charge_sum" + out_label] = ak.sum(
-            events.Muon.charge[:, :2], axis=-1
+            muons.charge[:, :2], axis=-1
         ).to_list()
         output[dataset]["vars"]["muons_4_charge_sum" + out_label] = ak.sum(
-            events.Muon.charge[:, :4], axis=-1
+            muons.charge[:, :4], axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_dxy_mean" + out_label] = ak.mean(
-            abs(events.Muon.dxy), axis=-1
+            abs(muons.dxy), axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_dz_mean" + out_label] = ak.mean(
-            abs(events.Muon.dz), axis=-1
+            abs(muons.dz), axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_ip3d_mean" + out_label] = ak.mean(
-            events.Muon.ip3d, axis=-1
+            muons.ip3d, axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_pt_leading" + out_label] = ak.flatten(
-            events.Muon.pt[:, :1]
+            muons.pt[:, 0]
         ).to_list()
         output[dataset]["vars"]["muon_pt_subleading" + out_label] = ak.flatten(
-            events.Muon.pt[:, 1:2]
+            muons.pt[:, 1]
         ).to_list()
         output[dataset]["vars"][
             "muon_miniPFRelIso_all_leading" + out_label
-        ] = ak.flatten(events.Muon.miniPFRelIso_all[:, :1]).to_list()
+        ] = ak.flatten(muons.miniPFRelIso_all[:, :1]).to_list()
         output[dataset]["vars"][
             "muon_miniPFRelIso_all_subleading" + out_label
-        ] = ak.flatten(events.Muon.miniPFRelIso_all[:, 1:2]).to_list()
+        ] = ak.flatten(muons.miniPFRelIso_all[:, 1:2]).to_list()
         output[dataset]["vars"]["muon_miniPFRelIso_all_mean" + out_label] = ak.mean(
-            events.Muon.miniPFRelIso_all, axis=-1
+            muons.miniPFRelIso_all, axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_multiIsoId_leading" + out_label] = ak.flatten(
-            events.Muon.multiIsoId[:, :1]
+            muons.multiIsoId[:, 0]
         ).to_list()
         output[dataset]["vars"]["muon_multiIsoId_subleading" + out_label] = ak.flatten(
-            events.Muon.multiIsoId[:, 1:2]
+            muons.multiIsoId[:, 1]
         ).to_list()
         output[dataset]["vars"]["muon_multiIsoId_mean" + out_label] = ak.mean(
-            events.Muon.multiIsoId, axis=-1
+            muons.multiIsoId, axis=-1
+        ).to_list()
+        output[dataset]["vars"]["muon_pfIsoId_mean" + out_label] = ak.mean(
+            muons.pfIsoId, axis=-1
         ).to_list()
 
     def initializeColumns(self, label=""):
@@ -460,7 +462,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events = self.tripleMuFilter(events)
+            events, muons = self.tripleMuFilter(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -499,6 +501,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events,
             output,
             tracks,
+            muons,
             ak_inclusive_jets,
             ak_inclusive_cluster,
             out_label=col_label,
