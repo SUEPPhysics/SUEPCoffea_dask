@@ -369,16 +369,16 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"][
             "muon_miniPFRelIso_all_subleading" + out_label
         ] = ak.flatten(events.Muon.miniPFRelIso_all[:, 1:2]).to_list()
-        output[dataset]["vars"][
-            "muon_miniPFRelIso_all_subleading" + out_label
-        ] = ak.mean(events.Muon.miniPFRelIso_all, axis=-1).to_list()
+        output[dataset]["vars"]["muon_miniPFRelIso_all_mean" + out_label] = ak.mean(
+            events.Muon.miniPFRelIso_all, axis=-1
+        ).to_list()
         output[dataset]["vars"]["muon_multiIsoId_leading" + out_label] = ak.flatten(
             events.Muon.multiIsoId[:, :1]
         ).to_list()
         output[dataset]["vars"]["muon_multiIsoId_subleading" + out_label] = ak.flatten(
             events.Muon.multiIsoId[:, 1:2]
         ).to_list()
-        output[dataset]["vars"]["muon_multiIsoId_subleading" + out_label] = ak.mean(
+        output[dataset]["vars"]["muon_multiIsoId_mean" + out_label] = ak.mean(
             events.Muon.multiIsoId, axis=-1
         ).to_list()
 
