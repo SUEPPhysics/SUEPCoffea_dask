@@ -141,7 +141,7 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.eta) < 2.4)
         )
         muons = muons[mask]
-        selectByMuons = ak.num(muons) >= 4
+        selectByMuons = ak.num(muons, axis=-1) >= 4
         events = events[selectByMuons]
         muons = muons[selectByMuons]
         return events, muons
@@ -374,27 +374,27 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["muon_ip3d_mean" + out_label] = ak.mean(
             muons.ip3d, axis=-1
         ).to_list()
-        output[dataset]["vars"]["muon_pt_leading" + out_label] = ak.flatten(
-            muons.pt[:, 0]
-        ).to_list()
-        output[dataset]["vars"]["muon_pt_subleading" + out_label] = ak.flatten(
-            muons.pt[:, 1]
-        ).to_list()
+        output[dataset]["vars"]["muon_pt_leading" + out_label] = muons.pt[
+            :, 0
+        ].to_list()
+        output[dataset]["vars"]["muon_pt_subleading" + out_label] = muons.pt[
+            :, 1
+        ].to_list()
         output[dataset]["vars"][
             "muon_miniPFRelIso_all_leading" + out_label
-        ] = ak.flatten(muons.miniPFRelIso_all[:, :1]).to_list()
+        ] = muons.miniPFRelIso_all[:, 0].to_list()
         output[dataset]["vars"][
             "muon_miniPFRelIso_all_subleading" + out_label
-        ] = ak.flatten(muons.miniPFRelIso_all[:, 1:2]).to_list()
+        ] = muons.miniPFRelIso_all[:, 1].to_list()
         output[dataset]["vars"]["muon_miniPFRelIso_all_mean" + out_label] = ak.mean(
             muons.miniPFRelIso_all, axis=-1
         ).to_list()
-        output[dataset]["vars"]["muon_multiIsoId_leading" + out_label] = ak.flatten(
-            muons.multiIsoId[:, 0]
-        ).to_list()
-        output[dataset]["vars"]["muon_multiIsoId_subleading" + out_label] = ak.flatten(
-            muons.multiIsoId[:, 1]
-        ).to_list()
+        output[dataset]["vars"][
+            "muon_multiIsoId_leading" + out_label
+        ] = muons.multiIsoId[:, 0].to_list()
+        output[dataset]["vars"][
+            "muon_multiIsoId_subleading" + out_label
+        ] = muons.multiIsoId[:, 1].to_list()
         output[dataset]["vars"]["muon_multiIsoId_mean" + out_label] = ak.mean(
             muons.multiIsoId, axis=-1
         ).to_list()
