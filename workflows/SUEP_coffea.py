@@ -342,6 +342,45 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
             events.Muon.pt, axis=-1
         ).to_list()
+        output[dataset]["vars"]["muons_2_charge_sum" + out_label] = ak.sum(
+            events.Muon.charge[:, :2], axis=-1
+        ).to_list()
+        output[dataset]["vars"]["muons_4_charge_sum" + out_label] = ak.sum(
+            events.Muon.charge[:, :4], axis=-1
+        ).to_list()
+        output[dataset]["vars"]["muon_dxy_mean" + out_label] = ak.mean(
+            events.Muon.dxy, axis=-1
+        ).to_list()
+        output[dataset]["vars"]["muon_dz_mean" + out_label] = ak.mean(
+            events.Muon.dz, axis=-1
+        ).to_list()
+        output[dataset]["vars"]["muon_ip3d_mean" + out_label] = ak.mean(
+            events.Muon.ip3d, axis=-1
+        ).to_list()
+        output[dataset]["vars"]["muon_pt_leading" + out_label] = ak.flatten(
+            events.Muon.pt[:, :1]
+        ).to_list()
+        output[dataset]["vars"]["muon_pt_subleading" + out_label] = ak.flatten(
+            events.Muon.pt[:, 1:2]
+        ).to_list()
+        output[dataset]["vars"][
+            "muon_miniPFRelIso_all_leading" + out_label
+        ] = ak.flatten(events.Muon.miniPFRelIso_all[:, :1]).to_list()
+        output[dataset]["vars"][
+            "muon_miniPFRelIso_all_subleading" + out_label
+        ] = ak.flatten(events.Muon.miniPFRelIso_all[:, 1:2]).to_list()
+        output[dataset]["vars"][
+            "muon_miniPFRelIso_all_subleading" + out_label
+        ] = ak.mean(events.Muon.miniPFRelIso_all, axis=-1).to_list()
+        output[dataset]["vars"]["muon_multiIsoId_leading" + out_label] = ak.flatten(
+            events.Muon.multiIsoId[:, :1]
+        ).to_list()
+        output[dataset]["vars"]["muon_multiIsoId_subleading" + out_label] = ak.flatten(
+            events.Muon.multiIsoId[:, 1:2]
+        ).to_list()
+        output[dataset]["vars"]["muon_multiIsoId_subleading" + out_label] = ak.mean(
+            events.Muon.multiIsoId, axis=-1
+        ).to_list()
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
