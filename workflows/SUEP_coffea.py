@@ -349,10 +349,10 @@ class SUEP_cluster(processor.ProcessorABC):
             events.Muon.charge[:, :4], axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_dxy_mean" + out_label] = ak.mean(
-            events.Muon.dxy, axis=-1
+            ak.abs(events.Muon.dxy), axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_dz_mean" + out_label] = ak.mean(
-            events.Muon.dz, axis=-1
+            ak.abs(events.Muon.dz), axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_ip3d_mean" + out_label] = ak.mean(
             events.Muon.ip3d, axis=-1
@@ -439,6 +439,10 @@ class SUEP_cluster(processor.ProcessorABC):
                 self, events, lepveto=True
             )
         events = self.eventSelection(events)
+
+        # make sure we have at least 3 muons with loose ID
+        if self.trigger == "TripleMu":
+            events = events[ak.sum(events.Muon.looseId, axis=-1) >= 3]
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
