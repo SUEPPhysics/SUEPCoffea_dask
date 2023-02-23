@@ -504,7 +504,7 @@ def create_output_file(label, abcd):
         output.update(
             {
                 f"nMuons{muonVariable}_{label}": Hist.new.Reg(
-                    49,
+                    50,
                     0,
                     50,
                     name=f"nMuons{muonVariable}_{label}",
@@ -516,6 +516,97 @@ def create_output_file(label, abcd):
         {
             f"muon_pt_mean_{label}": Hist.new.Reg(
                 400, 0, 100, name=f"muon_pt_mean_{label}", label="mean muon pt in Event"
+            ).Weight(),
+            f"muons_2_charge_sum_{label}": Hist.new.Reg(
+                3,
+                0,
+                3,
+                name=f"muon_2_charge_sum_{label}",
+                label="2-muon charge sum in Event",
+            ).Weight(),
+            f"muons_4_charge_sum_{label}": Hist.new.Reg(
+                5,
+                0,
+                5,
+                name=f"muon_2_charge_sum_{label}",
+                label="4-muon charge sum in Event",
+            ).Weight(),
+            f"muon_dxy_mean_{label}": Hist.new.Reg(
+                500,
+                0,
+                0.5,
+                name=f"muon_dxy_mean_{label}",
+                label="mean muon abs(dxy) in Event",
+            ).Weight(),
+            f"muon_dz_mean_{label}": Hist.new.Reg(
+                500,
+                0,
+                0.5,
+                name=f"muon_dz_mean_{label}",
+                label="mean muon abs(dz) in Event",
+            ).Weight(),
+            f"muon_ip3d_mean_{label}": Hist.new.Reg(
+                500,
+                0,
+                0.5,
+                name=f"muon_ip3d_mean_{label}",
+                label="mean muon ip3d in Event",
+            ).Weight(),
+            f"muon_pt_leading_{label}": Hist.new.Reg(
+                100,
+                0,
+                100,
+                name=f"muon_pt_leading_{label}",
+                label="leading muon pt in Event",
+            ).Weight(),
+            f"muon_pt_subleading_{label}": Hist.new.Reg(
+                100,
+                0,
+                100,
+                name=f"muon_pt_subleading_{label}",
+                label="subleading muon pt in Event",
+            ).Weight(),
+            f"muon_miniPFRelIso_all_leading_{label}": Hist.new.Reg(
+                200,
+                0,
+                5,
+                name=f"muon_miniPFRelIso_all_leading_{label}",
+                label="leading muon miniPFRelIso_all in Event",
+            ).Weight(),
+            f"muon_miniPFRelIso_all_subleading_{label}": Hist.new.Reg(
+                200,
+                0,
+                5,
+                name=f"muon_miniPFRelIso_all_subleading_{label}",
+                label="subleading muon miniPFRelIso_all in Event",
+            ).Weight(),
+            f"muon_miniPFRelIso_all_mean_{label}": Hist.new.Reg(
+                200,
+                0,
+                5,
+                name=f"muon_miniPFRelIso_all_mean_{label}",
+                label="mean muon miniPFRelIso_all in Event",
+            ).Weight(),
+            f"muon_multiIsoId_leading_{label}": Hist.new.Reg(
+                200,
+                0,
+                5,
+                name=f"muon_multiIsoId_leading_{label}",
+                label="leading muon multiIsoId in Event",
+            ).Weight(),
+            f"muon_multiIsoId_subleading_{label}": Hist.new.Reg(
+                200,
+                0,
+                5,
+                name=f"muon_multiIsoId_subleading_{label}",
+                label="subleading muon multiIsoId in Event",
+            ).Weight(),
+            f"muon_multiIsoId_mean_{label}": Hist.new.Reg(
+                200,
+                0,
+                5,
+                name=f"muon_multiIsoId_mean_{label}",
+                label="mean muon multiIsoId in Event",
             ).Weight(),
         }
     )
