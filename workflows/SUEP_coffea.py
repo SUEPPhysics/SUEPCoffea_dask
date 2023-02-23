@@ -127,6 +127,24 @@ class SUEP_cluster(processor.ProcessorABC):
             events = events[trigger]
         return events
 
+    def tripleMuFilter(self, events):
+        """
+        Filter events for the TripleMu trigger.
+        Requires at least 4 muons with looseId, pt, dxy, dz, and eta cuts.
+        """
+        muons = events.Muon
+        mask = (
+            (events.Muon.looseId)
+            & (events.Muon.pt > 3)
+            & (abs(events.Muon.dxy) <= 0.02)
+            & (abs(events.Muon.dz) <= 0.1)
+            & (abs(events.Muon.eta) < 2.4)
+        )
+        muons = muons[mask]
+        selectByMuons = ak.num(muons) >= 4
+        events = events[selectByMuons]
+        return events
+
     def getGenTracks(self, events):
         genParts = events.GenPart
         genParts = ak.zip(
@@ -442,7 +460,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events = events[ak.sum(events.Muon.looseId, axis=-1) >= 3]
+            events = self.tripleMuFilter(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
