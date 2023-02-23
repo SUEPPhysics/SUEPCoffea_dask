@@ -349,10 +349,10 @@ class SUEP_cluster(processor.ProcessorABC):
             events.Muon.charge[:, :4], axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_dxy_mean" + out_label] = ak.mean(
-            ak.abs(events.Muon.dxy), axis=-1
+            abs(events.Muon.dxy), axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_dz_mean" + out_label] = ak.mean(
-            ak.abs(events.Muon.dz), axis=-1
+            abs(events.Muon.dz), axis=-1
         ).to_list()
         output[dataset]["vars"]["muon_ip3d_mean" + out_label] = ak.mean(
             events.Muon.ip3d, axis=-1
