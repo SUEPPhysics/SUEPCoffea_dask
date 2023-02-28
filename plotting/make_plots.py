@@ -498,7 +498,6 @@ def create_output_file(label, abcd):
         "_tightId",
         "_triggerIdLoose",
         "_isTracker",
-        "_pfIsoId",
     ]
     for muonVariable in muonVariables:
         output.update(
@@ -607,6 +606,13 @@ def create_output_file(label, abcd):
                 10,
                 name=f"muon_multiIsoId_mean_{label}",
                 label="mean muon multiIsoId in Event",
+            ).Weight(),
+            f"muon_pfIsoId_mean_{label}": Hist.new.Reg(
+                10,
+                0,
+                10,
+                name=f"muon_pfIsoId_mean_{label}",
+                label="mean muon pfIsoId in Event",
             ).Weight(),
         }
     )
