@@ -327,6 +327,10 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars['n_sel_electrons'] = ak.to_numpy(ak.num(electrons))
             self.out_vars['n_sel_muons'] = ak.to_numpy(ak.num(muons))
             self.out_vars['n_sel_leps'] = ak.to_numpy(ak.num(electrons)) + ak.to_numpy(ak.num(muons))
+            
+            # store event weights for MC
+            if self.isMC:
+                self.out_vars['genweight'] = events.genWeight
 
             if self.era == 2016 and self.scouting == 0:
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
