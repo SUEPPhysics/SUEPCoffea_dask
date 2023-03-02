@@ -629,7 +629,10 @@ def calculate_systematic(
     options,
 ):
     # prepare new event weight
-    df["event_weight"] = np.ones(df.shape[0])
+    if options.isMC:
+        df["event_weight"] = df['genweight'].to_numpy()
+    else:
+        df["event_weight"] = np.ones(df.shape[0])
 
     if options.isMC == 1:
 
