@@ -134,6 +134,7 @@ class SUEP_cluster(processor.ProcessorABC):
         Requires at least 4 muons with looseId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
+        electrons = events.Electron
         cleanMuons = (
             (events.Muon.looseId)
             & (events.Muon.pt > 3)
@@ -141,13 +142,9 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.dz) <= 0.1)
             & (abs(events.Muon.eta) < 2.4)
         )
-        muons = muons[cleanMuons]
-        selectByMuons = ak.num(muons, axis=-1) >= 4
-        events = events[selectByMuons]
-        electrons = events.Electron
         cleanElectrons = (
             (events.Electron.mvaFall17V2noIso_WPL)
-            & (events.Electron.pt >= 3)
+            & (events.Electron.pt > 3)
             & (
                 abs(events.Electron.dxy)
                 < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
@@ -159,8 +156,12 @@ class SUEP_cluster(processor.ProcessorABC):
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
         )
+        muons = muons[cleanMuons]
         electrons = electrons[cleanElectrons]
+        selectByMuons = ak.num(muons, axis=-1) >= 4
+        events = events[selectByMuons]
         muons = muons[selectByMuons]
+        electrons = electrons[selectByMuons]
         return events, muons, electrons
 
     def getGenTracks(self, events):
