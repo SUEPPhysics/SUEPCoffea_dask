@@ -129,22 +129,39 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def tripleMuFilter(self, events):
         """
-        Filter events for the TripleMu trigger.
+        Filter events after the TripleMu trigger.
+        Cleans muons and electrons.
         Requires at least 4 muons with looseId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
-        mask = (
+        cleanMuons = (
             (events.Muon.looseId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
             & (abs(events.Muon.eta) < 2.4)
         )
-        muons = muons[mask]
+        muons = muons[cleanMuons]
         selectByMuons = ak.num(muons, axis=-1) >= 4
         events = events[selectByMuons]
+        electrons = events.Electron
+        cleanElectrons = (
+            (events.Electron.mvaFall17V2noIso_WPL)
+            & (events.Electron.pt >= 3)
+            & (
+                abs(events.Electron.dxy)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
+            & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+            & (abs(events.Electron.eta) < 2.5)
+        )
+        electrons = electrons[cleanElectrons]
         muons = muons[selectByMuons]
-        return events, muons
+        return events, muons, electrons
 
     def getGenTracks(self, events):
         genParts = events.GenPart
@@ -231,6 +248,7 @@ class SUEP_cluster(processor.ProcessorABC):
         events,
         output,
         tracks,
+        electrons,
         muons,
         ak_inclusive_jets,
         ak_inclusive_cluster,
@@ -402,6 +420,49 @@ class SUEP_cluster(processor.ProcessorABC):
             muons.pfIsoId, axis=-1
         ).to_list()
 
+        # muon inter-isolation
+        muonsCollection = ak.zip(
+            {
+                "pt": muons.pt,
+                "eta": muons.eta,
+                "phi": muons.phi,
+                "mass": muons.mass,
+                "charge": muons.pdgId / (-13),
+            },
+            with_name="Momentum4D",
+        )
+        electronsCollection = ak.zip(
+            {
+                "pt": electrons.pt,
+                "eta": electrons.eta,
+                "phi": electrons.phi,
+                "mass": electrons.mass,
+                "charge": electrons.pdgId / (-11),
+            },
+            with_name="Momentum4D",
+        )
+        output[dataset]["vars"][
+            "muon_interIsolation_leading" + out_label
+        ] = SUEP_utils.interIsolation(
+            muonsCollection[:, 0],
+            muonsCollection,
+            electronsCollection,
+        ).to_list()
+        output[dataset]["vars"][
+            "muon_interIsolation_subleading" + out_label
+        ] = SUEP_utils.interIsolation(
+            muonsCollection[:, 1],
+            muonsCollection,
+            electronsCollection,
+        ).to_list()
+        output[dataset]["vars"][
+            "muon_interIsolation_subsubleading" + out_label
+        ] = SUEP_utils.interIsolation(
+            muonsCollection[:, 2],
+            muonsCollection,
+            electronsCollection,
+        ).to_list()
+
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
         # for some reason, initializing these as empty and then trying to fill them doesn't work
@@ -462,7 +523,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events, muons = self.tripleMuFilter(events)
+            events, muons, electrons = self.tripleMuFilter(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -501,6 +562,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events,
             output,
             tracks,
+            electrons,
             muons,
             ak_inclusive_jets,
             ak_inclusive_cluster,
