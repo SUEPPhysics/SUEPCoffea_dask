@@ -1,7 +1,10 @@
+import math
+
 import awkward as ak
 import fastjet
 import numpy as np
 import vector
+from numba import njit
 
 vector.register_awkward()
 
@@ -603,3 +606,38 @@ def to_np_array(ak_array, maxN=100, pad=0):
     return ak.to_numpy(
         ak.fill_none(ak.pad_none(ak_array, maxN, clip=True, axis=-1), pad)
     )
+
+
+@njit
+def interIsolation(particles, v_electrons, v_muons):
+    """
+    Compute the inter-isolation of each particle. It is supposed to work for one particle per event. The input is:
+    - particles: array of particles for isolation calculation
+    - v_electrons: array of arrays of electrons for each event
+    - v_muons: array of arrays of muons for each event
+    """
+    n_particles = len(particles)
+    out = np.zeros(n_particles)
+    for i in range(n_particles):
+        particle = particles[i]
+        muons = v_muons[i]
+        electrons = v_electrons[i]
+        for j in range(len(muons)):
+            dEta = particle.eta - muons[j].eta
+            dPhi = particle.phi - muons[j].phi
+            if abs(dPhi) > math.pi:
+                dPhi = 2 * math.pi - abs(dPhi)
+            dR = math.sqrt((dEta) ** 2 + (dPhi) ** 2)
+            if dR < 1.6:
+                out[i] += muons[j].pt
+        for j in range(len(electrons)):
+            dEta = particle.eta - electrons[j].eta
+            dPhi = particle.phi - electrons[j].phi
+            if abs(dPhi) > math.pi:
+                dPhi = 2 * math.pi - abs(dPhi)
+            dR = math.sqrt((dEta) ** 2 + (dPhi) ** 2)
+            if dR < 1.6:
+                out[i] += electrons[j].pt
+        out[i] -= particle.pt
+        out[i] /= particle.pt
+    return out
