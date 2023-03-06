@@ -447,21 +447,21 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.materialized(muonsCollection[:, 0]),
             ak.materialized(muonsCollection),
             ak.materialized(electronsCollection),
-        ).to_list()
+        ).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_subleading" + out_label
         ] = SUEP_utils.interIsolation(
             ak.materialized(muonsCollection[:, 1]),
             ak.materialized(muonsCollection),
             ak.materialized(electronsCollection),
-        ).to_list()
+        ).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_subsubleading" + out_label
         ] = SUEP_utils.interIsolation(
             ak.materialized(muonsCollection[:, 2]),
             ak.materialized(muonsCollection),
             ak.materialized(electronsCollection),
-        ).to_list()
+        ).tolist()
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
