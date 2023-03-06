@@ -162,7 +162,7 @@ class SUEP_cluster(processor.ProcessorABC):
         events = events[selectByMuons]
         muons = muons[selectByMuons]
         electrons = electrons[selectByMuons]
-        return events, muons, electrons
+        return events, electrons, muons
 
     def getGenTracks(self, events):
         genParts = events.GenPart
@@ -524,7 +524,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events, muons, electrons = self.tripleMuFilter(events)
+            events, electrons, muons = self.tripleMuFilter(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
