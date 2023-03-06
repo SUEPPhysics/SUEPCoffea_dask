@@ -446,22 +446,22 @@ class SUEP_cluster(processor.ProcessorABC):
             "muon_interIsolation_leading" + out_label
         ] = SUEP_utils.interIsolation(
             ak.materialized(muonsCollection[:, 0]),
-            ak.materialized(muonsCollection),
             ak.materialized(electronsCollection),
+            ak.materialized(muonsCollection),
         ).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_subleading" + out_label
         ] = SUEP_utils.interIsolation(
             ak.materialized(muonsCollection[:, 1]),
-            ak.materialized(muonsCollection),
             ak.materialized(electronsCollection),
+            ak.materialized(muonsCollection),
         ).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_subsubleading" + out_label
         ] = SUEP_utils.interIsolation(
             ak.materialized(muonsCollection[:, 2]),
-            ak.materialized(muonsCollection),
             ak.materialized(electronsCollection),
+            ak.materialized(muonsCollection),
         ).tolist()
 
     def initializeColumns(self, label=""):
