@@ -614,6 +614,27 @@ def create_output_file(label, abcd):
                 name=f"muon_pfIsoId_mean_{label}",
                 label="mean muon pfIsoId in Event",
             ).Weight(),
+            f"muon_interIsolation_leading_{label}": Hist.new.Reg(
+                25,
+                0,
+                10,
+                name=f"muon_interIsolation_leading_{label}",
+                label="leading muon inter-isolation in Event",
+            ).Weight(),
+            f"muon_interIsolation_subleading_{label}": Hist.new.Reg(
+                25,
+                0,
+                10,
+                name=f"muon_interIsolation_subleading_{label}",
+                label="subleading muon inter-isolation in Event",
+            ).Weight(),
+            f"muon_interIsolation_subsubleading_{label}": Hist.new.Reg(
+                25,
+                0,
+                10,
+                name=f"muon_interIsolation_subsubleading_{label}",
+                label="subsubleading muon inter-isolation in Event",
+            ).Weight(),
         }
     )
 
