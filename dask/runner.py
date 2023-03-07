@@ -1,12 +1,13 @@
 import argparse
 import json
 import os
+import pickle
 import sys
 import time
 
 import numpy as np
 import uproot
-from coffea import nanoevents, processor, util
+from coffea import nanoevents, processor
 from rich import pretty
 
 # Make this script work from current directory
@@ -563,9 +564,9 @@ def saveOutput(args, output, sample, gensumweight=None):
     pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
     # Save the cutflow
-    cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.coffea"
+    cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
     print(f"Saving the following cutflow to {cutflowName}")
-    util.save(output["cutflow"], cutflowName)
+    pickle.dump(output["cutflow"], open(cutflowName, "wb"))
 
 
 if __name__ == "__main__":
