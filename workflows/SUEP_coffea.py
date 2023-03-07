@@ -519,7 +519,7 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
         )
         output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.TripleMu_5_3_3 == 1) * ["HLT_TripleMu_5_3_3"]
+            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"]
         )
 
         # golden jsons for offline data
