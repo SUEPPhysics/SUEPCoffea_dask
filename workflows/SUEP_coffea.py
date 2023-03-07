@@ -514,9 +514,11 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         # some cutflow stuff
-        output["cutflow"].fill(len(events) * ["all events"])
-        output["cutflow"].fill(ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"])
-        output["cutflow"].fill(
+        output[dataset]["cutflow"].fill(len(events) * ["all events"])
+        output[dataset]["cutflow"].fill(
+            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
+        )
+        output[dataset]["cutflow"].fill(
             ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"]
         )
 
@@ -533,7 +535,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
             events, electrons, muons = self.tripleMuFilter(events)
-        output["cutflow"].fill(len(events) * ["nMuons >= 4"])
+        output[dataset]["cutflow"].fill(len(events) * ["nMuons >= 4"])
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -651,10 +653,10 @@ class SUEP_cluster(processor.ProcessorABC):
         ).Double()
         output = {
             dataset: {
+                "cutflow": cutflow,
                 "gensumweight": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
             },
-            "cutflow": cutflow,
         }
 
         # gen weights
