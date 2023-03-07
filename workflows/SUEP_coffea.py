@@ -7,11 +7,11 @@ Chad Freer and Luca Lavezzo, 2021
 from typing import Optional
 
 import awkward as ak
+import hist
 import numpy as np
 import pandas as pd
 import vector
 from coffea import processor
-from hist import Hist
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
@@ -641,20 +641,21 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def process(self, events):
         dataset = events.metadata["dataset"]
+        cutflow = hist.Hist.new.StrCategory(
+            [
+                "all events",
+                "HLT_PFHT430",
+                "HLT_TripleMu_5_3_3",
+                "nMuon >= 4",
+            ],
+            name="cutflow",
+            label="cutflow",
+        ).Double()
         output = {
             dataset: processor.dict_accumulator(
                 {
                     "gensumweight": processor.value_accumulator(float, 0),
-                    "cutflow": Hist.new.StrCategory(
-                        [
-                            "all events",
-                            "HLT_PFHT430",
-                            "HLT_TripleMu_5_3_3",
-                            "nMuon >= 4",
-                        ],
-                        name="cutflow",
-                        label="cutflow",
-                    ).Double(),
+                    "cutflow": cutflow,
                     "vars": pandas_accumulator(pd.DataFrame()),
                 }
             )
