@@ -159,6 +159,16 @@ def fillSample(infile_name, plots, lumi):
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
+    elif "TTJets" in infile_name:
+        sample = "TTJets"
+
+        # include this block to import the QCD bins individually
+        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = temp_sample.split("_Tune")[0]
+        plots[temp_sample] = openpkl(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
 
@@ -216,7 +226,8 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         sample, plots = fillSample(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
-            plots[sample] = openpkl(infile_name)
+            infile = openpkl(infile_name)
+            plots[sample] = infile
             for plot in list(plots[sample].keys()):
                 plots[sample][plot] = plots[sample][plot] * lumi
         else:
