@@ -551,6 +551,7 @@ def saveOutput(args, output, sample, gensumweight=None):
         era=processor_instance.era,
         mc=processor_instance.isMC,
         sample=sample,
+        cutflow=output["cutflow"],
     )
 
     # Save the output

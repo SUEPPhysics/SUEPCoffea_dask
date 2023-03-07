@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import vector
 from coffea import processor
+from hist import Hist
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
@@ -512,6 +513,15 @@ class SUEP_cluster(processor.ProcessorABC):
         # get dataset name
         dataset = events.metadata["dataset"]
 
+        # some cutflow stuff
+        output[dataset]["cutflow"].fill(len(events) * ["all events"])
+        output[dataset]["cutflow"].fill(
+            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
+        )
+        output[dataset]["cutflow"].fill(
+            ak.sum(events.HLT.TripleMu_5_3_3 == 1) * ["HLT_TripleMu_5_3_3"]
+        )
+
         # golden jsons for offline data
         if not self.isMC and self.scouting != 1:
             events = applyGoldenJSON(self, events)
@@ -525,6 +535,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
             events, electrons, muons = self.tripleMuFilter(events)
+        output[dataset]["cutflow"].fill(len(events) * ["nMuons >= 4"])
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -634,6 +645,16 @@ class SUEP_cluster(processor.ProcessorABC):
             dataset: processor.dict_accumulator(
                 {
                     "gensumweight": processor.value_accumulator(float, 0),
+                    "cutflow": Hist.new.StrCategory(
+                        [
+                            "all events",
+                            "HLT_PFHT430",
+                            "HLT_TripleMu_5_3_3",
+                            "nMuon >= 4",
+                        ],
+                        name="cutflow",
+                        label="cutflow",
+                    ),
                     "vars": pandas_accumulator(pd.DataFrame()),
                 }
             )
