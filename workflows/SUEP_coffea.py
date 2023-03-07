@@ -650,12 +650,10 @@ class SUEP_cluster(processor.ProcessorABC):
             label="cutflow",
         ).Double()
         output = {
-            dataset: processor.dict_accumulator(
-                {
-                    "gensumweight": processor.value_accumulator(float, 0),
-                    "vars": pandas_accumulator(pd.DataFrame()),
-                }
-            ),
+            dataset: {
+                "gensumweight": processor.value_accumulator(float, 0),
+                "vars": pandas_accumulator(pd.DataFrame()),
+            },
             "cutflow": cutflow,
         }
 
