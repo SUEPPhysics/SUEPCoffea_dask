@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 import uproot
-from coffea import nanoevents, processor
+from coffea import nanoevents, processor, util
 from rich import pretty
 
 # Make this script work from current directory
@@ -552,7 +552,6 @@ def saveOutput(args, output, sample, gensumweight=None):
         era=processor_instance.era,
         mc=processor_instance.isMC,
         sample=sample,
-        cutflow=output["cutflow"],
     )
 
     # Save the output
@@ -562,6 +561,11 @@ def saveOutput(args, output, sample, gensumweight=None):
     outputName = f"{outputName}{sample}.hdf5"
     print(f"Saving the following output to {outputName}")
     pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
+
+    # Save the cutflow
+    cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.coffea"
+    print(f"Saving the following cutflow to {cutflowName}")
+    util.save(output["cutflow"], cutflowName)
 
 
 if __name__ == "__main__":
