@@ -264,7 +264,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # work on JECs and systematics
         prefix = ""
         if self.accum:
-            if "dask" in self.accum:
+            if "casa" in self.accum:
                 prefix = "dask-worker-space/"
         jets_c = apply_jecs(
             isMC=self.isMC,
