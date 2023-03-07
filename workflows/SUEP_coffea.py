@@ -25,7 +25,7 @@ from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
-
+from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 # Set vector behavior
 vector.register_awkward()
 
@@ -476,6 +476,12 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
         # ---- Cut Based Analysis
         #####################################################################################
+
+        # cut jets in the region with HEM issue for era 2018
+        jetHEMCut,eventHEMCut=jetHEMFilter(self,ak_inclusive_jets)
+        ak_inclusive_cluster = ak_inclusive_cluster[jetHEMCut]
+        ak_inclusive_jets = ak_inclusive_jets[jetHEMCut]
+        tracks = tracks[jetHEMCut]
 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
