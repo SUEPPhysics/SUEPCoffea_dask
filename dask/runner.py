@@ -543,6 +543,7 @@ def saveOutput(args, output, sample, gensumweight=None):
 
     if gensumweight is not None:
         output["gensumweight"].value = gensumweight
+        output["cutflow"][0] = gensumweight
 
     df = output["vars"].value
 
