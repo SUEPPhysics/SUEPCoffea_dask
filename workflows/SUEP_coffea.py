@@ -654,7 +654,7 @@ class SUEP_cluster(processor.ProcessorABC):
                         ],
                         name="cutflow",
                         label="cutflow",
-                    ),
+                    ).Double(),
                     "vars": pandas_accumulator(pd.DataFrame()),
                 }
             )
