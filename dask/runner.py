@@ -63,8 +63,7 @@ def loadder(args):
         for key in sample_dict.keys():
             print(key)
             sample_dict[key] = [
-                path.replace("xrootd.cmsaf.mit.edu", "xcache")
-                for path in sample_dict[key]
+                "root://xcache//" + path.split("//")[-1] for path in sample_dict[key]
             ]
     return sample_dict
 
