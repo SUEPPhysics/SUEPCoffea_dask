@@ -535,7 +535,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
             events, electrons, muons = self.tripleMuFilter(events)
-        output[dataset]["cutflow"].fill(len(events) * ["nMuons >= 4"])
+        output[dataset]["cutflow"].fill(len(events) * ["nMuon >= 4"])
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:

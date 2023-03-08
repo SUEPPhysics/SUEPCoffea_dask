@@ -566,7 +566,7 @@ def saveOutput(args, output, sample, gensumweight=None):
     # Save the cutflow
     cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
     print(f"Saving the following cutflow to {cutflowName}")
-    pickle.dump(output["cutflow"], open(cutflowName, "wb"))
+    pickle.dump({"cutflow": output["cutflow"]}, open(cutflowName, "wb"))
 
 
 if __name__ == "__main__":
