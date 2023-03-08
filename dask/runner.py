@@ -199,11 +199,11 @@ def get_main_parser():
         "--memory", type=str, default="2GB", help="Change worker memory"
     )
     parser.add_argument(
-        "--isMC", type=int, default=1, help="Specify if the file is MC or data"
+        "--isMC", action="store_true", help="Specify if the file is MC or data"
     )
     parser.add_argument("--era", type=str, default="2018", help="Specify the year")
     parser.add_argument(
-        "--doSyst", type=int, default=1, help="Turn systematics on or off"
+        "--doSyst", action="store_true", help="Turn systematics on or off"
     )
     parser.add_argument(
         "--scouting", action="store_true", help="Turn processing for scouting on"
@@ -494,7 +494,7 @@ def setupSUEP(args, sample_dict):
     instance = SUEP_cluster(
         isMC=args.isMC,
         era=int(args.era),
-        do_syst=0,
+        do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
         weight_syst="",
