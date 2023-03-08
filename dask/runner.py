@@ -197,6 +197,9 @@ def get_main_parser():
         help="Max number of chunks to run in total",
     )
     parser.add_argument(
+        "--memory", type=str, default="2GB", help="Change worker memory"
+    )
+    parser.add_argument(
         "--isMC", type=int, default=1, help="Specify if the file is MC or data"
     )
     parser.add_argument("--era", type=str, default="2018", help="Specify the year")
@@ -304,6 +307,7 @@ def daskExecutor(args, env_extra):
         cluster = LPCCondorCluster(
             transfer_input_files="/srv/workflows/",
             shared_temp_directory="/tmp",
+            memory=args.memory,
             worker_extra_args=[
                 "--worker-port 10000:10070",
                 "--nanny-port 10070:10100",
