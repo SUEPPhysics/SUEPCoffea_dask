@@ -495,7 +495,7 @@ def setupSUEP(args, sample_dict):
     instance = SUEP_cluster(
         isMC=args.isMC,
         era=int(args.era),
-        do_syst=1,
+        do_syst=0,
         syst_var="",
         sample=sample_dict,
         weight_syst="",
