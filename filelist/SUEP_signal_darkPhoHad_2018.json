@@ -1,0 +1,14 @@
+{
+  "SUEP-m1000-darkPhoHad+RunIIAutumn18": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_signal_private/SUEP-m1000-darkPhoHad+RunIIAutumn18-private+MINIAODSIM.root"
+  ],
+  "SUEP-m125-darkPhoHad+RunIIAutumn18": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_signal_private/SUEP-m125-darkPhoHad+RunIIAutumn18-private+MINIAODSIM.root"
+  ],
+  "SUEP-m400-darkPhoHad+RunIIAutumn18": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_signal_private/SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM.root"
+  ],
+  "SUEP-m750-darkPhoHad+RunIIAutumn18": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_signal_private/SUEP-m750-darkPhoHad+RunIIAutumn18-private+MINIAODSIM.root"
+  ]
+}
