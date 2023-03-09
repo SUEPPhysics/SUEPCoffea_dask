@@ -611,20 +611,19 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
 
-        if self.trigger != "TripleMu":
-            SUEP_utils.ClusterMethod(
-                self,
-                output,
-                dataset,
-                indices,
-                tracks,
-                SUEP_cand,
-                ISR_cand,
-                SUEP_cluster_tracks,
-                ISR_cluster_tracks,
-                do_inverted=True,
-                out_label=col_label,
-            )
+        SUEP_utils.ClusterMethod(
+            self,
+            output,
+            dataset,
+            indices,
+            tracks,
+            SUEP_cand,
+            ISR_cand,
+            SUEP_cluster_tracks,
+            ISR_cluster_tracks,
+            do_inverted=True,
+            out_label=col_label,
+        )
 
         if self.do_inf:
             import workflows.ML_utils as ML_utils
