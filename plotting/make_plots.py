@@ -53,25 +53,22 @@ parser.add_argument(
 )
 parser.add_argument(
     "--xrootd",
-    type=int,
-    default=0,
-    help="Local data or xrdcp from hadoop (default=False)",
+    action="store_true",
+    help="xrdcp from hadoop instead of local copy",
 )
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
-parser.add_argument("--merged", type=int, default=1, help="Use merged files")
+parser.add_argument("--merged", action="store_true", help="Use merged files")
 # some info about the files, highly encouraged to specify every time
 parser.add_argument("-e", "--era", type=int, help="era", required=True)
-parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
-parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
+parser.add_argument("--isMC", action="store_true", help="Is this MC or data")
+parser.add_argument("--scouting", action="store_true", help="Is this scouting?")
 # some parameters you can toggle freely
-parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
-parser.add_argument("--doInf", type=int, default=1, help="make GNN plots")
+parser.add_argument("--doSyst", action="store_true", help="make systematic plots")
+parser.add_argument("--doInf", action="store_true", help="make GNN plots")
 parser.add_argument(
-    "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
+    "--doABCD", action="store_true", help="make plots for each ABCD+ region"
 )
-parser.add_argument(
-    "--blind", type=int, default=1, help="Blind the data (default=True)"
-)
+parser.add_argument("--unblind", action="store_true", help="Unblind the data")
 parser.add_argument(
     "--weights",
     default="None",
@@ -80,7 +77,7 @@ parser.add_argument(
 parser.add_argument(
     "--isSignal",
     action="store_true",
-    help="Set this flag if you are running on signal",
+    help="Are you running on signal?",
 )
 options = parser.parse_args()
 
@@ -770,8 +767,8 @@ def calculate_systematic(
     # prepare new event weight
     df["event_weight"] = np.ones(df.shape[0])
 
-    if options.isMC == 1:
-        if options.scouting != 1:
+    if options.isMC:
+        if not options.scouting:
             # 1) pileup weights
             pu = pileup_weight.get_pileup_weights(
                 df, syst, puweights, puweights_up, puweights_down
@@ -841,7 +838,11 @@ def calculate_systematic(
 
         # prepare the DataFrame for plotting: blind, selections
         df_plot = fill_utils.prepareDataFrame(
-            df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
+            df.copy(),
+            config_out,
+            label_out,
+            isMC=options.isMC,
+            blind=(not options.unblind),
         )
 
         # auto fill all histograms
