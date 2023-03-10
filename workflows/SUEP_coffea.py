@@ -536,6 +536,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.trigger == "TripleMu":
             events, electrons, muons = self.tripleMuFilter(events)
         output[dataset]["cutflow"].fill(len(events) * ["nMuon >= 4"])
+        output[dataset]["vars"]["cutflow_nMuon_gt_4" + col_label] = len(events) * [1]
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
