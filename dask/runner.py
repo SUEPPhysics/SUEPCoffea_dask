@@ -570,7 +570,8 @@ def saveOutput(args, output, sample, gensumweight=None):
     cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
     print(f"Saving the following cutflow to {cutflowName}")
     pickle.dump(
-        {"cutflow": output["cutflow"] / output["cutflow"][0]}, open(cutflowName, "wb")
+        {"cutflow": output["cutflow"] / output["gensumweight"].value},
+        open(cutflowName, "wb"),
     )
 
 
