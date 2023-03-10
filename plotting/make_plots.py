@@ -80,6 +80,7 @@ parser.add_argument(
     action="store_true",
     help="Are you running on signal?",
 )
+parser.add_argument("--noWeights", action="store_true", help="Don't apply weights")
 options = parser.parse_args()
 
 ###################################################################################################################
@@ -775,7 +776,7 @@ def calculate_systematic(
     # prepare new event weight
     df["event_weight"] = np.ones(df.shape[0])
 
-    if options.isMC:
+    if options.isMC and not options.noWeights:
         if not options.scouting:
             # 1) pileup weights
             pu = pileup_weight.get_pileup_weights(
