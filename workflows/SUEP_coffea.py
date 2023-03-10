@@ -110,7 +110,8 @@ class SUEP_cluster(processor.ProcessorABC):
             }
         )
         jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta) < 2.4)
-        Jets_correct = Jets_awk[jet_awk_Cut]
+        jet_HEM_Cut,_=jetHEMFilter(self,Jets)
+        Jets_correct = Jets_awk[jet_awk_Cut*jet_HEM_Cut]
         return Jets_correct
 
     def eventSelection(self, events):
@@ -477,12 +478,6 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
         # ---- Cut Based Analysis
         #####################################################################################
-
-        # remove the jet within the region of HEM issue in era 2018
-        jetHEMCut,eventHEMCut=jetHEMFilter(self,ak_inclusive_jets)
-        ak_inclusive_cluster = ak_inclusive_cluster[jetHEMCut]
-        ak_inclusive_jets = ak_inclusive_jets[jetHEMCut]
-        tracks = tracks[jetHEMCut]
 
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
