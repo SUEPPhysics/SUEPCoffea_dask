@@ -933,6 +933,7 @@ for ifile in tqdm(files):
     df, metadata = open_file(options, redirector, ifile)
     print("Processing the following sample:")
     pprint(metadata)
+    print(f"Cross section: {xsection}")
 
     # check if file is corrupted
     if type(df) == int:
