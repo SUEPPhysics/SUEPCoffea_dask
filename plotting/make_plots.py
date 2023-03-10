@@ -632,6 +632,13 @@ def create_output_file(label, abcd):
                 name=f"muon_interIsolation_subsubleading_{label}",
                 label="subsubleading muon inter-isolation in Event",
             ).Weight(),
+            f"cutflow_nMuon_gt_4_{label}": Hist.new.Reg(
+                2,
+                0,
+                2,
+                name=f"cutflow_nMuon_gt_4_{label}",
+                label="cutflow_nMuon_gt_4",
+            ).Weight(),
         }
     )
 
