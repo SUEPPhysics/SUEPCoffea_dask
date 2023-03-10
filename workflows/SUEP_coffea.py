@@ -25,6 +25,7 @@ from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
+from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 
 # Set vector behavior
 vector.register_awkward()
@@ -109,7 +110,8 @@ class SUEP_cluster(processor.ProcessorABC):
             }
         )
         jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta) < 2.4)
-        Jets_correct = Jets_awk[jet_awk_Cut]
+        jet_HEM_Cut,_=jetHEMFilter(self,Jets)
+        Jets_correct = Jets_awk[jet_awk_Cut*jet_HEM_Cut]
         return Jets_correct
 
     def eventSelection(self, events):
