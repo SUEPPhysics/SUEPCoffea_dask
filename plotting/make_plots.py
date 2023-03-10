@@ -19,6 +19,7 @@ from CMS_corrections import (
     triggerSF,
 )
 from hist import Hist
+from rich.pretty import pprint
 from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
@@ -929,6 +930,8 @@ for ifile in tqdm(files):
 
     # get the file
     df, metadata = open_file(options, redirector, ifile)
+    print("Processing the following sample:")
+    pprint(metadata)
 
     # check if file is corrupted
     if type(df) == int:
