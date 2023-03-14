@@ -80,7 +80,16 @@ parser.add_argument(
     action="store_true",
     help="Are you running on signal?",
 )
-parser.add_argument("--noWeights", action="store_true", help="Don't apply weights")
+parser.add_argument("--triggerSF", action="store_true", help="Apply trigger SF")
+parser.add_argument("--PUreweight", action="store_true", help="Apply PU reweighting")
+parser.add_argument(
+    "--Higgs_pt_reweight", action="store_true", help="Apply Higgs pt reweighting"
+)
+parser.add_argument(
+    "--prepare",
+    action="store_true",
+    help="Prepare the dataframe. Applies blinding and cuts.",
+)
 options = parser.parse_args()
 
 ###################################################################################################################
@@ -756,6 +765,66 @@ def create_output_file(label, abcd):
     return output
 
 
+def event_weights(
+    df,
+    syst,
+    options,
+    puweights,
+    puweights_up,
+    puweights_down,
+    trig_bins,
+    trig_weights,
+    trig_weights_up,
+    trig_weights_down,
+    higgs_bins,
+    higgs_weights,
+    higgs_weights_up,
+    higgs_weights_down,
+):
+    if not options.scouting:
+        # 1) pileup weights
+        if options.PUreweight:
+            pu = pileup_weight.get_pileup_weights(
+                df, syst, puweights, puweights_up, puweights_down
+            )
+            df["event_weight"] *= pu
+
+        # 2) TriggerSF weights
+        if options.triggerSF:
+            trigSF = triggerSF.get_trigSF_weight(
+                df,
+                syst,
+                trig_bins,
+                trig_weights,
+                trig_weights_up,
+                trig_weights_down,
+            )
+            df["event_weight"] *= trigSF
+
+        # 3) PS weights
+        if "PSWeight" in syst and syst in df.keys():
+            df["event_weight"] *= df[syst]
+
+        # 4) prefire weights
+        if options.era == 2016 or options.era == 2017:
+            if "prefire" in syst and syst in df.keys():
+                df["event_weight"] *= df[syst]
+            else:
+                df["event_weight"] *= df["prefire_nom"]
+
+    # 5) Higgs_pt weights
+    if "SUEP-m125" in options.dataset and options.Higgs_pt_reweight:
+        higgs_weight = higgs_reweight.get_higgs_weight(
+            df,
+            syst,
+            higgs_bins,
+            higgs_weights,
+            higgs_weights_up,
+            higgs_weights_down,
+        )
+        df["event_weight"] *= higgs_weight
+
+
 def calculate_systematic(
     df,
     config,
@@ -776,47 +845,29 @@ def calculate_systematic(
     # prepare new event weight
     df["event_weight"] = np.ones(df.shape[0])
 
-    if options.isMC and not options.noWeights:
-        if not options.scouting:
-            # 1) pileup weights
-            pu = pileup_weight.get_pileup_weights(
-                df, syst, puweights, puweights_up, puweights_down
-            )
-            df["event_weight"] *= pu
-
-            # 2) TriggerSF weights
-            trigSF = triggerSF.get_trigSF_weight(
-                df,
-                syst,
-                trig_bins,
-                trig_weights,
-                trig_weights_up,
-                trig_weights_down,
-            )
-            df["event_weight"] *= trigSF
-
-            # 3) PS weights
-            if "PSWeight" in syst and syst in df.keys():
-                df["event_weight"] *= df[syst]
-
-            # 3) prefire weights
-            if options.era == 2016 or options.era == 2017:
-                if "prefire" in syst and syst in df.keys():
-                    df["event_weight"] *= df[syst]
-                else:
-                    df["event_weight"] *= df["prefire_nom"]
-
-        # 5) Higgs_pt weights
-        if "SUEP-m125" in options.dataset:
-            higgs_weight = higgs_reweight.get_higgs_weight(
-                df,
-                syst,
-                higgs_bins,
-                higgs_weights,
-                higgs_weights_up,
-                higgs_weights_down,
-            )
-            df["event_weight"] *= higgs_weight
+    # if MC then apply the following weights:
+    # 1) pileup weights
+    # 2) TriggerSF weights
+    # 3) PS weights
+    # 4) prefire weights
+    # 5) Higgs_pt weights
+    if options.isMC:
+        event_weights(
+            df,
+            syst,
+            options,
+            puweights,
+            puweights_up,
+            puweights_down,
+            trig_bins,
+            trig_weights,
+            trig_weights_up,
+            trig_weights_down,
+            higgs_bins,
+            higgs_weights,
+            higgs_weights_up,
+            higgs_weights_down,
+        )
 
     # 6) scaling weights
     # N.B.: these aren't part of the systematics, just an optional scaling
@@ -846,13 +897,15 @@ def calculate_systematic(
         output.update(create_output_file(label_out, config_out))
 
         # prepare the DataFrame for plotting: blind, selections
-        df_plot = fill_utils.prepareDataFrame(
-            df.copy(),
-            config_out,
-            label_out,
-            isMC=options.isMC,
-            blind=(not options.unblind),
-        )
+        df_plot = df.copy()
+        if options.prepare:
+            df_plot = fill_utils.prepareDataFrame(
+                df.copy(),
+                config_out,
+                label_out,
+                isMC=options.isMC,
+                blind=(not options.unblind),
+            )
 
         # auto fill all histograms
         fill_utils.auto_fill(
