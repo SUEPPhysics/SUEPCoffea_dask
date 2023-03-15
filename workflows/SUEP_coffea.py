@@ -258,6 +258,28 @@ class SUEP_cluster(processor.ProcessorABC):
     ):
         dataset = events.metadata["dataset"]
 
+        # muon inter-isolation
+        muonsCollection = ak.zip(
+            {
+                "pt": muons.pt,
+                "eta": muons.eta,
+                "phi": muons.phi,
+                "mass": muons.mass,
+                "charge": muons.pdgId / (-13),
+            },
+            with_name="Momentum4D",
+        )
+        electronsCollection = ak.zip(
+            {
+                "pt": electrons.pt,
+                "eta": electrons.eta,
+                "phi": electrons.phi,
+                "mass": electrons.mass,
+                "charge": electrons.pdgId / (-11),
+            },
+            with_name="Momentum4D",
+        )
+
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
 
@@ -379,12 +401,6 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
             muons.pt, axis=-1
         ).to_list()
-        output[dataset]["vars"]["muons_2_charge_sum" + out_label] = ak.sum(
-            muons.charge[:, :2], axis=-1
-        ).to_list()
-        output[dataset]["vars"]["muons_4_charge_sum" + out_label] = ak.sum(
-            muons.charge[:, :4], axis=-1
-        ).to_list()
         output[dataset]["vars"]["muon_dxy_mean" + out_label] = ak.mean(
             abs(muons.dxy), axis=-1
         ).to_list()
@@ -409,40 +425,30 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["muon_miniPFRelIso_all_mean" + out_label] = ak.mean(
             muons.miniPFRelIso_all, axis=-1
         ).to_list()
-        output[dataset]["vars"][
-            "muon_multiIsoId_leading" + out_label
-        ] = muons.multiIsoId[:, 0].to_list()
-        output[dataset]["vars"][
-            "muon_multiIsoId_subleading" + out_label
-        ] = muons.multiIsoId[:, 1].to_list()
-        output[dataset]["vars"]["muon_multiIsoId_mean" + out_label] = ak.mean(
-            muons.multiIsoId, axis=-1
+        output[dataset]["vars"]["muon_l_sl_deltaphi" + out_label] = abs(
+            ak.materialized(muonsCollection[:, 0]).deltaphi(
+                ak.materialized(muonsCollection[:, 1])
+            )
         ).to_list()
-        output[dataset]["vars"]["muon_pfIsoId_mean" + out_label] = ak.mean(
-            muons.pfIsoId, axis=-1
+        output[dataset]["vars"]["muon_l_sl_deltaeta" + out_label] = abs(
+            ak.materialized(muonsCollection[:, 0]).deltaeta(
+                ak.materialized(muonsCollection[:, 1])
+            )
         ).to_list()
+        output[dataset]["vars"]["muon_l_sl_deltaR" + out_label] = (
+            ak.materialized(muonsCollection[:, 0])
+            .deltaR(ak.materialized(muonsCollection[:, 1]))
+            .to_list()
+        )
+        eigs_muons = SUEP_utils.sphericity(muons, 1.0)
+        output[dataset]["vars"]["muon_S1" + out_label] = 1.5 * (
+            eigs_muons[:, 1] + eigs_muons[:, 0]
+        )
+        eigs_tracks = SUEP_utils.sphericity(tracks, 1.0)
+        output[dataset]["vars"]["event_S1" + out_label] = 1.5 * (
+            eigs_tracks[:, 1] + eigs_tracks[:, 0]
+        )
 
-        # muon inter-isolation
-        muonsCollection = ak.zip(
-            {
-                "pt": muons.pt,
-                "eta": muons.eta,
-                "phi": muons.phi,
-                "mass": muons.mass,
-                "charge": muons.pdgId / (-13),
-            },
-            with_name="Momentum4D",
-        )
-        electronsCollection = ak.zip(
-            {
-                "pt": electrons.pt,
-                "eta": electrons.eta,
-                "phi": electrons.phi,
-                "mass": electrons.mass,
-                "charge": electrons.pdgId / (-11),
-            },
-            with_name="Momentum4D",
-        )
         output[dataset]["vars"][
             "muon_interIsolation_leading" + out_label
         ] = SUEP_utils.interIsolation(
@@ -464,6 +470,20 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.materialized(electronsCollection),
             ak.materialized(muonsCollection),
         ).tolist()
+
+        # Eta ring variables
+        eta_cutoff = 1.2  # the ring will be from -eta_cutoff to eta_cutoff around the leading muon
+        leading_muon_eta = muonsCollection[:, 0].eta
+        tracks_eta_ring = tracks[abs(leading_muon_eta - tracks.eta) < eta_cutoff]
+        muons_eta_ring = muonsCollection[
+            abs(leading_muon_eta - muonsCollection.eta) < eta_cutoff
+        ]
+        output[dataset]["vars"]["nMuons_eta_ring" + out_label] = ak.num(
+            muons_eta_ring
+        ).to_list()
+        output[dataset]["vars"]["ntracks_eta_ring" + out_label] = ak.num(
+            tracks_eta_ring
+        ).to_list()
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -536,7 +556,6 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.trigger == "TripleMu":
             events, electrons, muons = self.tripleMuFilter(events)
         output[dataset]["cutflow"].fill(len(events) * ["nMuon >= 4"])
-        output[dataset]["vars"]["cutflow_nMuon_gt_4" + col_label] = len(events) * [1]
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
