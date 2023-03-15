@@ -524,20 +524,6 @@ def create_output_file(label, abcd):
             f"muon_pt_mean_{label}": Hist.new.Reg(
                 400, 0, 100, name=f"muon_pt_mean_{label}", label="mean muon pt in Event"
             ).Weight(),
-            f"muons_2_charge_sum_{label}": Hist.new.Reg(
-                3,
-                0,
-                3,
-                name=f"muon_2_charge_sum_{label}",
-                label="2-muon charge sum in Event",
-            ).Weight(),
-            f"muons_4_charge_sum_{label}": Hist.new.Reg(
-                5,
-                0,
-                5,
-                name=f"muon_2_charge_sum_{label}",
-                label="4-muon charge sum in Event",
-            ).Weight(),
             f"muon_dxy_mean_{label}": Hist.new.Reg(
                 100,
                 0,
@@ -594,33 +580,40 @@ def create_output_file(label, abcd):
                 name=f"muon_miniPFRelIso_all_mean_{label}",
                 label="mean muon miniPFRelIso_all in Event",
             ).Weight(),
-            f"muon_multiIsoId_leading_{label}": Hist.new.Reg(
+            f"muon_l_sl_deltaphi_{label}": Hist.new.Reg(
+                100,
+                0,
+                4,
+                name=f"muon_l_sl_deltaphi_{label}",
+                label="delta phi between leading and subleading muon in Event",
+            ).Weight(),
+            f"muon_l_sl_deltaeta_{label}": Hist.new.Reg(
+                100,
+                0,
+                6,
+                name=f"muon_l_sl_deltaeta_{label}",
+                label="delta eta between leading and subleading muon in Event",
+            ).Weight(),
+            f"muon_l_sl_deltaR_{label}": Hist.new.Reg(
                 200,
                 0,
                 10,
-                name=f"muon_multiIsoId_leading_{label}",
-                label="leading muon multiIsoId in Event",
+                name=f"muon_l_sl_deltaR_{label}",
+                label="delta R between leading and subleading muon in Event",
             ).Weight(),
-            f"muon_multiIsoId_subleading_{label}": Hist.new.Reg(
-                200,
+            f"muon_S1_{label}": Hist.new.Reg(
+                100,
                 0,
-                10,
-                name=f"muon_multiIsoId_subleading_{label}",
-                label="subleading muon multiIsoId in Event",
+                1,
+                name=f"muon_S1_{label}",
+                label="S1 using muons in Event",
             ).Weight(),
-            f"muon_multiIsoId_mean_{label}": Hist.new.Reg(
-                200,
+            f"event_S1_{label}": Hist.new.Reg(
+                100,
                 0,
-                10,
-                name=f"muon_multiIsoId_mean_{label}",
-                label="mean muon multiIsoId in Event",
-            ).Weight(),
-            f"muon_pfIsoId_mean_{label}": Hist.new.Reg(
-                10,
-                0,
-                10,
-                name=f"muon_pfIsoId_mean_{label}",
-                label="mean muon pfIsoId in Event",
+                1,
+                name=f"event_S1_{label}",
+                label="S1 using tracks in Event",
             ).Weight(),
             f"muon_interIsolation_leading_{label}": Hist.new.Reg(
                 25,
@@ -643,12 +636,19 @@ def create_output_file(label, abcd):
                 name=f"muon_interIsolation_subsubleading_{label}",
                 label="subsubleading muon inter-isolation in Event",
             ).Weight(),
-            f"cutflow_nMuon_gt_4_{label}": Hist.new.Reg(
-                2,
+            f"nMuons_eta_ring_{label}": Hist.new.Reg(
+                50,
                 0,
-                2,
-                name=f"cutflow_nMuon_gt_4_{label}",
-                label="cutflow_nMuon_gt_4",
+                50,
+                name=f"nMuons_eta_ring_{label}",
+                label="# muons in eta ring",
+            ).Weight(),
+            f"ntracks_eta_ring_{label}": Hist.new.Reg(
+                200,
+                0,
+                600,
+                name=f"ntracks_eta_ring_{label}",
+                label="# tracks in eta ring",
             ).Weight(),
         }
     )
