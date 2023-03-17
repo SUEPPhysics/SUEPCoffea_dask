@@ -398,6 +398,21 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["nMuons_isTracker" + out_label] = ak.sum(
             muons.isTracker, axis=-1
         ).to_list()
+
+        # Define muon categories in order to decorrelate mediumId and isTracker
+        cat1 = muons.mediumId
+        cat2 = muons.isTracker & ~muons.mediumId
+        cat3 = ~cat1 & ~cat2
+        output[dataset]["vars"]["nMuons_category1" + out_label] = ak.sum(
+            cat1, axis=-1
+        ).to_list()
+        output[dataset]["vars"]["nMuons_category2" + out_label] = ak.sum(
+            cat2, axis=-1
+        ).to_list()
+        output[dataset]["vars"]["nMuons_category3" + out_label] = ak.sum(
+            cat3, axis=-1
+        ).to_list()
+
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
             muons.pt, axis=-1
         ).to_list()
