@@ -33,9 +33,7 @@ def find_optimum(histogram):
     return edges[values.argmax()]
 
 
-def significance(
-    n_signal, n_signal_total, n_background, alpha=2, beta=5, mode="punzi_full_smooth"
-):
+def significance_functions(alpha=2, beta=5, mode="punzi_full_smooth"):
     """
     Calculate the significance of a signal given the number of signal and background
     events. The significance is calculated using the following methods:
@@ -46,12 +44,6 @@ def significance(
     - s_over_b_and_s: S / sqrt(B + S)
     Parameters
     ----------
-    n_signal : int
-        Number of signal events
-    n_signal_total : int
-        Total number of signal events
-    n_background : int
-        Number of background events
     alpha : float
         Punzi parameter
     beta : float
@@ -61,17 +53,9 @@ def significance(
         "s_over_b", "s_over_b_and_s"
     Returns
     -------
-    significance, significance uncertainty : tuple(float, float)
-        Significance and significance uncertainty
+    significance, significance uncertainty : tuple(sympy.FunctionClass instance, sympy.FunctionClass instance)
+        Significance and uncertainty
     """
-    point = {
-        "S": n_signal.value,
-        "S_tot": n_signal_total.value,
-        "B": n_background.value,
-        "dS": math.sqrt(n_signal.variance),
-        "dS_tot": math.sqrt(n_signal_total.variance),
-        "dB": math.sqrt(n_background.variance),
-    }
     S, S_tot, B, dS, dS_tot, dB = sp.symbols("S S_tot B dS dS_tot dB")
     epsilon = S / S_tot
     punziCommon = alpha * sp.sqrt(B) + (beta / 2) * sp.sqrt(
@@ -96,10 +80,12 @@ def significance(
     delta_sig = (
         (partial_S * dS) ** 2 + (partial_S_tot * dS_tot) ** 2 + (partial_B * dB) ** 2
     )
-    return sig.evalf(subs=point), delta_sig.evalf(subs=point)
+    return sp.lambdify([S, S_tot, B], sig), sp.lambdify(
+        [S, S_tot, B, dS, dS_tot, dB], delta_sig
+    )
 
 
-def significance_scan(h_sig, h_bkg, columns_list):
+def significance_scan(h_sig, h_bkg, columns_list, sig_func):
     """
     Scan the significance of a signal given the histograms of signal and background
     events. The significance is calculated using the Punzi formula.
@@ -128,7 +114,17 @@ def significance_scan(h_sig, h_bkg, columns_list):
         cut = [slice(index, n_bins[count]) for count, index in enumerate(indices)]
         B = h_bkg[tuple(cut)].sum(flow=True)
         S = h_sig[tuple(cut)].sum(flow=True)
-        signfificance = significance(S, S_tot, B)
+        signfificance = (
+            sig_func[0](S.value, S_tot.value, B.value),
+            sig_func[1](
+                S.value,
+                S_tot.value,
+                B.value,
+                math.sqrt(S.variance),
+                math.sqrt(S_tot.variance),
+                math.sqrt(B.variance),
+            ),
+        )
         h_significance[indices] = signfificance
     return h_significance
 
@@ -351,7 +347,8 @@ signal_datasets = [
 
 # List of variables to plot
 # That's the main input for the significance scan
-columns_list = ["nMuons_mediumId"]
+columns_list = ["nMuons_mediumId", "nMuons_tightId"]
+enable_plots = True
 
 if __name__ == "__main__":
     # Make histograms
@@ -359,10 +356,12 @@ if __name__ == "__main__":
     h_sig = make_histogram(axes_dict, columns_list, signal_files, signal_datasets)
 
     # Perform significance scan
-    h_significance = significance_scan(h_sig, h_bkg, columns_list)
+    sig_funcs = significance_functions()
+    h_significance = significance_scan(h_sig, h_bkg, columns_list, sig_funcs)
 
     # Plot histograms
-    if len(columns_list) == 1:
-        plot_1d(h_bkg, h_sig, h_significance)
-    elif len(columns_list) == 2:
-        plot_2d(h_bkg, h_sig, h_significance)
+    if enable_plots:
+        if len(columns_list) == 1:
+            plot_1d(h_bkg, h_sig, h_significance)
+        elif len(columns_list) == 2:
+            plot_2d(h_bkg, h_sig, h_significance)
