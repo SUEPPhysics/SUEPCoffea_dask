@@ -6,10 +6,31 @@ import hist
 import matplotlib
 import mplhep as hep
 import plot_utils
+import sympy as sp
 from hist import Hist
 from matplotlib import pyplot as plt
 
 plt.style.use(hep.style.CMS)
+
+
+def find_optimum(histogram):
+    """
+    NOTE: not done yet
+    Find the optimum cut value(s) for a histogram
+    Parameters
+    ----------
+    histogram : hist.Hist
+        Histogram to find optimum cut value for
+    Returns
+    -------
+    cut : numpy.ndarray
+        Array of optimum cut value(s)
+    """
+    # Find the maximum significance
+    array = histogram.to_numpy()
+    values = array[0]
+    edges = array[1:]
+    return edges[values.argmax()]
 
 
 def significance(
@@ -40,28 +61,76 @@ def significance(
         "s_over_b", "s_over_b_and_s"
     Returns
     -------
-    sig : float
-        Significance
+    significance, significance uncertainty : tuple(float, float)
+        Significance and significance uncertainty
     """
-    S = n_signal.value
-    B = n_background.value
-    epsilon = S / n_signal_total.value
-    punziCommon = alpha * math.sqrt(B) + (beta / 2) * math.sqrt(
-        beta**2 + 4 * alpha * math.sqrt(B) + 4 * B
+    point = {
+        "S": n_signal.value,
+        "S_tot": n_signal_total.value,
+        "B": n_background.value,
+        "dS": math.sqrt(n_signal.variance),
+        "dS_tot": math.sqrt(n_signal_total.variance),
+        "dB": math.sqrt(n_background.variance),
+    }
+    S, S_tot, B, dS, dS_tot, dB = sp.symbols("S S_tot B dS dS_tot dB")
+    epsilon = S / S_tot
+    punziCommon = alpha * sp.sqrt(B) + (beta / 2) * sp.sqrt(
+        beta**2 + 4 * alpha * sp.sqrt(B) + 4 * B
     )
     if mode == "punzi_simple":
-        sig = epsilon / ((alpha**2) / 2 + math.sqrt(B))
+        sig = epsilon / ((alpha**2) / 2 + sp.sqrt(B))
     elif mode == "punzi_full":
         sig = epsilon / ((beta**2) / 2 + punziCommon)
     elif mode == "punzi_full_smooth":
         sig = epsilon / ((alpha**2) / 8 + 9 * (beta**2) / 13 + punziCommon)
     elif mode == "s_over_b" and B > 0:
-        sig = epsilon / math.sqrt(B)
+        sig = epsilon / sp.sqrt(B)
     elif mode == "s_over_b_and_s" and (B + S) > 0:
-        sig = epsilon / math.sqrt(B + S)
+        sig = epsilon / sp.sqrt(B + S)
     else:
         raise ValueError("Invalid mode")
-    return sig
+
+    partial_S = sp.diff(sig, S)
+    partial_S_tot = sp.diff(sig, S_tot)
+    partial_B = sp.diff(sig, B)
+    delta_sig = (
+        (partial_S * dS) ** 2 + (partial_S_tot * dS_tot) ** 2 + (partial_B * dB) ** 2
+    )
+    return sig.evalf(subs=point), delta_sig.evalf(subs=point)
+
+
+def significance_scan(h_sig, h_bkg, columns_list):
+    """
+    Scan the significance of a signal given the histograms of signal and background
+    events. The significance is calculated using the Punzi formula.
+    Parameters
+    ----------
+    h_sig : hist.Hist
+        Histogram of signal events
+    h_bkg : hist.Hist
+        Histogram of background events
+    columns_list : list
+        List of columns to scan significance for
+    Returns
+    -------
+    h_significance : hist.Hist
+        Histogram of significance
+    """
+    h_significance = h_sig.copy()
+    h_significance.reset()
+    for ax in h_significance.axes:
+        ax.label += " >= cutvalue"
+    n_dims = len(columns_list)
+    n_bins = h_bkg.shape
+    S_tot = h_sig.sum(flow=True)
+    iterators = [range(n_bins[i]) for i in range(n_dims)]
+    for indices in itertools.product(*iterators):
+        cut = [slice(index, n_bins[count]) for count, index in enumerate(indices)]
+        B = h_bkg[tuple(cut)].sum(flow=True)
+        S = h_sig[tuple(cut)].sum(flow=True)
+        signfificance = significance(S, S_tot, B)
+        h_significance[indices] = signfificance
+    return h_significance
 
 
 def make_histogram(axes, columns, files, datasets):
@@ -115,6 +184,33 @@ def make_histogram(axes, columns, files, datasets):
     return h
 
 
+def plot_1d(h_bkg, h_sig, h_significance):
+    fig, ax = plt.subplots(1, 2, figsize=(14, 7))
+    fig.tight_layout()
+    # fig.subplots_adjust(left=0.07, right=0.94, top=0.92, bottom=0.13, wspace=0.4)
+    h_bkg.plot(ax=ax[0], label="Background")
+    h_sig.plot(ax=ax[0], label="Signal")
+    ax[0].set_title("Events")
+    ax[0].legend()
+    ax[0].set_yscale("log")
+    h_significance.plot(ax=ax[1])
+    ax[1].set_title("Significance")
+    plt.show()
+
+
+def plot_2d(h_bkg, h_sig, h_significance):
+    fig, ax = plt.subplots(1, 3, figsize=(15, 7))
+    fig.tight_layout()
+    fig.subplots_adjust(left=0.07, right=0.94, top=0.92, bottom=0.13, wspace=0.4)
+    h_bkg.plot(norm=matplotlib.colors.LogNorm(), ax=ax[0])
+    ax[0].set_title("Background")
+    h_sig.plot(norm=matplotlib.colors.LogNorm(), ax=ax[1])
+    ax[1].set_title("Signal")
+    h_significance.plot(ax=ax[2])
+    ax[2].set_title("Significance")
+    plt.show()
+
+
 # Define axes
 axes_dict = {
     "ntracks": hist.axis.Regular(
@@ -122,6 +218,33 @@ axes_dict = {
     ),
     "nMuons": hist.axis.Regular(
         30, 0, 30, name="nMuons", label="nMuons", underflow=False, overflow=True
+    ),
+    "nMuons_category1": hist.axis.Regular(
+        20,
+        0,
+        20,
+        name="nMuons_category1",
+        label="nMuons_cat1",
+        underflow=False,
+        overflow=True,
+    ),
+    "nMuons_category2": hist.axis.Regular(
+        10,
+        0,
+        10,
+        name="nMuons_category2",
+        label="nMuons_cat2",
+        underflow=False,
+        overflow=True,
+    ),
+    "nMuons_category3": hist.axis.Regular(
+        10,
+        0,
+        10,
+        name="nMuons_category3",
+        label="nMuons_cat3",
+        underflow=False,
+        overflow=True,
     ),
     "nMuons_highPurity": hist.axis.Regular(
         20,
@@ -213,8 +336,8 @@ qcd_datasets = [
 # List of signal files
 # masses_s = [125, 400, 750, 1000]
 # decays = ["darkPho", "darkPhoHad"]
-masses_s = [1000]
-decays = ["darkPho"]
+masses_s = [125]
+decays = ["darkPhoHad"]
 signal_files = [
     f"{local_path}condor_test_SUEP-m{mass_s}-{decay}+RunIIAutumn18.hdf5"
     for mass_s in masses_s
@@ -226,35 +349,20 @@ signal_datasets = [
     for decay in decays
 ]
 
-columns_list = ["nMuons", "nMuons_mediumId"]
+# List of variables to plot
+# That's the main input for the significance scan
+columns_list = ["nMuons_mediumId"]
+
 if __name__ == "__main__":
     # Make histograms
     h_bkg = make_histogram(axes_dict, columns_list, qcd_files, qcd_datasets)
     h_sig = make_histogram(axes_dict, columns_list, signal_files, signal_datasets)
 
     # Perform significance scan
-    h_significance = h_sig.copy()
-    h_significance.reset()
-    for ax in h_significance.axes:
-        ax.label += " >= cutvalue"
-    n_dims = len(columns_list)
-    n_bins = h_bkg.shape
-    iterators = [range(n_bins[n]) for n in range(n_dims)]
-    S_tot = h_sig.sum(flow=True)
-    for i, j in itertools.product(*iterators):
-        B = h_bkg[i:, j:].sum(flow=True)
-        S = h_sig[i:, j:].sum(flow=True)
-        punzi_signfificance = significance(S, S_tot, B)
-        h_significance[i, j] = [punzi_signfificance, punzi_signfificance]
+    h_significance = significance_scan(h_sig, h_bkg, columns_list)
 
     # Plot histograms
-    fig, ax = plt.subplots(1, 3, figsize=(15, 7))
-    fig.tight_layout()
-    fig.subplots_adjust(left=0.07, right=0.94, top=0.92, bottom=0.13, wspace=0.4)
-    h_bkg.plot(norm=matplotlib.colors.LogNorm(), ax=ax[0])
-    ax[0].set_title("Background")
-    h_sig.plot(norm=matplotlib.colors.LogNorm(), ax=ax[1])
-    ax[1].set_title("Signal")
-    h_significance.plot(ax=ax[2])
-    ax[2].set_title("Significance")
-    plt.show()
+    if len(columns_list) == 1:
+        plot_1d(h_bkg, h_sig, h_significance)
+    elif len(columns_list) == 2:
+        plot_2d(h_bkg, h_sig, h_significance)
