@@ -134,7 +134,7 @@ def significance_scan(h_sig, h_bkg, columns_list, sig_func):
     return h_significance
 
 
-def make_histogram(axes, columns, files, datasets):
+def make_histogram(axes, columns, files, datasets, merge_datasets=False):
     """
     Make a histogram from a list of files and datasets
     Parameters
@@ -147,6 +147,9 @@ def make_histogram(axes, columns, files, datasets):
         List of files to fill histogram with
     datasets : list
         List of datasets to fill histogram with
+    merge_datasets : bool
+        Merge datasets into one histogram. Useful when datasets are
+        split into multiple bins, e.g. for the QCD Pt or HT bins
     Returns
     -------
     h : hist.Hist
@@ -157,6 +160,8 @@ def make_histogram(axes, columns, files, datasets):
         *axes,
         storage=hist.storage.Weight(),
     )
+    if not merge_datasets:
+        h = {dataset: h.copy() for dataset in datasets}
     for file, dataset in zip(files, datasets):
         df, metadata = fill_utils.h5load(file, "vars")
 
@@ -181,11 +186,14 @@ def make_histogram(axes, columns, files, datasets):
         axes = h.axes.name
         df_dict = {}
         df_dict = df[list(axes)].to_dict("list")
-        h.fill(**df_dict, weight=weight)
+        if merge_datasets:
+            h.fill(**df_dict, weight=weight)
+        else:
+            h[dataset].fill(**df_dict, weight=weight)
     return h
 
 
-def plot_1d(h_bkg, h_sig, h_significance):
+def plot_1d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     when there is only one variable
@@ -207,10 +215,13 @@ def plot_1d(h_bkg, h_sig, h_significance):
     ax[0].set_yscale("log")
     h_significance.plot(ax=ax[1])
     ax[1].set_title("Significance")
-    plt.show()
+    if save_plot:
+        plt.savefig("significance.png")
+    if show_plot:
+        plt.show()
 
 
-def plot_2d(h_bkg, h_sig, h_significance):
+def plot_2d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     when there are two variables
@@ -235,7 +246,7 @@ def plot_2d(h_bkg, h_sig, h_significance):
     plt.show()
 
 
-def plot_Nd(h_bkg, h_sig, h_significance):
+def plot_Nd(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     when there are more than two variables
@@ -249,6 +260,7 @@ def plot_Nd(h_bkg, h_sig, h_significance):
         Histogram of significance
     """
     n_axes = len(h_significance.axes)
+    label_scale = 3 / n_axes
     for ax in h_significance.axes:
         ax.label = ax.name
     fig, ax = plt.subplots(ncols=n_axes, nrows=n_axes, figsize=(12, 12))
@@ -258,8 +270,8 @@ def plot_Nd(h_bkg, h_sig, h_significance):
         right=0.94,
         top=0.96,
         bottom=0.08,
-        wspace=0.32 + 0.013 * n_axes,
-        hspace=0.32 + 0.013 * n_axes,
+        wspace=0.32 + 0.04 * n_axes / 3,
+        hspace=0.32 + 0.04 * n_axes / 3,
     )
     for i, j in track(
         itertools.product(range(n_axes), range(n_axes)),
@@ -270,13 +282,42 @@ def plot_Nd(h_bkg, h_sig, h_significance):
             h_bkg.project(i).plot(ax=ax[i, j], label="QCD")
             h_sig.project(i).plot(ax=ax[i, j], label="Signal")
             ax[i, j].set_yscale("log")
-            ax[i, j].xaxis.label.set_size(29 - 3 * n_axes)
-            ax[i, j].legend(fontsize=24 - 2 * n_axes)
+            ax[i, j].xaxis.label.set_size(20 * label_scale)
+            ax[i, j].xaxis.labelpad = 4 * label_scale * 0.7
+            ax[i, j].legend(fontsize=20 * label_scale * 0.9)
             continue
         h_significance.project(i, j).plot(ax=ax[i, j])
-        ax[i, j].xaxis.label.set_size(20)
-        ax[i, j].yaxis.label.set_size(20)
+        ax[i, j].xaxis.label.set_size(20 * label_scale)
+        ax[i, j].yaxis.label.set_size(20 * label_scale)
+        ax[i, j].xaxis.labelpad = 4 * label_scale * 0.7
+        ax[i, j].yaxis.labelpad = 4 * label_scale * 0.7
     plt.show()
+
+
+def plot(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
+    """
+    Plot the histograms of signal and background events and the significance
+    Parameters
+    ----------
+    h_bkg : hist.Hist
+        Histogram of background events
+    h_sig : hist.Hist
+        Histogram of signal events
+    h_significance : hist.Hist
+        Histogram of significance
+    save_plot : bool
+        Save the plot to a file
+    show_plot : bool
+        Show the plot
+    """
+    if len(h_significance.axes) == 1:
+        plot_1d(h_bkg, h_sig, h_significance, save_plot, show_plot)
+    elif len(h_significance.axes) == 2:
+        plot_2d(h_bkg, h_sig, h_significance, save_plot, show_plot)
+    elif len(h_significance.axes) > 2:
+        plot_Nd(h_bkg, h_sig, h_significance, save_plot, show_plot)
+    else:
+        raise ValueError("The number of axes must be >= 1")
 
 
 # Define axes
@@ -426,24 +467,27 @@ columns_list = [
     "nMuons_isTracker",
     "nMuons_triggerIdLoose",
 ]
-enable_plots = True
+save_plots = True
+show_plots = False
 
 if __name__ == "__main__":
     # Make histograms
-    print("Making histograms...", end=" ", flush=True)
-    h_bkg = make_histogram(axes_dict, columns_list, qcd_files, qcd_datasets)
-    h_sig = make_histogram(axes_dict, columns_list, signal_files, signal_datasets)
-    print("Done.", flush=True)
+    h_bkg = make_histogram(
+        axes_dict, columns_list, qcd_files, qcd_datasets, merge_datasets=True
+    )
+    h_sig = make_histogram(
+        axes_dict, columns_list, signal_files, signal_datasets, merge_datasets=False
+    )
 
-    # Perform significance scan
+    # Get significance functions
     sig_funcs = significance_functions()
-    h_significance = significance_scan(h_sig, h_bkg, columns_list, sig_funcs)
 
-    # Plot histograms
-    if enable_plots:
-        if len(columns_list) == 1:
-            plot_1d(h_bkg, h_sig, h_significance)
-        elif len(columns_list) == 2:
-            plot_2d(h_bkg, h_sig, h_significance)
-        elif len(columns_list) > 2:
-            plot_Nd(h_bkg, h_sig, h_significance)
+    # Loop over signal points
+    for signal_dataset in signal_datasets:
+        # Perform significance scan
+        h_significance = significance_scan(
+            h_sig[signal_dataset], h_bkg, columns_list, sig_funcs
+        )
+
+        # Plot histograms
+        plot(h_bkg, h_sig[signal_dataset], h_significance, save_plots, show_plots)
