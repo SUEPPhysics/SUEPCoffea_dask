@@ -186,6 +186,18 @@ def make_histogram(axes, columns, files, datasets):
 
 
 def plot_1d(h_bkg, h_sig, h_significance):
+    """
+    Plot the histograms of signal and background events and the significance
+    when there is only one variable
+    Parameters
+    ----------
+    h_bkg : hist.Hist
+        Histogram of background events
+    h_sig : hist.Hist
+        Histogram of signal events
+    h_significance : hist.Hist
+        Histogram of significance
+    """
     fig, ax = plt.subplots(1, 2, figsize=(14, 7))
     fig.tight_layout()
     h_bkg.plot(ax=ax[0], label="QCD")
@@ -199,6 +211,18 @@ def plot_1d(h_bkg, h_sig, h_significance):
 
 
 def plot_2d(h_bkg, h_sig, h_significance):
+    """
+    Plot the histograms of signal and background events and the significance
+    when there are two variables
+    Parameters
+    ----------
+    h_bkg : hist.Hist
+        Histogram of background events
+    h_sig : hist.Hist
+        Histogram of signal events
+    h_significance : hist.Hist
+        Histogram of significance
+    """
     fig, ax = plt.subplots(1, 3, figsize=(15, 7))
     fig.tight_layout()
     fig.subplots_adjust(left=0.07, right=0.94, top=0.92, bottom=0.13, wspace=0.4)
@@ -212,6 +236,18 @@ def plot_2d(h_bkg, h_sig, h_significance):
 
 
 def plot_Nd(h_bkg, h_sig, h_significance):
+    """
+    Plot the histograms of signal and background events and the significance
+    when there are more than two variables
+    Parameters
+    ----------
+    h_bkg : hist.Hist
+        Histogram of background events
+    h_sig : hist.Hist
+        Histogram of signal events
+    h_significance : hist.Hist
+        Histogram of significance
+    """
     n_axes = len(h_significance.axes)
     for ax in h_significance.axes:
         ax.label = ax.name
@@ -387,6 +423,8 @@ columns_list = [
     "nMuons_looseId",
     "nMuons_mediumId",
     "nMuons_tightId",
+    "nMuons_isTracker",
+    "nMuons_triggerIdLoose",
 ]
 enable_plots = True
 
