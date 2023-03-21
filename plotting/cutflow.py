@@ -9,6 +9,7 @@ import plot_utils
 import sympy as sp
 from hist import Hist
 from matplotlib import pyplot as plt
+from rich.progress import track
 
 plt.style.use(hep.style.CMS)
 
@@ -67,9 +68,9 @@ def significance_functions(alpha=2, beta=5, mode="punzi_full_smooth"):
         sig = epsilon / ((beta**2) / 2 + punziCommon)
     elif mode == "punzi_full_smooth":
         sig = epsilon / ((alpha**2) / 8 + 9 * (beta**2) / 13 + punziCommon)
-    elif mode == "s_over_b" and B > 0:
+    elif mode == "s_over_b":
         sig = epsilon / sp.sqrt(B)
-    elif mode == "s_over_b_and_s" and (B + S) > 0:
+    elif mode == "s_over_b_and_s":
         sig = epsilon / sp.sqrt(B + S)
     else:
         raise ValueError("Invalid mode")
@@ -110,7 +111,11 @@ def significance_scan(h_sig, h_bkg, columns_list, sig_func):
     n_bins = h_bkg.shape
     S_tot = h_sig.sum(flow=True)
     iterators = [range(n_bins[i]) for i in range(n_dims)]
-    for indices in itertools.product(*iterators):
+    for indices in track(
+        itertools.product(*iterators),
+        total=len(list(itertools.product(*iterators))),
+        description="Significance scan",
+    ):
         cut = [slice(index, n_bins[count]) for count, index in enumerate(indices)]
         B = h_bkg[tuple(cut)].sum(flow=True)
         S = h_sig[tuple(cut)].sum(flow=True)
@@ -183,8 +188,7 @@ def make_histogram(axes, columns, files, datasets):
 def plot_1d(h_bkg, h_sig, h_significance):
     fig, ax = plt.subplots(1, 2, figsize=(14, 7))
     fig.tight_layout()
-    # fig.subplots_adjust(left=0.07, right=0.94, top=0.92, bottom=0.13, wspace=0.4)
-    h_bkg.plot(ax=ax[0], label="Background")
+    h_bkg.plot(ax=ax[0], label="QCD")
     h_sig.plot(ax=ax[0], label="Signal")
     ax[0].set_title("Events")
     ax[0].legend()
@@ -199,11 +203,43 @@ def plot_2d(h_bkg, h_sig, h_significance):
     fig.tight_layout()
     fig.subplots_adjust(left=0.07, right=0.94, top=0.92, bottom=0.13, wspace=0.4)
     h_bkg.plot(norm=matplotlib.colors.LogNorm(), ax=ax[0])
-    ax[0].set_title("Background")
+    ax[0].set_title("QCD")
     h_sig.plot(norm=matplotlib.colors.LogNorm(), ax=ax[1])
     ax[1].set_title("Signal")
     h_significance.plot(ax=ax[2])
     ax[2].set_title("Significance")
+    plt.show()
+
+
+def plot_Nd(h_bkg, h_sig, h_significance):
+    n_axes = len(h_significance.axes)
+    for ax in h_significance.axes:
+        ax.label = ax.name
+    fig, ax = plt.subplots(ncols=n_axes, nrows=n_axes, figsize=(12, 12))
+    fig.tight_layout()
+    fig.subplots_adjust(
+        left=0.05,
+        right=0.94,
+        top=0.96,
+        bottom=0.08,
+        wspace=0.32 + 0.013 * n_axes,
+        hspace=0.32 + 0.013 * n_axes,
+    )
+    for i, j in track(
+        itertools.product(range(n_axes), range(n_axes)),
+        total=n_axes**2,
+        description="Plotting",
+    ):
+        if i == j:
+            h_bkg.project(i).plot(ax=ax[i, j], label="QCD")
+            h_sig.project(i).plot(ax=ax[i, j], label="Signal")
+            ax[i, j].set_yscale("log")
+            ax[i, j].xaxis.label.set_size(29 - 3 * n_axes)
+            ax[i, j].legend(fontsize=24 - 2 * n_axes)
+            continue
+        h_significance.project(i, j).plot(ax=ax[i, j])
+        ax[i, j].xaxis.label.set_size(20)
+        ax[i, j].yaxis.label.set_size(20)
     plt.show()
 
 
@@ -243,54 +279,54 @@ axes_dict = {
         overflow=True,
     ),
     "nMuons_highPurity": hist.axis.Regular(
-        20,
+        10,
         0,
-        20,
+        10,
         name="nMuons_highPurity",
         label="nMuons highPurity",
         underflow=False,
         overflow=True,
     ),
     "nMuons_looseId": hist.axis.Regular(
-        20,
+        10,
         0,
-        20,
+        10,
         name="nMuons_looseId",
         label="nMuons looseId",
         underflow=False,
         overflow=True,
     ),
     "nMuons_mediumId": hist.axis.Regular(
-        20,
+        10,
         0,
-        20,
+        10,
         name="nMuons_mediumId",
         label="nMuons mediumId",
         underflow=False,
         overflow=True,
     ),
     "nMuons_tightId": hist.axis.Regular(
-        20,
+        10,
         0,
-        20,
+        10,
         name="nMuons_tightId",
         label="nMuons tightId",
         underflow=False,
         overflow=True,
     ),
     "nMuons_isTracker": hist.axis.Regular(
-        20,
+        10,
         0,
-        20,
+        10,
         name="nMuons_isTracker",
         label="nMuons isTracker",
         underflow=False,
         overflow=True,
     ),
     "nMuons_triggerIdLoose": hist.axis.Regular(
-        20,
+        10,
         0,
-        20,
+        10,
         name="nMuons_triggerIdLoose",
         label="nMuons triggerIdLoose",
         underflow=False,
@@ -347,13 +383,19 @@ signal_datasets = [
 
 # List of variables to plot
 # That's the main input for the significance scan
-columns_list = ["nMuons_mediumId", "nMuons_tightId"]
+columns_list = [
+    "nMuons_looseId",
+    "nMuons_mediumId",
+    "nMuons_tightId",
+]
 enable_plots = True
 
 if __name__ == "__main__":
     # Make histograms
+    print("Making histograms...", end=" ", flush=True)
     h_bkg = make_histogram(axes_dict, columns_list, qcd_files, qcd_datasets)
     h_sig = make_histogram(axes_dict, columns_list, signal_files, signal_datasets)
+    print("Done.", flush=True)
 
     # Perform significance scan
     sig_funcs = significance_functions()
@@ -365,3 +407,5 @@ if __name__ == "__main__":
             plot_1d(h_bkg, h_sig, h_significance)
         elif len(columns_list) == 2:
             plot_2d(h_bkg, h_sig, h_significance)
+        elif len(columns_list) > 2:
+            plot_Nd(h_bkg, h_sig, h_significance)
