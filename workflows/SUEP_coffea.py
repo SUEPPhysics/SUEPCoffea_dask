@@ -128,7 +128,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events = events[trigger]
         return events
 
-    def tripleMuFilter(self, events):
+    def triple_mu_filter(self, events):
         """
         Filter events after the TripleMu trigger.
         Cleans muons and electrons.
@@ -136,14 +136,14 @@ class SUEP_cluster(processor.ProcessorABC):
         """
         muons = events.Muon
         electrons = events.Electron
-        cleanMuons = (
-            (events.Muon.looseId)
+        clean_muons = (
+            (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.dxy) <= 0.02)
             & (abs(events.Muon.dz) <= 0.1)
             & (abs(events.Muon.eta) < 2.4)
         )
-        cleanElectrons = (
+        clean_electrons = (
             (events.Electron.mvaFall17V2noIso_WPL)
             & (events.Electron.pt > 3)
             & (
@@ -157,12 +157,12 @@ class SUEP_cluster(processor.ProcessorABC):
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
         )
-        muons = muons[cleanMuons]
-        electrons = electrons[cleanElectrons]
-        selectByMuons = ak.num(muons, axis=-1) >= 4
-        events = events[selectByMuons]
-        muons = muons[selectByMuons]
-        electrons = electrons[selectByMuons]
+        muons = muons[clean_muons]
+        electrons = electrons[clean_electrons]
+        select_by_muons = ak.num(muons, axis=-1) >= 6
+        events = events[select_by_muons]
+        muons = muons[select_by_muons]
+        electrons = electrons[select_by_muons]
         return events, electrons, muons
 
     def getGenTracks(self, events):
@@ -569,8 +569,8 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events, electrons, muons = self.tripleMuFilter(events)
-        output[dataset]["cutflow"].fill(len(events) * ["nMuon >= 4"])
+            events, electrons, muons = self.triple_mu_filter(events)
+        output[dataset]["cutflow"].fill(len(events) * ["nMuon_mediumId >= 6"])
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -681,7 +681,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "all events",
                 "HLT_PFHT430",
                 "HLT_TripleMu_5_3_3",
-                "nMuon >= 4",
+                "nMuon_mediumId >= 6",
             ],
             name="cutflow",
             label="cutflow",
