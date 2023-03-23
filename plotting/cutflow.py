@@ -1,4 +1,6 @@
+import argparse
 import itertools
+import json
 import math
 
 import fill_utils
@@ -443,6 +445,26 @@ def plot(h_bkg, h_sig, h_significance, save_plots_as=None, show_plot=True):
         raise ValueError("The number of axes must be >= 1")
 
 
+# Parse command line arguments
+parser = argparse.ArgumentParser(description="Calculate and plot cutflows")
+parser.add_argument(
+    "-c", "--config", metavar="configuration_file", help="Configuration file"
+)
+args = parser.parse_args()
+
+# Load configuration
+with open(args.config) as f:
+    config = json.load(f)
+qcd_pt_bins = config["background_datasets"]["QCD_Pt"]
+masses_s = config["signal_points"]["masses_s"]
+decays = config["signal_points"]["decays"]
+columns_list = config["columns_list"]
+show_plot = config["show_plot"]
+merged_plots = config["merged_plots"]
+local_path = config["local_path"]
+plots_path = config["plots_path"]
+
+
 # Define axes
 axes_dict = {
     "ntracks": hist.axis.Regular(
@@ -534,27 +556,7 @@ axes_dict = {
     ),
 }
 
-# Local configuration
-local_path = "../temp_output.nosync/"
-
-# List of background files
-qcd_pt_bins = [
-    "15to30",
-    "30to50",
-    "50to80",
-    "80to120",
-    "120to170",
-    "170to300",
-    "300to470",
-    "470to600",
-    "600to800",
-    "800to1000",
-    "1000to1400",
-    "1400to1800",
-    "1800to2400",
-    "2400to3200",
-    "3200toInf",
-]
+# Make list of background files
 qcd_files = [
     f"{local_path}condor_test_QCD_Pt_{bin}+RunIISummer20UL18.hdf5"
     for bin in qcd_pt_bins
@@ -565,11 +567,7 @@ qcd_datasets = [
     for bin in qcd_pt_bins
 ]
 
-# List of signal files
-masses_s = [125, 400, 750, 1000]
-decays = ["darkPho", "darkPhoHad"]
-# masses_s = [125]
-# decays = ["darkPhoHad"]
+# Make list of signal files
 signal_files = [
     f"{local_path}condor_test_SUEP-m{mass_s}-{decay}+RunIIAutumn18.hdf5"
     for mass_s in masses_s
@@ -581,6 +579,7 @@ signal_datasets = [
     for decay in decays
 ]
 
+# Make lists for custom legends
 custom_lines_masses = []
 for mass_s in masses_s:
     custom_lines_masses.append(
@@ -607,15 +606,6 @@ for decay in decays:
         )
     )
 
-
-# List of variables to plot
-# That's the main input for the significance scan
-columns_list = [
-    "nMuons_mediumId",
-]
-show_plot = False
-merged_plots = True
-plots_path = "output_plots/"
 
 if __name__ == "__main__":
     # Make histograms
@@ -659,12 +649,11 @@ if __name__ == "__main__":
 
     # Save merged plots
     if merged_plots and len(columns_list) == 1:
-        """
-        legend1 = plt.legend(custom_lines_masses, masses_s, title=r"$m_S$ (GeV)", loc=2)
-        legend2 = plt.legend(custom_lines_decays, decays, title="Decay mode", loc=3)
+        legend1 = ax_merged[1].legend(
+            custom_lines_masses, masses_s, title=r"$m_S$ (GeV)", loc=2
+        )
+        legend2 = ax_merged[1].legend(
+            custom_lines_decays, decays, title="Decay mode", loc=3
+        )
         ax_merged[1].add_artist(legend1)
-        ax_merged[1].add_artist(legend2)
-        """
-        ax_merged[1].legend(custom_lines_masses, masses_s, title=r"$m_S$ (GeV)", loc=2)
-        ax_merged[0].legend(custom_lines_decays, decays, title="Decay mode", loc=3)
         fig_merged.savefig(plots_path + columns_list[0] + "_merged.pdf")

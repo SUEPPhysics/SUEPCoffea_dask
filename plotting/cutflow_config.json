@@ -1,0 +1,30 @@
+{
+  "signal_points": {
+    "masses_s": [125, 400, 750, 1000],
+    "decays": ["darkPho", "darkPhoHad"]
+  },
+  "background_datasets": {
+    "QCD_Pt": [
+      "15to30",
+      "30to50",
+      "50to80",
+      "80to120",
+      "120to170",
+      "170to300",
+      "300to470",
+      "470to600",
+      "600to800",
+      "800to1000",
+      "1000to1400",
+      "1400to1800",
+      "1800to2400",
+      "2400to3200",
+      "3200toInf"
+    ]
+  },
+  "columns_list": ["nMuons_mediumId"],
+  "show_plot": false,
+  "merged_plots": true,
+  "plots_path": "output_plots/",
+  "local_path": "../temp_output.nosync/"
+}
