@@ -5,10 +5,12 @@ import fill_utils
 import hist
 import matplotlib
 import mplhep as hep
+import numpy as np
 import plot_utils
 import sympy as sp
 from hist import Hist
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 from rich.progress import track
 
 plt.style.use(hep.style.CMS)
@@ -86,18 +88,20 @@ def significance_functions(alpha=2, beta=5, mode="punzi_full_smooth"):
     )
 
 
-def significance_scan(h_sig, h_bkg, columns_list, sig_func):
+def significance_scan(h_bkg, h_sig, columns_list, sig_func):
     """
     Scan the significance of a signal given the histograms of signal and background
     events. The significance is calculated using the Punzi formula.
     Parameters
     ----------
-    h_sig : hist.Hist
-        Histogram of signal events
     h_bkg : hist.Hist
         Histogram of background events
+    h_sig : hist.Hist
+        Histogram of signal events
     columns_list : list
         List of columns to scan significance for
+    sig_func : tuple
+        Tuple of significance functions
     Returns
     -------
     h_significance : hist.Hist
@@ -183,7 +187,10 @@ def make_histogram(axes, columns, files, datasets, merge_datasets=False):
         xsection = fill_utils.getXSection(dataset, 2018, SUEP=is_signal)
         lumi = plot_utils.findLumi(year=None, auto_lumi=True, infile_name=dataset)
         weight = xsection * lumi / gensumweight
-        axes = h.axes.name
+        if merge_datasets:
+            axes = h.axes.name
+        else:
+            axes = h[dataset].axes.name
         df_dict = {}
         df_dict = df[list(axes)].to_dict("list")
         if merge_datasets:
@@ -193,7 +200,7 @@ def make_histogram(axes, columns, files, datasets, merge_datasets=False):
     return h
 
 
-def plot_1d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
+def plot_1d(h_bkg, h_sig, h_significance, save_plot_as=None, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     when there is only one variable
@@ -205,6 +212,10 @@ def plot_1d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
         Histogram of signal events
     h_significance : hist.Hist
         Histogram of significance
+    save_plot_as : str
+        Save the plot as this file name
+    show_plot : bool
+        Show the plot
     """
     fig, ax = plt.subplots(1, 2, figsize=(14, 7))
     fig.tight_layout()
@@ -215,13 +226,81 @@ def plot_1d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
     ax[0].set_yscale("log")
     h_significance.plot(ax=ax[1])
     ax[1].set_title("Significance")
-    if save_plot:
-        plt.savefig("significance.png")
+    if save_plot_as is not None:
+        plt.savefig(save_plot_as + ".pdf")
     if show_plot:
         plt.show()
 
 
-def plot_2d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
+def plot_1d_merged(h_bkg, h_sig, h_significance, dataset=None, fig=None, ax=None):
+    """
+    Plot the histograms of signal and background events and the significance
+    when there is only one variable and keep all signal points in the same plots
+    Parameters
+    ----------
+    h_bkg : hist.Hist
+        Histogram of background events
+    h_sig : hist.Hist
+        Histogram of signal events
+    h_significance : hist.Hist
+        Histogram of significance
+    dataset : str
+        Dataset name
+    fig : matplotlib.figure.Figure
+        Figure to plot on
+    ax : matplotlib.axes.Axes
+        Axes to plot on
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure
+    ax : matplotlib.axes.Axes
+        Axes
+    """
+    if fig is None and ax is None:
+        fig, ax = plt.subplots(1, 2, figsize=(14, 7))
+        fig.tight_layout()
+        ax[0].set_title("Events")
+        ax[0].set_yscale("log")
+        ax[1].set_title("Significance")
+        hep.histplot(
+            h_bkg,
+            yerr=np.sqrt(h_bkg.variances()),
+            ax=ax[0],
+            label="QCD",
+            color=plot_utils.default_colors["QCD"],
+        )
+
+    label = "Signal"
+    if dataset is not None:
+        label = dataset.replace("+RunIIAutumn18-private+MINIAODSIM", "").replace(
+            "SUEP-", ""
+        )
+
+    linestyle = "solid"
+    if "darkPhoHad" in label:
+        linestyle = "dashed"
+
+    hep.histplot(
+        h_sig,
+        yerr=np.sqrt(h_sig.variances()),
+        ax=ax[0],
+        label=label,
+        color=plot_utils.default_colors["SUEP-" + label + "_2018"],
+        linestyle=linestyle,
+    )
+    hep.histplot(
+        h_significance,
+        yerr=np.sqrt(h_significance.variances()),
+        ax=ax[1],
+        label=label,
+        color=plot_utils.default_colors["SUEP-" + label + "_2018"],
+        linestyle=linestyle,
+    )
+    return fig, ax
+
+
+def plot_2d(h_bkg, h_sig, h_significance, save_plot_as=None, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     when there are two variables
@@ -233,6 +312,10 @@ def plot_2d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
         Histogram of signal events
     h_significance : hist.Hist
         Histogram of significance
+    save_plot_as : str
+        Save the plot as this file name
+    show_plot : bool
+        Show the plot
     """
     fig, ax = plt.subplots(1, 3, figsize=(15, 7))
     fig.tight_layout()
@@ -243,10 +326,13 @@ def plot_2d(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
     ax[1].set_title("Signal")
     h_significance.plot(ax=ax[2])
     ax[2].set_title("Significance")
-    plt.show()
+    if save_plot_as is not None:
+        plt.savefig(save_plot_as + ".pdf")
+    if show_plot:
+        plt.show()
 
 
-def plot_Nd(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
+def plot_Nd(h_bkg, h_sig, h_significance, save_plot_as=None, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     when there are more than two variables
@@ -258,6 +344,10 @@ def plot_Nd(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
         Histogram of signal events
     h_significance : hist.Hist
         Histogram of significance
+    save_plot_as : str
+        Save the plot as this file name
+    show_plot : bool
+        Show the plot
     """
     n_axes = len(h_significance.axes)
     label_scale = 3 / n_axes
@@ -279,8 +369,20 @@ def plot_Nd(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
         description="Plotting",
     ):
         if i == j:
-            h_bkg.project(i).plot(ax=ax[i, j], label="QCD")
-            h_sig.project(i).plot(ax=ax[i, j], label="Signal")
+            h_bkg_project = h_bkg.project(i)
+            h_sig_project = h_sig.project(i)
+            hep.histplot(
+                h_bkg_project,
+                ax=ax[i, j],
+                yerr=np.sqrt(h_bkg_project.variances()),
+                label="QCD",
+            )
+            hep.histplot(
+                h_sig_project,
+                ax=ax[i, j],
+                yerr=np.sqrt(h_sig_project.variances()),
+                label="Signal",
+            )
             ax[i, j].set_yscale("log")
             ax[i, j].xaxis.label.set_size(20 * label_scale)
             ax[i, j].xaxis.labelpad = 4 * label_scale * 0.7
@@ -291,10 +393,13 @@ def plot_Nd(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
         ax[i, j].yaxis.label.set_size(20 * label_scale)
         ax[i, j].xaxis.labelpad = 4 * label_scale * 0.7
         ax[i, j].yaxis.labelpad = 4 * label_scale * 0.7
-    plt.show()
+    if save_plot_as is not None:
+        plt.savefig(save_plot_as + ".pdf")
+    if show_plot:
+        plt.show()
 
 
-def plot(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
+def plot(h_bkg, h_sig, h_significance, save_plots_as=None, show_plot=True):
     """
     Plot the histograms of signal and background events and the significance
     Parameters
@@ -305,17 +410,35 @@ def plot(h_bkg, h_sig, h_significance, save_plot=False, show_plot=True):
         Histogram of signal events
     h_significance : hist.Hist
         Histogram of significance
-    save_plot : bool
-        Save the plot to a file
+    save_plots_as : str
+        Save the plot as this file name
     show_plot : bool
         Show the plot
     """
     if len(h_significance.axes) == 1:
-        plot_1d(h_bkg, h_sig, h_significance, save_plot, show_plot)
+        plot_1d(
+            h_bkg,
+            h_sig,
+            h_significance,
+            save_plot_as=save_plots_as,
+            show_plot=show_plot,
+        )
     elif len(h_significance.axes) == 2:
-        plot_2d(h_bkg, h_sig, h_significance, save_plot, show_plot)
+        plot_2d(
+            h_bkg,
+            h_sig,
+            h_significance,
+            save_plot_as=save_plots_as,
+            show_plot=show_plot,
+        )
     elif len(h_significance.axes) > 2:
-        plot_Nd(h_bkg, h_sig, h_significance, save_plot, show_plot)
+        plot_Nd(
+            h_bkg,
+            h_sig,
+            h_significance,
+            save_plot_as=save_plots_as,
+            show_plot=show_plot,
+        )
     else:
         raise ValueError("The number of axes must be >= 1")
 
@@ -443,10 +566,10 @@ qcd_datasets = [
 ]
 
 # List of signal files
-# masses_s = [125, 400, 750, 1000]
-# decays = ["darkPho", "darkPhoHad"]
-masses_s = [125]
-decays = ["darkPhoHad"]
+masses_s = [125, 400, 750, 1000]
+decays = ["darkPho", "darkPhoHad"]
+# masses_s = [125]
+# decays = ["darkPhoHad"]
 signal_files = [
     f"{local_path}condor_test_SUEP-m{mass_s}-{decay}+RunIIAutumn18.hdf5"
     for mass_s in masses_s
@@ -458,17 +581,41 @@ signal_datasets = [
     for decay in decays
 ]
 
+custom_lines_masses = []
+for mass_s in masses_s:
+    custom_lines_masses.append(
+        Line2D(
+            [0],
+            [0],
+            color=plot_utils.default_colors[f"SUEP-m{mass_s}-darkPho_2018"],
+            lw=2,
+        )
+    )
+custom_lines_decays = []
+for decay in decays:
+    if decay == "darkPho":
+        linestyle = "solid"
+    elif decay == "darkPhoHad":
+        linestyle = "dashed"
+    custom_lines_decays.append(
+        Line2D(
+            [0],
+            [0],
+            color="black",
+            linestyle=linestyle,
+            lw=2,
+        )
+    )
+
+
 # List of variables to plot
 # That's the main input for the significance scan
 columns_list = [
-    "nMuons_looseId",
     "nMuons_mediumId",
-    "nMuons_tightId",
-    "nMuons_isTracker",
-    "nMuons_triggerIdLoose",
 ]
-save_plots = True
-show_plots = False
+show_plot = False
+merged_plots = True
+plots_path = "output_plots/"
 
 if __name__ == "__main__":
     # Make histograms
@@ -483,11 +630,41 @@ if __name__ == "__main__":
     sig_funcs = significance_functions()
 
     # Loop over signal points
+    fig_merged, ax_merged = None, None
     for signal_dataset in signal_datasets:
         # Perform significance scan
         h_significance = significance_scan(
-            h_sig[signal_dataset], h_bkg, columns_list, sig_funcs
+            h_bkg, h_sig[signal_dataset], columns_list, sig_funcs
         )
 
-        # Plot histograms
-        plot(h_bkg, h_sig[signal_dataset], h_significance, save_plots, show_plots)
+        if merged_plots and len(columns_list) == 1:
+            # Plot merged histograms
+            fig_merged, ax_merged = plot_1d_merged(
+                h_bkg,
+                h_sig[signal_dataset],
+                h_significance,
+                dataset=signal_dataset,
+                fig=fig_merged,
+                ax=ax_merged,
+            )
+        else:
+            # Plot histograms
+            plot(
+                h_bkg,
+                h_sig[signal_dataset],
+                h_significance,
+                save_plots_as=plots_path + signal_dataset,
+                show_plot=show_plot,
+            )
+
+    # Save merged plots
+    if merged_plots and len(columns_list) == 1:
+        """
+        legend1 = plt.legend(custom_lines_masses, masses_s, title=r"$m_S$ (GeV)", loc=2)
+        legend2 = plt.legend(custom_lines_decays, decays, title="Decay mode", loc=3)
+        ax_merged[1].add_artist(legend1)
+        ax_merged[1].add_artist(legend2)
+        """
+        ax_merged[1].legend(custom_lines_masses, masses_s, title=r"$m_S$ (GeV)", loc=2)
+        ax_merged[0].legend(custom_lines_decays, decays, title="Decay mode", loc=3)
+        fig_merged.savefig(plots_path + columns_list[0] + "_merged.pdf")
