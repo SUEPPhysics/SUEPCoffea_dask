@@ -15,18 +15,33 @@ import numpy as np
 from sympy import diff, sqrt, symbols
 
 default_colors = {
-    "QCD": "midnightblue",
-    "QCD_HT": "midnightblue",
-    "QCD_HT_2018": "midnightblue",
-    "QCD_HT_2017": "midnightblue",
-    "QCD_HT_2016": "midnightblue",
-    "QCD_HT_allyears": "midnightblue",
-    "data": "maroon",
+    "QCD": "slateblue",
+    "QCD_HT": "slateblue",
+    "QCD_HT_2018": "slateblue",
+    "QCD_HT_2017": "slateblue",
+    "QCD_HT_2016": "slateblue",
+    "QCD_HT_allyears": "slateblue",
+    "TTJets_2018": "midnightblue",
+    "TTJets_2017": "midnightblue",
+    "TTJets_2016": "midnightblue",
+    "MC_2018": "slateblue",
+    "MC_2017": "slateblue",
+    "MC_2016": "slateblue",
     "data": "maroon",
     "data_2018": "maroon",
     "data_2017": "maroon",
     "data_2016": "maroon",
     "data_allyears": "maroon",
+    "mS1000_T2.0_mPhi2.0_hadronic_2018": "red",
+    "mS125_T2.0_mPhi2.0_hadronic_2018":  "cyan",
+    "mS200_T2.0_mPhi2.0_hadronic_2018": "blue",
+    "mS300_T2.0_mPhi2.0_hadronic_2018": "lightseagreen",
+    "mS400_T2.0_mPhi2.0_hadronic_2018": "green",
+    "mS500_T2.0_mPhi2.0_hadronic_2018": "darkgreen",
+    "mS600_T2.0_mPhi2.0_hadronic_2018": "lawngreen",
+    "mS700_T2.0_mPhi2.0_hadronic_2018": "goldenrod",
+    "mS800_T2.0_mPhi2.0_hadronic_2018": "orange",
+    "mS900_T2.0_mPhi2.0_hadronic_2018": "sienna",
     "SUEP-m1000-darkPho_2018": "red",
     "SUEP-m1000-darkPhoHad_2018": "red",
     "SUEP-m1000-generic_2018": "red",
@@ -173,12 +188,12 @@ def fillSample(infile_name, plots, lumi):
         sample = "data"
 
     elif "SUEP" in infile_name:
-        if "+" in infile_name:
+        if "+" in infile_name:  # historical naming convention
             sample = infile_name.split("/")[-1].split("+")[0]
-        elif "generic" in infile_name:
-            sample = infile_name.split("/")[-1].split("_")[1]  # hack for Carlos naming convention
-        elif "GluGluToSUEP" in infile_name:
+        elif "GluGluToSUEP" in infile_name: # private samples naming convention
             sample = formatNaming(infile_name.split('/')[-1])
+        elif "generic" in infile_name and 'MS' in infile_name: # hack for Carlos naming convention
+            sample = infile_name.split("/")[-1].split("_")[1] 
         else:
             sample = infile_name.split("/")[-1]
     else:

@@ -70,6 +70,9 @@ parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
 )
 parser.add_argument(
+    "--predictSR", type=int, default=0, help="Predict SR using ABCD method."
+)
+parser.add_argument(
     "--blind", type=int, default=1, help="Blind the data (default=True)"
 )
 parser.add_argument(
@@ -83,7 +86,7 @@ options = parser.parse_args()
 # Script Parameters
 ###################################################################################################################
 
-outDir = f"/work/submit/{getpass.getuser()}/SUEP/outputs/"
+outDir = f"/data/submit/{getpass.getuser()}/SUEP/outputs/"
 if options.save is not None:
     outDir = options.save
 # define these if --xrootd 0
@@ -131,15 +134,15 @@ config = {
     #     "SR": [["SUEP_S1_CL", ">=", 0.45], ["SUEP_nconst_CL", ">=", 80]],
     #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     # },
-    # "ClusterInverted": {
-    #     "input_method": "CL",
-    #     "xvar": "ISR_S1_CL",
-    #     "xvar_regions": [0.3, 0.425, 0.5, 1.0],
-    #     "yvar": "ISR_nconst_CL",
-    #     "yvar_regions": [10, 35, 60, 1000],
-    #     "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
-    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    # },
+    "ClusterInverted": {
+        "input_method": "CL",
+        "xvar": "ISR_S1_CL",
+        "xvar_regions": [0.3, 0.425, 0.5, 1.0],
+        "yvar": "ISR_nconst_CL",
+        "yvar_regions": [10, 35, 60, 1000],
+        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
+        "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+    },
     # "ClusterInverted": {
     #     "input_method": "CL",
     #     "xvar": "ISR_S1_CL",
@@ -881,7 +884,39 @@ if options.isMC and options.doSyst:
 
 # apply normalization
 if options.isMC:
-    outputs = fill_utils.apply_normalization(output, xsection / total_gensumweight)
+    print(xsection, total_gensumweight)
+    output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
+    
+# Make ABCD expected histogram for signal region 
+
+if options.doABCD and options.blind and options.predictSR:
+    logging.info("Predicting SR using ABCD method.")
+    
+    #Loop through every configuration
+    for label_out, config_out in config.items():
+
+        xregions = np.array(config_out['xvar_regions'])*1.0j
+        yregions = np.array(config_out['yvar_regions'])*1.0j
+        xvar = config_out['xvar'].replace('_'+config_out['input_method'],'')
+        yvar = config_out['yvar'].replace('_'+config_out['input_method'],'')
+        
+        hist_name = '2D_{}_vs_{}_{}'.format(xvar,yvar,label_out)
+
+        # Check if histogram exists 
+        if hist_name not in output.keys(): 
+            logging.warning("{} has not been created.".format(hist_name))
+            continue
+
+        # Only calculate predicted for 9 region ABCD
+        if (len(xregions) != 4) or (len(yregions)!=4): 
+            logging.warning("Can only calculate SR for 9 region ABCD, skipping {}".format(label_out))
+            continue
+
+        # Calculate SR from ABCD method
+        # sum_var = 'x' corresponds to scaling F histogram
+        SR, SR_exp, alpha, sigma_alpha = plot_utils.ABCD_9regions_errorProp(output[hist_name],xregions,yregions, sum_var="x") 
+        
+        output['I_{}_{}'.format(yvar,label_out)] = SR_exp
 
 logging.info("Saving outputs.")
 
