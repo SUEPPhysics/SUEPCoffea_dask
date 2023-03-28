@@ -229,26 +229,23 @@ class SUEP_cluster(processor.ProcessorABC):
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
 
-            if self.era == 2016 and self.scouting == 0:
+            if self.era == 2016:
                 output[dataset]["vars"]["HLT_PFHT900" + out_label] = events.HLT.PFHT900
-            elif self.scouting == 0:
+            else:
                 output[dataset]["vars"][
                     "HLT_PFHT1050" + out_label
                 ] = events.HLT.PFHT1050
             output[dataset]["vars"]["ngood_ak4jets" + out_label] = ak.num(
                 ak4jets
             ).to_list()
-            if self.scouting == 1:
-                output[dataset]["vars"]["PV_npvs" + out_label] = ak.num(events.Vertex.x)
-            else:
-                if self.isMC:
-                    output[dataset]["vars"][
-                        "Pileup_nTrueInt" + out_label
-                    ] = events.Pileup.nTrueInt
-                    GetPSWeights(events, output[dataset])  # Parton Shower weights
-                    GetPrefireWeights(self, events, output[dataset])  # Prefire weights
-                output[dataset]["vars"]["PV_npvs" + out_label] = events.PV.npvs
-                output[dataset]["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
+            if self.isMC:
+                output[dataset]["vars"][
+                    "Pileup_nTrueInt" + out_label
+                ] = events.Pileup.nTrueInt
+                GetPSWeights(events, output[dataset])  # Parton Shower weights
+                GetPrefireWeights(self, events, output[dataset])  # Prefire weights
+            output[dataset]["vars"]["PV_npvs" + out_label] = events.PV.npvs
+            output[dataset]["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
@@ -256,7 +253,7 @@ class SUEP_cluster(processor.ProcessorABC):
         SUEP_genEta = len(events) * [0]
         SUEP_genPhi = len(events) * [0]
 
-        if self.isMC and not self.scouting:
+        if self.isMC:
             genParts = self.getGenTracks(events)
             genSUEP = genParts[(abs(genParts.pdgID) == 25)]
 
@@ -407,7 +404,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
 
         # golden jsons for offline data
-        if not self.isMC and self.scouting != 1:
+        if not self.isMC:
             events = applyGoldenJSON(self, events)
 
         events = self.eventSelection(events)
