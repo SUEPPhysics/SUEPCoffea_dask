@@ -90,7 +90,7 @@ def get_main_parser():
         "--wf",
         "--workflow",
         dest="workflow",
-        choices=["SUEP"],
+        choices=["SUEP", "SUEP_slim"],
         help="Which processor to run",
         required=True,
     )
@@ -509,6 +509,28 @@ def setupSUEP(args, sample_dict):
     return instance
 
 
+def setupSUEP_slim(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_slim import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -597,6 +619,8 @@ if __name__ == "__main__":
     # Load workflow
     if args.workflow == "SUEP":
         processor_instance = setupSUEP(args, sample_dict)
+    elif args.workflow == "SUEP_slim":
+        processor_instance = setupSUEP_slim(args, sample_dict)
     else:
         raise NotImplementedError
 

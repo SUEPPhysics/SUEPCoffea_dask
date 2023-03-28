@@ -31,13 +31,11 @@ class SUEP_cluster(processor.ProcessorABC):
         self,
         isMC: int,
         era: int,
-        scouting: int,
         sample: str,
         do_syst: bool,
         syst_var: str,
         weight_syst: bool,
         flag: bool,
-        do_inf: bool,
         output_location: Optional[str],
         accum: Optional[bool] = None,
         trigger: Optional[str] = None,
@@ -47,7 +45,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.output_location = output_location
         self.do_syst = do_syst
         self.gensumweight = 1.0
-        self.scouting = scouting
         self.era = int(era)
         self.isMC = bool(isMC)
         self.sample = sample
@@ -55,7 +52,6 @@ class SUEP_cluster(processor.ProcessorABC):
             (syst_var, f"_sys_{syst_var}") if do_syst and syst_var else ("", "")
         )
         self.weight_syst = weight_syst
-        self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
         self.doOF = False
         self.accum = accum
@@ -211,6 +207,9 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # save per event variables to a dataframe
         if out_label == "":
+            output[dataset]["vars"][
+                "genWeight" + out_label
+            ] = events.genWeight.to_list()
             output[dataset]["vars"]["ht" + out_label] = ak.sum(
                 ak4jets.pt, axis=-1
             ).to_list()
