@@ -143,6 +143,15 @@ def fillSample(infile_name, plots, lumi):
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
+    elif "ttZJets" in infile_name:
+        sample = "ttZJets"
+
+    elif "ZZTo4L" in infile_name:
+        sample = "ZZTo4L"
+
+    elif "ZZZ" in infile_name:
+        sample = "ZZZ"
+
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
 
