@@ -395,12 +395,15 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         # some cutflow stuff
-        output[dataset]["cutflow"].fill(len(events) * ["all events"])
         output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
+            len(events) * ["all events"], weight=events.genWeight
         )
         output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"]
+            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"], weight=events.genWeight
+        )
+        output[dataset]["cutflow"].fill(
+            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"],
+            weight=events.genWeight,
         )
 
         # golden jsons for offline data
@@ -412,7 +415,9 @@ class SUEP_cluster(processor.ProcessorABC):
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
             events, electrons, muons = self.triple_mu_filter(events)
-        output[dataset]["cutflow"].fill(len(events) * ["nMuon_mediumId >= 6"])
+        output[dataset]["cutflow"].fill(
+            len(events) * ["nMuon_mediumId >= 6"], weight=events.genWeight
+        )
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
