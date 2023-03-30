@@ -250,5 +250,20 @@
     "br": 1,
     "kr": 1,
     "xsec": 6344.0
+  },
+  "ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.5407
+  },
+  "ZZTo4L_TuneCP5_13TeV_powheg_pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 1.325
+  },
+  "ZZZ_TuneCP5_13TeV-amcatnlo-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.01476
   }
 }
