@@ -399,11 +399,12 @@ class SUEP_cluster(processor.ProcessorABC):
             len(events) * ["all events"], weight=events.genWeight
         )
         output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"], weight=events.genWeight
+            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"],
+            weight=events[events.HLT.PFHT430 == 1].genWeight,
         )
         output[dataset]["cutflow"].fill(
             ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"],
-            weight=events.genWeight,
+            weight=events[events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1].genWeight,
         )
 
         # golden jsons for offline data
