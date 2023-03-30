@@ -256,6 +256,11 @@
     "kr": 1,
     "xsec": 0.5407
   },
+  "WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.1707
+  },
   "WWZJetsTo4L2Nu_4F_TuneCP5_13TeV-amcatnlo-pythia8": {
     "br": 1,
     "kr": 1,
