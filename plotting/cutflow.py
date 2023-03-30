@@ -90,7 +90,7 @@ def significance_functions(alpha=2, beta=5, mode="punzi_full_smooth"):
     )
 
 
-def significance_scan(h_bkg, h_sig, columns_list, sig_func):
+def significance_scan(h_bkg, h_sig, columns_list, axes, sig_func):
     """
     Scan the significance of a signal given the histograms of signal and background
     events. The significance is calculated using the Punzi formula.
@@ -102,6 +102,8 @@ def significance_scan(h_bkg, h_sig, columns_list, sig_func):
         Histogram of signal events
     columns_list : list
         List of columns to scan significance for
+    axes : dict
+        Dictionary of axes. Contains info about the direction of the cut
     sig_func : tuple
         Tuple of significance functions
     Returns
@@ -111,8 +113,10 @@ def significance_scan(h_bkg, h_sig, columns_list, sig_func):
     """
     h_significance = h_sig.copy()
     h_significance.reset()
+    cuts = []
     for ax in h_significance.axes:
-        ax.label += " >= cutvalue"
+        cuts.append(axes[ax.name]["cut"])
+        ax.label += f" {axes[ax.name]['cut']} cutvalue"
     n_dims = len(columns_list)
     n_bins = h_bkg.shape
     S_tot = h_sig.sum(flow=True)
@@ -122,7 +126,10 @@ def significance_scan(h_bkg, h_sig, columns_list, sig_func):
         total=len(list(itertools.product(*iterators))),
         description="Significance scan",
     ):
-        cut = [slice(index, n_bins[count]) for count, index in enumerate(indices)]
+        cut = [
+            slice(index, n_bins[count]) if cuts[count] == ">=" else slice(index + 1)
+            for count, index in enumerate(indices)
+        ]
         B = h_bkg[tuple(cut)].sum(flow=True)
         S = h_sig[tuple(cut)].sum(flow=True)
         signfificance = (
@@ -161,7 +168,7 @@ def make_histogram(axes, columns, files, datasets, merge_datasets=False):
     h : hist.Hist
         Histogram
     """
-    axes = [axes[c] for c in columns]
+    axes = [axes[c]["axis"] for c in columns]
     h = Hist(
         *axes,
         storage=hist.storage.Weight(),
@@ -467,93 +474,138 @@ plots_path = config["plots_path"]
 
 # Define axes
 axes_dict = {
-    "ntracks": hist.axis.Regular(
-        300, 0, 300, name="ntracks", label="nTracks", underflow=False, overflow=True
-    ),
-    "nMuons": hist.axis.Regular(
-        30, 0, 30, name="nMuons", label="nMuons", underflow=False, overflow=True
-    ),
-    "nMuons_category1": hist.axis.Regular(
-        20,
-        0,
-        20,
-        name="nMuons_category1",
-        label="nMuons_cat1",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_category2": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_category2",
-        label="nMuons_cat2",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_category3": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_category3",
-        label="nMuons_cat3",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_highPurity": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_highPurity",
-        label="nMuons highPurity",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_looseId": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_looseId",
-        label="nMuons looseId",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_mediumId": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_mediumId",
-        label="nMuons mediumId",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_tightId": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_tightId",
-        label="nMuons tightId",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_isTracker": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_isTracker",
-        label="nMuons isTracker",
-        underflow=False,
-        overflow=True,
-    ),
-    "nMuons_triggerIdLoose": hist.axis.Regular(
-        10,
-        0,
-        10,
-        name="nMuons_triggerIdLoose",
-        label="nMuons triggerIdLoose",
-        underflow=False,
-        overflow=True,
-    ),
+    "ntracks": {
+        "axis": hist.axis.Regular(
+            300, 0, 300, name="ntracks", label="nTracks", underflow=False, overflow=True
+        ),
+        "cut": ">=",
+    },
+    "nMuons": {
+        "axis": hist.axis.Regular(
+            30, 0, 30, name="nMuons", label="nMuons", underflow=False, overflow=True
+        ),
+        "cut": ">=",
+    },
+    "nMuons_category1": {
+        "axis": hist.axis.Regular(
+            20,
+            0,
+            20,
+            name="nMuons_category1",
+            label="nMuons_cat1",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_category2": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_category2",
+            label="nMuons_cat2",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_category3": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_category3",
+            label="nMuons_cat3",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_highPurity": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_highPurity",
+            label="nMuons highPurity",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_looseId": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_looseId",
+            label="nMuons looseId",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_mediumId": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_mediumId",
+            label="nMuons mediumId",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_tightId": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_tightId",
+            label="nMuons tightId",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_isTracker": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_isTracker",
+            label="nMuons isTracker",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "nMuons_triggerIdLoose": {
+        "axis": hist.axis.Regular(
+            10,
+            0,
+            10,
+            name="nMuons_triggerIdLoose",
+            label="nMuons triggerIdLoose",
+            underflow=False,
+            overflow=True,
+        ),
+        "cut": ">=",
+    },
+    "muon_dxy_mean": {
+        "axis": hist.axis.Regular(
+            100,
+            0.0,
+            0.02,
+            name="muon_dxy_mean",
+            label="muon_dxy_mean",
+            underflow=True,
+            overflow=False,
+        ),
+        "cut": "<=",
+    },
 }
 
 # Make list of background files
@@ -624,7 +676,7 @@ if __name__ == "__main__":
     for signal_dataset in signal_datasets:
         # Perform significance scan
         h_significance = significance_scan(
-            h_bkg, h_sig[signal_dataset], columns_list, sig_funcs
+            h_bkg, h_sig[signal_dataset], columns_list, axes_dict, sig_funcs
         )
 
         if merged_plots and len(columns_list) == 1:

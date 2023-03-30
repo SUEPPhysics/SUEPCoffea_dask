@@ -28,6 +28,8 @@ default_colors = {
     "QCD_Pt_allyears": "midnightblue",
     "ttZ": "darkgreen",
     "ttZJets_2018": "darkgreen",
+    "WWZJetsTo4L2Nu": "darkmagenta",
+    "WWZJetsTo4L2Nu_2018": "darkmagenta",
     "ZZTo4L": "darkred",
     "ZZTo4L_2018": "darkred",
     "ZZZ": "darkorange",
@@ -148,6 +150,9 @@ def fillSample(infile_name, plots, lumi):
 
     elif "ttZJets" in infile_name:
         sample = "ttZJets"
+
+    elif "WWZJetsTo4L2Nu" in infile_name:
+        sample = "WWZJetsTo4L2Nu"
 
     elif "ZZTo4L" in infile_name:
         sample = "ZZTo4L"

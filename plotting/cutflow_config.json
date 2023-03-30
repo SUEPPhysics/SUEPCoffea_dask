@@ -22,7 +22,7 @@
       "3200toInf"
     ]
   },
-  "columns_list": ["nMuons_mediumId"],
+  "columns_list": ["nMuons_looseId", "nMuons_mediumId", "muon_dxy_mean"],
   "show_plot": false,
   "merged_plots": true,
   "plots_path": "output_plots/",
