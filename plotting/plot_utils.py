@@ -154,7 +154,7 @@ def findLumi(year, auto_lumi, infile_name):
 
 def fillSample(infile_name, plots, lumi):
     found_name = False
-    for name in sample_names:
+    for name in sample_names.keys():
         if name in infile_name:
             if found_name:
                 raise Exception("Found multiple sample names in file name")
