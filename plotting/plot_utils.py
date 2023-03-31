@@ -108,6 +108,21 @@ lumis = {
     "2018": 59817.406,
 }
 
+sample_names = {
+    "QCD_Pt": "QCD_Pt",
+    "QCD_HT": "QCD_HT",
+    "TTJets": "TTJets",
+    "TTTo2L2Nu": "TTTo2L2Nu",
+    "ttZJets": "ttZJets",
+    "WWZ_4F": "WWZ_4F",
+    "WWZJetsTo4L2Nu_4F": "WWZJetsTo4L2Nu_4F",
+    "ZZTo4L": "ZZTo4L",
+    "ZZZ": "ZZZ",
+    "ZToMuMu": "ZToMuMu",
+    "JetHT+Run": "data",
+    "ScoutingPFHT": "data",
+}
+
 
 def lumiLabel(year):
     if year in ["2017", "2018"]:
@@ -138,58 +153,33 @@ def findLumi(year, auto_lumi, infile_name):
 
 
 def fillSample(infile_name, plots, lumi):
-    if "QCD_Pt" in infile_name:
-        sample = "QCD_Pt"
+    found_name = False
+    for name in sample_names:
+        if name in infile_name:
+            if found_name:
+                raise Exception("Found multiple sample names in file name")
+            sample = sample_names[name]
+            found_name = True
 
+    if "QCD_Pt" in infile_name:
         # include this block to import the QCD bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
     elif "QCD_HT" in infile_name:
-        sample = "QCD_HT"
-
         # include this block to import the QCD bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "TTJets" in infile_name:
-        sample = "TTJets"
-
-    elif "TTTo2L2Nu" in infile_name:
-        sample = "TTTo2L2Nu"
-
-    elif "ttZJets" in infile_name:
-        sample = "ttZJets"
-
-    elif "WWZ_4F" in infile_name:
-        sample = "WWZ_4F"
-
-    elif "WWZJetsTo4L2Nu_4F" in infile_name:
-        sample = "WWZJetsTo4L2Nu_4F"
-
-    elif "ZZTo4L" in infile_name:
-        sample = "ZZTo4L"
-
-    elif "ZZZ" in infile_name:
-        sample = "ZZZ"
-
     elif "ZToMuMu" in infile_name:
-        sample = "ZToMuMu"
-
         # include this block to import the QCD bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
-        sample = "data"
-
     elif "SUEP" in infile_name:
         if "+" in infile_name:
             sample = infile_name.split("/")[-1].split("+")[0]
