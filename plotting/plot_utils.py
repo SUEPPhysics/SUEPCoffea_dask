@@ -36,6 +36,8 @@ default_colors = {
     "ZZTo4L_2018": "darkred",
     "ZZZ": "darkorange",
     "ZZZ_2018": "darkorange",
+    "ZToMuMu": "sienna",
+    "ZToMuMu_2018": "sienna",
     "data": "maroon",
     "data": "maroon",
     "data_2018": "maroon",
@@ -164,6 +166,15 @@ def fillSample(infile_name, plots, lumi):
 
     elif "ZZZ" in infile_name:
         sample = "ZZZ"
+
+    elif "ZToMuMu" in infile_name:
+        sample = "ZToMuMu"
+
+        # include this block to import the QCD bins individually
+        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        plots[temp_sample] = openpkl(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
