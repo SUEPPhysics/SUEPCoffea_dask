@@ -154,10 +154,10 @@ def fillSample(infile_name, plots, lumi):
         sample = "ttZJets"
 
     elif "WWZ" in infile_name:
-        sample = "WWZ"
+        sample = "WWZ_4F"
 
     elif "WWZJetsTo4L2Nu" in infile_name:
-        sample = "WWZJetsTo4L2Nu"
+        sample = "WWZJetsTo4L2Nu_4F"
 
     elif "ZZTo4L" in infile_name:
         sample = "ZZTo4L"
