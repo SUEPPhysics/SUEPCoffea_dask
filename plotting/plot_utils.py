@@ -189,7 +189,7 @@ def fillSample(infile_name, plots, lumi):
             ]  # hack for Carlos naming convention
         else:
             sample = infile_name.split("/")
-    else:
+    elif sample is None:
         sample = infile_name
     return sample, plots
 
