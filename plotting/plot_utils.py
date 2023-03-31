@@ -26,7 +26,12 @@ default_colors = {
     "QCD_Pt_2017": "midnightblue",
     "QCD_Pt_2016": "midnightblue",
     "QCD_Pt_allyears": "midnightblue",
-    "ttZ": "darkgreen",
+    "TTJets": "black",
+    "TTJets_2018": "black",
+    "TTTo2L2Nu": "pink",
+    "TTTo2L2Nu_2018": "pink",
+    "TTJets_2018": "black",
+    "ttZJets": "darkgreen",
     "ttZJets_2018": "darkgreen",
     "WWZ_4F": "darkcyan",
     "WWZ_4F_2018": "darkcyan",
@@ -151,6 +156,12 @@ def fillSample(infile_name, plots, lumi):
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
+    elif "TTJets" in infile_name:
+        sample = "TTJets"
+
+    elif "TTTo2L2Nu" in infile_name:
+        sample = "TTTo2L2Nu"
 
     elif "ttZJets" in infile_name:
         sample = "ttZJets"
