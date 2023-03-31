@@ -325,5 +325,15 @@
     "br": 1,
     "kr": 1,
     "xsec": 2.526e-08	
+  },
+  "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 88.29
+  },
+  "TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 831.76
   }
 }
