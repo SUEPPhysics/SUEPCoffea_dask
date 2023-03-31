@@ -275,5 +275,55 @@
     "br": 1,
     "kr": 1,
     "xsec": 0.01476
+  },
+  "ZToMuMu_M-50To120_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 2116.0
+  },
+  "ZToMuMu_M-120To200_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 20.58	
+  },
+  "ZToMuMu_M-200To400_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 2.89	
+  },
+  "ZToMuMu_M-400To800_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.2515
+  },
+  "ZToMuMu_M-800To1400_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.01709
+  },
+  "ZToMuMu_M-1400To2300_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.00137
+  },
+  "ZToMuMu_M-2300To3500_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 8.282e-05
+  },
+  "ZToMuMu_M-3500To4500_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 3.414e-06
+  },
+  "ZToMuMu_M-4500To6000_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 3.65e-07
+  },
+  "ZToMuMu_M-6000ToInf_TuneCP5_13TeV-powheg-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 2.526e-08	
   }
 }
