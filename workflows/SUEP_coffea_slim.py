@@ -69,6 +69,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "eta": Jets.eta,
                 "phi": Jets.phi,
                 "mass": Jets.mass,
+                "btagDeepB": Jets.btagDeepB,
             }
         )
         jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta) < 2.4)
@@ -98,7 +99,7 @@ class SUEP_cluster(processor.ProcessorABC):
         """
         Filter events after the TripleMu trigger.
         Cleans muons and electrons.
-        Requires at least 4 muons with looseId, pt, dxy, dz, and eta cuts.
+        Requires at least 6 muons with mediumId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
         electrons = events.Electron
@@ -267,6 +268,29 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["SUEP_genPt" + out_label] = SUEP_genPt
         output[dataset]["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
         output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
+
+        # MET
+        output[dataset]["vars"]["MET_pt" + out_label] = events.MET.pt.to_list()
+        output[dataset]["vars"]["MET_phi" + out_label] = events.MET.phi.to_list()
+        output[dataset]["vars"]["MET_sumEt" + out_label] = events.MET.sumEt.to_list()
+
+        # BTagging
+        btag_scores = ak4jets.btagDeepB
+        btag_scores = btag_scores[:, :4]
+        btag_scores = ak.pad_none(btag_scores, target=4, axis=-1)
+        btag_scores = ak.fill_none(btag_scores, value=-2)
+        output[dataset]["vars"]["bTag_score_leading" + out_label] = btag_scores[
+            :, 0
+        ].to_list()
+        output[dataset]["vars"]["bTag_score_subleading" + out_label] = btag_scores[
+            :, 1
+        ].to_list()
+        output[dataset]["vars"]["bTag_score_third" + out_label] = btag_scores[
+            :, 2
+        ].to_list()
+        output[dataset]["vars"]["bTag_score_fourth" + out_label] = btag_scores[
+            :, 3
+        ].to_list()
 
         # nMuons
         output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon).to_list()
