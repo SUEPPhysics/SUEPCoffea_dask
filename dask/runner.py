@@ -313,6 +313,7 @@ def daskExecutor(args, env_extra):
                 "--no-dashboard",
             ],
             job_script_prologue=[],
+            log_directory="/uscmst1b_scratch/lpc1/3DayLifetime/chpapage/",
             scheduler_options={"dashboard_address": ":44890"},
         )
         cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
