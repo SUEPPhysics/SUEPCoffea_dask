@@ -7,7 +7,6 @@ import pickle
 import subprocess
 
 import fill_utils
-import numpy as np
 import uproot
 
 # Import our own functions
@@ -843,7 +842,7 @@ def calculate_systematic(
     higgs_weights_down,
 ):
     # prepare new event weight
-    df["event_weight"] = np.ones(df.shape[0])
+    df["event_weight"] = df["genWeight"]
 
     # if MC then apply the following weights:
     # 1) pileup weights
