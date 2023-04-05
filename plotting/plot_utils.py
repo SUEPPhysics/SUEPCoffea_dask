@@ -157,6 +157,7 @@ def findLumi(year, auto_lumi, infile_name):
 
 def fillSample(infile_name, plots, lumi):
     found_name = False
+    sample = None
     for name in sample_names.keys():
         if name in infile_name:
             if found_name:
