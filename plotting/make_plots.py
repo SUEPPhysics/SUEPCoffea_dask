@@ -649,6 +649,55 @@ def create_output_file(label, abcd):
                 name=f"ntracks_eta_ring_{label}",
                 label="# tracks in eta ring",
             ).Weight(),
+            f"MET_pt_{label}": Hist.new.Reg(
+                200,
+                0,
+                500,
+                name=f"MET_pt_{label}",
+                label="MET_pt in the event",
+            ).Weight(),
+            f"MET_phi_{label}": Hist.new.Reg(
+                100,
+                -10,
+                10,
+                name=f"MET_phi_{label}",
+                label="MET_phi in the event",
+            ).Weight(),
+            f"MET_sumEt_{label}": Hist.new.Reg(
+                200,
+                0,
+                1500,
+                name=f"MET_sumEt_{label}",
+                label="MET_sumEt in the event",
+            ).Weight(),
+            f"bTag_score_leading_{label}": Hist.new.Reg(
+                200,
+                -2.1,
+                1.1,
+                name=f"bTag_score_leading_{label}",
+                label="bTag_score_leading in the event",
+            ).Weight(),
+            f"bTag_score_subleading_{label}": Hist.new.Reg(
+                200,
+                -2.1,
+                1.1,
+                name=f"bTag_score_subleading_{label}",
+                label="bTag_score_subleading in the event",
+            ).Weight(),
+            f"bTag_score_leading_{label}": Hist.new.Reg(
+                200,
+                -2.1,
+                1.1,
+                name=f"bTag_score_third_{label}",
+                label="bTag_score_third in the event",
+            ).Weight(),
+            f"bTag_score_leading_{label}": Hist.new.Reg(
+                200,
+                -2.1,
+                1.1,
+                name=f"bTag_score_fourth_{label}",
+                label="bTag_score_fourth in the event",
+            ).Weight(),
         }
     )
 
