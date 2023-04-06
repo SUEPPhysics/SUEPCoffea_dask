@@ -684,14 +684,14 @@ def create_output_file(label, abcd):
                 name=f"bTag_score_subleading_{label}",
                 label="bTag_score_subleading in the event",
             ).Weight(),
-            f"bTag_score_leading_{label}": Hist.new.Reg(
+            f"bTag_score_third_{label}": Hist.new.Reg(
                 200,
                 -2.1,
                 1.1,
                 name=f"bTag_score_third_{label}",
                 label="bTag_score_third in the event",
             ).Weight(),
-            f"bTag_score_leading_{label}": Hist.new.Reg(
+            f"bTag_score_fourth_{label}": Hist.new.Reg(
                 200,
                 -2.1,
                 1.1,
