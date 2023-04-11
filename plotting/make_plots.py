@@ -458,35 +458,35 @@ def create_output_file(label, abcd):
                     label="HT JEC JES down",
                 ).Weight(),
                 f"{r}ntracks_{label}": Hist.new.Reg(
-                    101,
+                    100,
                     0,
                     500,
                     name=f"{r}ntracks_{label}",
                     label="# Tracks in Event",
                 ).Weight(),
                 f"{r}ngood_fastjets_{label}": Hist.new.Reg(
-                    9,
+                    10,
                     0,
                     10,
                     name=f"{r}ngood_fastjets_{label}",
                     label="# FastJets in Event",
                 ).Weight(),
                 f"{r}PV_npvs_{label}": Hist.new.Reg(
-                    199,
+                    200,
                     0,
                     200,
                     name=f"{r}PV_npvs_{label}",
                     label="# PVs in Event ",
                 ).Weight(),
                 f"{r}Pileup_nTrueInt_{label}": Hist.new.Reg(
-                    199,
+                    200,
                     0,
                     200,
                     name=f"{r}Pileup_nTrueInt_{label}",
                     label="# True Interactions in Event ",
                 ).Weight(),
                 f"{r}ngood_ak4jets_{label}": Hist.new.Reg(
-                    19,
+                    20,
                     0,
                     20,
                     name=f"{r}ngood_ak4jets_{label}",
@@ -721,6 +721,11 @@ def create_output_file(label, abcd):
                 )
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
+                f"2D_nMuons_mediumId_vs_ngood_ak4jets_{label}": Hist.new.Reg(
+                    20, 0, 20, name=f"nMuons_mediumId_{label}", label="nMuons_mediumId"
+                )
+                .Reg(20, 0, 20, name=f"ngood_ak4jets_{label}", label="ngood_ak4jets")
+                .Weight(),
             }
         )
 
@@ -729,7 +734,7 @@ def create_output_file(label, abcd):
             output.update(
                 {
                     f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                        199,
+                        200,
                         0,
                         500,
                         name=f"{r}SUEP_nconst_{label}",
