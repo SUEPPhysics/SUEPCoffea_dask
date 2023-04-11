@@ -180,7 +180,7 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
     return df
 
 
-def fill_2d_distributions(output, df, label_out, input_method):
+def fill_2d_distributions(df, output, label_out, input_method):
     keys = list(output.keys())
     keys_2Dhists = [k for k in keys if "2D" in k]
     for key in keys_2Dhists:
