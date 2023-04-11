@@ -193,8 +193,12 @@ def fill_2d_distributions(df, output, label_out, input_method):
         var2 = string.split("_vs_")[1]
         if var1 not in list(df.keys()):
             var1 += "_" + input_method
+            if var1 not in list(df.keys()):
+                continue
         if var2 not in list(df.keys()):
             var2 += "_" + input_method
+            if var2 not in list(df.keys()):
+                continue
         output[key].fill(df[var1], df[var2], weight=df["event_weight"])
 
 
