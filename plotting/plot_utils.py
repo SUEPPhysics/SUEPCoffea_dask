@@ -28,6 +28,8 @@ default_colors = {
     "QCD_Pt_allyears": "midnightblue",
     "DYJetsToLL": "olive",
     "DYJetsToLL_2018": "olive",
+    "DYNJetsToLL": "black",
+    "DYNJetsToLL_2018": "black",
     "DYJetsToMuMu": "red",
     "DYJetsToMuMu_2018": "red",
     "TTJets": "gray",
@@ -116,6 +118,10 @@ sample_names = {
     "QCD_HT": "QCD_HT",
     "DYJetsToLL": "DYJetsToLL",
     "DYJetsToMuMu": "DYJetsToMuMu",
+    "DY1JetsToLL": "DYNJetsToLL",
+    "DY2JetsToLL": "DYNJetsToLL",
+    "DY3JetsToLL": "DYNJetsToLL",
+    "DY4JetsToLL": "DYNJetsToLL",
     "TTJets": "TTJets",
     "TTTo2L2Nu": "TTTo2L2Nu",
     "ttZJets": "ttZJets",
@@ -167,21 +173,22 @@ def fillSample(infile_name, plots, lumi):
             sample = sample_names[name]
             found_name = True
 
-    if "QCD_Pt" in infile_name:
-        # include this block to import the QCD bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        plots[temp_sample] = openpkl(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-    elif "QCD_HT" in infile_name:
-        # include this block to import the QCD bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-        plots[temp_sample] = openpkl(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-    elif "ZToMuMu" in infile_name:
-        # include this block to import the QCD bins individually
+    is_binned = False
+    binned_samples = [
+        "QCD_Pt",
+        "QCD_HT",
+        "ZToMuMu",
+        "DY1JetsToLL",
+        "DY2JetsToLL",
+        "DY3JetsToLL",
+        "DY4JetsToLL",
+    ]
+    for binned_sample in binned_samples:
+        if binned_sample in infile_name:
+            is_binned = True
+
+    if is_binned:
+        # include this block to import the bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
