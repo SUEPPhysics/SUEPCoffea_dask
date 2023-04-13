@@ -261,6 +261,26 @@
     "kr": 1,
     "xsec": 6424.0
   },
+  "DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 876.9
+  },
+  "DY2JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 306.4
+  },
+  "DY3JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 112.0
+  },
+  "DY4JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 44.03
+  },
   "ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8": {
     "br": 1,
     "kr": 1,
