@@ -28,6 +28,8 @@ default_colors = {
     "QCD_Pt_allyears": "midnightblue",
     "DYJetsToLL": "olive",
     "DYJetsToLL_2018": "olive",
+    "DYJetsToLL_HT": "orange",
+    "DYJetsToLL_HT_2018": "orange",
     "DYNJetsToLL": "black",
     "DYNJetsToLL_2018": "black",
     "DYJetsToMuMu": "red",
@@ -122,6 +124,8 @@ sample_names = {
     "DY2JetsToLL": "DYNJetsToLL",
     "DY3JetsToLL": "DYNJetsToLL",
     "DY4JetsToLL": "DYNJetsToLL",
+    "DYJetsToLL_M-50_HT": "DYJetsToLL_M-50_HT",
+    "DYJetsToLL_M-4to50_HT": "DYJetsToLL_M-4to50_HT",
     "TTJets": "TTJets",
     "TTTo2L2Nu": "TTTo2L2Nu",
     "ttZJets": "ttZJets",
@@ -182,6 +186,8 @@ def fillSample(infile_name, plots, lumi):
         "DY2JetsToLL",
         "DY3JetsToLL",
         "DY4JetsToLL",
+        "DYJetsToLL_M-50_HT",
+        "DYJetsToLL_M-4to50_HT",
     ]
     for binned_sample in binned_samples:
         if binned_sample in infile_name:
