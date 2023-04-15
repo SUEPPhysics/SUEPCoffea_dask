@@ -230,7 +230,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-4to50_HT-70to100_TuneCP5_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v3/70000/B9704EA8-DC05-1348-83D1-7418E03813D1.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-4to50_HT-70to100_TuneCP5_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v3/70000/BB0692C8-07DF-D74A-BCF9-BDFBC5C4DDD5.root"
   ],
-  "DYJetsToLL_M-4to50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/58B0CDDB-4B9E-8C43-8942-18E36A770592.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/B08E9886-6046-2F41-82DD-A026AFD337D4.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/C5FC268A-8CB9-CD4B-A2B2-6BA6C3682C54.root",
@@ -262,7 +262,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/4EDB634A-EC42-0649-9455-64FBC1BC93E2.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/B2A89648-28D7-D444-81CC-B2E3F421C1AE.root"
   ],
-  "DYJetsToLL_M-4to50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/120000/26793660-5D04-C24B-813E-3C1744C84D2D.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/120000/6275C5B3-2FF5-E64B-972A-795610435C10.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/DF67B177-8809-6D49-BD5F-6B11214898FE.root",
@@ -277,7 +277,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/21F23E7C-7BB0-A946-8F65-58E022336A7B.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/A4550D32-FE34-2744-92A5-B4485787950C.root"
   ],
-  "DYJetsToLL_M-4to50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/0594D51F-0A67-4046-9D3C-5F9B42DED5A2.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/049A53D2-0293-F341-A519-D05EC501B569.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/BF4DA10A-2C7E-A044-B5A4-5845D9F832DB.root",
@@ -300,7 +300,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/DA5F7B62-4082-FE4A-8A36-6B9A57800DF8.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/120000/1DF66202-5953-FC43-947A-DAB20E014690.root"
   ],
-  "DYJetsToLL_M-4to50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/110000/FF6E75D5-85E4-254B-B021-2C64DA872093.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/110000/2BE2AB49-F227-9149-A72C-8C91D91F926D.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/100000/0454549E-D951-B14A-B548-B59B5C0E95D7.root",
@@ -321,7 +321,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/110000/8A0E61C4-F0FF-414F-B8A3-9BEFCDCD29E0.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/40000/BB330FB1-81D6-E142-A51F-18048DA4C350.root"
   ],
-  "DYJetsToLL_M-4to50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/90EAC274-6CB4-BB42-8F60-BF38CBBC26DC.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/6704FAEF-1A5A-7E44-9E64-71E375630210.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/00846A4F-433D-6D4E-8381-DD588DAE4954.root",
@@ -351,7 +351,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/A10A94FC-E34F-8F41-9B7D-39DD90D45931.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/3F5E3479-570F-6D4F-8C37-B4529ACFD058.root"
   ],
-  "DYJetsToLL_M-4to50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/6E2F7BE4-857E-DE4D-82CD-DEC677DA7697.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/120000/A180B4E8-7AAA-A64B-B279-D21C2054AAFC.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/F50516FF-24E5-DF47-B96F-8B7048F385B9.root",
@@ -364,7 +364,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/79AB1FF0-3ADB-C246-91EE-B9C14BC21CE8.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/130000/BF4F1C08-B7F4-774E-8711-069C9881898F.root"
   ],
-  "DYJetsToLL_M-4to50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/158E3EB5-BC86-5D4A-8FF5-9A56D48DF51F.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/7C1CB7A5-2FEB-DD44-A187-D6D209B6D687.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/270000/5BB01100-65C6-FD4A-8D45-D9D55A191CA8.root",
@@ -379,7 +379,7 @@
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/3F792024-D0E5-0345-89A0-34D540FC82C9.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/053A99DE-D090-3A42-892F-7E323FCF3E5D.root"
   ],
-  "DYJetsToLL_M-4to50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
+  "DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": [
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/B8CB81A3-4B34-8B45-B350-55559BDCB821.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/021E8C2F-03FB-A043-AE3B-6868A0CB4D37.root",
     "root://cmseos.fnal.gov//store/user/chpapage/RunIISummer20UL18NanoAODv9/DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/280000/535D7D65-C9BB-FB40-9BB9-6CCFEB9B5356.root",
