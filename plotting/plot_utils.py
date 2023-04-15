@@ -173,7 +173,7 @@ def fillSample(infile_name, plots, lumi):
     for name in sample_names.keys():
         if name in infile_name:
             if found_name:
-                raise Exception("Found multiple sample names in file name")
+                raise Exception(f"Found multiple sample names in file name: {name}")
             sample = sample_names[name]
             found_name = True
 
