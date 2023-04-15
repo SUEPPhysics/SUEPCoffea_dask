@@ -261,6 +261,71 @@
     "kr": 1,
     "xsec": 6424.0
   },
+  "DYJetsToLL_M-4to50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 190.6
+  },
+  "DYJetsToLL_M-4to50_HT-200to400_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 42.27
+  },
+  "DYJetsToLL_M-4to50_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 4.05
+  },
+  "DYJetsToLL_M-4to50_HT-600toInf_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 1.216
+  },
+  "DYJetsToLL_M-4to50_HT-70to100_TuneCP5_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 314.8
+  },
+  "DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 139.2
+  },
+  "DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.1305
+  },
+  "DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 38.4
+  },
+  "DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.002997
+  },
+  "DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 5.174
+  },
+  "DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 1.258
+  },
+  "DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 140.0
+  },
+  "DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.5598
+  },
   "DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8": {
     "br": 1,
     "kr": 1,
