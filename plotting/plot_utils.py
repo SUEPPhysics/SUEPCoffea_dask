@@ -237,17 +237,6 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
                 continue
             if "100to200" in infile_name:
                 continue
-            # if '200to300' in infile_name: continue
-            # if '300to500' in infile_name: continue
-            # if '500to700' in infile_name: continue
-            # if '700to1000' in infile_name: continue
-
-            # if '15to30' in infile_name: continue
-            # if '30to50' in infile_name: continue
-            # if '50to80' in infile_name: continue
-            # if '80to120' in infile_name: continue
-            # if '120to170' in infile_name: continue
-            # if '170to300' in infile_name: continue
 
         # plots[sample] sample is filled here
         sample, plots = fillSample(infile_name, plots, lumi)
