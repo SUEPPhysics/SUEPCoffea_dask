@@ -26,6 +26,8 @@ default_colors = {
     "QCD_Pt_2017": "midnightblue",
     "QCD_Pt_2016": "midnightblue",
     "QCD_Pt_allyears": "midnightblue",
+    "QCD_MuEnriched": "darkred",
+    "QCD_MuEnriched_2018": "darkred",
     "DYJetsToLL": "olive",
     "DYJetsToLL_2018": "olive",
     "DYJetsToLL_HT": "orange",
@@ -122,6 +124,7 @@ lumis = {
 sample_names = {
     "QCD_Pt": "QCD_Pt",
     "QCD_HT": "QCD_HT",
+    "MuEnriched": "QCD_MuEnriched",
     "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX": "DYJetsToLL",
     "DYJetsToMuMu": "DYJetsToMuMu",
     "DY1JetsToLL": "DYNJetsToLL",
@@ -185,6 +188,7 @@ def fillSample(infile_name, plots, lumi):
     binned_samples = [
         "QCD_Pt",
         "QCD_HT",
+        "MuEnriched",
         "ZToMuMu",
         "DY1JetsToLL",
         "DY2JetsToLL",
