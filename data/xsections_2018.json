@@ -79,13 +79,11 @@
     "kr": 1,
     "xsec": 6524
   },
-
   "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
     "xsec": 2346000.0
   },
-
   "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
@@ -166,11 +164,6 @@
     "kr": 1,
     "xsec": 7.465
   },
-  "SUEP-m400-darkPhoHad+RunIIAutumn18-private+MINIAODSIM": {
-    "br": 1,
-    "kr": 1,
-    "xsec": 1
-  },
   "QCD_HT200to300_TuneCP5_13TeV-madgraphMLM-pythia8+RunIIAutumn18DRPremix-102X_upgrade2018_realistic_v15-v1+AODSIM": {
     "br": 1,
     "kr": 1,
@@ -250,6 +243,66 @@
     "br": 1,
     "kr": 1,
     "xsec": 6344.0
+  },
+  "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 1.085
+  },
+  "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 21280.0
+  },
+  "QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 2800000.0
+  },
+  "QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 7000.0
+  },
+  "QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 2527000.0
+  },
+  "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 622.6	
+  },
+  "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 1367000.0
+  },
+  "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 58.9
+  },
+  "QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 381700.0
+  },
+  "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 18.12
+  },
+  "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 3.318
+  },
+  "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 87740.0	
   },
   "DYJetsToMuMu_M-50_massWgtFix_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos": {
     "br": 1,
