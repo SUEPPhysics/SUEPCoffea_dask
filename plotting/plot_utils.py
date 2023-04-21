@@ -186,7 +186,7 @@ def fillSample(infile_name, plots, lumi):
 
     is_binned = False
     binned_samples = [
-        "QCD_Pt",
+        "QCD_Pt_",
         "QCD_HT",
         "MuEnriched",
         "ZToMuMu",
