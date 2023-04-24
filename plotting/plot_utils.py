@@ -122,7 +122,7 @@ lumis = {
 }
 
 sample_names = {
-    "QCD_Pt": "QCD_Pt",
+    "QCD_Pt_": "QCD_Pt",
     "QCD_HT": "QCD_HT",
     "MuEnriched": "QCD_Pt_MuEnriched",
     "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX": "DYJetsToLL",
