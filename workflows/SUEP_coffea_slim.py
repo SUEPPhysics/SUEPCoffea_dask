@@ -458,7 +458,8 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         n_muons = ak.num(muons)
         output[dataset]["cutflow"].fill(
-            len(events[n_muons >= 6]) * ["nMuon_mediumId >= 6"], weight=events.genWeight
+            len(events[n_muons >= 6]) * ["nMuon_mediumId >= 6"],
+            weight=events[n_muons >= 6].genWeight,
         )
 
         # output empty dataframe if no events pass trigger
