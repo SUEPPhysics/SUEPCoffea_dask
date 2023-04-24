@@ -167,16 +167,16 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
-        electronsCollection = ak.zip(
-            {
-                "pt": electrons.pt,
-                "eta": electrons.eta,
-                "phi": electrons.phi,
-                "mass": electrons.mass,
-                "charge": electrons.pdgId / (-11),
-            },
-            with_name="Momentum4D",
-        )
+        # electronsCollection = ak.zip(
+        #    {
+        #        "pt": electrons.pt,
+        #        "eta": electrons.eta,
+        #        "phi": electrons.phi,
+        #        "mass": electrons.mass,
+        #        "charge": electrons.pdgId / (-11),
+        #    },
+        #    with_name="Momentum4D",
+        # )
 
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
@@ -365,6 +365,7 @@ class SUEP_cluster(processor.ProcessorABC):
             eigs_muons[:, 1] + eigs_muons[:, 0]
         )
 
+        """
         output[dataset]["vars"][
             "muon_interIsolation_0p2" + out_label
         ] = SUEP_utils.interIsolation(
@@ -397,6 +398,7 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.materialized(muonsCollection),
             1.6,
         ).tolist()
+        """
 
         # Eta ring variables
         output[dataset]["vars"][
