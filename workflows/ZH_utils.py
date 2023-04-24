@@ -76,9 +76,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
         selMuons = selMuons[cutOneAndOne]
 
     else:
-
         if lepveto:  # lepton veto used in the HT analyses for orthoganality
-
             # Cut out events with any lepton to also be orthogonal to possible WH analysis
             cutAnyElecs = (ak.num(selElectrons, axis=1) > 0) & (
                 ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25
