@@ -609,7 +609,7 @@ def to_np_array(ak_array, maxN=100, pad=0):
 
 
 @njit
-def interIsolation(particles, v_electrons, v_muons):
+def interIsolation(particles, v_electrons, v_muons, cone_size=0.4):
     """
     Compute the inter-isolation of each particle. It is supposed to work for one particle per event. The input is:
     - particles: array of particles for isolation calculation
@@ -636,8 +636,16 @@ def interIsolation(particles, v_electrons, v_muons):
             if abs(dPhi) > math.pi:
                 dPhi = 2 * math.pi - abs(dPhi)
             dR = math.sqrt((dEta) ** 2 + (dPhi) ** 2)
-            if dR < 1.6:
+            if dR < cone_size:
                 out[i] += electrons[j].pt
         out[i] -= particle.pt
         out[i] /= particle.pt
     return out
+
+
+def n_eta_ring(muonsCollection, eta_cutoff):
+    """Return the number of muons in the eta ring around the leading muon"""
+    leading_muon_eta = muonsCollection[:, 0].eta
+    return ak.num(
+        muonsCollection[abs(leading_muon_eta - muonsCollection.eta) < eta_cutoff]
+    )
