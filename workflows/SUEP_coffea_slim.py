@@ -167,16 +167,16 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
-        # electronsCollection = ak.zip(
-        #    {
-        #        "pt": electrons.pt,
-        #        "eta": electrons.eta,
-        #        "phi": electrons.phi,
-        #        "mass": electrons.mass,
-        #        "charge": electrons.pdgId / (-11),
-        #    },
-        #    with_name="Momentum4D",
-        # )
+        electronsCollection = ak.zip(
+            {
+                "pt": electrons.pt,
+                "eta": electrons.eta,
+                "phi": electrons.phi,
+                "mass": electrons.mass,
+                "charge": electrons.pdgId / (-11),
+            },
+            with_name="Momentum4D",
+        )
 
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
@@ -365,40 +365,20 @@ class SUEP_cluster(processor.ProcessorABC):
             eigs_muons[:, 1] + eigs_muons[:, 0]
         )
 
-        """
+        leptons = ak.concatenate([muonsCollection, electronsCollection], axis=-1)
+        leading_muons = leptons[:, 0]
         output[dataset]["vars"][
             "muon_interIsolation_0p2" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 0]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-            0.2,
-        ).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.2).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_0p4" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 0]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-            0.4,
-        ).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.4).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_0p8" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 0]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-            0.8,
-        ).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.8).tolist()
         output[dataset]["vars"][
             "muon_interIsolation_1p6" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 0]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-            1.6,
-        ).tolist()
-        """
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6).tolist()
 
         # Eta ring variables
         output[dataset]["vars"][

@@ -608,8 +608,20 @@ def to_np_array(ak_array, maxN=100, pad=0):
     )
 
 
+def inter_isolation(leptons_1, leptons_2, dR=1.6):
+    """
+    Compute the inter-isolation of each particle. It is supposed to work for one particle per event. The input is:
+    - leptons_1: array of leptons for isolation calculation
+    - leptons_2: array of all leptons in the events
+    - dR: deltaR cut for isolation calculation
+    """
+    a, b = ak.unzip(ak.cartesian([leptons_1, leptons_2]))
+    deltar_mask = a.deltaR(b) < dR
+    return (ak.sum(b[deltar_mask].pt, axis=-1) - leptons_1.pt) / leptons_2.pt
+
+
 @njit
-def interIsolation(particles, v_electrons, v_muons, cone_size=0.4):
+def interIsolation_old(particles, v_electrons, v_muons, cone_size=0.4):
     """
     Compute the inter-isolation of each particle. It is supposed to work for one particle per event. The input is:
     - particles: array of particles for isolation calculation
