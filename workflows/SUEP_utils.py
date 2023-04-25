@@ -617,7 +617,7 @@ def inter_isolation(leptons_1, leptons_2, dR=1.6):
     """
     a, b = ak.unzip(ak.cartesian([leptons_1, leptons_2]))
     deltar_mask = a.deltaR(b) < dR
-    return (ak.sum(b[deltar_mask].pt, axis=-1) - leptons_1.pt) / leptons_2.pt
+    return (ak.sum(b[deltar_mask].pt, axis=-1) - leptons_1.pt) / leptons_1.pt
 
 
 @njit

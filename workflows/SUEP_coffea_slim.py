@@ -369,16 +369,16 @@ class SUEP_cluster(processor.ProcessorABC):
         leading_muons = leptons[:, 0]
         output[dataset]["vars"][
             "muon_interIsolation_0p2" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.2).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.2).to_list()
         output[dataset]["vars"][
             "muon_interIsolation_0p4" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.4).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.4).to_list()
         output[dataset]["vars"][
             "muon_interIsolation_0p8" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.8).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.8).to_list()
         output[dataset]["vars"][
             "muon_interIsolation_1p6" + out_label
-        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6).tolist()
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6).to_list()
 
         # Eta ring variables
         output[dataset]["vars"][
