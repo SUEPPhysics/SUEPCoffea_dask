@@ -5,7 +5,7 @@ import os
 import shlex
 import subprocess
 import time
-from multiprocessing.pool import ThreadPool, Pool
+from multiprocessing.pool import Pool, ThreadPool
 
 import numpy as np
 from plot_utils import check_proxy
@@ -84,7 +84,7 @@ def call_process(cmd):
     return (out, err)
 
 
-pool = Pool(min(multiprocessing.cpu_count(),24), maxtasksperchild=1000)
+pool = Pool(min(multiprocessing.cpu_count(), 24), maxtasksperchild=1000)
 
 with open(options.inputList) as f:
     input_list = f.readlines()
@@ -102,7 +102,6 @@ if options.xrootd:
     print(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 for sample in input_list:
-
     if options.code == "merge":
         cmd = "python3 merge_plots.py --tag={} --dataset={} --isMC={}".format(
             options.tag, sample, options.isMC
@@ -124,7 +123,7 @@ for sample in input_list:
             options.doInf,
             options.doABCD,
             options.blind,
-            options.predictSR
+            options.predictSR,
         )
         results.append(pool.apply_async(call_process, (cmd,)))
 

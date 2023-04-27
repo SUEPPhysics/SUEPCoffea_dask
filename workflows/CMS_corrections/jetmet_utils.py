@@ -6,7 +6,6 @@ from coffea.lookup_tools import extractor
 
 
 def apply_jecs(isMC, Sample, era, events, prefix=""):
-
     # Find the Collection we want to look at
     if isMC:
         if era == 2016:
@@ -70,12 +69,18 @@ def apply_jecs(isMC, Sample, era, events, prefix=""):
     if isMC:
         ext_ak4.add_weight_sets(
             [  # change to correct files
-                "* * " + jec_path + jecdir + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
+                "* * "
+                + jec_path
+                + jecdir
+                + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
                 #'* * ' + jec_path + jecdir +"_L1RC_AK4PFchs.jec.txt", #needs area
                 #'* * ' + jec_path + jecdir +"_L2L3Residual_AK4PFchs.jec.txt",
                 #'* * ' + jec_path + jecdir +"_L2Residual_AK4PFchs.jec.txt",
                 "* * " + jec_path + jecdir + "_L2Relative_AK4PFchs.jec.txt",
-                "* * " + jec_path + jecdir + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
+                "* * "
+                + jec_path
+                + jecdir
+                + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
                 "* * " + jec_path + jecdir + "_Uncertainty_AK4PFchs.junc.txt",
                 "* * " + jer_path + jerdir + "_PtResolution_AK4PFchs.jr.txt",
                 "* * " + jer_path + jerdir + "_SF_AK4PFchs.jersf.txt",
@@ -84,10 +89,16 @@ def apply_jecs(isMC, Sample, era, events, prefix=""):
     else:
         ext_ak4.add_weight_sets(
             [  # change to correct files
-                "* * " + jec_path + jecdir + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
+                "* * "
+                + jec_path
+                + jecdir
+                + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
                 "* * " + jec_path + jecdir + "_L1RC_AK4PFchs.jec.txt",  # needs area
                 "* * " + jec_path + jecdir + "_L2Relative_AK4PFchs.jec.txt",
-                "* * " + jec_path + jecdir + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
+                "* * "
+                + jec_path
+                + jecdir
+                + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
                 "* * " + jec_path + jecdir + "_L2L3Residual_AK4PFchs.jec.txt",
                 "* * " + jec_path + jecdir + "_L2Residual_AK4PFchs.jec.txt",
                 #'* * ' + jec_path + jecdir +"_Uncertainty_AK4PFchs.junc.txt",
