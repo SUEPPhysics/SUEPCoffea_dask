@@ -614,33 +614,61 @@ def create_output_file(label, abcd):
                 name=f"event_S1_{label}",
                 label="S1 using tracks in Event",
             ).Weight(),
-            f"muon_interIsolation_leading_{label}": Hist.new.Reg(
+            f"muon_interIsolation_0p2_{label}": Hist.new.Reg(
                 25,
                 0,
                 10,
-                name=f"muon_interIsolation_leading_{label}",
-                label="leading muon inter-isolation in Event",
+                name=f"muon_interIsolation_0p2_{label}",
+                label="leading muon inter-isolation cone 0.2",
             ).Weight(),
-            f"muon_interIsolation_subleading_{label}": Hist.new.Reg(
+            f"muon_interIsolation_0p4_{label}": Hist.new.Reg(
                 25,
                 0,
                 10,
-                name=f"muon_interIsolation_subleading_{label}",
-                label="subleading muon inter-isolation in Event",
+                name=f"muon_interIsolation_0p4_{label}",
+                label="leading muon inter-isolation cone 0.4",
             ).Weight(),
-            f"muon_interIsolation_subsubleading_{label}": Hist.new.Reg(
+            f"muon_interIsolation_0p8_{label}": Hist.new.Reg(
                 25,
                 0,
                 10,
-                name=f"muon_interIsolation_subsubleading_{label}",
-                label="subsubleading muon inter-isolation in Event",
+                name=f"muon_interIsolation_0p8_{label}",
+                label="leading muon inter-isolation cone 0.8",
             ).Weight(),
-            f"nMuons_eta_ring_{label}": Hist.new.Reg(
+            f"muon_interIsolation_1p6_{label}": Hist.new.Reg(
+                25,
+                0,
+                10,
+                name=f"muon_interIsolation_1p6_{label}",
+                label="leading muon inter-isolation cone 1.6",
+            ).Weight(),
+            f"nMuons_eta_ring_0p2_{label}": Hist.new.Reg(
                 50,
                 0,
                 50,
-                name=f"nMuons_eta_ring_{label}",
-                label="# muons in eta ring",
+                name=f"nMuons_eta_ring_0p2_{label}",
+                label="# muons in eta ring 0.2",
+            ).Weight(),
+            f"nMuons_eta_ring_0p4_{label}": Hist.new.Reg(
+                50,
+                0,
+                50,
+                name=f"nMuons_eta_ring_0p4_{label}",
+                label="# muons in eta ring 0.4",
+            ).Weight(),
+            f"nMuons_eta_ring_0p8_{label}": Hist.new.Reg(
+                50,
+                0,
+                50,
+                name=f"nMuons_eta_ring_0p8_{label}",
+                label="# muons in eta ring 0.8",
+            ).Weight(),
+            f"nMuons_eta_ring_1p6_{label}": Hist.new.Reg(
+                50,
+                0,
+                50,
+                name=f"nMuons_eta_ring_1p6_{label}",
+                label="# muons in eta ring 1.6",
             ).Weight(),
             f"ntracks_eta_ring_{label}": Hist.new.Reg(
                 200,
