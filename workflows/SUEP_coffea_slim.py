@@ -239,9 +239,6 @@ class SUEP_cluster(processor.ProcessorABC):
             output[dataset]["vars"]["ngood_ak4jets" + out_label] = ak.num(
                 ak4jets
             ).to_list()
-            output[dataset]["vars"]["ngood_ak4jets" + out_label] = ak.num(
-                ak4jets
-            ).to_list()
             if self.isMC:
                 output[dataset]["vars"][
                     "Pileup_nTrueInt" + out_label
