@@ -733,13 +733,14 @@ def plot_sliced_hist2d(hist, regions_list, slice_var="y", labels=None):
     if labels:
         assert len(labels) == len(regions_list)
     hist_list = slice_hist2d(hist, regions_list, slice_var)
+    hist_list_err = [np.sqrt(h.variances()) for h in hist_list]
     cmap = plt.cm.jet(np.linspace(0, 1, len(hist_list)))
 
     fig = plt.figure()
     ax = fig.subplots()
     hep.histplot(
         hist_list,
-        yerr=True,
+        yerr=hist_list_err,
         stack=True,
         histtype="fill",
         label=labels,
