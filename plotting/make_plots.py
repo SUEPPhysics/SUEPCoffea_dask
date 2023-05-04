@@ -754,6 +754,17 @@ def create_output_file(label, abcd):
                 )
                 .Reg(20, 0, 20, name=f"ngood_ak4jets_{label}", label="ngood_ak4jets")
                 .Weight(),
+                f"2D_nMuons_mediumId_vs_muon_interIsolation_1p6_{label}": Hist.new.Reg(
+                    20, 0, 20, name=f"nMuons_mediumId_{label}", label="nMuons_mediumId"
+                )
+                .Reg(
+                    25,
+                    0,
+                    10,
+                    name=f"muon_interIsolation_1p6_{label}",
+                    label="muon_interIsolation_1p6",
+                )
+                .Weight(),
             }
         )
 
