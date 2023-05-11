@@ -99,7 +99,7 @@ class SUEP_cluster(processor.ProcessorABC):
         """
         Filter events after the TripleMu trigger.
         Cleans muons and electrons.
-        Requires at least 6 muons with mediumId, pt, dxy, dz, and eta cuts.
+        Requires at least nMuons with mediumId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
         electrons = events.Electron

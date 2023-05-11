@@ -128,11 +128,11 @@ class SUEP_cluster(processor.ProcessorABC):
             events = events[trigger]
         return events
 
-    def triple_mu_filter(self, events):
+    def muon_filter(self, events, nMuons=4):
         """
         Filter events after the TripleMu trigger.
         Cleans muons and electrons.
-        Requires at least 4 muons with looseId, pt, dxy, dz, and eta cuts.
+        Requires at least nMuons with mediumId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
         electrons = events.Electron
@@ -159,7 +159,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         muons = muons[clean_muons]
         electrons = electrons[clean_electrons]
-        select_by_muons = ak.num(muons, axis=-1) >= 6
+        select_by_muons = ak.num(muons, axis=-1) >= nMuons
         events = events[select_by_muons]
         muons = muons[select_by_muons]
         electrons = electrons[select_by_muons]
@@ -398,21 +398,6 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["nMuons_isTracker" + out_label] = ak.sum(
             muons.isTracker, axis=-1
         ).to_list()
-
-        # Define muon categories in order to decorrelate mediumId and isTracker
-        cat1 = muons.mediumId
-        cat2 = muons.isTracker & ~muons.mediumId
-        cat3 = ~cat1 & ~cat2
-        output[dataset]["vars"]["nMuons_category1" + out_label] = ak.sum(
-            cat1, axis=-1
-        ).to_list()
-        output[dataset]["vars"]["nMuons_category2" + out_label] = ak.sum(
-            cat2, axis=-1
-        ).to_list()
-        output[dataset]["vars"]["nMuons_category3" + out_label] = ak.sum(
-            cat3, axis=-1
-        ).to_list()
-
         output[dataset]["vars"]["muon_pt_mean" + out_label] = ak.mean(
             muons.pt, axis=-1
         ).to_list()
@@ -464,41 +449,34 @@ class SUEP_cluster(processor.ProcessorABC):
             eigs_tracks[:, 1] + eigs_tracks[:, 0]
         )
 
+        leptons = ak.concatenate([muonsCollection, electronsCollection], axis=-1)
+        leading_muons = leptons[:, 0]
         output[dataset]["vars"][
-            "muon_interIsolation_leading" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 0]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-        ).tolist()
+            "muon_interIsolation_0p2" + out_label
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.2).to_list()
         output[dataset]["vars"][
-            "muon_interIsolation_subleading" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 1]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-        ).tolist()
+            "muon_interIsolation_0p4" + out_label
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.4).to_list()
         output[dataset]["vars"][
-            "muon_interIsolation_subsubleading" + out_label
-        ] = SUEP_utils.interIsolation(
-            ak.materialized(muonsCollection[:, 2]),
-            ak.materialized(electronsCollection),
-            ak.materialized(muonsCollection),
-        ).tolist()
+            "muon_interIsolation_0p8" + out_label
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=0.8).to_list()
+        output[dataset]["vars"][
+            "muon_interIsolation_1p6" + out_label
+        ] = SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6).to_list()
 
         # Eta ring variables
-        eta_cutoff = 1.2  # the ring will be from -eta_cutoff to eta_cutoff around the leading muon
-        leading_muon_eta = muonsCollection[:, 0].eta
-        tracks_eta_ring = tracks[abs(leading_muon_eta - tracks.eta) < eta_cutoff]
-        muons_eta_ring = muonsCollection[
-            abs(leading_muon_eta - muonsCollection.eta) < eta_cutoff
-        ]
-        output[dataset]["vars"]["nMuons_eta_ring" + out_label] = ak.num(
-            muons_eta_ring
-        ).to_list()
-        output[dataset]["vars"]["ntracks_eta_ring" + out_label] = ak.num(
-            tracks_eta_ring
-        ).to_list()
+        output[dataset]["vars"][
+            "nMuons_eta_ring_0p2" + out_label
+        ] = SUEP_utils.n_eta_ring(muonsCollection, 0.2).to_list()
+        output[dataset]["vars"][
+            "nMuons_eta_ring_0p4" + out_label
+        ] = SUEP_utils.n_eta_ring(muonsCollection, 0.4).to_list()
+        output[dataset]["vars"][
+            "nMuons_eta_ring_0p8" + out_label
+        ] = SUEP_utils.n_eta_ring(muonsCollection, 0.8).to_list()
+        output[dataset]["vars"][
+            "nMuons_eta_ring_1p6" + out_label
+        ] = SUEP_utils.n_eta_ring(muonsCollection, 1.6).to_list()
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -549,12 +527,15 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         # some cutflow stuff
-        output[dataset]["cutflow"].fill(len(events) * ["all events"])
+        output[dataset]["cutflow"].fill(
+            len(events) * ["all events"], weight=events.genWeight
+        )
         output[dataset]["cutflow"].fill(
             ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
         )
         output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"]
+            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"],
+            weight=events[events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1].genWeight,
         )
 
         # golden jsons for offline data
@@ -569,8 +550,15 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events, electrons, muons = self.triple_mu_filter(events)
-        output[dataset]["cutflow"].fill(len(events) * ["nMuon_mediumId >= 6"])
+            events, electrons, muons = self.muon_filter(events, 4)
+        output[dataset]["cutflow"].fill(
+            len(events) * ["nMuon_mediumId >= 4"], weight=events.genWeight
+        )
+        n_muons = ak.num(muons)
+        output[dataset]["cutflow"].fill(
+            len(events[n_muons >= 6]) * ["nMuon_mediumId >= 6"],
+            weight=events[n_muons >= 6].genWeight,
+        )
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -679,8 +667,8 @@ class SUEP_cluster(processor.ProcessorABC):
         cutflow = hist.Hist.new.StrCategory(
             [
                 "all events",
-                "HLT_PFHT430",
                 "HLT_TripleMu_5_3_3",
+                "nMuon_mediumId >= 4",
                 "nMuon_mediumId >= 6",
             ],
             name="cutflow",
