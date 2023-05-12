@@ -314,6 +314,10 @@ class SUEP_cluster(processor.ProcessorABC):
             ak_inclusive_jets
         ).to_list()
         if out_label == "":
+            output[dataset]["vars"]["events" + out_label] = events.event.to_list()
+            output[dataset]["vars"][
+                "luminosityBlock" + out_label
+            ] = events.luminosityBlock.to_list()
             output[dataset]["vars"]["ht" + out_label] = ak.sum(
                 ak4jets.pt, axis=-1
             ).to_list()

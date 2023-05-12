@@ -208,6 +208,10 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # save per event variables to a dataframe
         if out_label == "":
+            output[dataset]["vars"]["events" + out_label] = events.event.to_list()
+            output[dataset]["vars"][
+                "luminosityBlock" + out_label
+            ] = events.luminosityBlock.to_list()
             output[dataset]["vars"][
                 "genWeight" + out_label
             ] = events.genWeight.to_list()
