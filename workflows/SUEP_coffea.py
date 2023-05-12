@@ -566,8 +566,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
-            # if self.debug:
-            #    print("No events passed trigger. Saving empty outputs.")
             return output
 
         #####################################################################################
@@ -627,8 +625,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
-            # if self.debug:
-            #    print("No events pass clusterCut.")
             for c in self.columns:
                 output[dataset]["vars"][c] = np.nan
             return output
@@ -640,8 +636,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
-            # if self.debug:
-            #    print("No events pass singletrackCut.")
             for c in self.columns:
                 output[dataset]["vars"][c] = np.nan
             return output
