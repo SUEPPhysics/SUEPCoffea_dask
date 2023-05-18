@@ -318,6 +318,9 @@ class SUEP_cluster(processor.ProcessorABC):
             output[dataset]["vars"][
                 "luminosityBlock" + out_label
             ] = events.luminosityBlock.to_list()
+            output[dataset]["vars"][
+                "genWeight" + out_label
+            ] = events.genWeight.to_list()
             output[dataset]["vars"]["ht" + out_label] = ak.sum(
                 ak4jets.pt, axis=-1
             ).to_list()
