@@ -744,6 +744,13 @@ def create_output_file(label, abcd):
                 )
                 .Reg(199, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
+                f"2D_SUEP_S1_vs_nMuons_mediumId_{label}": Hist.new.Reg(
+                    100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+                )
+                .Reg(
+                    20, 0, 20, name=f"nMuons_mediumId_{label}", label="nMuons_mediumId"
+                )
+                .Weight(),
                 f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Reg(
                     199, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
                 )
