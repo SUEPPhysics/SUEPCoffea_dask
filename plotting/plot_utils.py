@@ -174,6 +174,38 @@ def findLumi(year, auto_lumi, infile_name):
     return lumi
 
 
+def fill_background(infile_name, plots, lumi):
+    is_background = False
+    backgrounds = [
+        "QCD_Pt_",
+        "DY1JetsToLL",
+        "DY2JetsToLL",
+        "DY3JetsToLL",
+        "DY4JetsToLL",
+        "TTJets",
+        "ttZJets",
+        "WWZ_4F",
+        "ZZTo4L",
+        "ZZZ",
+    ]
+    for background in backgrounds:
+        if background in infile_name:
+            is_background = True
+
+    if not is_background:
+        return plots
+
+    if "bkg" not in list(plots.keys()):
+        plots["bkg"] = openpkl(infile_name)
+        for plot in list(plots["bkg"].keys()):
+            plots["bkg"][plot] = plots["bkg"][plot] * lumi
+    else:
+        plotsToAdd = openpkl(infile_name)
+        for plot in list(plotsToAdd.keys()):
+            plots["bkg"][plot] = plots["bkg"][plot] + plotsToAdd[plot] * lumi
+    return plots
+
+
 def fillSample(infile_name, plots, lumi):
     found_name = False
     sample = None
@@ -248,6 +280,9 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
 
         # plots[sample] sample is filled here
         sample, plots = fillSample(infile_name, plots, lumi)
+
+        # plots["bkg"] is filled here
+        plots = fill_background(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
             plots[sample] = openpkl(infile_name)
