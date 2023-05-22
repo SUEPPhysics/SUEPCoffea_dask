@@ -7,6 +7,8 @@ import pickle
 import subprocess
 
 import fill_utils
+import numpy as np
+import plot_utils
 import uproot
 
 # Import our own functions
@@ -116,24 +118,33 @@ selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
 config = {
-    "Cluster": {
+    "Cluster_4muons": {
         "input_method": "CL",
         "xvar": "SUEP_S1_CL",
-        "xvar_regions": [0.35, 0.4, 0.5, 1.0],
+        "xvar_regions": [0.2, 0.6, 1.0],
         "yvar": "SUEP_nconst_CL",
-        "yvar_regions": [20, 40, 80, 1000],
-        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 80]],
-        "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+        "yvar_regions": [15, 50, 1000],
+        "SR": [["SUEP_S1_CL", ">=", 0.6], ["SUEP_nconst_CL", ">=", 50]],
+        "selections": [["nMuons_mediumId", ">=", 4], ["ntracks", ">", 0]],
     },
-    "ClusterInverted": {
+    "Cluster_6muons": {
         "input_method": "CL",
-        "xvar": "ISR_S1_CL",
-        "xvar_regions": [0.35, 0.4, 0.5, 1.0],
-        "yvar": "ISR_nconst_CL",
-        "yvar_regions": [20, 40, 80, 1000],
-        "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
-        "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+        "xvar": "SUEP_S1_CL",
+        "xvar_regions": [0.2, 0.6, 1.0],
+        "yvar": "SUEP_nconst_CL",
+        "yvar_regions": [15, 50, 1000],
+        "SR": [["SUEP_S1_CL", ">=", 0.6], ["SUEP_nconst_CL", ">=", 50]],
+        "selections": [["nMuons_mediumId", ">=", 6], ["ntracks", ">", 0]],
     },
+    # "ClusterInverted": {
+    #     "input_method": "CL",
+    #     "xvar": "ISR_S1_CL",
+    #     "xvar_regions": [0.35, 0.4, 0.5, 1.0],
+    #     "yvar": "ISR_nconst_CL",
+    #     "yvar_regions": [20, 40, 80, 1000],
+    #     "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
+    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+    # },
     # 'ISRRemoval' : {
     #     'input_method' : 'IRM',
     #     'xvar' : 'SUEP_S1_IRM',
@@ -1202,8 +1213,33 @@ if options.isMC and options.doSyst:
 if options.isMC:
     outputs = fill_utils.apply_normalization(output, xsection / total_gensumweight)
 
-logging.info("Saving outputs.")
+# Make ABCD expected histogram for signal region
+if options.doABCD and not options.unblind:
+    logging.info("Predicting SR using ABCD method.")
 
+    # Loop through every configuration
+    for label_out, config_out in config.items():
+        xregions = np.array(config_out["xvar_regions"]) * 1.0j
+        yregions = np.array(config_out["yvar_regions"]) * 1.0j
+        xvar = config_out["xvar"].replace("_" + config_out["input_method"], "")
+        yvar = config_out["yvar"].replace("_" + config_out["input_method"], "")
+
+        hist_name = f"2D_{xvar}_vs_{yvar}_{label_out}"
+
+        # Check if histogram exists
+        if hist_name not in output.keys():
+            logging.warning(f"{hist_name} has not been created.")
+            continue
+
+        # Calculate SR from ABCD method
+        # sum_var = 'x' corresponds to scaling B histogram
+        SR, SR_exp = plot_utils.ABCD_4regions(
+            output[hist_name], xregions, yregions, sum_var="x"
+        )
+
+        output[f"D_{yvar}_{label_out}"] = SR_exp
+
+logging.info("Saving outputs.")
 if options.dataset:
     outFile = outDir + "/" + options.dataset + "_" + options.output
 else:
