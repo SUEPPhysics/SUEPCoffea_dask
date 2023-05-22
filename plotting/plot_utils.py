@@ -15,6 +15,8 @@ import numpy as np
 from sympy import diff, sqrt, symbols
 
 default_colors = {
+    "bkg": "black",
+    "bkg_2018": "black",
     "QCD": "midnightblue",
     "QCD_HT": "midnightblue",
     "QCD_HT_2018": "midnightblue",
