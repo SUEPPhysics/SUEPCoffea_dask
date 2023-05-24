@@ -429,7 +429,8 @@ def bin_midpoints(bins):
 
 
 def plot_ratio(
-    hlist, labels=None, cmap=None, plot_label=None, xlim="default", log=True
+    hlist, labels=None, systs=None,
+    cmap=None, plot_label=None, xlim="default", log=True
 ):
     # Set up variables for the stacked histogram
     fig = plt.figure()
@@ -511,7 +512,15 @@ def plot_ratio(
 
     ax2.axhline(1, ls="--", color="gray")
     ax2.set_ylabel("Ratio", y=1, ha="right")
-
+    
+    if systs is not None:
+        assert len(systs) == len(hlist[0].axes.centers[0])
+        widths = hlist[0].axes.widths[0]
+        ax2.bar(hlist[0].axes.centers[0], height=np.array(systs), bottom=1, width=widths, alpha=0.3, color='gray')
+        ax2.bar(hlist[0].axes.centers[0], -np.array(systs), bottom=1, width=widths, alpha=0.3, color='gray')
+        # add to legend
+        ax1.plot([0,0], color='gray', label='Systematics')
+        
     if plot_label is None:
         plot_label = hlist[0].axes[0].label
         if plot_label == "Axis 0":
