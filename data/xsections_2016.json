@@ -39,10 +39,20 @@
     "kr": 1,
     "xsec": 21.93
   },
+  "QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 1554000.0
+  },
   "QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
     "xsec": 1554000.0
+  },
+   "QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 323800.0
   },
   "QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
     "br": 1,
@@ -323,5 +333,45 @@
     "br": 1,
     "kr": 1,
     "xsec": 6392.0
-  }
+  },
+	"TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v2+MINIAODSIM":{
+		"xsec": 1.402,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v2+MINIAODSIM":{
+		"xsec": 0.5581,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v2+MINIAODSIM":{
+		"xsec": 0.09876,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-2500toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v2+MINIAODSIM":{
+		"xsec": 0.001124,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM":{
+		"xsec": 1.402,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM":{
+		"xsec": 0.5581,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM":{
+		"xsec": 0.09876,
+		"br": 1,
+		"kr": 1
+	},
+	"TTJets_HT-2500toInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM":{
+		"xsec": 0.001124,
+		"br": 1,
+		"kr": 1
+	}
 }

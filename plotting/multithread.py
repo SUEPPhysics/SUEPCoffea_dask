@@ -5,7 +5,7 @@ import os
 import shlex
 import subprocess
 import time
-from multiprocessing.pool import ThreadPool, Pool
+from multiprocessing.pool import Pool, ThreadPool
 
 import numpy as np
 from plot_utils import check_proxy
@@ -55,6 +55,9 @@ parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
 )
 parser.add_argument(
+    "--predictSR", type=int, default=0, help="Predict SR using ABCD method."
+)
+parser.add_argument(
     "--blind", type=int, default=1, help="Blind the data (default=True)"
 )
 options = parser.parse_args()
@@ -81,7 +84,7 @@ def call_process(cmd):
     return (out, err)
 
 
-pool = Pool(min(multiprocessing.cpu_count(),24), maxtasksperchild=1000)
+pool = Pool(min(multiprocessing.cpu_count(), 24), maxtasksperchild=1000)
 
 with open(options.inputList) as f:
     input_list = f.readlines()
@@ -99,7 +102,6 @@ if options.xrootd:
     print(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 for sample in input_list:
-
     if options.code == "merge":
         cmd = "python3 merge_plots.py --tag={} --dataset={} --isMC={}".format(
             options.tag, sample, options.isMC
@@ -107,7 +109,7 @@ for sample in input_list:
         results.append(pool.apply_async(call_process, (cmd,)))
 
     elif options.code == "plot":
-        cmd = """python3 make_plots.py --dataset={} --tag={} --output={} --xrootd={} --weights={} --isMC={} --era={} --scouting={} --doSyst={} --merged={} --doInf={} --doABCD={} --blind={}""".format(
+        cmd = """python3 make_plots.py --dataset={} --tag={} --output={} --xrootd={} --weights={} --isMC={} --era={} --scouting={} --doSyst={} --merged={} --doInf={} --doABCD={} --blind={} --predictSR={}""".format(
             sample,
             options.tag,
             options.output,
@@ -120,7 +122,8 @@ for sample in input_list:
             options.merged,
             options.doInf,
             options.doABCD,
-            options.blind
+            options.blind,
+            options.predictSR,
         )
         results.append(pool.apply_async(call_process, (cmd,)))
 

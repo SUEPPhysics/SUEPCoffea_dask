@@ -15,18 +15,33 @@ import numpy as np
 from sympy import diff, sqrt, symbols
 
 default_colors = {
-    "QCD": "midnightblue",
-    "QCD_HT": "midnightblue",
-    "QCD_HT_2018": "midnightblue",
-    "QCD_HT_2017": "midnightblue",
-    "QCD_HT_2016": "midnightblue",
-    "QCD_HT_allyears": "midnightblue",
-    "data": "maroon",
+    "QCD": "slateblue",
+    "QCD_HT": "slateblue",
+    "QCD_HT_2018": "slateblue",
+    "QCD_HT_2017": "slateblue",
+    "QCD_HT_2016": "slateblue",
+    "QCD_HT_allyears": "slateblue",
+    "TTJets_2018": "midnightblue",
+    "TTJets_2017": "midnightblue",
+    "TTJets_2016": "midnightblue",
+    "MC_2018": "slateblue",
+    "MC_2017": "slateblue",
+    "MC_2016": "slateblue",
     "data": "maroon",
     "data_2018": "maroon",
     "data_2017": "maroon",
     "data_2016": "maroon",
     "data_allyears": "maroon",
+    "mS1000_T2.0_mPhi2.0_hadronic_2018": "red",
+    "mS125_T2.0_mPhi2.0_hadronic_2018": "cyan",
+    "mS200_T2.0_mPhi2.0_hadronic_2018": "blue",
+    "mS300_T2.0_mPhi2.0_hadronic_2018": "lightseagreen",
+    "mS400_T2.0_mPhi2.0_hadronic_2018": "green",
+    "mS500_T2.0_mPhi2.0_hadronic_2018": "darkgreen",
+    "mS600_T2.0_mPhi2.0_hadronic_2018": "lawngreen",
+    "mS700_T2.0_mPhi2.0_hadronic_2018": "goldenrod",
+    "mS800_T2.0_mPhi2.0_hadronic_2018": "orange",
+    "mS900_T2.0_mPhi2.0_hadronic_2018": "sienna",
     "SUEP-m1000-darkPho_2018": "red",
     "SUEP-m1000-darkPhoHad_2018": "red",
     "SUEP-m1000-generic_2018": "red",
@@ -84,6 +99,7 @@ lumis = {
     "2016": 16810.813,
     "2017": 41471.589,
     "2018": 59817.406,
+    "all": 19497.914+16810.813+41471.589+59817.406
 }
 
 
@@ -116,26 +132,26 @@ def findLumi(year, auto_lumi, infile_name):
 
 
 def formatNaming(file):
-    tokens = file.split('_')
+    tokens = file.split("_")
     temp = tokens[2]
     mS = tokens[3]
     mPhi = tokens[4]
     decay = tokens[6]
 
-    if 'p' in temp:
-        temp = temp.replace('p', '.')
-        temp = 'T'+str(float(temp[1:]))
+    if "p" in temp:
+        temp = temp.replace("p", ".")
+        temp = "T" + str(float(temp[1:]))
 
-    if '.' in mS:
-        mS = mS[:mS.find('.')]
+    if "." in mS:
+        mS = mS[: mS.find(".")]
 
-    if '.' in mPhi:
-        mPhi = 'mPhi'+str(float(mPhi[4:]))
+    if "." in mPhi:
+        mPhi = "mPhi" + str(float(mPhi[4:]))
 
-    if 'mode' in decay:
+    if "mode" in decay:
         decay = decay[4:]
 
-    name = '_'.join([mS, temp, mPhi, decay])
+    name = "_".join([mS, temp, mPhi, decay])
     return name
 
 
@@ -173,12 +189,14 @@ def fillSample(infile_name, plots, lumi):
         sample = "data"
 
     elif "SUEP" in infile_name:
-        if "+" in infile_name:
+        if "+" in infile_name:  # historical naming convention
             sample = infile_name.split("/")[-1].split("+")[0]
-        elif "generic" in infile_name:
-            sample = infile_name.split("/")[-1].split("_")[1]  # hack for Carlos naming convention
-        elif "GluGluToSUEP" in infile_name:
-            sample = formatNaming(infile_name.split('/')[-1])
+        elif "GluGluToSUEP" in infile_name:  # private samples naming convention
+            sample = formatNaming(infile_name.split("/")[-1])
+        elif (
+            "generic" in infile_name and "MS" in infile_name
+        ):  # hack for Carlos naming convention
+            sample = infile_name.split("/")[-1].split("_")[1]
         else:
             sample = infile_name.split("/")[-1]
     else:
@@ -344,7 +362,7 @@ def apply_binwise_scaling(h_in, bins, scales, dim="x"):
 # function to load files from pickle
 def openpkl(infile_name):
     plots = {}
-    with (open(infile_name, "rb")) as openfile:
+    with open(infile_name, "rb") as openfile:
         while True:
             try:
                 plots.update(pickle.load(openfile))
@@ -354,7 +372,6 @@ def openpkl(infile_name):
 
 
 def plot1d(h, ax, label, color="default", lw=1):
-
     if color == "default":
         color = default_colors[label]
     if label == "QCD" and lw == 1:
@@ -373,7 +390,6 @@ def plot1d(h, ax, label, color="default", lw=1):
 
 
 def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
-
     cmap = plt.cm.rainbow(np.linspace(0, 1, len(labels)))
 
     ylist = []
@@ -412,8 +428,9 @@ def bin_midpoints(bins):
     return np.array(midpoints)
 
 
-def plot_ratio(hlist, labels=None, cmap=None, plot_label=None, xlim="default", log=True):
-
+def plot_ratio(
+    hlist, labels=None, cmap=None, plot_label=None, xlim="default", log=True
+):
     # Set up variables for the stacked histogram
     fig = plt.figure()
     plt.subplots_adjust(bottom=0.15, left=0.17)
@@ -506,7 +523,6 @@ def plot_ratio(hlist, labels=None, cmap=None, plot_label=None, xlim="default", l
 
 
 def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=False):
-
     fig = plt.figure()
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
@@ -612,14 +628,12 @@ def plot_all_regions(
     xlim="default",
     log=True,
 ):
-
     fig = plt.figure(figsize=(20, 7))
     ax = fig.subplots()
 
     offset = 0
     mids = []
     for i, r in enumerate(regions):
-
         # get (x, y) for each sample in rhig region
         hists, ys, xs = [], [], []
         for sample in samples:
@@ -748,7 +762,6 @@ def ABCD_4regions(
     yregions,
     sum_var="x",
 ):
-
     if sum_var == "x":
         A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
         B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
@@ -766,7 +779,6 @@ def ABCD_4regions(
 
 
 def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
-
     if sum_var == "x":
         if len(xregions) == 3:
             A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
@@ -815,7 +827,6 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
 
 
 def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
-
     if sum_var == "x":
         A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
         B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
@@ -952,7 +963,6 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
     # and for each bin, calculate total amount of events and variance
     z_vals, z_vars = [], []
     for iBin in range(len(bins) - 1):
-
         if histtype == "hist":
             bin_lo = bins[iBin] * 1.0j
             bin_hi = bins[iBin + 1] * 1.0j
