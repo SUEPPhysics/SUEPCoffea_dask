@@ -198,7 +198,7 @@ def main():
                     )
                     Raw_list.append(new_f)
             else:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A01/{}/RawFiles.00".format(
+                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A02/{}/RawFiles.00".format(
                     sample_name
                 )
                 Raw_list = open(input_list)
