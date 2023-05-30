@@ -516,8 +516,10 @@ def plot_ratio(
     if systs is not None:
         assert len(systs) == len(hlist[0].axes.centers[0])
         widths = hlist[0].axes.widths[0]
-        ax2.bar(hlist[0].axes.centers[0], height=np.array(systs), bottom=1, width=widths, alpha=0.3, color='gray')
-        ax2.bar(hlist[0].axes.centers[0], -np.array(systs), bottom=1, width=widths, alpha=0.3, color='gray')
+        up_height = np.where(systs>0, systs, 0)
+        down_height = np.where(systs>0, 1/(1+systs) - 1, 0)
+        ax2.bar(hlist[0].axes.centers[0], height=up_height, bottom=1, width=widths, alpha=0.3, color='gray')
+        ax2.bar(hlist[0].axes.centers[0], height=down_height, bottom=1, width=widths, alpha=0.3, color='gray')
         # add to legend
         ax1.plot([0,0], color='gray', label='Systematics')
         
@@ -724,7 +726,8 @@ def slice_hist2d(hist, regions_list, slice_var="y"):
     return hist_list
 
 
-def plot_sliced_hist2d(hist, regions_list, slice_var="y", labels=None):
+def plot_sliced_hist2d(hist, regions_list, 
+                       stack=False, density=False, slice_var="y", labels=None):
     """
     Takes a 2d histogram, slices it in different regions, and plots the
     regions stacked.
@@ -740,14 +743,18 @@ def plot_sliced_hist2d(hist, regions_list, slice_var="y", labels=None):
         assert len(labels) == len(regions_list)
     hist_list = slice_hist2d(hist, regions_list, slice_var)
     cmap = plt.cm.jet(np.linspace(0, 1, len(hist_list)))
-
+    
+    if stack: histtype = 'fill'
+    else: histtype = 'step'
+        
     fig = plt.figure()
     ax = fig.subplots()
     hep.histplot(
         hist_list,
         yerr=True,
-        stack=True,
-        histtype="fill",
+        stack=stack,
+        histtype=histtype,
+        density=density,
         label=labels,
         color=cmap,
         ax=ax,
