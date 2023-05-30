@@ -39,7 +39,7 @@
     "kr": 1,
     "xsec": 187300000.0
   },
-  "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
+  "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
     "kr": 1,
     "xsec": 6364.0
