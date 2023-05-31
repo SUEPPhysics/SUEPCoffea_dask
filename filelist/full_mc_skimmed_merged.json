@@ -82,7 +82,8 @@
   "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root",
-    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_3.root"
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_4.root"
   ],
   "QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_Pt_80to120_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
@@ -175,7 +176,11 @@
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_85.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_86.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_87.root",
-    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_9.root"
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_88.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_89.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_9.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_90.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_91.root"
   ],
   "WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM": [
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM/skim_1.root",
@@ -229,6 +234,8 @@
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_138.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_139.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_14.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_140.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_141.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_15.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_16.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_17.root",
@@ -351,6 +358,7 @@
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_26.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_27.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_28.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_29.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_3.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_4.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_5.root",
@@ -358,5 +366,50 @@
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_7.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_8.root",
     "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/ttZJets_TuneCP5_13TeV_madgraphMLM_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_9.root"
+  ],
+  "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root"
+  ],
+  "QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_4.root"
+  ],
+  "QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root"
+  ],
+  "QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root"
+  ],
+  "QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_4.root"
+  ],
+  "QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_4.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_5.root"
+  ],
+  "QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_4.root"
+  ],
+  "QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM/skim_2.root"
+  ],
+  "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_2.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM/skim_4.root"
   ]
 }
