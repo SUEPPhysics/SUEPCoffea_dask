@@ -15,7 +15,13 @@ event_vars, m = h5load(f, "vars")
 event_vars_old, m_old = h5load(f_old, "vars")
 
 pretty.pprint("Printing new file columns")
-pretty.pprint(event_vars.columns)
+pretty.pprint(event_vars)
+pretty.pprint(m)
 
 pretty.pprint("Printing old file columns")
-pretty.pprint(event_vars_old.columns)
+pretty.pprint(event_vars_old)
+pretty.pprint(m_old)
+
+# Check if the two datasets are the same
+print("Checking if the two datasets are the same")
+print(event_vars.equals(event_vars_old))
