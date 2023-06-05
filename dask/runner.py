@@ -532,6 +532,28 @@ def setupSUEP_slim(args, sample_dict):
     return instance
 
 
+def setupSUEP_fastjet_testing(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_fastjet_testing import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -622,6 +644,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP(args, sample_dict)
     elif args.workflow == "SUEP_slim":
         processor_instance = setupSUEP_slim(args, sample_dict)
+    elif args.workflow == "SUEP_fastjet_testing":
+        processor_instance = setupSUEP_fastjet_testing(args, sample_dict)
     else:
         raise NotImplementedError
 
