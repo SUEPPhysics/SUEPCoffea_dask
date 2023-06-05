@@ -614,7 +614,7 @@ def saveOutput(args, output, sample, gensumweight=None):
     pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
     # Save the cutflow (normalized to the gensumweight)
-    if output["cutflow"] is not None:
+    if "cutflow" in output.keys():
         cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
         print(f"Saving the following cutflow to {cutflowName}")
         pickle.dump(
