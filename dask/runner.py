@@ -614,12 +614,13 @@ def saveOutput(args, output, sample, gensumweight=None):
     pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
     # Save the cutflow (normalized to the gensumweight)
-    cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
-    print(f"Saving the following cutflow to {cutflowName}")
-    pickle.dump(
-        {"cutflow": output["cutflow"] / output["gensumweight"].value},
-        open(cutflowName, "wb"),
-    )
+    if output["cutflow"] is not None:
+        cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
+        print(f"Saving the following cutflow to {cutflowName}")
+        pickle.dump(
+            {"cutflow": output["cutflow"] / output["gensumweight"].value},
+            open(cutflowName, "wb"),
+        )
 
 
 if __name__ == "__main__":
