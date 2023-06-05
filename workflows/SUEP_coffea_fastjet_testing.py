@@ -252,6 +252,9 @@ class SUEP_cluster(processor.ProcessorABC):
     ):
         dataset = events.metadata["dataset"]
 
+        ak_inclusive_jets = ak.pad_none(ak_inclusive_jets, 1, axis=-1)
+        ak_inclusive_cluster = ak.pad_none(ak_inclusive_cluster, 1, axis=-1)
+
         # save per event variables to a dataframe
         output[dataset]["vars"]["ht_fastjet" + out_label] = ak.sum(
             ak_inclusive_jets.pt, axis=-1
