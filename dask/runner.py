@@ -546,6 +546,8 @@ def setupSUEP_fastjet_testing(args, sample_dict):
         sample=sample_dict,
         weight_syst="",
         flag=False,
+        scouting=args.scouting,
+        do_inf=args.doInf,
         output_location=os.getcwd(),
         accum=args.executor,
         trigger=args.trigger,
