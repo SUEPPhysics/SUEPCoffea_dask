@@ -90,7 +90,7 @@ def get_main_parser():
         "--wf",
         "--workflow",
         dest="workflow",
-        choices=["SUEP", "SUEP_slim"],
+        choices=["SUEP", "SUEP_slim", "SUEP_fastjet_testing"],
         help="Which processor to run",
         required=True,
     )
