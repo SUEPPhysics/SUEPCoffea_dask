@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-import pickle
+
 import sys
 import time
 
@@ -532,6 +532,28 @@ def setupSUEP_slim(args, sample_dict):
     return instance
 
 
+def setupSUEP_fastjet_testing(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_fastjet_testing import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -569,13 +591,12 @@ def saveOutput(args, output, sample, gensumweight=None):
     from workflows import pandas_utils
 
     if gensumweight is not None:
-        output["gensumweight"].value = gensumweight
-        output["cutflow"][0] = [gensumweight, gensumweight]
+        output["gensumweight"] = gensumweight
 
     df = output["vars"].value
 
     metadata = dict(
-        gensumweight=output["gensumweight"].value,
+        gensumweight=output["gensumweight"],
         era=processor_instance.era,
         mc=processor_instance.isMC,
         sample=sample,
@@ -588,14 +609,6 @@ def saveOutput(args, output, sample, gensumweight=None):
     outputName = f"{outputName}{sample}.hdf5"
     print(f"Saving the following output to {outputName}")
     pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
-
-    # Save the cutflow (normalized to the gensumweight)
-    cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
-    print(f"Saving the following cutflow to {cutflowName}")
-    pickle.dump(
-        {"cutflow": output["cutflow"] / output["gensumweight"].value},
-        open(cutflowName, "wb"),
-    )
 
 
 if __name__ == "__main__":
@@ -622,6 +635,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP(args, sample_dict)
     elif args.workflow == "SUEP_slim":
         processor_instance = setupSUEP_slim(args, sample_dict)
+    elif args.workflow == "SUEP_fastjet_testing":
+        processor_instance = setupSUEP_fastjet_testing(args, sample_dict)
     else:
         raise NotImplementedError
 
@@ -644,7 +659,7 @@ if __name__ == "__main__":
     # Save the output
     for sample in sample_dict:
         if args.skimmed:
-            saveOutput(args, output[sample], sample, weights[sample].value)
+            saveOutput(args, output[sample], sample, weights[sample])
         else:
             saveOutput(
                 args,

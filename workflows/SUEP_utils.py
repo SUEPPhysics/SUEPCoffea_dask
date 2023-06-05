@@ -1,6 +1,6 @@
 import math
 
-import awkward as ak
+import dask_awkward as ak
 import fastjet
 import numpy as np
 import vector

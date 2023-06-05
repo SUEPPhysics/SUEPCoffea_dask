@@ -6,7 +6,7 @@ Chad Freer and Luca Lavezzo, 2022
 """
 from typing import Optional
 
-import awkward as ak
+import dask_awkward as ak
 import h5py
 import numpy as np
 import pandas as pd

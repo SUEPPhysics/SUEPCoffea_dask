@@ -3,7 +3,7 @@ import pathlib
 import shutil
 from typing import List, Optional
 
-import awkward as ak
+import dask_awkward as ak
 import pandas as pd
 
 

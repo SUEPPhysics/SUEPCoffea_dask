@@ -1,4 +1,4 @@
-import awkward as ak
+import dask_awkward as ak
 import cachetools
 import numpy as np
 from coffea.jetmet_tools import CorrectedJetsFactory, JECStack

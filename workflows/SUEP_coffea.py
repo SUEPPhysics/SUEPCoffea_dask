@@ -6,8 +6,9 @@ Chad Freer and Luca Lavezzo, 2021
 """
 from typing import Optional
 
-import awkward as ak
-import hist
+import dask_awkward as ak
+
+# import hist.dask as hist
 import numpy as np
 import pandas as pd
 import vector
@@ -19,9 +20,10 @@ import workflows.ZH_utils as ZH_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.jetmet_utils import apply_jecs
-from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
+
+# from workflows.CMS_corrections.jetmet_utils import apply_jecs
+# from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
+# from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 from workflows.pandas_accumulator import pandas_accumulator
 
@@ -159,7 +161,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         muons = muons[clean_muons]
         electrons = electrons[clean_electrons]
-        select_by_muons = ak.num(muons, axis=-1) >= 6
+        select_by_muons = ak.num(muons, axis=-1) >= 0
         events = events[select_by_muons]
         muons = muons[select_by_muons]
         electrons = electrons[select_by_muons]
@@ -197,7 +199,7 @@ class SUEP_cluster(processor.ProcessorABC):
             & (events.PFCands.dzErr < 0.05)
         )
         Cleaned_cands = Cands[cut]
-        Cleaned_cands = ak.packed(Cleaned_cands)
+        # Cleaned_cands = ak.packed(Cleaned_cands)
 
         # Prepare the Lost Track collection
         LostTracks = ak.zip(
@@ -205,7 +207,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "pt": events.lostTracks.pt,
                 "eta": events.lostTracks.eta,
                 "phi": events.lostTracks.phi,
-                "mass": 0.0,
+                "mass": 0.0 * events.lostTracks.pt,
             },
             with_name="Momentum4D",
         )
@@ -217,7 +219,7 @@ class SUEP_cluster(processor.ProcessorABC):
             & (events.lostTracks.dzErr < 0.05)
         )
         Lost_Tracks_cands = LostTracks[cut]
-        Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
+        # Lost_Tracks_cands = ak.packed(Lost_Tracks_cands)
 
         # select which tracks to use in the script
         # dimensions of tracks = events x tracks in event x 4 momenta
@@ -259,6 +261,7 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         # muon inter-isolation
+        """
         muonsCollection = ak.zip(
             {
                 "pt": muons.pt,
@@ -279,10 +282,12 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
+        """
 
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
 
+        """
         # work on JECs and systematics
         prefix = ""
         if self.accum:
@@ -307,16 +312,20 @@ class SUEP_cluster(processor.ProcessorABC):
             jets_jec_JERDown = jets_jec
             jets_jec_JESUp = jets_jec
             jets_jec_JESDown = jets_jec
+        """
 
         # save per event variables to a dataframe
-        output[dataset]["vars"]["ntracks" + out_label] = ak.num(tracks).to_list()
-        output[dataset]["vars"]["ngood_fastjets" + out_label] = ak.num(
-            ak_inclusive_jets
-        ).to_list()
+        output[dataset]["vars"]["ntracks" + out_label] = (
+            ak.num(tracks).compute().to_list()
+        )
+        output[dataset]["vars"]["ngood_fastjets" + out_label] = (
+            ak.num(ak_inclusive_jets).compute().to_list()
+        )
         if out_label == "":
-            output[dataset]["vars"]["ht" + out_label] = ak.sum(
-                ak4jets.pt, axis=-1
-            ).to_list()
+            output[dataset]["vars"]["ht" + out_label] = (
+                ak.sum(ak4jets.pt, axis=-1).compute().to_list()
+            )
+            """
             output[dataset]["vars"]["ht_JEC" + out_label] = ak.sum(
                 jets_jec.pt, axis=-1
             ).to_list()
@@ -332,28 +341,36 @@ class SUEP_cluster(processor.ProcessorABC):
             output[dataset]["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
+            """
 
             if self.era == 2016 and self.scouting == 0:
                 output[dataset]["vars"]["HLT_PFHT900" + out_label] = events.HLT.PFHT900
             elif self.scouting == 0:
                 output[dataset]["vars"][
                     "HLT_PFHT1050" + out_label
-                ] = events.HLT.PFHT1050
-            output[dataset]["vars"]["ngood_ak4jets" + out_label] = ak.num(
-                ak4jets
-            ).to_list()
+                ] = events.HLT.PFHT1050.compute().to_list()
+            output[dataset]["vars"]["ngood_ak4jets" + out_label] = (
+                ak.num(ak4jets).compute().to_list()
+            )
             if self.scouting == 1:
-                output[dataset]["vars"]["PV_npvs" + out_label] = ak.num(events.Vertex.x)
+                output[dataset]["vars"]["PV_npvs" + out_label] = (
+                    ak.num(events.Vertex.x).compute().to_list()
+                )
             else:
                 if self.isMC:
                     output[dataset]["vars"][
                         "Pileup_nTrueInt" + out_label
-                    ] = events.Pileup.nTrueInt
-                    GetPSWeights(events, output[dataset])  # Parton Shower weights
-                    GetPrefireWeights(self, events, output[dataset])  # Prefire weights
-                output[dataset]["vars"]["PV_npvs" + out_label] = events.PV.npvs
-                output[dataset]["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
+                    ] = events.Pileup.nTrueInt.compute().to_list()
+                    # GetPSWeights(events, output[dataset])  # Parton Shower weights
+                    # GetPrefireWeights(self, events, output[dataset])  # Prefire weights
+                output[dataset]["vars"][
+                    "PV_npvs" + out_label
+                ] = events.PV.npvs.compute().to_list()
+                output[dataset]["vars"][
+                    "PV_npvsGood" + out_label
+                ] = events.PV.npvsGood.compute().to_list()
 
+        """
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
         SUEP_genPt = len(events) * [0]
@@ -370,10 +387,18 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_genPhi = [g[-1].phi if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
 
-        output[dataset]["vars"]["SUEP_genMass" + out_label] = SUEP_genMass
-        output[dataset]["vars"]["SUEP_genPt" + out_label] = SUEP_genPt
-        output[dataset]["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
-        output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
+        output[dataset]["vars"][
+            "SUEP_genMass" + out_label
+        ] = SUEP_genMass.compute().to_list()
+        output[dataset]["vars"][
+            "SUEP_genPt" + out_label
+        ] = SUEP_genPt.compute().to_list()
+        output[dataset]["vars"][
+            "SUEP_genEta" + out_label
+        ] = SUEP_genEta.compute().to_list()
+        output[dataset]["vars"][
+            "SUEP_genPhi" + out_label
+        ] = SUEP_genPhi.compute().to_list()
 
         # nMuons
         output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon).to_list()
@@ -499,6 +524,7 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["ntracks_eta_ring" + out_label] = ak.num(
             tracks_eta_ring
         ).to_list()
+        """
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -546,16 +572,16 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         # get dataset name
-        dataset = events.metadata["dataset"]
+        # dataset = events.metadata["dataset"]
 
         # some cutflow stuff
-        output[dataset]["cutflow"].fill(len(events) * ["all events"])
-        output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
-        )
-        output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"]
-        )
+        # output[dataset]["cutflow"].fill(len(events) * ["all events"])
+        # output[dataset]["cutflow"].fill(
+        #    ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
+        # )
+        # output[dataset]["cutflow"].fill(
+        #    ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"]
+        # )
 
         # golden jsons for offline data
         if not self.isMC and self.scouting != 1:
@@ -570,7 +596,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
             events, electrons, muons = self.triple_mu_filter(events)
-        output[dataset]["cutflow"].fill(len(events) * ["nMuon_mediumId >= 6"])
+        # output[dataset]["cutflow"].fill(len(events) * ["nMuon_mediumId >= 6"])
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -616,6 +642,7 @@ class SUEP_cluster(processor.ProcessorABC):
             out_label=col_label,
         )
 
+        """
         # indices of events in tracks, used to keep track which events pass selections
         indices = np.arange(0, len(tracks))
 
@@ -673,23 +700,24 @@ class SUEP_cluster(processor.ProcessorABC):
                 out_label=col_label,
                 do_inverted=True,
             )
+        """
 
     def process(self, events):
         dataset = events.metadata["dataset"]
-        cutflow = hist.Hist.new.StrCategory(
-            [
-                "all events",
-                "HLT_PFHT430",
-                "HLT_TripleMu_5_3_3",
-                "nMuon_mediumId >= 6",
-            ],
-            name="cutflow",
-            label="cutflow",
-        ).Weight()
+        # cutflow = hist.Hist.new.StrCategory(
+        #    [
+        #        "all events",
+        #        "HLT_PFHT430",
+        #        "HLT_TripleMu_5_3_3",
+        #        "nMuon_mediumId >= 6",
+        #    ],
+        #    name="cutflow",
+        #    label="cutflow",
+        # ).Weight()
         output = {
             dataset: {
-                "cutflow": cutflow,
-                "gensumweight": processor.value_accumulator(float, 0),
+                # "cutflow": cutflow,
+                "gensumweight": 0,
                 "vars": pandas_accumulator(pd.DataFrame()),
             },
         }
@@ -697,10 +725,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # gen weights
         if self.isMC and self.scouting == 1:
             self.gensumweight = ak.num(events.PFcand.pt, axis=0)
-            output[dataset]["gensumweight"].add(self.gensumweight)
+            output[dataset]["gensumweight"] = self.gensumweight
         elif self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
-            output[dataset]["gensumweight"].add(self.gensumweight)
+            output[dataset]["gensumweight"] = self.gensumweight
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:

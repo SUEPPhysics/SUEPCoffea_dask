@@ -1,4 +1,4 @@
-import awkward as ak
+import dask_awkward as ak
 import numpy as np
 
 
