@@ -269,10 +269,10 @@ class SUEP_cluster(processor.ProcessorABC):
             ak_inclusive_cluster[:, 0]
         ).to_list()
         output[dataset]["vars"]["fastjet_lead_const_mean_pt" + out_label] = ak.mean(
-            ak_inclusive_cluster[:, 0].pt
+            ak_inclusive_cluster[:, 0].pt, axis=-1
         ).to_list()
         output[dataset]["vars"]["fastjet_lead_const_mean_eta" + out_label] = ak.mean(
-            ak_inclusive_cluster[:, 0].eta
+            ak_inclusive_cluster[:, 0].eta, axis=-1
         ).to_list()
 
     def initializeColumns(self, label=""):
