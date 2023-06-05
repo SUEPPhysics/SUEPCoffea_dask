@@ -252,8 +252,8 @@ class SUEP_cluster(processor.ProcessorABC):
     ):
         dataset = events.metadata["dataset"]
 
-        ak_inclusive_jets = ak.pad_none(ak_inclusive_jets, 1, axis=-1)
-        ak_inclusive_cluster = ak.pad_none(ak_inclusive_cluster, 1, axis=-1)
+        ak_inclusive_jets = ak.pad_none(ak_inclusive_jets, 1, axis=1)
+        ak_inclusive_cluster = ak.pad_none(ak_inclusive_cluster, 1, axis=1)
 
         # save per event variables to a dataframe
         output[dataset]["vars"]["ht_fastjet" + out_label] = ak.sum(
@@ -382,7 +382,7 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         output = {
             dataset: {
-                "gensumweight": 0,
+                "gensumweight": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
             },
         }
@@ -390,10 +390,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # gen weights
         if self.isMC and self.scouting == 1:
             self.gensumweight = ak.num(events.PFcand.pt, axis=0)
-            output[dataset]["gensumweight"] = self.gensumweight
+            output[dataset]["gensumweight"].add(self.gensumweight)
         elif self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
-            output[dataset]["gensumweight"] = self.gensumweight
+            output[dataset]["gensumweight"].add(self.gensumweight)
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
