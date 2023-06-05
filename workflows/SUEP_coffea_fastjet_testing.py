@@ -252,6 +252,9 @@ class SUEP_cluster(processor.ProcessorABC):
     ):
         dataset = events.metadata["dataset"]
 
+        ak_inclusive_jets = ak.pad_none(ak_inclusive_jets, 1, axis=1)
+        ak_inclusive_cluster = ak.pad_none(ak_inclusive_cluster, 1, axis=1)
+
         # save per event variables to a dataframe
         output[dataset]["vars"]["ht_fastjet" + out_label] = (
             ak.sum(ak_inclusive_jets.pt, axis=-1).compute().to_list()
@@ -260,19 +263,19 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.num(ak_inclusive_jets).compute().to_list()
         )
         output[dataset]["vars"]["fastjet_lead_pt" + out_label] = (
-            ak_inclusive_jets[0].pt.compute().to_list()
+            ak_inclusive_jets[:, 0].pt.compute().to_list()
         )
         output[dataset]["vars"]["fastjet_lead_eta" + out_label] = (
-            ak_inclusive_jets[0].eta.compute().to_list()
+            ak_inclusive_jets[:, 0].eta.compute().to_list()
         )
         output[dataset]["vars"]["fastjet_lead_nconst" + out_label] = (
-            ak.num(ak_inclusive_cluster[0]).compute().to_list()
+            ak.num(ak_inclusive_cluster[:, 0]).compute().to_list()
         )
         output[dataset]["vars"]["fastjet_lead_const_mean_pt" + out_label] = (
-            ak.mean(ak_inclusive_cluster[0].pt).compute().to_list()
+            ak.mean(ak_inclusive_cluster[:, 0].pt, axis=-1).compute().to_list()
         )
         output[dataset]["vars"]["fastjet_lead_const_mean_eta" + out_label] = (
-            ak.mean(ak_inclusive_cluster[0].eta).compute().to_list()
+            ak.mean(ak_inclusive_cluster[:, 0].eta, axis=-1).compute().to_list()
         )
 
     def initializeColumns(self, label=""):
