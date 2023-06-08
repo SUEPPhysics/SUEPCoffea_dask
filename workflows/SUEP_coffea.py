@@ -21,11 +21,11 @@ import workflows.ZH_utils as ZH_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
+from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
-from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 
 # Set vector behavior
 vector.register_awkward()
@@ -67,7 +67,6 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars = pd.DataFrame()
 
         if self.do_inf:
-
             # ML settings
             self.batch_size = 1024
 
@@ -110,8 +109,8 @@ class SUEP_cluster(processor.ProcessorABC):
             }
         )
         jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta) < 2.4)
-        jet_HEM_Cut,_=jetHEMFilter(self,Jets)
-        Jets_correct = Jets_awk[jet_awk_Cut*jet_HEM_Cut]
+        jet_HEM_Cut, _ = jetHEMFilter(self, Jets)
+        Jets_correct = Jets_awk[jet_awk_Cut * jet_HEM_Cut]
         return Jets_correct
 
     def eventSelection(self, events):
@@ -141,9 +140,28 @@ class SUEP_cluster(processor.ProcessorABC):
     def selectByFilters(self, events):
         ### Apply MET filter selection (see https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2)
         if self.era == 2018 or self.era == 2017:
-            cutAnyFilter = (events.Flag.goodVertices) & (events.Flag.globalSuperTightHalo2016Filter) & (events.Flag.HBHENoiseFilter) & (events.Flag.HBHENoiseIsoFilter) & (events.Flag.EcalDeadCellTriggerPrimitiveFilter) & (events.Flag.BadPFMuonFilter) & (events.Flag.BadPFMuonDzFilter) & (events.Flag.eeBadScFilter) & (events.Flag.ecalBadCalibFilter)
+            cutAnyFilter = (
+                (events.Flag.goodVertices)
+                & (events.Flag.globalSuperTightHalo2016Filter)
+                & (events.Flag.HBHENoiseFilter)
+                & (events.Flag.HBHENoiseIsoFilter)
+                & (events.Flag.EcalDeadCellTriggerPrimitiveFilter)
+                & (events.Flag.BadPFMuonFilter)
+                & (events.Flag.BadPFMuonDzFilter)
+                & (events.Flag.eeBadScFilter)
+                & (events.Flag.ecalBadCalibFilter)
+            )
         if self.era == 2016:
-            cutAnyFilter = (events.Flag.goodVertices) & (events.Flag.globalSuperTightHalo2016Filter) & (events.Flag.HBHENoiseFilter) & (events.Flag.HBHENoiseIsoFilter) & (events.Flag.EcalDeadCellTriggerPrimitiveFilter) & (events.Flag.BadPFMuonFilter) & (events.Flag.BadPFMuonDzFilter) & (events.Flag.eeBadScFilter)
+            cutAnyFilter = (
+                (events.Flag.goodVertices)
+                & (events.Flag.globalSuperTightHalo2016Filter)
+                & (events.Flag.HBHENoiseFilter)
+                & (events.Flag.HBHENoiseIsoFilter)
+                & (events.Flag.EcalDeadCellTriggerPrimitiveFilter)
+                & (events.Flag.BadPFMuonFilter)
+                & (events.Flag.BadPFMuonDzFilter)
+                & (events.Flag.eeBadScFilter)
+            )
         return events[cutAnyFilter]
 
     def getGenTracks(self, events):
@@ -227,7 +245,6 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
 
     def getLooseLeptons(self, events):
-        
         looseMuons = ak.zip(
             {
                 "pt": events.Muon.pt,
@@ -249,7 +266,7 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
-        
+
         cutLooseMuons = (
             (events.Muon.looseId)
             & (events.Muon.pt >= 1)
@@ -260,24 +277,35 @@ class SUEP_cluster(processor.ProcessorABC):
         cutLooseElectrons = (
             (events.Electron.cutBased >= 1)
             & (events.Electron.pt >= 1)
-            & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
-            & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
+            & (
+                abs(events.Electron.dxy)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
         )
-        
+
         ### Apply the cuts
         # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
         looseMuons = looseMuons[cutLooseMuons]
         looseElectrons = looseElectrons[cutLooseElectrons]
 
         return looseElectrons, looseMuons
-    
-    def storeEventVars(
-        self, events, tracks, ak_inclusive_jets, ak_inclusive_cluster, 
-        electrons, muons, out_label=""
-    ):
 
+    def storeEventVars(
+        self,
+        events,
+        tracks,
+        ak_inclusive_jets,
+        ak_inclusive_cluster,
+        electrons,
+        muons,
+        out_label="",
+    ):
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
 
@@ -326,13 +354,15 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
-            self.out_vars['n_sel_electrons'] = ak.to_numpy(ak.num(electrons))
-            self.out_vars['n_sel_muons'] = ak.to_numpy(ak.num(muons))
-            self.out_vars['n_sel_leps'] = ak.to_numpy(ak.num(electrons)) + ak.to_numpy(ak.num(muons))
-            
+            self.out_vars["n_sel_electrons"] = ak.to_numpy(ak.num(electrons))
+            self.out_vars["n_sel_muons"] = ak.to_numpy(ak.num(muons))
+            self.out_vars["n_sel_leps"] = ak.to_numpy(ak.num(electrons)) + ak.to_numpy(
+                ak.num(muons)
+            )
+
             # store event weights for MC
             if self.isMC:
-                self.out_vars['genweight'] = events.genWeight
+                self.out_vars["genweight"] = events.genWeight
 
             if self.era == 2016 and self.scouting == 0:
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
@@ -446,7 +476,7 @@ class SUEP_cluster(processor.ProcessorABC):
             tracks, Cleaned_cands = self.getTracks(events)
 
         looseElectrons, looseMuons = self.getLooseLeptons(events)
-        
+
         if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
             Cleaned_cands = track_killing(self, Cleaned_cands)
@@ -465,8 +495,13 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         self.storeEventVars(
-            events, tracks, ak_inclusive_jets, ak_inclusive_cluster, looseElectrons, looseMuons, 
-            out_label=col_label
+            events,
+            tracks,
+            ak_inclusive_jets,
+            ak_inclusive_cluster,
+            looseElectrons,
+            looseMuons,
+            out_label=col_label,
         )
 
         # indices of events in tracks, used to keep track which events pass selections
@@ -555,7 +590,6 @@ class SUEP_cluster(processor.ProcessorABC):
                 return output
 
             if "pandas_merger" == self.accum:
-
                 # save the out_vars object as a Pandas DataFrame
                 pandas_utils.save_dfs(
                     self,
