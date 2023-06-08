@@ -418,7 +418,7 @@ def create_output_file(label, abcd):
         return output
     else:
         output["labels"].append(label)
-
+        
     # ABCD histogram
     xvar = abcd["xvar"]
     yvar = abcd["yvar"]
@@ -535,6 +535,16 @@ def create_output_file(label, abcd):
                     501, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
                 )
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
+                .Weight(),
+                f"2D_SUEP_eta_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                    100, -5, 5, name=f"SUEP_eta_{label}", label="$\eta$"
+                )
+                .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
+                .Weight(),
+                f"2D_SUEP_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                    100, 0, 2000, name=f"SUEP_pt_{label}", label="SUEP $p_T$"
+                )
+                .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
             }
         )
