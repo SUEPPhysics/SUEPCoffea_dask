@@ -195,17 +195,16 @@ def fill_2d_distributions(df, output, label_out, input_method):
         var2 = string.split("_vs_")[1]
         if var1 not in df_keys:
             var1 += "_" + input_method
-            if var1 not in df_keys: 
+            if var1 not in df_keys:
                 continue
         if var2 not in df_keys:
             var2 += "_" + input_method
-            if var2 not in df_keys: 
+            if var2 not in df_keys:
                 continue
         output[key].fill(df[var1], df[var2], weight=df["event_weight"])
 
 
 def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
-
     input_method = abcd["input_method"]
 
     #####################################################################################
@@ -249,7 +248,6 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
             x_val_hi = xvar_regions[i + 1]
 
             for j in range(len(yvar_regions) - 1):
-
                 r = regions[iRegion] + "_"
 
                 y_val_lo = yvar_regions[j]
