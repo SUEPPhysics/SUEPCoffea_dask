@@ -4,10 +4,10 @@ import multiprocessing
 import os
 import subprocess
 import sys
-import pandas as pd
-from tqdm import tqdm
 
 import fill_utils
+import pandas as pd
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description="Famous Submitter")
 parser.add_argument(
@@ -40,6 +40,7 @@ result = subprocess.check_output(["xrdfs", redirector, "ls", dataDir])
 result = result.decode("utf-8")
 files = result.split("\n")
 files = [f for f in files if (".hdf5" in f) and ("merged" not in f)]
+
 
 # SAVE OUTPUTS
 def save_dfs(df_tot, output):
@@ -96,7 +97,6 @@ df_tot = 0
 metadata_tot = 0
 i_out = 0
 for ifile, file in enumerate(tqdm(files)):
-
     if os.path.exists(dataset + ".hdf5"):
         subprocess.run(["rm", dataset + ".hdf5"])
     xrd_file = redirector + file

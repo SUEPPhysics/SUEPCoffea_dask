@@ -444,6 +444,11 @@ def plot_ratio(
     density=False,
     cmap=None, plot_label=None, xlim="default", log=True
 ):
+    """
+    Plots ratio of a list of Hist histograms, the ratio is wrt to the first one in the list.
+    The errors in the ratio are taken to be independent between histograms.
+    """
+
     # Set up variables for the stacked histogram
     fig = plt.figure()
     plt.subplots_adjust(bottom=0.15, left=0.17)
@@ -451,7 +456,6 @@ def plot_ratio(
     
     if density:
         for h in hlist: h/=h.sum().value
-        print("Cannot calculate ratio errors for densities yet...")
         
     if labels is None:
         labels = [None] * len(hlist)
@@ -506,7 +510,7 @@ def plot_ratio(
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
 
-    # calculate the ratio, with poisson errors, and plot them
+    # calculate the ratio, with error propagation, and plot them
     for i, (c, h) in enumerate(zip(cmap, hlist)):
         if i == 0:
             continue
@@ -516,7 +520,11 @@ def plot_ratio(
             out=np.ones_like(h.values()),
             where=hlist[0].values() != 0,
         )
-        ratio_err = hist.intervals.ratio_uncertainty(h.values(), hlist[0].values()) if not density else None
+        ratio_err = np.where(
+            hlist[0].values() > 0,
+            np.sqrt((hlist[0].values()**-2)*(h.variances()) + (h.values()**2 * hlist[0].values()**-4)*(hlist[0].variances())),
+            0
+        )
         ax2.errorbar(
             hlist[0].axes.centers[0],
             ratio,
@@ -1052,7 +1060,7 @@ def hist_std_dev(hist, axis=0):
     """
     bin_values = hist.values()
     bin_centers = hist.axes[0].centers
-    mean = calculate_mean(hist)
+    mean = hist_mean(hist)
 
     # Calculate the sum of squared differences from the mean
     squared_diff_sum = np.sum(bin_values * (bin_centers - mean) ** 2)
@@ -1075,10 +1083,10 @@ def hist2d_correlation(h):
     yvals = h.axes[1].centers
     zvals = h.values()
     
-    xmean = calculate_mean(h[:,sum])
-    ymean = calculate_mean(h[sum,:])
-    xdev = calculate_std_dev(h[:, sum])
-    ydev = calculate_std_dev(h[sum,:])
+    xmean = hist_mean(h[:,sum])
+    ymean = hist_mean(h[sum,:])
+    xdev = hist_std_dev(h[:, sum])
+    ydev = hist_std_dev(h[sum,:])
         
     if xdev == 0 or ydev == 0: return 
     
