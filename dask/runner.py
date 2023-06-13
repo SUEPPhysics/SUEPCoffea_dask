@@ -611,7 +611,7 @@ def saveOutput(args, output, sample, gensumweight=None):
     outputName = ""
     if args.output is not None:
         outputName = f"{args.output}_"
-    outputName = f"{outputName}{sample}.hdf5"
+    outputName = f"{outputName}{sample}_n_muons_is_{args.n_muons}.hdf5"
     print(f"Saving the following output to {outputName}")
     pandas_utils.save_dfs([df], ["vars"], f"{outputName}", metadata=metadata)
 
