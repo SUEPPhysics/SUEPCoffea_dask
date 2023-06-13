@@ -238,61 +238,6 @@ def specificProcessing(args, sample_dict):
     return sample_dict
 
 
-def parslExecutor(args, env_extra, condor_extra):
-    import parsl
-    from parsl.addresses import address_by_hostname, address_by_query
-    from parsl.channels import LocalChannel
-    from parsl.config import Config
-    from parsl.executors import HighThroughputExecutor
-    from parsl.launchers import SrunLauncher
-    from parsl.providers import CondorProvider, SlurmProvider
-
-    if "slurm" in args.executor:
-        htex_config = Config(
-            executors=[
-                HighThroughputExecutor(
-                    label="coffea_parsl_slurm",
-                    address=address_by_hostname(),
-                    prefetch_capacity=0,
-                    provider=SlurmProvider(
-                        channel=LocalChannel(script_dir="logs_parsl"),
-                        launcher=SrunLauncher(),
-                        max_blocks=(args.scaleout) + 10,
-                        init_blocks=args.scaleout,
-                        partition="all",
-                        worker_init="\n".join(env_extra),
-                        walltime="00:120:00",
-                    ),
-                )
-            ],
-            retries=20,
-        )
-    elif "condor" in args.executor:
-        htex_config = Config(
-            executors=[
-                HighThroughputExecutor(
-                    label="coffea_parsl_condor",
-                    address=address_by_query(),
-                    # max_workers=1,
-                    provider=CondorProvider(
-                        nodes_per_block=1,
-                        init_blocks=1,
-                        max_blocks=1,
-                        worker_init="\n".join(env_extra + condor_extra),
-                        walltime="00:20:00",
-                    ),
-                )
-            ]
-        )
-    else:
-        raise NotImplementedError
-
-    parsl.load(htex_config)
-
-    executor = processor.ParslExecutor(config=htex_config)
-    return executor
-
-
 def daskExecutor(args, env_extra):
     import shutil
 
@@ -564,8 +509,6 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     if args.executor in ["futures", "iterative"]:
         executor = nativeExecutors(args)
-    elif "parsl" in args.executor:
-        executor = parslExecutor(args, env_extra, condor_extra)
     elif "dask" in args.executor:
         executor = daskExecutor(args, env_extra)
     else:
