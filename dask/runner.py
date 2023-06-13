@@ -216,6 +216,7 @@ def get_main_parser():
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
+    parser.add_argument("--n_muons", type=int, default=2, help="Number of muons")
     return parser
 
 
@@ -506,6 +507,7 @@ def setupSUEP(args, sample_dict):
         accum=args.executor,
         trigger=args.trigger,
         debug=args.debug,
+        n_muons=args.n_muons,
     )
     return instance
 
