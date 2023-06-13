@@ -12,6 +12,14 @@ dask-worker-space/
 .vscode/
 *.pyc
 
+# Python envs
+env/
+.env/
+venv/
+.venv/
+myenv/
+.myenv/
+
 # Log & txt files
 dask-report.html
 *.log
