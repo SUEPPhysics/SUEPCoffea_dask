@@ -41,6 +41,7 @@ class SUEP_cluster(processor.ProcessorABC):
         weight_syst: bool,
         flag: bool,
         do_inf: bool,
+        n_muons: int,
         output_location: Optional[str],
         accum: Optional[bool] = None,
         trigger: Optional[str] = None,
@@ -64,6 +65,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.accum = accum
         self.trigger = trigger
         self.debug = debug
+        self.n_muons = n_muons
 
         if self.do_inf:
             # ML settings
@@ -159,7 +161,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         muons = muons[clean_muons]
         electrons = electrons[clean_electrons]
-        select_by_muons = ak.num(muons, axis=-1) >= nMuons
+        select_by_muons = ak.num(muons, axis=-1) == nMuons
         events = events[select_by_muons]
         muons = muons[select_by_muons]
         electrons = electrons[select_by_muons]
@@ -557,14 +559,9 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # make sure we have at least 3 muons with loose ID
         if self.trigger == "TripleMu":
-            events, electrons, muons = self.muon_filter(events, 4)
+            events, electrons, muons = self.muon_filter(events, self.n_muons)
         output[dataset]["cutflow"].fill(
-            len(events) * ["nMuon_mediumId >= 4"], weight=events.genWeight
-        )
-        n_muons = ak.num(muons)
-        output[dataset]["cutflow"].fill(
-            len(events[n_muons >= 6]) * ["nMuon_mediumId >= 6"],
-            weight=events[n_muons >= 6].genWeight,
+            len(events) * [f"nMuon_mediumId == {self.n_muons}"], weight=events.genWeight
         )
 
         # output empty dataframe if no events pass trigger
@@ -625,6 +622,11 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
+        events = events[clusterCut]
+        output[dataset]["cutflow"].fill(
+            len(events) * ["n_ak15 >= 2"],
+            weight=events.genWeight,
+        )
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
@@ -677,8 +679,8 @@ class SUEP_cluster(processor.ProcessorABC):
             [
                 "all events",
                 "HLT_TripleMu_5_3_3",
-                "nMuon_mediumId >= 4",
-                "nMuon_mediumId >= 6",
+                f"nMuon_mediumId == {self.n_muons}",
+                "n_ak15 >= 2",
             ],
             name="cutflow",
             label="cutflow",
