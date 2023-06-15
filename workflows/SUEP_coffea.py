@@ -619,6 +619,17 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Cut Based Analysis
         #####################################################################################
 
+        # Check the effect of higher pT cuts on the SUEP and ISR jets
+        (
+            ak_inclusive_jets_highPt,
+            ak_inclusive_cluster_highPt,
+        ) = SUEP_utils.FastJetReclustering(tracks, r=1.5, min_pt=150)
+        clusterCut_highPt = ak.num(ak_inclusive_jets_highPt, axis=1) > 1
+        output[dataset]["cutflow"].fill(
+            len(events[clusterCut_highPt]) * ["n_ak15 >= 2 (150 GeV)"],
+            weight=events[clusterCut_highPt].genWeight,
+        )
+
         # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
@@ -629,17 +640,6 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["cutflow"].fill(
             len(events) * ["n_ak15 >= 2 (50 GeV)"],
             weight=events.genWeight,
-        )
-
-        # Check the effect of higher pT cuts on the SUEP and ISR jets
-        (
-            ak_inclusive_jets_highPt,
-            ak_inclusive_cluster_highPt,
-        ) = SUEP_utils.FastJetReclustering(tracks, r=1.5, min_pt=150)
-        clusterCut_highPt = ak.num(ak_inclusive_jets_highPt, axis=1) > 1
-        output[dataset]["cutflow"].fill(
-            len(events[clusterCut_highPt]) * ["n_ak15 >= 2 (150 GeV)"],
-            weight=events[clusterCut_highPt].genWeight,
         )
 
         # output file if no events pass selections, avoids errors later on
