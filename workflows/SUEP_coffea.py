@@ -591,7 +591,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, minPt=150
+            tracks, r=1.5, min_pt=50
         )
 
         #####################################################################################
@@ -625,6 +625,22 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
+        events = events[clusterCut]
+        output[dataset]["cutflow"].fill(
+            len(events) * ["n_ak15 >= 2 (50 GeV)"],
+            weight=events.genWeight,
+        )
+
+        # Check the effect of higher pT cuts on the SUEP and ISR jets
+        (
+            ak_inclusive_jets_highPt,
+            ak_inclusive_cluster_highPt,
+        ) = SUEP_utils.FastJetReclustering(tracks, r=1.5, min_pt=150)
+        clusterCut_highPt = ak.num(ak_inclusive_jets_highPt, axis=1) > 1
+        output[dataset]["cutflow"].fill(
+            len(events[clusterCut_highPt]) * ["n_ak15 >= 2 (150 GeV)"],
+            weight=events[clusterCut_highPt].genWeight,
+        )
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
@@ -679,6 +695,8 @@ class SUEP_cluster(processor.ProcessorABC):
                 "HLT_TripleMu_5_3_3",
                 "nMuon_mediumId >= 4",
                 "nMuon_mediumId >= 6",
+                "n_ak15 >= 2 (50 GeV)",
+                "n_ak15 >= 2 (150 GeV)",
             ],
             name="cutflow",
             label="cutflow",

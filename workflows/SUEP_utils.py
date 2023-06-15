@@ -456,21 +456,11 @@ def rho(number, jet, tracks, deltaR, dr=0.05):
     return rho_values
 
 
-def FastJetReclustering(tracks, r, minPt):
+def FastJetReclustering(tracks, r, min_pt):
     jetdef = fastjet.JetDefinition(fastjet.antikt_algorithm, r)
     cluster = fastjet.ClusterSequence(tracks, jetdef)
-
-    # have to set min_pt = 0 and cut later to avoid some memory issues
-    # FIXME: should try to understand this failure
-    ak_inclusive_jets = cluster.inclusive_jets()
-    ak_inclusive_cluster = cluster.constituents()
-
-    # apply minimum pT cut
-    minPtCut = ak_inclusive_jets.pt > minPt
-
-    ak_inclusive_jets = ak_inclusive_jets[minPtCut]
-    ak_inclusive_cluster = ak_inclusive_cluster[minPtCut]
-
+    ak_inclusive_jets = cluster.inclusive_jets(min_pt=min_pt)
+    ak_inclusive_cluster = cluster.constituents(min_pt=min_pt)
     return ak_inclusive_jets, ak_inclusive_cluster
 
 
