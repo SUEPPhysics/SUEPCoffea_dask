@@ -204,7 +204,10 @@ def fill_background(infile_name, plots, lumi):
     else:
         plotsToAdd = openpkl(infile_name)
         for plot in list(plotsToAdd.keys()):
-            plots["bkg"][plot] = plots["bkg"][plot] + plotsToAdd[plot] * lumi
+            if plot not in list(plots["bkg"].keys()):
+                plots["bkg"][plot] = plotsToAdd[plot] * lumi
+            else:
+                plots["bkg"][plot] = plots["bkg"][plot] + plotsToAdd[plot] * lumi
     return plots
 
 
