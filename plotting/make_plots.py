@@ -118,23 +118,14 @@ selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
 config = {
-    "Cluster_4muons": {
+    "Cluster": {
         "input_method": "CL",
         "xvar": "SUEP_S1_CL",
         "xvar_regions": [0.2, 0.6, 1.0],
         "yvar": "SUEP_nconst_CL",
         "yvar_regions": [15, 50, 1000],
         "SR": [["SUEP_S1_CL", ">=", 0.6], ["SUEP_nconst_CL", ">=", 50]],
-        "selections": [["nMuons_mediumId", ">=", 4], ["ntracks", ">", 0]],
-    },
-    "Cluster_6muons": {
-        "input_method": "CL",
-        "xvar": "SUEP_S1_CL",
-        "xvar_regions": [0.2, 0.6, 1.0],
-        "yvar": "SUEP_nconst_CL",
-        "yvar_regions": [15, 50, 1000],
-        "SR": [["SUEP_S1_CL", ">=", 0.6], ["SUEP_nconst_CL", ">=", 50]],
-        "selections": [["nMuons_mediumId", ">=", 6], ["ntracks", ">", 0]],
+        "selections": [["nMuons_mediumId", ">=", 3], ["ntracks", ">", 0]],
     },
     # "ClusterInverted": {
     #     "input_method": "CL",
