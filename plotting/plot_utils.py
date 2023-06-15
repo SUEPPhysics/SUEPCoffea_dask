@@ -296,7 +296,10 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         else:
             plotsToAdd = openpkl(infile_name)
             for plot in list(plotsToAdd.keys()):
-                plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
+                if plot not in list(plots[sample].keys()):
+                    plots[sample][plot] = plotsToAdd[plot] * lumi
+                else:
+                    plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
 
     return plots
 
