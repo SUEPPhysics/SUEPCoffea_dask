@@ -4,6 +4,7 @@ import os
 import subprocess
 from shutil import copyfile
 
+import numpy as np
 import pandas as pd
 from termcolor import colored
 
@@ -75,6 +76,7 @@ def main():
         copyfile("/tmp/" + proxy_base, proxy_copy)
 
     with open(options.input) as stream:
+        totals, completeds = 0, 0
         for sample in stream.read().split("\n"):
             if len(sample) <= 1:
                 continue
@@ -91,6 +93,10 @@ def main():
 
             jobs_dir = "_".join(["jobs", options.tag, sample_name])
             jobs_dir = jobs_base_dir + jobs_dir
+
+            if not os.path.isdir(out_dir.format(sample_name)):
+                logging.warning("Cannot find " + out_dir.format(sample_name))
+                continue
 
             # delete files that are corrupted (i.e., empty)
             for file in os.listdir(out_dir.format(sample_name)):
@@ -136,6 +142,8 @@ def main():
                     "red",
                 )
             )
+            completeds += nfile
+            totals += njobs
 
             # If files are missing we resubmit with the same condor.sub
             if options.resubmit:
@@ -202,7 +210,21 @@ def main():
                             move_dir.format(sample_name) + "/",
                         ]
                     )
-
+        
+        logging.info('')
+        logging.info('')
+        logging.info("TOTAL")
+        percent = completeds/totals * 100
+        logging.info(
+            colored("\t\t --> completed", "green")
+            if completeds == totals
+            else colored(
+                "\t\t --> ({}/{}) finished. {:.1f}% complete".format(
+                    completeds, totals, percent
+                ),
+                "red",
+            )
+        )
 
 if __name__ == "__main__":
     main()
