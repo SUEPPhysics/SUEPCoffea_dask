@@ -633,14 +633,12 @@ def calculate_systematic(
 ):
     # prepare new event weight
     if options.isMC:
-        df["event_weight"] = df['genweight'].to_numpy()
+        df["event_weight"] = df["genweight"].to_numpy()
     else:
         df["event_weight"] = np.ones(df.shape[0])
 
     if options.isMC == 1:
-
         if options.scouting != 1:
-
             # 1) pileup weights
             puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
                 options.era
@@ -722,7 +720,7 @@ def calculate_systematic(
 
         # initialize new hists, if needed
         output.update(create_output_file(label_out, config_out))
-        
+
         # prepare the DataFrame for plotting: blind, selections
         df_plot = fill_utils.prepareDataFrame(
             df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
@@ -776,7 +774,6 @@ if options.weights is not None and options.weights != "None":
 
 # add new output methods for track killing and jet energy systematics
 if options.isMC and options.doSyst:
-
     # track systematics: need to use the track_down version of the variables
     new_config_track_killing = fill_utils.get_track_killing_config(config)
 
@@ -798,7 +795,6 @@ logging.info("Setup ready, filling histograms now.")
 
 # Plotting loop #######################################################################
 for ifile in tqdm(files):
-
     #####################################################################################
     # ---- Load file
     #####################################################################################
@@ -843,12 +839,7 @@ for ifile in tqdm(files):
     for syst in sys_loop:
         # prepare new event weight
 
-        calculate_systematic(
-            df,
-            config,
-            syst,
-            options
-        )
+        calculate_systematic(df, config, syst, options)
 
     #####################################################################################
     # ---- End
@@ -886,37 +877,40 @@ if options.isMC and options.doSyst:
 if options.isMC:
     print(xsection, total_gensumweight)
     output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
-    
-# Make ABCD expected histogram for signal region 
+
+# Make ABCD expected histogram for signal region
 
 if options.doABCD and options.blind and options.predictSR:
     logging.info("Predicting SR using ABCD method.")
-    
-    #Loop through every configuration
+
+    # Loop through every configuration
     for label_out, config_out in config.items():
+        xregions = np.array(config_out["xvar_regions"]) * 1.0j
+        yregions = np.array(config_out["yvar_regions"]) * 1.0j
+        xvar = config_out["xvar"].replace("_" + config_out["input_method"], "")
+        yvar = config_out["yvar"].replace("_" + config_out["input_method"], "")
 
-        xregions = np.array(config_out['xvar_regions'])*1.0j
-        yregions = np.array(config_out['yvar_regions'])*1.0j
-        xvar = config_out['xvar'].replace('_'+config_out['input_method'],'')
-        yvar = config_out['yvar'].replace('_'+config_out['input_method'],'')
-        
-        hist_name = '2D_{}_vs_{}_{}'.format(xvar,yvar,label_out)
+        hist_name = f"2D_{xvar}_vs_{yvar}_{label_out}"
 
-        # Check if histogram exists 
-        if hist_name not in output.keys(): 
-            logging.warning("{} has not been created.".format(hist_name))
+        # Check if histogram exists
+        if hist_name not in output.keys():
+            logging.warning(f"{hist_name} has not been created.")
             continue
 
         # Only calculate predicted for 9 region ABCD
-        if (len(xregions) != 4) or (len(yregions)!=4): 
-            logging.warning("Can only calculate SR for 9 region ABCD, skipping {}".format(label_out))
+        if (len(xregions) != 4) or (len(yregions) != 4):
+            logging.warning(
+                f"Can only calculate SR for 9 region ABCD, skipping {label_out}"
+            )
             continue
 
         # Calculate SR from ABCD method
         # sum_var = 'x' corresponds to scaling F histogram
-        SR, SR_exp, alpha, sigma_alpha = plot_utils.ABCD_9regions_errorProp(output[hist_name],xregions,yregions, sum_var="x") 
-        
-        output['I_{}_{}'.format(yvar,label_out)] = SR_exp
+        SR, SR_exp, alpha, sigma_alpha = plot_utils.ABCD_9regions_errorProp(
+            output[hist_name], xregions, yregions, sum_var="x"
+        )
+
+        output[f"I_{yvar}_{label_out}"] = SR_exp
 
 logging.info("Saving outputs.")
 

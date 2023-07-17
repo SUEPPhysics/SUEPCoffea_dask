@@ -142,7 +142,9 @@ def fillSample(infile_name, plots, lumi):
         if "+" in infile_name:
             sample = infile_name.split("/")[-1].split("+")[0]
         elif "generic" in infile_name:
-            sample = infile_name.split("/")[-1].split("_")[1]  # hack for Carlos naming convention
+            sample = infile_name.split("/")[-1].split("_")[
+                1
+            ]  # hack for Carlos naming convention
         else:
             sample = infile_name.split("/")[-1]
     else:
@@ -307,7 +309,7 @@ def apply_binwise_scaling(h_in, bins, scales, dim="x"):
 # function to load files from pickle
 def openpkl(infile_name):
     plots = {}
-    with (open(infile_name, "rb")) as openfile:
+    with open(infile_name, "rb") as openfile:
         while True:
             try:
                 plots.update(pickle.load(openfile))
@@ -317,7 +319,6 @@ def openpkl(infile_name):
 
 
 def plot1d(h, ax, label, color="default", lw=1):
-
     if color == "default":
         color = default_colors[label]
     if label == "QCD" and lw == 1:
@@ -336,7 +337,6 @@ def plot1d(h, ax, label, color="default", lw=1):
 
 
 def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
-
     cmap = plt.cm.rainbow(np.linspace(0, 1, len(labels)))
 
     ylist = []
@@ -375,8 +375,9 @@ def bin_midpoints(bins):
     return np.array(midpoints)
 
 
-def plot_ratio(hlist, labels=None, cmap=None, plot_label=None, xlim="default", log=True):
-
+def plot_ratio(
+    hlist, labels=None, cmap=None, plot_label=None, xlim="default", log=True
+):
     # Set up variables for the stacked histogram
     fig = plt.figure()
     plt.subplots_adjust(bottom=0.15, left=0.17)
@@ -469,7 +470,6 @@ def plot_ratio(hlist, labels=None, cmap=None, plot_label=None, xlim="default", l
 
 
 def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=False):
-
     fig = plt.figure()
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
@@ -575,14 +575,12 @@ def plot_all_regions(
     xlim="default",
     log=True,
 ):
-
     fig = plt.figure(figsize=(20, 7))
     ax = fig.subplots()
 
     offset = 0
     mids = []
     for i, r in enumerate(regions):
-
         # get (x, y) for each sample in rhig region
         hists, ys, xs = [], [], []
         for sample in samples:
@@ -711,7 +709,6 @@ def ABCD_4regions(
     yregions,
     sum_var="x",
 ):
-
     if sum_var == "x":
         A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
         B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
@@ -729,7 +726,6 @@ def ABCD_4regions(
 
 
 def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
-
     if sum_var == "x":
         if len(xregions) == 3:
             A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
@@ -778,7 +774,6 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
 
 
 def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
-
     if sum_var == "x":
         A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
         B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
@@ -915,7 +910,6 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
     # and for each bin, calculate total amount of events and variance
     z_vals, z_vars = [], []
     for iBin in range(len(bins) - 1):
-
         if histtype == "hist":
             bin_lo = bins[iBin] * 1.0j
             bin_hi = bins[iBin + 1] * 1.0j

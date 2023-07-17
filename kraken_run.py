@@ -158,11 +158,14 @@ def main():
 
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
-            if len(sample) < 1: continue
-            if "#" in sample or ('/' in sample and len(sample.split("/")) <= 1):
+            if len(sample) < 1:
                 continue
-            if '/' in sample: sample_name = sample.split("/")[-1]
-            else: sample_name = sample
+            if "#" in sample or ("/" in sample and len(sample.split("/")) <= 1):
+                continue
+            if "/" in sample:
+                sample_name = sample.split("/")[-1]
+            else:
+                sample_name = sample
             jobs_dir = "_".join([logdir + "jobs", options.tag, sample_name])
             logging.info("-- sample_name : " + sample)
 
@@ -188,9 +191,12 @@ def main():
                 Raw_list = open(input_list)
             elif options.private == 1:
                 # some wrangling to get them in the same format as the RawFiles.00
-                if options.era == '2018' or options.era == '2017': userOwner = 'bmaier/suep'
-                elif options.era == '2016' or options.era == '2016apv': userOwner = 'cfreer/suep_correct'
-                else: sys.exit("Double check this.")
+                if options.era == "2018" or options.era == "2017":
+                    userOwner = "bmaier/suep"
+                elif options.era == "2016" or options.era == "2016apv":
+                    userOwner = "cfreer/suep_correct"
+                else:
+                    sys.exit("Double check this.")
                 raw_input_list = os.listdir(
                     "/mnt/T2_US_MIT/hadoop/cms/store/user/{}/official_private/{}/{}".format(
                         userOwner, options.era, sample_name

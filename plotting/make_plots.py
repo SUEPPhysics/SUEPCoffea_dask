@@ -418,7 +418,7 @@ def create_output_file(label, abcd):
         return output
     else:
         output["labels"].append(label)
-        
+
     # ABCD histogram
     xvar = abcd["xvar"]
     yvar = abcd["yvar"]
@@ -537,7 +537,7 @@ def create_output_file(label, abcd):
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
                 f"2D_SUEP_eta_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                    100, -5, 5, name=f"SUEP_eta_{label}", label="$\eta$"
+                    100, -5, 5, name=f"SUEP_eta_{label}", label=r"$\eta$"
                 )
                 .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
@@ -738,7 +738,7 @@ def calculate_systematic(
         df_plot = fill_utils.prepareDataFrame(
             df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
         )
-        
+
         # auto fill all histograms
         fill_utils.auto_fill(
             df_plot,
@@ -811,10 +811,10 @@ for ifile in tqdm(files):
     #####################################################################################
     # ---- Load file
     #####################################################################################
-    
+
     # get the file
     df, metadata = open_file(options, redirector, ifile)
-    
+
     # check if file is corrupted
     if type(df) == int:
         nfailed += 1

@@ -210,11 +210,11 @@ def main():
                             move_dir.format(sample_name) + "/",
                         ]
                     )
-        
-        logging.info('')
-        logging.info('')
+
+        logging.info("")
+        logging.info("")
         logging.info("TOTAL")
-        percent = completeds/totals * 100
+        percent = completeds / totals * 100
         logging.info(
             colored("\t\t --> completed", "green")
             if completeds == totals
@@ -225,6 +225,7 @@ def main():
                 "red",
             )
         )
+
 
 if __name__ == "__main__":
     main()
