@@ -4,6 +4,7 @@ import pickle
 import shutil
 import subprocess
 from collections import defaultdict
+import math
 
 import boost_histogram as bh
 import hist
@@ -15,84 +16,42 @@ import numpy as np
 from sympy import diff, sqrt, symbols
 
 default_colors = {
-    "QCD": "slateblue",
-    "QCD_HT": "slateblue",
-    "QCD_HT_2018": "slateblue",
-    "QCD_HT_2017": "slateblue",
-    "QCD_HT_2016": "slateblue",
-    "QCD_HT_allyears": "slateblue",
-    "TTJets_2018": "midnightblue",
-    "TTJets_2017": "midnightblue",
-    "TTJets_2016": "midnightblue",
-    "MC_2018": "slateblue",
-    "MC_2017": "slateblue",
-    "MC_2016": "slateblue",
+    "125": "cyan",
+    "200": "blue",
+    "300": "lightseagreen",
+    "400": "green",
+    "500": "darkgreen",
+    "600": "lawngreen",
+    "700": "goldenrod",
+    "800": "orange",
+    "900": "sienna",
+    "1000": "red",
     "data": "maroon",
-    "data_2018": "maroon",
-    "data_2017": "maroon",
-    "data_2016": "maroon",
-    "data_allyears": "maroon",
-    "mS1000_T2.0_mPhi2.0_hadronic_2018": "red",
-    "mS125_T2.0_mPhi2.0_hadronic_2018": "cyan",
-    "mS200_T2.0_mPhi2.0_hadronic_2018": "blue",
-    "mS300_T2.0_mPhi2.0_hadronic_2018": "lightseagreen",
-    "mS400_T2.0_mPhi2.0_hadronic_2018": "green",
-    "mS500_T2.0_mPhi2.0_hadronic_2018": "darkgreen",
-    "mS600_T2.0_mPhi2.0_hadronic_2018": "lawngreen",
-    "mS700_T2.0_mPhi2.0_hadronic_2018": "goldenrod",
-    "mS800_T2.0_mPhi2.0_hadronic_2018": "orange",
-    "mS900_T2.0_mPhi2.0_hadronic_2018": "sienna",
-    "SUEP-m1000-darkPho_2018": "red",
-    "SUEP-m1000-darkPhoHad_2018": "red",
-    "SUEP-m1000-generic_2018": "red",
-    "SUEP-m750-darkPho_2018": "orange",
-    "SUEP-m750-darkPhoHad_2018": "orange",
-    "SUEP-m750-generic_2018": "orange",
-    "SUEP-m400-darkPho_2018": "green",
-    "SUEP-m400-darkPhoHad_2018": "green",
-    "SUEP-m400-generic_2018": "green",
-    "SUEP-m125-darkPho_2018": "cyan",
-    "SUEP-m125-darkPhoHad_2018": "cyan",
-    "SUEP-m125-generic_2018": "cyan",
-    "SUEP-m125-generic-htcut_2018": "magenta",
-    "SUEP-m1000-darkPho_2017": "red",
-    "SUEP-m1000-darkPhoHad_2017": "red",
-    "SUEP-m1000-generic_2017": "red",
-    "SUEP-m750-darkPho_2017": "orange",
-    "SUEP-m750-darkPhoHad_2017": "orange",
-    "SUEP-m750-generic_2017": "orange",
-    "SUEP-m400-darkPho_2017": "green",
-    "SUEP-m400-darkPhoHad_2017": "green",
-    "SUEP-m400-generic_2017": "green",
-    "SUEP-m125-darkPho_2017": "cyan",
-    "SUEP-m125-darkPhoHad_2017": "cyan",
-    "SUEP-m125-generic_2017": "cyan",
-    "SUEP-m125-generic-htcut_2017": "magenta",
-    "SUEP-m1000-darkPho_2016": "red",
-    "SUEP-m1000-darkPhoHad_2016": "red",
-    "SUEP-m1000-generic_2016": "red",
-    "SUEP-m750-darkPho_2016": "orange",
-    "SUEP-m750-darkPhoHad_2016": "orange",
-    "SUEP-m750-generic_2016": "orange",
-    "SUEP-m400-darkPho_2016": "green",
-    "SUEP-m400-darkPhoHad_2016": "green",
-    "SUEP-m400-generic_2016": "green",
-    "SUEP-m125-darkPho_2016": "cyan",
-    "SUEP-m125-darkPhoHad_2016": "cyan",
-    "SUEP-m125-generic_2016": "cyan",
-    "SUEP-m125-generic-htcut_2016": "magenta",
-    "M125_2018": "cyan",
-    "M200_2018": "blue",
-    "M300_2018": "lightseagreen",
-    "M400_2018": "green",
-    "M500_2018": "darkgreen",
-    "M600_2018": "lawngreen",
-    "M700_2018": "goldenrod",
-    "M800_2018": "orange",
-    "M900_2018": "sienna",
-    "M1000_2018": "red",
+    "QCD": "slateblue",
+    "MC": "slateblue",
+    "TTJets": "midnightblue"
 }
+def getColor(sample):
+    if 'mS' in sample:
+        sample = sample[sample.find("mS")+2:]
+        sample = sample.split("_")[0]
+        return default_colors[sample]
+    
+    if 'QCD' in sample:
+        return default_colors['QCD']
+    
+    if 'data' in sample.lower():
+        return default_colors['data']
+    
+    if 'ttjets' in sample.lower():
+        return default_colors['TTJets']
+    
+    if 'MC' in sample:
+        return default_colors['MC']
 
+    else:
+        return None
+        
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
     "2016_apv": 19497.914,
@@ -131,7 +90,6 @@ def findLumi(year, auto_lumi, infile_name):
     if year and auto_lumi:
         raise Exception("Apply lumis automatically or based on year")
     return lumi
-
 
 def formatNaming(file):
     tokens = file.split("_")
@@ -712,10 +670,10 @@ def plot_all_regions(
             y_errs = y_errs[xmin : xmax + 1]
             if i == 0:
                 ax.step(
-                    x, y, color=default_colors.get(sample), label=label, where="mid"
+                    x, y, color=getColor(sample), label=label, where="mid"
                 )
             else:
-                ax.step(x, y, color=default_colors.get(sample), where="mid")
+                ax.step(x, y, color=getColor(sample), where="mid")
 
         ax.axvline(Xs[0][0], ls="--", color="black")
 
@@ -964,6 +922,29 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
     
     return SR, SR_exp
 
+
+def ABCD_9regions_yield(abcd, xregions, yregions):
+    A, B, C, D, E, F, G, H, SR, _ = ABCD_9regions(
+            abcd, xregions, yregions, sum_var='x', return_all=True
+    )
+
+    A = A.sum().value
+    B = B.sum().value
+    C = C.sum().value
+    D = D.sum().value
+    E = E.sum().value
+    F = F.sum().value
+    G = G.sum().value
+    H = H.sum().value
+    SR = SR.sum().value
+    tot = A+B+C+D+E+F+G+H+SR
+
+    SR_exp = (F**2)*(H**2)*(D**2)*(B**2)*(G**-1)*(C**-1)*(A**-1)*(E**-4)
+    delta_SR_exp = np.sqrt(4*(F**-1) + 4*(H**-1) + 4*(D**-1) + 4*(B**-1) + (G**-1) + (C**-1) + (A**-1) + 16*(E**-1))*SR_exp
+
+    return SR, SR_exp, delta_SR_exp
+
+
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
     return i.value, np.sqrt(i.variance)
@@ -1095,7 +1076,21 @@ def hist2d_correlation(h):
             coeff += (xvals[i] - xmean)*(yvals[j] - ymean)*zvals[i,j]
                 
     coeff /= (xdev*ydev*h.sum().value)
-    return coeff
+    error = np.sqrt((1-coeff**2)/(h.sum().value - 2))
+
+    return coeff, error
+
+
+def sf(value, error):
+    # Calculate the number of significant figures based on the error
+    significant_figures = round(-math.log10(error)) + 1
+
+    # Round the value and error to the determined significant figures
+    rounded_value = round(value, significant_figures)
+    rounded_error = round(error, significant_figures)
+
+    return rounded_value, rounded_error
+
 
 def nested_dict(n, type):
     if n == 1:
