@@ -3,17 +3,17 @@ import uproot
 
 
 def pileup_weight(era):
-    if era == '2018':
+    if era == "2018":
         f_MC = uproot.open("../data/pileup/mcPileupUL2018.root")
         f_data = uproot.open(
             "../data/pileup/PileupHistogram-UL2018-100bins_withVar.root"
         )
-    elif era == '2017':
+    elif era == "2017":
         f_MC = uproot.open("../data/pileup/mcPileupUL2017.root")
         f_data = uproot.open(
             "../data/pileup/PileupHistogram-UL2017-100bins_withVar.root"
         )
-    elif era == '2016' or era == '2016apv':
+    elif era == "2016" or era == "2016apv":
         f_MC = uproot.open("../data/pileup/mcPileupUL2016.root")
         f_data = uproot.open(
             "../data/pileup/PileupHistogram-UL2016-100bins_withVar.root"

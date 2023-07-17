@@ -60,12 +60,12 @@ parser.add_argument(
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument("--merged", type=int, default=1, help="Use merged files")
 # some info about the files, highly encouraged to specify every time
-parser.add_argument("-e", "--era", type=str, help="era", required=True)
+parser.add_argument("-e", "--era", type=int, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
-parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
+parser.add_argument("--doInf", type=int, default=1, help="make GNN plots")
 parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
 )
@@ -137,13 +137,10 @@ config = {
     "ClusterInverted": {
         "input_method": "CL",
         "xvar": "ISR_S1_CL",
-        "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-        # "xvar_regions": [0.3, 0.425, 0.5, 1.0],
+        "xvar_regions": [0.3, 0.4, 0.5, 1.0],
         "yvar": "ISR_nconst_CL",
-        # "yvar_regions": [10, 35, 60, 1000],
-        "yvar_regions": [30, 50, 70, 1000],
-        # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
-        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+        "yvar_regions": [10, 35, 60, 1000],
+        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
         "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     },
     # "ClusterInverted": {
@@ -536,16 +533,6 @@ def create_output_file(label, abcd):
                 )
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
-                f"2D_SUEP_eta_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                    100, -5, 5, name=f"SUEP_eta_{label}", label=r"$\eta$"
-                )
-                .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
-                .Weight(),
-                f"2D_SUEP_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                    100, 0, 2000, name=f"SUEP_pt_{label}", label="SUEP $p_T$"
-                )
-                .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
-                .Weight(),
             }
         )
 
@@ -851,6 +838,7 @@ for ifile in tqdm(files):
 
     for syst in sys_loop:
         # prepare new event weight
+
         calculate_systematic(df, config, syst, options)
 
     #####################################################################################

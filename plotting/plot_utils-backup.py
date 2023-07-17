@@ -1,5 +1,4 @@
 import logging
-import math
 import os
 import pickle
 import shutil
@@ -16,44 +15,68 @@ import numpy as np
 from sympy import diff, sqrt, symbols
 
 default_colors = {
-    "125": "cyan",
-    "200": "blue",
-    "300": "lightseagreen",
-    "400": "green",
-    "500": "darkgreen",
-    "600": "lawngreen",
-    "700": "goldenrod",
-    "800": "orange",
-    "900": "sienna",
-    "1000": "red",
+    "QCD": "midnightblue",
+    "QCD_HT": "midnightblue",
+    "QCD_HT_2018": "midnightblue",
+    "QCD_HT_2017": "midnightblue",
+    "QCD_HT_2016": "midnightblue",
+    "QCD_HT_allyears": "midnightblue",
     "data": "maroon",
-    "QCD": "slateblue",
-    "MC": "slateblue",
-    "TTJets": "midnightblue",
+    "data": "maroon",
+    "data_2018": "maroon",
+    "data_2017": "maroon",
+    "data_2016": "maroon",
+    "data_allyears": "maroon",
+    "SUEP-m1000-darkPho_2018": "red",
+    "SUEP-m1000-darkPhoHad_2018": "red",
+    "SUEP-m1000-generic_2018": "red",
+    "SUEP-m750-darkPho_2018": "orange",
+    "SUEP-m750-darkPhoHad_2018": "orange",
+    "SUEP-m750-generic_2018": "orange",
+    "SUEP-m400-darkPho_2018": "green",
+    "SUEP-m400-darkPhoHad_2018": "green",
+    "SUEP-m400-generic_2018": "green",
+    "SUEP-m125-darkPho_2018": "cyan",
+    "SUEP-m125-darkPhoHad_2018": "cyan",
+    "SUEP-m125-generic_2018": "cyan",
+    "SUEP-m125-generic-htcut_2018": "magenta",
+    "SUEP-m1000-darkPho_2017": "red",
+    "SUEP-m1000-darkPhoHad_2017": "red",
+    "SUEP-m1000-generic_2017": "red",
+    "SUEP-m750-darkPho_2017": "orange",
+    "SUEP-m750-darkPhoHad_2017": "orange",
+    "SUEP-m750-generic_2017": "orange",
+    "SUEP-m400-darkPho_2017": "green",
+    "SUEP-m400-darkPhoHad_2017": "green",
+    "SUEP-m400-generic_2017": "green",
+    "SUEP-m125-darkPho_2017": "cyan",
+    "SUEP-m125-darkPhoHad_2017": "cyan",
+    "SUEP-m125-generic_2017": "cyan",
+    "SUEP-m125-generic-htcut_2017": "magenta",
+    "SUEP-m1000-darkPho_2016": "red",
+    "SUEP-m1000-darkPhoHad_2016": "red",
+    "SUEP-m1000-generic_2016": "red",
+    "SUEP-m750-darkPho_2016": "orange",
+    "SUEP-m750-darkPhoHad_2016": "orange",
+    "SUEP-m750-generic_2016": "orange",
+    "SUEP-m400-darkPho_2016": "green",
+    "SUEP-m400-darkPhoHad_2016": "green",
+    "SUEP-m400-generic_2016": "green",
+    "SUEP-m125-darkPho_2016": "cyan",
+    "SUEP-m125-darkPhoHad_2016": "cyan",
+    "SUEP-m125-generic_2016": "cyan",
+    "SUEP-m125-generic-htcut_2016": "magenta",
+    "M125_2018": "cyan",
+    "M200_2018": "blue",
+    "M300_2018": "lightseagreen",
+    "M400_2018": "green",
+    "M500_2018": "darkgreen",
+    "M600_2018": "lawngreen",
+    "M700_2018": "goldenrod",
+    "M800_2018": "orange",
+    "M900_2018": "sienna",
+    "M1000_2018": "red",
 }
-
-
-def getColor(sample):
-    if "mS" in sample:
-        sample = sample[sample.find("mS") + 2 :]
-        sample = sample.split("_")[0]
-        return default_colors[sample]
-
-    if "QCD" in sample:
-        return default_colors["QCD"]
-
-    if "data" in sample.lower():
-        return default_colors["data"]
-
-    if "ttjets" in sample.lower():
-        return default_colors["TTJets"]
-
-    if "MC" in sample:
-        return default_colors["MC"]
-
-    else:
-        return None
-
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
@@ -61,7 +84,6 @@ lumis = {
     "2016": 16810.813,
     "2017": 41471.589,
     "2018": 59817.406,
-    "all": 19497.914 + 16810.813 + 41471.589 + 59817.406,
 }
 
 
@@ -70,8 +92,6 @@ def lumiLabel(year):
         return round(lumis[year] / 1000, 1)
     elif year == "2016":
         return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
-    elif year == "all":
-        return round(lumis[year] / 1000, 1)
 
 
 def findLumi(year, auto_lumi, infile_name):
@@ -95,30 +115,6 @@ def findLumi(year, auto_lumi, infile_name):
     return lumi
 
 
-def formatNaming(file):
-    tokens = file.split("_")
-    temp = tokens[2]
-    mS = tokens[3]
-    mPhi = tokens[4]
-    decay = tokens[6]
-
-    if "p" in temp:
-        temp = temp.replace("p", ".")
-        temp = "T" + str(float(temp[1:]))
-
-    if "." in mS:
-        mS = mS[: mS.find(".")]
-
-    if "." in mPhi:
-        mPhi = "mPhi" + str(float(mPhi[4:]))
-
-    if "mode" in decay:
-        decay = decay[4:]
-
-    name = "_".join([mS, temp, mPhi, decay])
-    return name
-
-
 def fillSample(infile_name, plots, lumi):
     if "QCD_Pt" in infile_name:
         sample = "QCD_Pt"
@@ -132,19 +128,9 @@ def fillSample(infile_name, plots, lumi):
     elif "QCD_HT" in infile_name:
         sample = "QCD_HT"
 
-        # include this block to import the HT bins individually
+        # include this block to import the QCD bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-        plots[temp_sample] = openpkl(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "TTJets" in infile_name:
-        sample = "TTJets"
-
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
@@ -152,24 +138,13 @@ def fillSample(infile_name, plots, lumi):
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
 
-        # include this block to import the eras bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        temp_sample = temp_sample.split("Run")[1].split("-UL")[0]
-        temp_sample = "data_" + temp_sample[4:]
-
-        plots[temp_sample] = openpkl(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
     elif "SUEP" in infile_name:
-        if "+" in infile_name:  # historical naming convention
+        if "+" in infile_name:
             sample = infile_name.split("/")[-1].split("+")[0]
-        elif "GluGluToSUEP" in infile_name:  # private samples naming convention
-            sample = formatNaming(infile_name.split("/")[-1])
-        elif (
-            "generic" in infile_name and "MS" in infile_name
-        ):  # hack for Carlos naming convention
-            sample = infile_name.split("/")[-1].split("_")[1]
+        elif "generic" in infile_name:
+            sample = infile_name.split("/")[-1].split("_")[
+                1
+            ]  # hack for Carlos naming convention
         else:
             sample = infile_name.split("/")[-1]
     else:
@@ -217,8 +192,7 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         sample, plots = fillSample(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
-            infile = openpkl(infile_name)
-            plots[sample] = infile
+            plots[sample] = openpkl(infile_name)
             for plot in list(plots[sample].keys()):
                 plots[sample][plot] = plots[sample][plot] * lumi
         else:
@@ -402,28 +376,12 @@ def bin_midpoints(bins):
 
 
 def plot_ratio(
-    hlist,
-    labels=None,
-    systs=None,
-    density=False,
-    cmap=None,
-    plot_label=None,
-    xlim="default",
-    log=True,
+    hlist, labels=None, cmap=None, plot_label=None, xlim="default", log=True
 ):
-    """
-    Plots ratio of a list of Hist histograms, the ratio is wrt to the first one in the list.
-    The errors in the ratio are taken to be independent between histograms.
-    """
-
     # Set up variables for the stacked histogram
     fig = plt.figure()
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
-
-    if density:
-        for h in hlist:
-            h /= h.sum().value
 
     if labels is None:
         labels = [None] * len(hlist)
@@ -433,7 +391,7 @@ def plot_ratio(
         y, x = h.to_numpy()
         x_mid = h.axes.centers[0]
         y_errs = np.sqrt(h.variances())
-        ax1.stairs(y, x, color=c, label=l)
+        ax1.stairs(h.values(), x, color=c, label=l)
         ax1.errorbar(
             x_mid,
             y,
@@ -478,7 +436,7 @@ def plot_ratio(
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
 
-    # calculate the ratio, with error propagation, and plot them
+    # calculate the ratio, with poisson errors, and plot them
     for i, (c, h) in enumerate(zip(cmap, hlist)):
         if i == 0:
             continue
@@ -488,14 +446,7 @@ def plot_ratio(
             out=np.ones_like(h.values()),
             where=hlist[0].values() != 0,
         )
-        ratio_err = np.where(
-            hlist[0].values() > 0,
-            np.sqrt(
-                (hlist[0].values() ** -2) * (h.variances())
-                + (h.values() ** 2 * hlist[0].values() ** -4) * (hlist[0].variances())
-            ),
-            0,
-        )
+        ratio_err = hist.intervals.ratio_uncertainty(h.values(), hlist[0].values())
         ax2.errorbar(
             hlist[0].axes.centers[0],
             ratio,
@@ -507,30 +458,6 @@ def plot_ratio(
 
     ax2.axhline(1, ls="--", color="gray")
     ax2.set_ylabel("Ratio", y=1, ha="right")
-
-    if systs is not None:
-        assert len(systs) == len(hlist[0].axes.centers[0])
-        widths = hlist[0].axes.widths[0]
-        up_height = np.where(systs > 0, systs, 0)
-        down_height = np.where(systs > 0, 1 / (1 + systs) - 1, 0)
-        ax2.bar(
-            hlist[0].axes.centers[0],
-            height=up_height,
-            bottom=1,
-            width=widths,
-            alpha=0.3,
-            color="gray",
-        )
-        ax2.bar(
-            hlist[0].axes.centers[0],
-            height=down_height,
-            bottom=1,
-            width=widths,
-            alpha=0.3,
-            color="gray",
-        )
-        # add to legend
-        ax1.plot([0, 0], color="gray", label="Systematics")
 
     if plot_label is None:
         plot_label = hlist[0].axes[0].label
@@ -696,9 +623,11 @@ def plot_all_regions(
             y_errs = np.sqrt(h.variances())
             y_errs = y_errs[xmin : xmax + 1]
             if i == 0:
-                ax.step(x, y, color=getColor(sample), label=label, where="mid")
+                ax.step(
+                    x, y, color=default_colors.get(sample), label=label, where="mid"
+                )
             else:
-                ax.step(x, y, color=getColor(sample), where="mid")
+                ax.step(x, y, color=default_colors.get(sample), where="mid")
 
         ax.axvline(Xs[0][0], ls="--", color="black")
 
@@ -733,9 +662,7 @@ def slice_hist2d(hist, regions_list, slice_var="y"):
     return hist_list
 
 
-def plot_sliced_hist2d(
-    hist, regions_list, stack=False, density=False, slice_var="y", labels=None
-):
+def plot_sliced_hist2d(hist, regions_list, slice_var="y", labels=None):
     """
     Takes a 2d histogram, slices it in different regions, and plots the
     regions stacked.
@@ -752,19 +679,13 @@ def plot_sliced_hist2d(
     hist_list = slice_hist2d(hist, regions_list, slice_var)
     cmap = plt.cm.jet(np.linspace(0, 1, len(hist_list)))
 
-    if stack:
-        histtype = "fill"
-    else:
-        histtype = "step"
-
     fig = plt.figure()
     ax = fig.subplots()
     hep.histplot(
         hist_list,
         yerr=True,
-        stack=stack,
-        histtype=histtype,
-        density=density,
+        stack=True,
+        histtype="fill",
         label=labels,
         color=cmap,
         ax=ax,
@@ -902,116 +823,51 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
     uncerantities of the regions. We need to scale histogram F or H
     by some factor 'alpha' (defined in exp). For example, for F,
     the new variance is:
-    variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance
+    variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance**2
     """
 
     A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(
         abcd, xregions, yregions, sum_var=sum_var, return_all=True
     )
 
-    preds, preds_err = [], []
-    for i in range(len(F.values())):
-        # this is needed in order to do error propagation correctly
-        F_bin = F[i]
-        F_other = F.copy()
-        F_other[i] = hist.accumulators.WeightedSum()
+    # define the scaling factor function
+    a, b, c, d, e, f, g, h = symbols("A B C D E F G H")
+    if sum_var == "x":
+        exp = f * h**2 * d**2 * b**2 * g**-1 * c**-1 * a**-1 * e**-4
+    elif sum_var == "y":
+        exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
 
-        # define the scaling factor function
-        a, b, c, d, e, f_bin, f_other, g, h = symbols("A B C D E F_bin F_other G H")
-        if sum_var == "x":
-            exp = (
-                f_bin
-                * (f_other + f_bin)
-                * h**2
-                * d**2
-                * b**2
-                * g**-1
-                * c**-1
-                * a**-1
-                * e**-4
-            )
-        elif sum_var == "y":
-            exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
+    # defines lists of variables (sympy symbols) and accumulators (hist.sum())
+    variables = [a, b, c, d, e, f, g, h]
+    accs = [A.sum(), B.sum(), C.sum(), D.sum(), E.sum(), F.sum(), G.sum(), H.sum()]
 
-        # defines lists of variables (sympy symbols) and accumulators (hist.sum())
-        variables = [a, b, c, d, e, f_bin, f_other, g, h]
-        accs = [
-            A.sum(),
-            B.sum(),
-            C.sum(),
-            D.sum(),
-            E.sum(),
-            F_bin,
-            F_other.sum(),
-            G.sum(),
-            H.sum(),
-        ]
+    # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
+    alpha = exp.copy()
+    for var, acc in zip(variables, accs):
+        alpha = alpha.subs(var, acc.value)
 
-        # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
-        alpha = exp.copy()
-        for var, acc in zip(variables, accs):
-            alpha = alpha.subs(var, acc.value)
+    # calculate the error on the scaling factor
+    variance = 0
+    for var, acc in zip(variables, accs):
+        der = diff(exp, var)
+        var = abs(acc.variance)
+        variance += der**2 * var
+    for var, acc in zip(variables, accs):
+        variance = variance.subs(var, acc.value)
+    sigma_alpha = sqrt(variance)
 
-        # calculate the error on the scaling factor
-        variance = 0
-        for var, acc in zip(variables, accs):
-            der = diff(exp, var)
-            var = abs(acc.variance)
-            variance += der**2 * var
-        for var, acc in zip(variables, accs):
-            variance = variance.subs(var, acc.value)
-        sigma_alpha = variance
-
-        preds.append(alpha)
-        preds_err.append(sigma_alpha)
-
-    SR_exp.view().variance = preds_err
-    SR_exp.view().value = preds
-
-    return SR, SR_exp
-
-
-def ABCD_9regions_yield(abcd, xregions, yregions):
-    A, B, C, D, E, F, G, H, SR, _ = ABCD_9regions(
-        abcd, xregions, yregions, sum_var="x", return_all=True
+    # define SR_exp and propagate the error on the scaling factor to the bin variances
+    if sum_var == "x":
+        SR_exp = F.copy()
+    elif sum_var == "y":
+        SR_exp = H.copy()
+    new_var = SR_exp.values() ** 2 * float(sigma_alpha) ** 2 + float(alpha) ** 2 * abs(
+        SR_exp.variances()
     )
+    SR_exp.view().variance = new_var
+    SR_exp.view().value = SR_exp.view().value * float(alpha)
 
-    A = A.sum().value
-    B = B.sum().value
-    C = C.sum().value
-    D = D.sum().value
-    E = E.sum().value
-    F = F.sum().value
-    G = G.sum().value
-    H = H.sum().value
-    SR = SR.sum().value
-    tot = A + B + C + D + E + F + G + H + SR
-
-    SR_exp = (
-        (F**2)
-        * (H**2)
-        * (D**2)
-        * (B**2)
-        * (G**-1)
-        * (C**-1)
-        * (A**-1)
-        * (E**-4)
-    )
-    delta_SR_exp = (
-        np.sqrt(
-            4 * (F**-1)
-            + 4 * (H**-1)
-            + 4 * (D**-1)
-            + 4 * (B**-1)
-            + (G**-1)
-            + (C**-1)
-            + (A**-1)
-            + 16 * (E**-1)
-        )
-        * SR_exp
-    )
-
-    return SR, SR_exp, delta_SR_exp
+    return SR, SR_exp, alpha, sigma_alpha
 
 
 def integrate(h, lower, upper):
@@ -1094,75 +950,6 @@ def linearFit2DHist(h):
     p = np.poly1d(np.polyfit(x_values, y_values, 1, w=z_values, cov=False))
     logging.info("Linear fit result:", p)
     return p
-
-
-def hist_mean(hist):
-    """
-    Calculates the mean of a 1-dimensional Hist histogram.
-    """
-    bin_values = hist.values()
-    bin_centers = hist.axes[0].centers
-    mean = np.average(bin_centers, weights=bin_values)
-    return mean
-
-
-def hist_std_dev(hist, axis=0):
-    """
-    Calculates the standard deviation of a 1-dimensional Hist histogram.
-    """
-    bin_values = hist.values()
-    bin_centers = hist.axes[0].centers
-    mean = hist_mean(hist)
-
-    # Calculate the sum of squared differences from the mean
-    squared_diff_sum = np.sum(bin_values * (bin_centers - mean) ** 2)
-
-    # Calculate the standard deviation
-    standard_deviation = np.sqrt(squared_diff_sum / np.sum(bin_values))
-
-    return standard_deviation
-
-
-def hist2d_correlation(h):
-    """
-    Calculates Pearson Coefficient from a 2-dimensional Hist histogram.
-    """
-
-    coeff = 0
-
-    assert len(h.axes) == 2
-
-    xvals = h.axes[0].centers
-    yvals = h.axes[1].centers
-    zvals = h.values()
-
-    xmean = hist_mean(h[:, sum])
-    ymean = hist_mean(h[sum, :])
-    xdev = hist_std_dev(h[:, sum])
-    ydev = hist_std_dev(h[sum, :])
-
-    if xdev == 0 or ydev == 0:
-        return
-
-    for i in range(len(xvals)):
-        for j in range(len(yvals)):
-            coeff += (xvals[i] - xmean) * (yvals[j] - ymean) * zvals[i, j]
-
-    coeff /= xdev * ydev * h.sum().value
-    error = np.sqrt((1 - coeff**2) / (h.sum().value - 2))
-
-    return coeff, error
-
-
-def sf(value, error):
-    # Calculate the number of significant figures based on the error
-    significant_figures = round(-math.log10(error)) + 1
-
-    # Round the value and error to the determined significant figures
-    rounded_value = round(value, significant_figures)
-    rounded_error = round(error, significant_figures)
-
-    return rounded_value, rounded_error
 
 
 def nested_dict(n, type):

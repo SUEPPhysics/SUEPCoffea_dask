@@ -1,5 +1,5 @@
 def GetPrefireWeights(self, events):
-    if self.era == '2016' or self.era == '2017' or self.era == '2016apv':
+    if self.era == "2016" or self.era == "2017" or self.era == "2016apv":
         self.out_vars["prefire_nom"] = events.L1PreFiringWeight.Nom
         self.out_vars["prefire_up"] = events.L1PreFiringWeight.Up
         self.out_vars["prefire_down"] = events.L1PreFiringWeight.Dn
