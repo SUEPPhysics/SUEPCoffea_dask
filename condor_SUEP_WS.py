@@ -26,7 +26,7 @@ modules_era = []
 modules_era.append(
     SUEP_coffea.SUEP_cluster(
         isMC=options.isMC,
-        era=int(options.era),
+        era=str(options.era),
         scouting=0,
         do_syst=options.doSyst,
         syst_var="",
