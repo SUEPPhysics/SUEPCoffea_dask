@@ -3,11 +3,11 @@ import uproot
 
 
 def triggerSF(era):
-    if era == 2018:
+    if era == '2018':
         f_weight = uproot.open("../data/trigSF/trigSF_2018.root")
-    elif era == 2017:
+    elif era == '2017':
         f_weight = uproot.open("../data/trigSF/trigSF_2017.root")
-    elif era == 2016:
+    elif era == '2016' or era == '2016apv':
         f_weight = uproot.open("../data/trigSF/trigSF_2016.root")
     else:
         print("no TriggerSFs because no year was selected for function triggerSF")

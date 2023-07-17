@@ -14,7 +14,7 @@ def track_killing(self, tracks):
         block1_percent = 0.05
         block2_percent = 0.01
     else:
-        year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027}
+        year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027, "2016apv": 0.027}
         block1_percent = year_percent[str(self.era)]
         block2_percent = 0.01
 

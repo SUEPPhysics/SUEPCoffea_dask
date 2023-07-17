@@ -8,30 +8,29 @@ from coffea.lookup_tools import extractor
 def apply_jecs(isMC, Sample, era, events, prefix=""):
     # Find the Collection we want to look at
     if isMC:
-        if era == 2016:
+        if era == '2016':
             jecdir = "Summer19UL16_V7_MC"
-            if "APV" in Sample:
-                jerdir = "Summer20UL16APV_JRV3_MC"
-            else:
-                jerdir = "Summer20UL16_JRV3_MC"
-        elif era == 2017:
+            jerdir = "Summer20UL16_JRV3_MC"
+        elif era == '2016apv':
+            jecdir = "Summer19UL16_V7_MC"
+            jerdir = "Summer20UL16APV_JRV3_MC"
+        elif era == '2017':
             jecdir = "Summer19UL17_V5_MC"
             jerdir = "Summer19UL17_JRV3_MC"
-        elif era == 2018:
+        elif era == '2018':
             jecdir = "Summer19UL18_V5_MC"
             jerdir = "Summer19UL18_JRV2_MC"
         else:
             print("WARNING: Unable to find the correct JECs for MC!")
     # Now Data
     elif not isMC:
-        if era == 2016:
-            if "APV" in Sample:
-                jecdir = "Summer19UL16APV_RunBCDEF_V7_DATA"
-                jerdir = "Summer20UL16APV_JRV3_DATA"
-            else:
-                jecdir = "Summer19UL16_RunFGH_V7_DATA"
-                jerdir = "Summer20UL16_JRV3_DATA"
-        elif era == 2017:
+        if era == '2016apv':
+            jecdir = "Summer19UL16APV_RunBCDEF_V7_DATA"
+            jerdir = "Summer20UL16APV_JRV3_DATA"
+        elif era == '2016':
+            jecdir = "Summer19UL16_RunFGH_V7_DATA"
+            jerdir = "Summer20UL16_JRV3_DATA"
+        elif era == '2017':
             jerdir = "Summer19UL17_JRV3_DATA"
             if "RunB" or "Run2017B" in Sample:
                 jecdir = "Summer19UL17_RunB_V5_DATA"
@@ -45,7 +44,7 @@ def apply_jecs(isMC, Sample, era, events, prefix=""):
                 jecdir = "Summer19UL17_RunF_V5_DATA"
             else:
                 print("WARNING: The JECs for the 2017 data era do not seem to exist!")
-        elif era == 2018:
+        elif era == '2018':
             jerdir = "Summer19UL18_JRV2_DATA"
             if "RunA" or "Run2018A" in Sample:
                 jecdir = "Summer19UL18_RunA_V5_DATA"
