@@ -122,14 +122,14 @@ class SUEP_cluster(processor.ProcessorABC):
         # once we can move to Python 3.10 for good.
         if self.scouting != 1:
             if self.trigger == "TripleMu":
-                if self.era == '2016' or self.era == '2016apv':
+                if self.era == "2016" or self.era == "2016apv":
                     trigger = events.HLT.TripleMu_5_3_3 == 1
-                elif self.era == '2017':
+                elif self.era == "2017":
                     trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
                 else:
                     trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
             else:
-                if self.era == '2016' or self.era == '2016apv':
+                if self.era == "2016" or self.era == "2016apv":
                     trigger = events.HLT.PFHT900 == 1
                 else:
                     trigger = events.HLT.PFHT1050 == 1
@@ -139,7 +139,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
     def selectByFilters(self, events):
         ### Apply MET filter selection (see https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2)
-        if self.era == '2018' or self.era == '2017':
+        if self.era == "2018" or self.era == "2017":
             cutAnyFilter = (
                 (events.Flag.goodVertices)
                 & (events.Flag.globalSuperTightHalo2016Filter)
@@ -151,7 +151,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 & (events.Flag.eeBadScFilter)
                 & (events.Flag.ecalBadCalibFilter)
             )
-        if self.era == '2016' or self.era == '2016apv':
+        if self.era == "2016" or self.era == "2016apv":
             cutAnyFilter = (
                 (events.Flag.goodVertices)
                 & (events.Flag.globalSuperTightHalo2016Filter)
@@ -364,7 +364,7 @@ class SUEP_cluster(processor.ProcessorABC):
             if self.isMC:
                 self.out_vars["genweight"] = events.genWeight
 
-            if '2016' in self.era and self.scouting == 0:
+            if "2016" in self.era and self.scouting == 0:
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
             elif self.scouting == 0:
                 self.out_vars["HLT_PFHT1050" + out_label] = events.HLT.PFHT1050
