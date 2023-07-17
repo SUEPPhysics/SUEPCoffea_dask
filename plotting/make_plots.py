@@ -60,12 +60,12 @@ parser.add_argument(
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument("--merged", type=int, default=1, help="Use merged files")
 # some info about the files, highly encouraged to specify every time
-parser.add_argument("-e", "--era", type=int, help="era", required=True)
+parser.add_argument("-e", "--era", type=str, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
-parser.add_argument("--doInf", type=int, default=1, help="make GNN plots")
+parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
 parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
 )
@@ -738,7 +738,7 @@ def calculate_systematic(
         df_plot = fill_utils.prepareDataFrame(
             df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
         )
-
+        
         # auto fill all histograms
         fill_utils.auto_fill(
             df_plot,
@@ -811,10 +811,10 @@ for ifile in tqdm(files):
     #####################################################################################
     # ---- Load file
     #####################################################################################
-
+    
     # get the file
     df, metadata = open_file(options, redirector, ifile)
-
+    
     # check if file is corrupted
     if type(df) == int:
         nfailed += 1
@@ -851,7 +851,6 @@ for ifile in tqdm(files):
 
     for syst in sys_loop:
         # prepare new event weight
-
         calculate_systematic(df, config, syst, options)
 
     #####################################################################################
