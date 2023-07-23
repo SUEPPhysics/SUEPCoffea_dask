@@ -1,9 +1,8 @@
-# Make plots for SUEP analysis. Reads in hdf5 files and outputs to pickle and root files
+# Make plots for SUEP analysis. Reads in hdf5 files and outputs to root files
 import argparse
 import getpass
 import logging
 import os
-import pickle
 import subprocess
 
 import fill_utils
@@ -64,10 +63,12 @@ parser.add_argument("-e", "--era", type=str, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
-parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
 parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
 parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
+)
+parser.add_argument(
+    "--doSyst", type=int, default=0, help="make systematic plots"
 )
 parser.add_argument(
     "--predictSR", type=int, default=0, help="Predict SR using ABCD method."
@@ -87,7 +88,7 @@ options = parser.parse_args()
 ###################################################################################################################
 
 outDir = f"/data/submit/{getpass.getuser()}/SUEP/outputs/"
-if options.save is not None:
+if options.save is not None and options.save != 'None' and options != 'none':
     outDir = options.save
 # define these if --xrootd 0
 dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
@@ -116,54 +117,16 @@ config = {
         "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
         "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     },
-    # "Cluster75": {
-    #     "input_method": "CL",
-    #     "xvar": "SUEP_S1_CL",
-    #     "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-    #     "yvar": "SUEP_nconst_CL",
-    #     "yvar_regions": [25, 50, 75, 1000],
-    #     "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
-    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    # },
-    # "Cluster80": {
-    #     "input_method": "CL",
-    #     "xvar": "SUEP_S1_CL",
-    #     "xvar_regions": [0.25, 0.35, 0.45, 2.0],
-    #     "yvar": "SUEP_nconst_CL",
-    #     "yvar_regions": [15, 47.5, 80, 1000],
-    #     "SR": [["SUEP_S1_CL", ">=", 0.45], ["SUEP_nconst_CL", ">=", 80]],
-    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    # },
     "ClusterInverted": {
         "input_method": "CL",
         "xvar": "ISR_S1_CL",
         "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-        # "xvar_regions": [0.3, 0.425, 0.5, 1.0],
         "yvar": "ISR_nconst_CL",
-        # "yvar_regions": [10, 35, 60, 1000],
         "yvar_regions": [30, 50, 70, 1000],
         # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
         "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
         "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
     },
-    # "ClusterInverted": {
-    #     "input_method": "CL",
-    #     "xvar": "ISR_S1_CL",
-    #     "xvar_regions": [0.35, 0.4, 0.5, 1.0],
-    #     "yvar": "ISR_nconst_CL",
-    #     "yvar_regions": [20, 40, 80, 1000],
-    #     "SR": [["ISR_S1_CL", ">=", 0.5], ["ISR_nconst_CL", ">=", 80]],
-    #     "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    # },
-    # 'ISRRemoval' : {
-    #     'input_method' : 'IRM',
-    #     'xvar' : 'SUEP_S1_IRM',
-    #     'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
-    #     'yvar' : 'SUEP_nconst_IRM',
-    #     'yvar_regions' : [10, 20, 40, 1000],
-    #     'SR' : [['SUEP_S1_IRM', '>=', 0.5], ['SUEP_nconst_IRM', '>=', 40]],
-    #     'selections' : [['ht', '>', 1200], ['ntracks','>', 0], ["SUEP_S1_IRM", ">=", 0.0]]
-    # },
 }
 
 if options.doInf:
@@ -239,8 +202,7 @@ def create_output_clusterInverted(output, label, regions_list):
     )
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in regions_list:
-        output.update(
-            {
+        output.update({
                 f"{r}ISR_nconst_{label}": Hist.new.Reg(
                     501,
                     0,
@@ -248,47 +210,48 @@ def create_output_clusterInverted(output, label, regions_list):
                     name=f"{r}ISR_nconst_{label}",
                     label="# Tracks in ISR",
                 ).Weight(),
-                f"{r}ISR_pt_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    2000,
-                    name=f"{r}ISR_pt_{label}",
-                    label=r"ISR $p_T$ [GeV]",
-                ).Weight(),
-                f"{r}ISR_pt_avg_{label}": Hist.new.Reg(
-                    500,
-                    0,
-                    500,
-                    name=f"{r}ISR_pt_avg_{label}",
-                    label=r"ISR Components $p_T$ Avg.",
-                ).Weight(),
-                f"{r}ISR_eta_{label}": Hist.new.Reg(
-                    100,
-                    -5,
-                    5,
-                    name=f"{r}ISR_eta_{label}",
-                    label=r"ISR $\eta$",
-                ).Weight(),
-                f"{r}ISR_phi_{label}": Hist.new.Reg(
-                    100,
-                    -6.5,
-                    6.5,
-                    name=f"{r}ISR_phi_{label}",
-                    label=r"ISR $\phi$",
-                ).Weight(),
-                f"{r}ISR_mass_{label}": Hist.new.Reg(
-                    150,
-                    0,
-                    4000,
-                    name=f"{r}ISR_mass_{label}",
-                    label="ISR Mass [GeV]",
-                ).Weight(),
                 f"{r}ISR_S1_{label}": Hist.new.Reg(
                     100, 0, 1, name=f"{r}ISR_S1_{label}", label="$Sph_1$"
                 ).Weight(),
-            }
-        )
-
+        })
+        if 'up' not in label and 'down' not in label and r == '': # don't care for systematics for these
+            output.update({
+                f"ISR_pt_{label}": Hist.new.Reg(
+                    100,
+                    0,
+                    2000,
+                    name=f"ISR_pt_{label}",
+                    label=r"ISR $p_T$ [GeV]",
+                ).Weight(),
+                f"ISR_pt_avg_{label}": Hist.new.Reg(
+                    500,
+                    0,
+                    500,
+                    name=f"ISR_pt_avg_{label}",
+                    label=r"ISR Components $p_T$ Avg.",
+                ).Weight(),
+                f"ISR_eta_{label}": Hist.new.Reg(
+                    100,
+                    -5,
+                    5,
+                    name=f"ISR_eta_{label}",
+                    label=r"ISR $\eta$",
+                ).Weight(),
+                f"ISR_phi_{label}": Hist.new.Reg(
+                    100,
+                    -6.5,
+                    6.5,
+                    name=f"ISR_phi_{label}",
+                    label=r"ISR $\phi$",
+                ).Weight(),
+                f"ISR_mass_{label}": Hist.new.Reg(
+                    150,
+                    0,
+                    4000,
+                    name=f"ISR_mass_{label}",
+                    label="ISR Mass [GeV]",
+                ).Weight(),
+            })
 
 def create_output_GNN(abcd, output, label, regions_list):
     # 2D histograms
@@ -412,7 +375,7 @@ def create_output_GNNInverted(abcd, output, label, regions_list):
 
 
 # output histos
-def create_output_file(label, abcd):
+def create_output_file(label, abcd, options):
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:
         return output
@@ -437,99 +400,99 @@ def create_output_file(label, abcd):
     # defnie all the regions, will be used to make historgams for each region
     regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     n_regions = (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
-    regions_list = [""] + [regions[i] + "_" for i in range(n_regions)]
+    regions_list = [""] 
+    if options.doABCD: regions_list += [regions[i] + "_" for i in range(n_regions)]
 
     ###########################################################################################################################
     # variables from the dataframe for all the events, and those in A, B, C regions
-    for r in regions_list:
-        output.update(
-            {
-                f"{r}ht_{label}": Hist.new.Reg(
-                    100, 0, 10000, name=f"{r}ht_{label}", label="HT"
-                ).Weight(),
-                f"{r}ht_JEC_{label}": Hist.new.Reg(
-                    100, 0, 10000, name=f"{r}ht_JEC_{label}", label="HT JEC"
-                ).Weight(),
-                f"{r}ht_JEC_JER_up_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"{r}ht_JEC_JER_up_{label}",
-                    label="HT JEC up",
-                ).Weight(),
-                f"{r}ht_JEC_JER_down_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"{r}ht_JEC_JER_down_{label}",
-                    label="HT JEC JER down",
-                ).Weight(),
-                f"{r}ht_JEC_JES_up_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"{r}ht_JEC_JES_up_{label}",
-                    label="HT JEC JES up",
-                ).Weight(),
-                f"{r}ht_JEC_JES_down_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"{r}ht_JEC_JES_down_{label}",
-                    label="HT JEC JES down",
-                ).Weight(),
-                f"{r}ntracks_{label}": Hist.new.Reg(
-                    101,
-                    0,
-                    500,
-                    name=f"{r}ntracks_{label}",
-                    label="# Tracks in Event",
-                ).Weight(),
-                f"{r}ngood_fastjets_{label}": Hist.new.Reg(
-                    9,
-                    0,
-                    10,
-                    name=f"{r}ngood_fastjets_{label}",
-                    label="# FastJets in Event",
-                ).Weight(),
-                f"{r}PV_npvs_{label}": Hist.new.Reg(
-                    199,
-                    0,
-                    200,
-                    name=f"{r}PV_npvs_{label}",
-                    label="# PVs in Event ",
-                ).Weight(),
-                f"{r}Pileup_nTrueInt_{label}": Hist.new.Reg(
-                    199,
-                    0,
-                    200,
-                    name=f"{r}Pileup_nTrueInt_{label}",
-                    label="# True Interactions in Event ",
-                ).Weight(),
-                f"{r}ngood_ak4jets_{label}": Hist.new.Reg(
-                    19,
-                    0,
-                    20,
-                    name=f"{r}ngood_ak4jets_{label}",
-                    label="# ak4jets in Event",
-                ).Weight(),
-            }
-        )
+    output.update({
+        f"ht_{label}": Hist.new.Reg(
+            100, 0, 10000, name=f"ht_{label}", label="HT"
+        ).Weight(),
+        f"ht_JEC_{label}": Hist.new.Reg(
+            100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
+        ).Weight(),
+        f"ht_JEC_JER_up_{label}": Hist.new.Reg(
+            100,
+            0,
+            10000,
+            name=f"ht_JEC_JER_up_{label}",
+            label="HT JEC up",
+        ).Weight(),
+        f"ht_JEC_JER_down_{label}": Hist.new.Reg(
+            100,
+            0,
+            10000,
+            name=f"ht_JEC_JER_down_{label}",
+            label="HT JEC JER down",
+        ).Weight(),
+        f"ht_JEC_JES_up_{label}": Hist.new.Reg(
+            100,
+            0,
+            10000,
+            name=f"ht_JEC_JES_up_{label}",
+            label="HT JEC JES up",
+        ).Weight(),
+        f"ht_JEC_JES_down_{label}": Hist.new.Reg(
+            100,
+            0,
+            10000,
+            name=f"ht_JEC_JES_down_{label}",
+            label="HT JEC JES down",
+        ).Weight(),
+        f"ntracks_{label}": Hist.new.Reg(
+            101,
+            0,
+            500,
+            name=f"ntracks_{label}",
+            label="# Tracks in Event",
+        ).Weight(),
+        f"ngood_fastjets_{label}": Hist.new.Reg(
+            9,
+            0,
+            10,
+            name=f"ngood_fastjets_{label}",
+            label="# FastJets in Event",
+        ).Weight(),
+        f"PV_npvs_{label}": Hist.new.Reg(
+            199,
+            0,
+            200,
+            name=f"PV_npvs_{label}",
+            label="# PVs in Event ",
+        ).Weight(),
+        f"Pileup_nTrueInt_{label}": Hist.new.Reg(
+            199,
+            0,
+            200,
+            name=f"Pileup_nTrueInt_{label}",
+            label="# True Interactions in Event ",
+        ).Weight(),
+        f"ngood_ak4jets_{label}": Hist.new.Reg(
+            19,
+            0,
+            20,
+            name=f"ngood_ak4jets_{label}",
+            label="# ak4jets in Event",
+        ).Weight(),
+    })
 
     ###########################################################################################################################
     if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone"]]):
         # 2D histograms
-        output.update(
-            {
+        output.update({
+            f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+            )
+            .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
+            .Weight(),
+        })
+        if 'up' not in label and 'down' not in label: # don't care for systematics for these
+            output.update({
                 f"2D_SUEP_S1_vs_ntracks_{label}": Hist.new.Reg(
                     100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
                 )
                 .Reg(100, 0, 500, name=f"ntracks_{label}", label="# Tracks")
-                .Weight(),
-                f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                    100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
-                )
-                .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
                 f"2D_SUEP_nconst_vs_SUEP_pt_avg_{label}": Hist.new.Reg(
                     501, 0, 500, name=f"SUEP_nconst_{label}", label="# Const"
@@ -546,13 +509,11 @@ def create_output_file(label, abcd):
                 )
                 .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
-            }
-        )
+            })
 
         # variables from the dataframe for all the events, and those in A, B, C regions
         for r in regions_list:
-            output.update(
-                {
+            output.update({
                     f"{r}SUEP_nconst_{label}": Hist.new.Reg(
                         501,
                         0,
@@ -560,6 +521,12 @@ def create_output_file(label, abcd):
                         name=f"{r}SUEP_nconst_{label}",
                         label="# Constituents",
                     ).Weight(),
+                    f"{r}SUEP_S1_{label}": Hist.new.Reg(
+                        100, 0, 1, name=f"{r}SUEP_S1_{label}", label="$Sph_1$"
+                    ).Weight(),
+            })
+            if r == '' and 'up' not in label and 'down' not in label: # don't care for systematics for these
+                output.update({
                     f"{r}SUEP_genMass_{label}": Hist.new.Reg(
                         100,
                         0,
@@ -616,11 +583,7 @@ def create_output_file(label, abcd):
                         name=f"{r}SUEP_delta_mass_genMass_{label}",
                         label="SUEP Mass - genSUEP Mass [GeV]",
                     ).Weight(),
-                    f"{r}SUEP_S1_{label}": Hist.new.Reg(
-                        100, 0, 1, name=f"{r}SUEP_S1_{label}", label="$Sph_1$"
-                    ).Weight(),
-                }
-            )
+                })
     ###########################################################################################################################
     if "ClusterInverted" in label:
         create_output_clusterInverted(output, label, regions_list)
@@ -690,7 +653,7 @@ def calculate_systematic(
             #         df["event_weight"] *= df["prefire_nom"]
 
         # 5) Higgs_pt weights
-        if "SUEP-m125" in options.dataset:
+        if "mS125" in options.dataset:
             (
                 higgs_bins,
                 higgs_weights,
@@ -732,7 +695,7 @@ def calculate_systematic(
             label_out = label_out + "_" + syst
 
         # initialize new hists, if needed
-        output.update(create_output_file(label_out, config_out))
+        output.update(create_output_file(label_out, config_out, options))
 
         # prepare the DataFrame for plotting: blind, selections
         df_plot = fill_utils.prepareDataFrame(
@@ -842,10 +805,13 @@ for ifile in tqdm(files):
             "PSWeight_FSR_up",
             "PSWeight_FSR_down",
             "prefire_up",
-            "prefire_down",
-            "higgs_weights_up",
-            "higgs_weights_down",
+            "prefire_down"
         ]
+        if "mS125" in options.dataset:
+            sys_loop += [
+                "higgs_weights_up",
+                "higgs_weights_down",
+            ]
     else:
         sys_loop = [""]
 
@@ -860,7 +826,7 @@ for ifile in tqdm(files):
     # remove file at the end of loop
     if options.xrootd:
         os.system("rm " + options.dataset + ".hdf5")
-
+        
 logging.warning("Number of files that failed to be read: " + str(nfailed))
 # End plotting loop ###################################################################
 
@@ -924,13 +890,11 @@ if options.doABCD and options.blind and options.predictSR:
 
         output[f"I_{yvar}_{label_out}"] = SR_exp
 
-logging.info("Saving outputs.")
-
 if options.dataset:
     outFile = outDir + "/" + options.dataset + "_" + options.output
 else:
     outFile = os.path.join(outDir, options.output)
-pickle.dump(output, open(outFile + ".pkl", "wb"))
+logging.info("Saving outputs to " + outFile + ".")
 with uproot.recreate(outFile + ".root") as froot:
     for h, hist in output.items():
         froot[h] = hist

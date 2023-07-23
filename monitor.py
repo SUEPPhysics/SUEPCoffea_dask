@@ -77,6 +77,7 @@ def main():
 
     with open(options.input) as stream:
         totals, completeds = 0, 0
+        missing_samples = []
         for sample in stream.read().split("\n"):
             if len(sample) <= 1:
                 continue
@@ -96,6 +97,7 @@ def main():
 
             if not os.path.isdir(out_dir.format(sample_name)):
                 logging.warning("Cannot find " + out_dir.format(sample_name))
+                missing_samples.append(sample_name)
                 continue
 
             # delete files that are corrupted (i.e., empty)
@@ -122,6 +124,10 @@ def main():
             njobs = len(jobs)
             complete_list = os.listdir(out_dir.format(sample_name))
             nfile = len(complete_list)
+
+            if njobs == 0: 
+                missing_samples.append(sample)
+                continue
 
             # Print out the results
             logging.info(
@@ -219,13 +225,17 @@ def main():
             colored("\t\t --> completed", "green")
             if completeds == totals
             else colored(
-                "\t\t --> ({}/{}) finished. {:.1f}% complete".format(
+                "\t --> ({}/{}) finished. {:.1f}% complete".format(
                     completeds, totals, percent
                 ),
                 "red",
             )
         )
 
+        if len(missing_samples) > 0:
+            logging.info("")
+            logging.info("The following samples were missing:")
+            for s in missing_samples: logging.info(s)
 
 if __name__ == "__main__":
     main()

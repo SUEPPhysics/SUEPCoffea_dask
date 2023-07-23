@@ -236,68 +236,70 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
     fill_2d_distributions(df, output, label_out, input_method)
 
     # 3. divide the dfs by region
-    if do_abcd:
-        regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        xvar = abcd["xvar"]
-        yvar = abcd["yvar"]
-        xvar_regions = abcd["xvar_regions"]
-        yvar_regions = abcd["yvar_regions"]
-        iRegion = 0
-        for i in range(len(xvar_regions) - 1):
-            x_val_lo = xvar_regions[i]
-            x_val_hi = xvar_regions[i + 1]
+    regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    xvar = abcd["xvar"]
+    yvar = abcd["yvar"]
+    xvar_regions = abcd["xvar_regions"]
+    yvar_regions = abcd["yvar_regions"]
+    iRegion = 0
+    for i in range(len(xvar_regions) - 1):
+        x_val_lo = xvar_regions[i]
+        x_val_hi = xvar_regions[i + 1]
 
-            for j in range(len(yvar_regions) - 1):
-                r = regions[iRegion] + "_"
+        for j in range(len(yvar_regions) - 1):
+            r = regions[iRegion] + "_"
 
-                y_val_lo = yvar_regions[j]
-                y_val_hi = yvar_regions[j + 1]
+            y_val_lo = yvar_regions[j]
+            y_val_hi = yvar_regions[j + 1]
 
-                x_cut = make_selection(
-                    df, xvar, ">=", x_val_lo, False
-                ) & make_selection(df, xvar, "<", x_val_hi, False)
-                y_cut = make_selection(
-                    df, yvar, ">=", y_val_lo, False
-                ) & make_selection(df, yvar, "<", y_val_hi, False)
-                df_r = df.loc[(x_cut & y_cut)]
+            x_cut = make_selection(
+                df, xvar, ">=", x_val_lo, False
+            ) & make_selection(df, xvar, "<", x_val_hi, False)
+            y_cut = make_selection(
+                df, yvar, ">=", y_val_lo, False
+            ) & make_selection(df, yvar, "<", y_val_hi, False)
+            df_r = df.loc[(x_cut & y_cut)]
 
-                # double check the region is defined correctly
-                assert (
-                    df_r[
-                        (df_r[xvar] > float(x_val_hi)) | (df_r[xvar] < float(x_val_lo))
-                    ].shape[0]
-                    == 0
+            # double check the region is defined correctly
+            assert (
+                df_r[
+                    (df_r[xvar] > float(x_val_hi)) | (df_r[xvar] < float(x_val_lo))
+                ].shape[0]
+                == 0
+            )
+
+            # double check blinding
+            if (
+                iRegion == (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
+                and not isMC
+            ):
+                if df_r.shape[0] > 0:
+                    sys.exit(
+                        label_out + ": You are not blinding correctly! Exiting."
+                    )
+
+            # by default, we only plot the ABCD variables in each region, to reduce the size of the output
+            # the option do_abcd created a histogram of each variable for each region
+            
+            # 3a. Plot event wide variables
+            for plot in event_plot_labels:
+                if r + plot + "_" + label_out not in list(output.keys()):
+                    continue
+                output[r + plot + "_" + label_out].fill(
+                    df_r[plot], weight=df_r["event_weight"]
                 )
 
-                # double check blinding
-                if (
-                    iRegion == (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
-                    and not isMC
+            # 3b. Plot method variables
+            for plot in method_plot_labels:
+                if r + plot.replace(input_method, label_out) not in list(
+                    output.keys()
                 ):
-                    if df_r.shape[0] > 0:
-                        sys.exit(
-                            label_out + ": You are not blinding correctly! Exiting."
-                        )
+                    continue
+                output[r + plot.replace(input_method, label_out)].fill(
+                    df_r[plot], weight=df_r["event_weight"]
+                )
 
-                # 3a. Plot event wide variables
-                for plot in event_plot_labels:
-                    if r + plot + "_" + label_out not in list(output.keys()):
-                        continue
-                    output[r + plot + "_" + label_out].fill(
-                        df_r[plot], weight=df_r["event_weight"]
-                    )
-
-                # 3b. Plot method variables
-                for plot in method_plot_labels:
-                    if r + plot.replace(input_method, label_out) not in list(
-                        output.keys()
-                    ):
-                        continue
-                    output[r + plot.replace(input_method, label_out)].fill(
-                        df_r[plot], weight=df_r["event_weight"]
-                    )
-
-                iRegion += 1
+            iRegion += 1
 
 
 def apply_normalization(plots, norm):

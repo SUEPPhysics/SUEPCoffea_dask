@@ -5,7 +5,7 @@ import pickle
 import shutil
 import subprocess
 from collections import defaultdict
-
+import uproot
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -95,6 +95,16 @@ def findLumi(year, auto_lumi, infile_name):
     return lumi
 
 
+def getHistLists(plotDir, tag, filename):
+    hists = []
+    with open(filename, 'r') as file:
+        for line in file:
+            sample_name = line.strip().split('/')[-1]
+            result_path = f"{plotDir}{sample_name}_{tag}.root"
+            hists.append(result_path)
+    return hists
+
+
 def formatNaming(file):
     tokens = file.split("_")
     temp = tokens[2]
@@ -125,7 +135,8 @@ def fillSample(infile_name, plots, lumi):
 
         # include this block to import the QCD bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        plots[temp_sample] = openpkl(infile_name)
+        if '.root' in infile_name: plots[temp_sample] = openroot(infile_name)
+        elif '.pkl' in infile_name: plots[temp_sample] = openpickle(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -135,7 +146,8 @@ def fillSample(infile_name, plots, lumi):
         # include this block to import the HT bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-        plots[temp_sample] = openpkl(infile_name)
+        if '.root' in infile_name: plots[temp_sample] = openroot(infile_name)
+        elif '.pkl' in infile_name: plots[temp_sample] = openpickle(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -145,7 +157,8 @@ def fillSample(infile_name, plots, lumi):
         # include this block to import the HT bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         temp_sample = temp_sample.split("_Tune")[0]
-        plots[temp_sample] = openpkl(infile_name)
+        if '.root' in infile_name: plots[temp_sample] = openroot(infile_name)
+        elif '.pkl' in infile_name: plots[temp_sample] = openpickle(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -156,8 +169,8 @@ def fillSample(infile_name, plots, lumi):
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         temp_sample = temp_sample.split("Run")[1].split("-UL")[0]
         temp_sample = "data_" + temp_sample[4:]
-
-        plots[temp_sample] = openpkl(infile_name)
+        if '.root' in infile_name: plots[temp_sample] = openroot(infile_name)
+        elif '.pkl' in infile_name: plots[temp_sample] = openpickle(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -184,12 +197,7 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
             continue
-        elif ".pkl" not in infile_name:
-            continue
-        elif (
-            "QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-pilot"
-            in infile_name
-        ):
+        elif ".root" not in infile_name and ".pkl" not in infile_name:
             continue
 
         # sets the lumi based on year
@@ -217,53 +225,40 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         sample, plots = fillSample(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
-            infile = openpkl(infile_name)
+            if '.root' in infile_name: infile = openroot(infile_name)
+            elif '.pkl' in infile_name: infile = openpickle(infile_name)
             plots[sample] = infile
             for plot in list(plots[sample].keys()):
                 plots[sample][plot] = plots[sample][plot] * lumi
         else:
-            plotsToAdd = openpkl(infile_name)
+            if '.root' in infile_name: plotsToAdd = openroot(infile_name)
+            elif '.pkl' in infile_name: plotsToAdd = openpickle(infile_name)
             for plot in list(plotsToAdd.keys()):
                 plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
 
     return plots
 
 
-def combineYears(inplots, tag="QCD_HT", years=None):
-    """
-    Combines all samples in plots with a certain tag and with certain
-    years. Returns combined plots.
-    """
-    if not years:
-        years = ["2018", "2017", "2016"]
-    outPlots = {}
-    yearsAdded = []
-    initialize = True
-    for sample in inplots.keys():
-        if tag not in sample:
-            continue
-        if not any([y in sample for y in years]):
-            continue
+def combineMCSamples(plots, year, samples=['QCD_HT', 'TTJets']):
+    assert len(samples) > 0
+    year = str(year)
+    plots['MC_'+year] = {}
+    for key in plots[samples[0]+"_"+year].keys():
+        for i, sample in enumerate(samples):
+            if i == 0:
+                plots['MC_'+year][key] = plots[samples[i]+"_"+year][key].copy()
+            else:
+                plots['MC_'+year][key] += plots[samples[i]+"_"+year][key].copy()
 
-        # keep track of which years we've added already
-        for year in years:
-            if year in sample:
-                if year in yearsAdded:
-                    raise Exception("Already loaded this year: " + year)
-                yearsAdded.append(year)
-
-        # combine samples
-        if initialize:
-            outPlots = inplots[sample].copy()
-        else:
-            for plot in list(inplots[sample].keys()):
-                outPlots[plot] = outPlots[plot] + inplots[sample][plot].copy()
-
-        initialize = False
-
-    return outPlots
-
-
+                
+def combineYears(plots, sample, eras=['2018', '2017', '2016']):
+    plots['{}_all'.format(sample)] = {}
+    for i, year in enumerate(eras):
+        for key in plots['{}_{}'.format(sample, year)].keys():
+            if i == 0: plots['{}_all'.format(sample)][key] = plots['{}_{}'.format(sample, year)][key].copy()
+            else: plots['{}_all'.format(sample)][key] += plots['{}_{}'.format(sample, year)][key].copy()
+            
+            
 def check_proxy(time_min=100):
     """
     Checks for existence of proxy with at least time_min
@@ -333,7 +328,7 @@ def apply_binwise_scaling(h_in, bins, scales, dim="x"):
 
 
 # function to load files from pickle
-def openpkl(infile_name):
+def openpickle(infile_name):
     plots = {}
     with open(infile_name, "rb") as openfile:
         while True:
@@ -343,6 +338,13 @@ def openpkl(infile_name):
                 break
     return plots
 
+def openroot(infile_name):
+    _plots = {}
+    _infile = uproot.open(infile_name)
+    for k in _infile.keys():
+        if ';' in k: k = k.split(';')[0]
+        _plots[k] = _infile[k].to_hist()
+    return _plots
 
 def plot1d(h, ax, label, color="default", lw=1):
     if color == "default":
