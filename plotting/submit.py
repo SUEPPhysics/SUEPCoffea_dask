@@ -32,7 +32,7 @@ slurm_script_template = '''#!/bin/bash
 #SBATCH --output={log_dir}{sample}.out
 #SBATCH --error={log_dir}{sample}.err
 #SBATCH --time=02:00:00
-#SBATCH --mem=20GB
+#SBATCH --mem=2GB
 #SBATCH --partition=submit
 
 source ~/.bashrc
