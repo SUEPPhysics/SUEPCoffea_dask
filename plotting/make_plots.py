@@ -60,12 +60,12 @@ parser.add_argument(
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument("--merged", type=int, default=1, help="Use merged files")
 # some info about the files, highly encouraged to specify every time
-parser.add_argument("-e", "--era", type=int, help="era", required=True)
+parser.add_argument("-e", "--era", type=str, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
-parser.add_argument("--doInf", type=int, default=1, help="make GNN plots")
+parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
 parser.add_argument(
     "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
 )
@@ -418,7 +418,7 @@ def create_output_file(label, abcd):
         return output
     else:
         output["labels"].append(label)
-        
+
     # ABCD histogram
     xvar = abcd["xvar"]
     yvar = abcd["yvar"]
@@ -537,7 +537,7 @@ def create_output_file(label, abcd):
                 .Reg(200, 0, 500, name=f"SUEP_pt_avg_{label}", label="$p_T Avg$")
                 .Weight(),
                 f"2D_SUEP_eta_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                    100, -5, 5, name=f"SUEP_eta_{label}", label="$\eta$"
+                    100, -5, 5, name=f"SUEP_eta_{label}", label=r"$\eta$"
                 )
                 .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
                 .Weight(),
@@ -851,7 +851,6 @@ for ifile in tqdm(files):
 
     for syst in sys_loop:
         # prepare new event weight
-
         calculate_systematic(df, config, syst, options)
 
     #####################################################################################

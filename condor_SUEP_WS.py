@@ -26,7 +26,7 @@ modules_era = []
 modules_era.append(
     SUEP_coffea.SUEP_cluster(
         isMC=options.isMC,
-        era=int(options.era),
+        era=str(options.era),
         scouting=0,
         do_syst=options.doSyst,
         syst_var="",
@@ -44,7 +44,7 @@ for instance in modules_era:
         executor=processor.FuturesExecutor(compression=None, workers=1),
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
-        chunksize=10000,
+        chunksize=100000000,
     )
 
     runner.automatic_retries(
