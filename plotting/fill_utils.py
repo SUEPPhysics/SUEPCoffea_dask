@@ -252,12 +252,12 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
             y_val_lo = yvar_regions[j]
             y_val_hi = yvar_regions[j + 1]
 
-            x_cut = make_selection(
-                df, xvar, ">=", x_val_lo, False
-            ) & make_selection(df, xvar, "<", x_val_hi, False)
-            y_cut = make_selection(
-                df, yvar, ">=", y_val_lo, False
-            ) & make_selection(df, yvar, "<", y_val_hi, False)
+            x_cut = make_selection(df, xvar, ">=", x_val_lo, False) & make_selection(
+                df, xvar, "<", x_val_hi, False
+            )
+            y_cut = make_selection(df, yvar, ">=", y_val_lo, False) & make_selection(
+                df, yvar, "<", y_val_hi, False
+            )
             df_r = df.loc[(x_cut & y_cut)]
 
             # double check the region is defined correctly
@@ -274,13 +274,11 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
                 and not isMC
             ):
                 if df_r.shape[0] > 0:
-                    sys.exit(
-                        label_out + ": You are not blinding correctly! Exiting."
-                    )
+                    sys.exit(label_out + ": You are not blinding correctly! Exiting.")
 
             # by default, we only plot the ABCD variables in each region, to reduce the size of the output
             # the option do_abcd created a histogram of each variable for each region
-            
+
             # 3a. Plot event wide variables
             for plot in event_plot_labels:
                 if r + plot + "_" + label_out not in list(output.keys()):
@@ -291,9 +289,7 @@ def auto_fill(df, output, abcd, label_out, isMC=False, do_abcd=False):
 
             # 3b. Plot method variables
             for plot in method_plot_labels:
-                if r + plot.replace(input_method, label_out) not in list(
-                    output.keys()
-                ):
+                if r + plot.replace(input_method, label_out) not in list(output.keys()):
                     continue
                 output[r + plot.replace(input_method, label_out)].fill(
                     df_r[plot], weight=df_r["event_weight"]

@@ -125,7 +125,7 @@ def main():
             complete_list = os.listdir(out_dir.format(sample_name))
             nfile = len(complete_list)
 
-            if njobs == 0: 
+            if njobs == 0:
                 missing_samples.append(sample)
                 continue
 
@@ -235,7 +235,9 @@ def main():
         if len(missing_samples) > 0:
             logging.info("")
             logging.info("The following samples were missing:")
-            for s in missing_samples: logging.info(s)
+            for s in missing_samples:
+                logging.info(s)
+
 
 if __name__ == "__main__":
     main()
