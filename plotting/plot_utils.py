@@ -108,7 +108,7 @@ def lumiLabel(year):
         return round(lumis[year] / 1000, 1)
     elif year == "2016":
         return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
-    elif year == 'all':
+    elif year == "all":
         return round(lumis[year] / 1000, 1)
 
 
@@ -189,12 +189,12 @@ def fillSample(infile_name, plots, lumi):
 
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
-        
+
         # include this block to import the eras bins individually
         temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
         temp_sample = temp_sample.split("Run")[1].split("-UL")[0]
-        temp_sample = 'data_' + temp_sample[4:]
-                
+        temp_sample = "data_" + temp_sample[4:]
+
         plots[temp_sample] = openpkl(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
@@ -440,9 +440,14 @@ def bin_midpoints(bins):
 
 
 def plot_ratio(
-    hlist, labels=None, systs=None,
+    hlist,
+    labels=None,
+    systs=None,
     density=False,
-    cmap=None, plot_label=None, xlim="default", log=True
+    cmap=None,
+    plot_label=None,
+    xlim="default",
+    log=True,
 ):
     """
     Plots ratio of a list of Hist histograms, the ratio is wrt to the first one in the list.
@@ -453,10 +458,11 @@ def plot_ratio(
     fig = plt.figure()
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
-    
+
     if density:
-        for h in hlist: h/=h.sum().value
-        
+        for h in hlist:
+            h /= h.sum().value
+
     if labels is None:
         labels = [None] * len(hlist)
     if cmap is None:
@@ -522,8 +528,11 @@ def plot_ratio(
         )
         ratio_err = np.where(
             hlist[0].values() > 0,
-            np.sqrt((hlist[0].values()**-2)*(h.variances()) + (h.values()**2 * hlist[0].values()**-4)*(hlist[0].variances())),
-            0
+            np.sqrt(
+                (hlist[0].values() ** -2) * (h.variances())
+                + (h.values() ** 2 * hlist[0].values() ** -4) * (hlist[0].variances())
+            ),
+            0,
         )
         ax2.errorbar(
             hlist[0].axes.centers[0],
@@ -540,10 +549,24 @@ def plot_ratio(
     if systs is not None:
         assert len(systs) == len(hlist[0].axes.centers[0])
         widths = hlist[0].axes.widths[0]
-        up_height = np.where(systs>0, systs, 0)
-        down_height = np.where(systs>0, 1/(1+systs) - 1, 0)
-        ax2.bar(hlist[0].axes.centers[0], height=up_height, bottom=1, width=widths, alpha=0.3, color='gray')
-        ax2.bar(hlist[0].axes.centers[0], height=down_height, bottom=1, width=widths, alpha=0.3, color='gray')
+        up_height = np.where(systs > 0, systs, 0)
+        down_height = np.where(systs > 0, 1 / (1 + systs) - 1, 0)
+        ax2.bar(
+            hlist[0].axes.centers[0],
+            height=up_height,
+            bottom=1,
+            width=widths,
+            alpha=0.3,
+            color="gray",
+        )
+        ax2.bar(
+            hlist[0].axes.centers[0],
+            height=down_height,
+            bottom=1,
+            width=widths,
+            alpha=0.3,
+            color="gray",
+        )
         # add to legend
         ax1.plot([0, 0], color="gray", label="Systematics")
 
@@ -750,8 +773,9 @@ def slice_hist2d(hist, regions_list, slice_var="y"):
     return hist_list
 
 
-def plot_sliced_hist2d(hist, regions_list, 
-                       stack=False, density=False, slice_var="y", labels=None):
+def plot_sliced_hist2d(
+    hist, regions_list, stack=False, density=False, slice_var="y", labels=None
+):
     """
     Takes a 2d histogram, slices it in different regions, and plots the
     regions stacked.
@@ -767,10 +791,12 @@ def plot_sliced_hist2d(hist, regions_list,
         assert len(labels) == len(regions_list)
     hist_list = slice_hist2d(hist, regions_list, slice_var)
     cmap = plt.cm.jet(np.linspace(0, 1, len(hist_list)))
-    
-    if stack: histtype = 'fill'
-    else: histtype = 'step'
-        
+
+    if stack:
+        histtype = "fill"
+    else:
+        histtype = "step"
+
     fig = plt.figure()
     ax = fig.subplots()
     hep.histplot(
@@ -909,6 +935,7 @@ def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
     else:
         return SR, SR_exp
 
+
 def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
     """
     Does 9 region ABCD using error propagation of the statistical
@@ -921,10 +948,9 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
     A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(
         abcd, xregions, yregions, sum_var=sum_var, return_all=True
     )
-    
+
     preds, preds_err = [], []
     for i in range(len(F.values())):
-        
         # this is needed in order to do error propagation correctly
         F_bin = F[i]
         F_other = F.copy()
@@ -933,13 +959,33 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
         # define the scaling factor function
         a, b, c, d, e, f_bin, f_other, g, h = symbols("A B C D E F_bin F_other G H")
         if sum_var == "x":
-            exp = f_bin * (f_other+f_bin) * h**2 * d**2 * b**2 * g**-1 * c**-1 * a**-1 * e**-4
+            exp = (
+                f_bin
+                * (f_other + f_bin)
+                * h**2
+                * d**2
+                * b**2
+                * g**-1
+                * c**-1
+                * a**-1
+                * e**-4
+            )
         elif sum_var == "y":
             exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
 
         # defines lists of variables (sympy symbols) and accumulators (hist.sum())
         variables = [a, b, c, d, e, f_bin, f_other, g, h]
-        accs = [A.sum(), B.sum(), C.sum(), D.sum(), E.sum(), F_bin, F_other.sum(), G.sum(), H.sum()]
+        accs = [
+            A.sum(),
+            B.sum(),
+            C.sum(),
+            D.sum(),
+            E.sum(),
+            F_bin,
+            F_other.sum(),
+            G.sum(),
+            H.sum(),
+        ]
 
         # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
         alpha = exp.copy()
@@ -955,14 +1001,15 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
         for var, acc in zip(variables, accs):
             variance = variance.subs(var, acc.value)
         sigma_alpha = variance
-        
+
         preds.append(alpha)
         preds_err.append(sigma_alpha)
-    
+
     SR_exp.view().variance = preds_err
     SR_exp.view().value = preds
-    
+
     return SR, SR_exp
+
 
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
@@ -1045,6 +1092,7 @@ def linearFit2DHist(h):
     logging.info("Linear fit result:", p)
     return p
 
+
 def hist_mean(hist):
     """
     Calculates the mean of a 1-dimensional Hist histogram.
@@ -1053,6 +1101,7 @@ def hist_mean(hist):
     bin_centers = hist.axes[0].centers
     mean = np.average(bin_centers, weights=bin_values)
     return mean
+
 
 def hist_std_dev(hist, axis=0):
     """
@@ -1070,32 +1119,35 @@ def hist_std_dev(hist, axis=0):
 
     return standard_deviation
 
+
 def hist2d_correlation(h):
     """
     Calculates Pearson Coefficient from a 2-dimensional Hist histogram.
     """
-    
+
     coeff = 0
-    
+
     assert len(h.axes) == 2
-    
+
     xvals = h.axes[0].centers
     yvals = h.axes[1].centers
     zvals = h.values()
-    
-    xmean = hist_mean(h[:,sum])
-    ymean = hist_mean(h[sum,:])
+
+    xmean = hist_mean(h[:, sum])
+    ymean = hist_mean(h[sum, :])
     xdev = hist_std_dev(h[:, sum])
-    ydev = hist_std_dev(h[sum,:])
-        
-    if xdev == 0 or ydev == 0: return 
-    
+    ydev = hist_std_dev(h[sum, :])
+
+    if xdev == 0 or ydev == 0:
+        return
+
     for i in range(len(xvals)):
         for j in range(len(yvals)):
-            coeff += (xvals[i] - xmean)*(yvals[j] - ymean)*zvals[i,j]
-                
-    coeff /= (xdev*ydev*h.sum().value)
+            coeff += (xvals[i] - xmean) * (yvals[j] - ymean) * zvals[i, j]
+
+    coeff /= xdev * ydev * h.sum().value
     return coeff
+
 
 def nested_dict(n, type):
     if n == 1:
