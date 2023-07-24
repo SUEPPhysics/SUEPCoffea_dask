@@ -84,7 +84,7 @@ def call_process(cmd):
     return (out, err)
 
 
-pool = Pool(min(multiprocessing.cpu_count(), 24), maxtasksperchild=1000)
+pool = Pool(min(multiprocessing.cpu_count(), 500), maxtasksperchild=1000)
 
 with open(options.inputList) as f:
     input_list = f.readlines()
