@@ -269,13 +269,9 @@ def combineYears(plots, sample, eras=["2018", "2017", "2016"]):
     for i, year in enumerate(eras):
         for key in plots[f"{sample}_{year}"].keys():
             if i == 0:
-                plots[f"{sample}_all"][key] = plots[
-                    f"{sample}_{year}"
-                ][key].copy()
+                plots[f"{sample}_all"][key] = plots[f"{sample}_{year}"][key].copy()
             else:
-                plots[f"{sample}_all"][key] += plots[
-                    f"{sample}_{year}"
-                ][key].copy()
+                plots[f"{sample}_all"][key] += plots[f"{sample}_{year}"][key].copy()
 
 
 def check_proxy(time_min=100):
