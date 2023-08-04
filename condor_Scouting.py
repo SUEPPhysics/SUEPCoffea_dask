@@ -29,7 +29,7 @@ root_rewrite.rewrite(options.infile)
 modules_era.append(
     SUEP_coffea.SUEP_cluster(
         isMC=options.isMC,
-        era=int(options.era),
+        era=options.era,
         scouting=1,
         do_syst=options.doSyst,
         syst_var="",
@@ -54,8 +54,8 @@ for instance in modules_era:
         retries=3,
         skipbadfiles=False,
         func=runner.run,
-        fileset={options.dataset: [options.infile]},
-        treename="Events",
+        fileset={options.dataset: ['rewrite.root']},
+        treename="tree",
         processor_instance=instance,
     )
 

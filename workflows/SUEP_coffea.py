@@ -245,49 +245,79 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
 
     def getLooseLeptons(self, events):
-        looseMuons = ak.zip(
-            {
-                "pt": events.Muon.pt,
-                "eta": events.Muon.eta,
-                "phi": events.Muon.phi,
-                "mass": events.Muon.mass,
-                "charge": events.Muon.pdgId / (-13),
-            },
-            with_name="Momentum4D",
-        )
-
-        looseElectrons = ak.zip(
-            {
-                "pt": events.Electron.pt,
-                "eta": events.Electron.eta,
-                "phi": events.Electron.phi,
-                "mass": events.Electron.mass,
-                "charge": events.Electron.pdgId / (-11),
-            },
-            with_name="Momentum4D",
-        )
-
-        cutLooseMuons = (
-            (events.Muon.looseId)
-            & (events.Muon.pt >= 1)
-            & (abs(events.Muon.dxy) <= 0.02)
-            & (abs(events.Muon.dz) <= 0.1)
-            & (abs(events.Muon.eta) < 2.4)
-        )
-        cutLooseElectrons = (
-            (events.Electron.cutBased >= 1)
-            & (events.Electron.pt >= 1)
-            & (
-                abs(events.Electron.dxy)
-                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+        if self.scouting == 1:
+            looseMuons = ak.zip(
+                {
+                    "pt": events.Muon.pt,
+                    "eta": events.Muon.eta,
+                    "phi": events.Muon.phi,
+                    "mass": events.Muon.mass,
+                },
+                with_name="Momentum4D",
             )
-            & (
-                abs(events.Electron.dz)
-                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+
+            looseElectrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                },
+                with_name="Momentum4D",
             )
-            & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
-            & (abs(events.Electron.eta) < 2.5)
-        )
+
+            cutLooseMuons = (
+                (events.Muon.pt >= 1)
+                & (abs(events.Muon.eta) < 2.4)
+            )
+            cutLooseElectrons = (
+                (events.Electron.pt >= 1)
+                & (abs(events.Electron.eta) < 2.5)
+            )
+        else:
+            looseMuons = ak.zip(
+                {
+                    "pt": events.Muon.pt,
+                    "eta": events.Muon.eta,
+                    "phi": events.Muon.phi,
+                    "mass": events.Muon.mass,
+                    "charge": events.Muon.pdgId / (-13),
+                },
+                with_name="Momentum4D",
+            )
+
+            looseElectrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                    "charge": events.Electron.pdgId / (-11),
+                },
+                with_name="Momentum4D",
+            )
+
+            cutLooseMuons = (
+                (events.Muon.looseId)
+                & (events.Muon.pt >= 1)
+                & (abs(events.Muon.dxy) <= 0.02)
+                & (abs(events.Muon.dz) <= 0.1)
+                & (abs(events.Muon.eta) < 2.4)
+            )
+            cutLooseElectrons = (
+                (events.Electron.cutBased >= 1)
+                & (events.Electron.pt >= 1)
+                & (
+                    abs(events.Electron.dxy)
+                    < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+                )
+                & (
+                    abs(events.Electron.dz)
+                    < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+                )
+                & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+                & (abs(events.Electron.eta) < 2.5)
+            )
 
         ### Apply the cuts
         # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
@@ -315,6 +345,7 @@ class SUEP_cluster(processor.ProcessorABC):
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
         jets_c = apply_jecs(
+            self,
             isMC=self.isMC,
             Sample=self.sample,
             era=self.era,
@@ -452,7 +483,8 @@ class SUEP_cluster(processor.ProcessorABC):
             events = applyGoldenJSON(self, events)
         events, _, _ = ZH_utils.selectByLeptons(self, events, lepveto=True)
         events = self.eventSelection(events)
-        events = self.selectByFilters(events)
+        if self.scouting != 1:
+            events = self.selectByFilters(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -469,12 +501,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Track selection
         # Prepare the clean PFCand matched to tracks collection
         #####################################################################################
-
         if self.scouting == 1:
             tracks, Cleaned_cands = self.getScoutingTracks(events)
         else:
             tracks, Cleaned_cands = self.getTracks(events)
-
         looseElectrons, looseMuons = self.getLooseLeptons(events)
 
         if self.isMC and do_syst:
