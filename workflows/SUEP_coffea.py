@@ -352,7 +352,8 @@ class SUEP_cluster(processor.ProcessorABC):
             events=events,
             prefix=prefix,
         )
-        jets_jec = self.jet_awkward(jets_c)
+        #jets_jec = self.jet_awkward(jets_c)
+        jets_jec = jets_c
         if self.isMC:
             jets_jec_JERUp = self.jet_awkward(jets_c["JER"].up)
             jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
@@ -370,6 +371,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
+
         if out_label == "":
             self.out_vars["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
             self.out_vars["ht_JEC" + out_label] = ak.sum(jets_jec.pt, axis=-1).to_list()
@@ -516,10 +518,15 @@ class SUEP_cluster(processor.ProcessorABC):
         # The jet clustering part
         #####################################################################################
 
-        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, minPt=150
-        )
+        if self.scouting == 1:
+            min_FastJet = 60
+        else:
+            min_FastJet = 150
 
+        ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
+            tracks, r=1.5, minPt=min_FastJet
+        )
+ 
         #####################################################################################
         # ---- Event level information
         #####################################################################################
@@ -544,7 +551,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Cut Based Analysis
         #####################################################################################
 
-        # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
+        # remove events with less than 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
@@ -605,6 +612,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # run the analysis
         self.analysis(events)
+        print(self.out_vars)
 
         # output result to dask dataframe accumulator
         if self.accum:

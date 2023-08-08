@@ -38,6 +38,7 @@ modules_era.append(
         flag=False,
         do_inf=options.doInf,
         output_location=out_dir,
+        accum="pandas_merger",
     )
 )
 
