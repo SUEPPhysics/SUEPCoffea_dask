@@ -106,11 +106,13 @@ class SUEP_cluster(processor.ProcessorABC):
                 "eta": Jets.eta,
                 "phi": Jets.phi,
                 "mass": Jets.mass,
-            }
+            },
+            with_name="Momentum4D",
         )
-        jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta) < 2.4)
-        jet_HEM_Cut, _ = jetHEMFilter(self, Jets)
+        jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+        jet_HEM_Cut, _ = jetHEMFilter(self, Jets_awk)
         Jets_correct = Jets_awk[jet_awk_Cut * jet_HEM_Cut]
+
         return Jets_correct
 
     def eventSelection(self, events):
@@ -346,14 +348,11 @@ class SUEP_cluster(processor.ProcessorABC):
                 prefix = "dask-worker-space/"
         jets_c = apply_jecs(
             self,
-            isMC=self.isMC,
             Sample=self.sample,
-            era=self.era,
             events=events,
             prefix=prefix,
         )
-        #jets_jec = self.jet_awkward(jets_c)
-        jets_jec = jets_c
+        jets_jec = self.jet_awkward(jets_c)
         if self.isMC:
             jets_jec_JERUp = self.jet_awkward(jets_c["JER"].up)
             jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
@@ -519,7 +518,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         if self.scouting == 1:
-            min_FastJet = 60
+            min_FastJet = 50
         else:
             min_FastJet = 150
 

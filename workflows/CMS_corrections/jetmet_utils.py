@@ -4,8 +4,8 @@ import numpy as np
 from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
 from coffea.lookup_tools import extractor
 
-def load_jets(events, isMC, era):
-        if (isMC==1) and (era == "2016"):
+def load_jets(self, events):
+        if (self.isMC==1) and ( "2016" in self.era):
                 vals_jet0 = ak.zip({
                                'pt' : events.OffJet.pt,
                                'eta': events.OffJet.eta,
@@ -15,7 +15,8 @@ def load_jets(events, isMC, era):
                                'mass_raw': events.OffJet.mass, # I think there should be another factor here?
                                'pt_raw': events.OffJet.pt,
                                'passId': events.OffJet.passId,
-                               'ptGen': ak.values_astype(ak.without_parameters(ak.zeros_like(events.OffJet.pt)),np.float32)
+                               'ptGen': ak.values_astype(ak.without_parameters(ak.zeros_like(events.OffJet.pt)),np.float32),
+                               'rho': events.rho
                 },with_name="Momentum4D")
         else:
                 vals_jet0 = ak.zip({
@@ -28,43 +29,44 @@ def load_jets(events, isMC, era):
                                'pt_raw': events.Jet.pt,
                                'passId': events.Jet.passId,
                                'ptGen': ak.values_astype(ak.without_parameters(ak.zeros_like(events.Jet.pt)),np.float32),
-                               #'rho': ak.broadcast_arrays(events.rho, events.Jet.pt)[0]
+                               'rho': events.rho#/events.Jet.area
                 },with_name="Momentum4D")
         #if datatype == "Trigger":
         #       vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"] #ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
         #else:
         #       vals_jet0['rho'] = ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
         #vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
-        vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])[0]
+        #vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])#[0]
+        
 
         return vals_jet0
 
-def apply_jecs(self, isMC, Sample, era, events, prefix=""):
+def apply_jecs(self, Sample, events, prefix=""):
     # Find the Collection we want to look at
-    if isMC:
-        if era == "2016":
+    if self.isMC:
+        if self.era == "2016":
             jecdir = "Summer19UL16_V7_MC"
             jerdir = "Summer20UL16_JRV3_MC"
-        elif era == "2016apv":
+        elif self.era == "2016apv":
             jecdir = "Summer19UL16_V7_MC"
             jerdir = "Summer20UL16APV_JRV3_MC"
-        elif era == "2017":
+        elif self.era == "2017":
             jecdir = "Summer19UL17_V5_MC"
             jerdir = "Summer19UL17_JRV3_MC"
-        elif era == "2018":
+        elif self.era == "2018":
             jecdir = "Summer19UL18_V5_MC"
             jerdir = "Summer19UL18_JRV2_MC"
         else:
             print("WARNING: Unable to find the correct JECs for MC!")
     # Now Data
-    elif not isMC:
-        if era == "2016apv":
+    elif not self.isMC:
+        if self.era == "2016apv":
             jecdir = "Summer19UL16APV_RunBCDEF_V7_DATA"
             jerdir = "Summer20UL16APV_JRV3_DATA"
-        elif era == "2016":
+        elif self.era == "2016":
             jecdir = "Summer19UL16_RunFGH_V7_DATA"
             jerdir = "Summer20UL16_JRV3_DATA"
-        elif era == "2017":
+        elif self.era == "2017":
             jerdir = "Summer19UL17_JRV3_DATA"
             if "RunB" or "Run2017B" in Sample:
                 jecdir = "Summer19UL17_RunB_V5_DATA"
@@ -78,7 +80,7 @@ def apply_jecs(self, isMC, Sample, era, events, prefix=""):
                 jecdir = "Summer19UL17_RunF_V5_DATA"
             else:
                 print("WARNING: The JECs for the 2017 data era do not seem to exist!")
-        elif era == "2018":
+        elif self.era == "2018":
             jerdir = "Summer19UL18_JRV2_DATA"
             if "RunA" or "Run2018A" in Sample:
                 jecdir = "Summer19UL18_RunA_V5_DATA"
@@ -99,7 +101,7 @@ def apply_jecs(self, isMC, Sample, era, events, prefix=""):
 
     # Defined the weight sets we want to use
     ext_ak4 = extractor()
-    if isMC:
+    if self.isMC:
         ext_ak4.add_weight_sets(
             [  # change to correct files
                 "* * "
@@ -146,7 +148,7 @@ def apply_jecs(self, isMC, Sample, era, events, prefix=""):
     # WARNING
     # Make sure the acorrections are applied in the right order:
     # https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC#Mandatory_Jet_Energy_Corrections
-    if isMC:
+    if self.isMC:
         jec_stack_names_ak4 = [
             jecdir + "_L1FastJet_AK4PFchs",
             # jecdir + "_L1RC_AK4PFchs",
@@ -175,14 +177,13 @@ def apply_jecs(self, isMC, Sample, era, events, prefix=""):
     jec_stack_ak4 = JECStack(jec_inputs_ak4)
 
     # Prepare the jets from the events
-    #jets = events.Jet
     if self.scouting ==1:
-        jets = load_jets(events, self.isMC, self.era)
+        jets = load_jets(self, events)
     else:
         jets = events.Jet
         jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
         jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
-        if isMC:
+        if self.isMC:
             jets["pt_gen"] = ak.values_astype(
                 ak.fill_none(jets.matched_gen.pt, 0), np.float32
             )
@@ -198,7 +199,7 @@ def apply_jecs(self, isMC, Sample, era, events, prefix=""):
     name_map["Rho"] = "rho"
     name_map["massRaw"] = "mass_raw"
     name_map["ptRaw"] = "pt_raw"
-    if isMC:
+    if self.isMC:
         name_map["ptGenJet"] = "pt_gen"
 
     # create and return the corrected jet collection
