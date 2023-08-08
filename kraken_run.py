@@ -197,11 +197,17 @@ def main():
                     userOwner = "cfreer/suep_correct"
                 else:
                     sys.exit("Double check this.")
-                raw_input_list = os.listdir(
-                    "/mnt/T2_US_MIT/hadoop/cms/store/user/{}/official_private/{}/{}".format(
+                
+                if not os.path.isdir("/mnt/T2_US_MIT/hadoop/cms/store/user/{}/official_private/{}/{}".format(
                         userOwner, options.era, sample_name
+                    )):
+                    raw_input_list = []
+                else:
+                    raw_input_list = os.listdir(
+                        "/mnt/T2_US_MIT/hadoop/cms/store/user/{}/official_private/{}/{}".format(
+                            userOwner, options.era, sample_name
+                        )
                     )
-                )
                 Raw_list = []
                 for f in raw_input_list:
                     new_f = "root://xrootd.cmsaf.mit.edu//store/user/{}/official_private/{}/{}/{} 0 0 1 1 1 1".format(
@@ -259,7 +265,7 @@ def main():
                             proxy_copy,
                         ]
                     ),
-                    just_file=just_file,
+                    # just_file=just_file,
                     jobdir=jobs_dir,
                     proxy=proxy_base,
                     queue=options.queue,

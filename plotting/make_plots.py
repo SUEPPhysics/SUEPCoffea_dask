@@ -530,7 +530,7 @@ def create_output_file(label, abcd, options):
                     f"{r}SUEP_genMass_{label}": Hist.new.Reg(
                         100,
                         0,
-                        1200,
+                        3000,
                         name=f"{r}SUEP_genMass_{label}",
                         label="Gen Mass of SUEP ($m_S$) [GeV]",
                     ).Weight(),
