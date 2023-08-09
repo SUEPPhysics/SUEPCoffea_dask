@@ -268,13 +268,9 @@ class SUEP_cluster(processor.ProcessorABC):
                 with_name="Momentum4D",
             )
 
-            cutLooseMuons = (
-                (events.Muon.pt >= 1)
-                & (abs(events.Muon.eta) < 2.4)
-            )
-            cutLooseElectrons = (
-                (events.Electron.pt >= 1)
-                & (abs(events.Electron.eta) < 2.5)
+            cutLooseMuons = (events.Muon.pt >= 1) & (abs(events.Muon.eta) < 2.4)
+            cutLooseElectrons = (events.Electron.pt >= 1) & (
+                abs(events.Electron.eta) < 2.5
             )
         else:
             looseMuons = ak.zip(
@@ -317,7 +313,10 @@ class SUEP_cluster(processor.ProcessorABC):
                     abs(events.Electron.dz)
                     < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
                 )
-                & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+                & (
+                    (abs(events.Electron.eta) < 1.444)
+                    | (abs(events.Electron.eta) > 1.566)
+                )
                 & (abs(events.Electron.eta) < 2.5)
             )
 
@@ -528,7 +527,7 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
             tracks, r=1.5, minPt=min_FastJet
         )
- 
+
         #####################################################################################
         # ---- Event level information
         #####################################################################################

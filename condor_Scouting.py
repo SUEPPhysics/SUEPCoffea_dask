@@ -55,7 +55,7 @@ for instance in modules_era:
         retries=3,
         skipbadfiles=False,
         func=runner.run,
-        fileset={options.dataset: ['rewrite.root']},
+        fileset={options.dataset: ["rewrite.root"]},
         treename="tree",
         processor_instance=instance,
     )

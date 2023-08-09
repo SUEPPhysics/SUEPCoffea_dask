@@ -35,17 +35,20 @@ def get_trigSF_weight(
         trigSF = trig_weights[ht_bin]
     return trigSF
 
+
 def get_scout_trigSF_weight(htarray, sys, era=18):
-    bins, trigwgts, wgterr = np.loadtxt("../data/trigSF/scout_trigSF_{}.txt".format(era))
-    htbin = np.digitize(htarray,bins)
-    trigwgts =np.insert(trigwgts,0,0)
-    wgterr =np.insert(wgterr,0,0)
-    scaleFactorNom = np.take(trigwgts,htbin)
-    scaleFactorErr = np.take(wgterr,htbin)
+    bins, trigwgts, wgterr = np.loadtxt(
+        f"../data/trigSF/scout_trigSF_{era}.txt"
+    )
+    htbin = np.digitize(htarray, bins)
+    trigwgts = np.insert(trigwgts, 0, 0)
+    wgterr = np.insert(wgterr, 0, 0)
+    scaleFactorNom = np.take(trigwgts, htbin)
+    scaleFactorErr = np.take(wgterr, htbin)
     if "trigSF_up" in sys:
-       scaleFactor = scaleFactorNom + scaleFactorErr
+        scaleFactor = scaleFactorNom + scaleFactorErr
     elif "trigSF_down" in sys:
-       scaleFactor = scaleFactorNom - scaleFactorErr
+        scaleFactor = scaleFactorNom - scaleFactorErr
     else:
-       scaleFactor = scaleFactorNom
+        scaleFactor = scaleFactorNom
     return scaleFactor

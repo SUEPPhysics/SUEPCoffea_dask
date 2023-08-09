@@ -4,7 +4,7 @@ import awkward as ak
 def selectByLeptons(self, events, extraColls=[], lepveto=False):
     ###lepton selection criteria--4momenta collection for plotting
 
-    if self.scouting ==1:
+    if self.scouting == 1:
         muons = ak.zip(
             {
                 "pt": events.Muon.pt,
@@ -52,9 +52,9 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     ###  Some very simple selections on ID ###
     ###  Muons: loose ID + dxy dz cuts mimicking the medium prompt ID https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
     ###  Electrons: loose ID + dxy dz cuts for promptness https://twiki.cern.ch/twiki/bin/view/CMS/EgammaCutBasedIdentification
-    if self.scouting ==1:
+    if self.scouting == 1:
         cutMuons = (
-            #(events.Muon.isGlobalMuon == 1 | events.Muon.isTrackerMuon == 1)
+            # (events.Muon.isGlobalMuon == 1 | events.Muon.isTrackerMuon == 1)
             (events.Muon.isGlobalMuon == 1)
             & (events.Muon.pt >= 10)
             & (abs(events.Muon.dxy) <= 0.02)
@@ -65,8 +65,14 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
         cutElectrons = (
             (events.Electron.ID == 1)
             & (events.Electron.pt >= 15)
-            & (abs(events.Electron.d0) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
-            & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
+            & (
+                abs(events.Electron.d0)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
         )
@@ -83,8 +89,14 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             (events.Electron.cutBased >= 2)
             & (events.Electron.pt >= 15)
             & (events.Electron.mvaFall17V2Iso_WP90)
-            & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
-            & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
+            & (
+                abs(events.Electron.dxy)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
         )

@@ -4,42 +4,53 @@ import numpy as np
 from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
 from coffea.lookup_tools import extractor
 
-def load_jets(self, events):
-        if (self.isMC==1) and ( "2016" in self.era):
-                vals_jet0 = ak.zip({
-                               'pt' : events.OffJet.pt,
-                               'eta': events.OffJet.eta,
-                               'phi': events.OffJet.phi,
-                               'mass': events.OffJet.mass,
-                               'area': events.OffJet.area,
-                               'mass_raw': events.OffJet.mass, # I think there should be another factor here?
-                               'pt_raw': events.OffJet.pt,
-                               'passId': events.OffJet.passId,
-                               'ptGen': ak.values_astype(ak.without_parameters(ak.zeros_like(events.OffJet.pt)),np.float32),
-                               'rho': events.rho
-                },with_name="Momentum4D")
-        else:
-                vals_jet0 = ak.zip({
-                               'pt' : events.Jet.pt,
-                               'eta': events.Jet.eta,
-                               'phi': events.Jet.phi,
-                               'mass': events.Jet.mass,
-                               'area': events.Jet.area,
-                               'mass_raw': events.Jet.mass, # I think there should be another factor here?
-                               'pt_raw': events.Jet.pt,
-                               'passId': events.Jet.passId,
-                               'ptGen': ak.values_astype(ak.without_parameters(ak.zeros_like(events.Jet.pt)),np.float32),
-                               'rho': events.rho#/events.Jet.area
-                },with_name="Momentum4D")
-        #if datatype == "Trigger":
-        #       vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"] #ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
-        #else:
-        #       vals_jet0['rho'] = ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
-        #vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
-        #vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])#[0]
-        
 
-        return vals_jet0
+def load_jets(self, events):
+    if (self.isMC == 1) and ("2016" in self.era):
+        vals_jet0 = ak.zip(
+            {
+                "pt": events.OffJet.pt,
+                "eta": events.OffJet.eta,
+                "phi": events.OffJet.phi,
+                "mass": events.OffJet.mass,
+                "area": events.OffJet.area,
+                "mass_raw": events.OffJet.mass,  # I think there should be another factor here?
+                "pt_raw": events.OffJet.pt,
+                "passId": events.OffJet.passId,
+                "ptGen": ak.values_astype(
+                    ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
+                ),
+                "rho": events.rho,
+            },
+            with_name="Momentum4D",
+        )
+    else:
+        vals_jet0 = ak.zip(
+            {
+                "pt": events.Jet.pt,
+                "eta": events.Jet.eta,
+                "phi": events.Jet.phi,
+                "mass": events.Jet.mass,
+                "area": events.Jet.area,
+                "mass_raw": events.Jet.mass,  # I think there should be another factor here?
+                "pt_raw": events.Jet.pt,
+                "passId": events.Jet.passId,
+                "ptGen": ak.values_astype(
+                    ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
+                ),
+                "rho": events.rho,  # /events.Jet.area
+            },
+            with_name="Momentum4D",
+        )
+    # if datatype == "Trigger":
+    #       vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"] #ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
+    # else:
+    #       vals_jet0['rho'] = ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
+    # vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
+    # vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])#[0]
+
+    return vals_jet0
+
 
 def apply_jecs(self, Sample, events, prefix=""):
     # Find the Collection we want to look at
@@ -177,7 +188,7 @@ def apply_jecs(self, Sample, events, prefix=""):
     jec_stack_ak4 = JECStack(jec_inputs_ak4)
 
     # Prepare the jets from the events
-    if self.scouting ==1:
+    if self.scouting == 1:
         jets = load_jets(self, events)
     else:
         jets = events.Jet
@@ -188,7 +199,6 @@ def apply_jecs(self, Sample, events, prefix=""):
                 ak.fill_none(jets.matched_gen.pt, 0), np.float32
             )
         jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-
 
     # Create the map (for both MC and data)
     name_map = jec_stack_ak4.blank_name_map
