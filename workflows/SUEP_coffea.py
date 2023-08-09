@@ -110,8 +110,7 @@ class SUEP_cluster(processor.ProcessorABC):
             with_name="Momentum4D",
         )
         jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
-        jet_HEM_Cut, _ = jetHEMFilter(self, Jets_awk)
-        Jets_correct = Jets_awk[jet_awk_Cut * jet_HEM_Cut]
+        Jets_correct = Jets_awk[jet_awk_Cut]
 
         return Jets_correct
 
@@ -351,6 +350,9 @@ class SUEP_cluster(processor.ProcessorABC):
             events=events,
             prefix=prefix,
         )
+        jet_HEM_Cut, _ = jetHEMFilter(self, jets_c)
+        HEM_run_Cut = events.run > 319077
+        jets_c = jets_c[jet_HEM_Cut * HEM_run_Cut]
         jets_jec = self.jet_awkward(jets_c)
         if self.isMC:
             jets_jec_JERUp = self.jet_awkward(jets_c["JER"].up)
