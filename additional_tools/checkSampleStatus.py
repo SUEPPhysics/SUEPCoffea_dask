@@ -1,14 +1,28 @@
+"""
+Find all samples that have less than min_events in them from the histograms.
+
+WORK IN PRORGESS:
+This isn't a perfect check, but it's a good first pass. We only check how many 
+bins in the histogram have more than 0 events in them, since can't calculate the
+number of events because they're normalized by the gensumweight. We should consider
+fixing this, e.g. by storing the gensumwright so we can rederive the number of events.
+
+Author: Luca Lavezzo
+Date: August 2023
+"""
+
+
 import os
 import uproot
 import argparse
 
-def check_sample(filename):
+def check_sample(filename, min_events=100):
     if os.path.isfile(filename):
         try:
             file = uproot.open(filename)
             yvals = file['SUEP_nconst_Cluster70'].to_numpy()[0]
             num_events = len(yvals[yvals > 0])
-            if num_events < 100:
+            if num_events < min_events:
                 return 'low_stats'
             else:
                 return 'ok'
@@ -17,7 +31,7 @@ def check_sample(filename):
     else:
         return 'missing'
 
-def main(era):
+def main(era, min_events=100):
     input_file = 'filelist/list_full_signal_offline.txt' 
     if era == '2016apv':
         tag = 'July2023_2016apv'
@@ -38,7 +52,7 @@ def main(era):
         for line in file:
             sample_name = line.strip()
             file_path = f"{plotsDir}{sample_name}_{tag}.root"
-            status = check_sample(file_path)
+            status = check_sample(file_path, min_events)
             
             #print(sample_name, status)
 

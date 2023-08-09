@@ -1,3 +1,12 @@
+"""
+Used to calculate the filter efficiency for each sample from the logs
+from the production.
+
+Author: Luca Lavezzo
+Date: August 2023
+"""
+
+
 import os
 import re
 import json
@@ -16,9 +25,7 @@ def extract_sample_info(out_file_path, err_file_path):
 
     # Extract efficiency from err file using regular expression
     efficiency_match = re.search(r'Filter efficiency \(event-level\)= (\S+) / (\S+) = (\S+) \+- (\S+)', err_content)
-    # efficiency = efficiency_match.group(3) if efficiency_match else None
-    # efficiency_error = efficiency_match.group(4) if efficiency_match else None
-
+    
     num = float(efficiency_match.group(1)[1:-1]) if efficiency_match else None
     denom = float(efficiency_match.group(2)[1:-1]) if efficiency_match else None
 
