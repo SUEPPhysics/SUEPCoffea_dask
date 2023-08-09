@@ -37,9 +37,7 @@ def get_trigSF_weight(
 
 
 def get_scout_trigSF_weight(htarray, sys, era=18):
-    bins, trigwgts, wgterr = np.loadtxt(
-        f"../data/trigSF/scout_trigSF_{era}.txt"
-    )
+    bins, trigwgts, wgterr = np.loadtxt(f"../data/trigSF/scout_trigSF_{era}.txt")
     htbin = np.digitize(htarray, bins)
     trigwgts = np.insert(trigwgts, 0, 0)
     wgterr = np.insert(wgterr, 0, 0)
