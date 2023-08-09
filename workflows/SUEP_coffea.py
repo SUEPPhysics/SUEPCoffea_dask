@@ -351,7 +351,7 @@ class SUEP_cluster(processor.ProcessorABC):
             prefix=prefix,
         )
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c)
-        HEM_run_Cut = (events.run > 319077)
+        HEM_run_Cut = events.run > 319077
         jets_c = jets_c[jet_HEM_Cut * HEM_run_Cut]
         jets_jec = self.jet_awkward(jets_c)
         if self.isMC:
