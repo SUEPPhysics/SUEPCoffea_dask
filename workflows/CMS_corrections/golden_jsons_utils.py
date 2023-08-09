@@ -17,6 +17,9 @@ def applyGoldenJSON(self, events):
     else:
         print("No era is defined. Please specify the year")
 
-    events = events[LumiJSON(events.run, events.luminosityBlock)]
+    if self.scouting == 1:
+        events = events[LumiJSON(events.run, events.lumSec)]
+    else:
+        events = events[LumiJSON(events.run, events.luminosityBlock)]
 
     return events

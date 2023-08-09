@@ -9,16 +9,15 @@ def rewrite(infile):
     f = uproot.open(infile)
     to_write = "f_new['tree'] = {"
     for entry in f["mmtree/tree"]:
-        # if type(entry) == uproot.models.TBranch.Model_TBranch_v13: continue
-        if entry.name == "hltResultName":
+        if entry.name in [
+            "hltResultName",
+            "genModel",
+        ]:  # strings that break the rewrite
             continue
-        if "PFcand_m" in entry.name:
-            out_name = entry.name.replace("PFcand_m", "PFcand_mass")
-        elif "Jet_m" in entry.name:
-            out_name = entry.name.replace("Jet_m", "Jet_mass")
-
+        if entry.name.endswith("_m") == True:
+            out_name = entry.name.replace("_m", "_mass")
         else:
-            out_name = entry.name  # rename PFCands class for NanoAODSchema
+            out_name = entry.name
         to_write = to_write + "'{}':f['mmtree/tree']['{}'].array(),".format(
             out_name, entry.name
         )

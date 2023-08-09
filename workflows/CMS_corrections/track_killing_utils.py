@@ -10,7 +10,7 @@ def track_killing(self, tracks):
      For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
     """
 
-    if self.scouting:
+    if self.scouting == 1:
         block1_percent = 0.05
         block2_percent = 0.01
     else:

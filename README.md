@@ -9,14 +9,33 @@ Three separate analyses and their documentation are here:
 
 **Offline:**
 
-https://gitlab.cern.ch/tdr/notes/AN-22-133
+CADI: https://cms.cern.ch/iCMS/analysisadmin/cadilines?line=EXO-23-002&tp=an&id=2650&ancode=EXO-23-002
+
+Note: https://gitlab.cern.ch/tdr/notes/AN-22-133
+
+PAS: https://gitlab.cern.ch/tdr/notes/EXO-23-002
+
+Paper: https://gitlab.cern.ch/tdr/papers/EXO-23-002
 
 **Scouting:**
 
-https://gitlab.cern.ch/tdr/notes/AN-21-119
+CADI: https://cms.cern.ch/iCMS/analysisadmin/cadilines?line=EXO-23-001&tp=an&id=2649&ancode=EXO-23-001
+
+Note: https://gitlab.cern.ch/tdr/notes/AN-21-119
+
+PAS: NA
+
+Paper: https://gitlab.cern.ch/tdr/papers/EXO-23-001
 
 **ZH:**
-NEED LINK
+
+CADI: https://cms.cern.ch/iCMS/analysisadmin/cadilines?line=EXO-23-003&tp=an&id=2651&ancode=EXO-23-003
+
+Note: NA
+
+PAS: NA
+
+Paper: https://gitlab.cern.ch/tdr/papers/EXO-23-003
 
 ## to run the producer
 
