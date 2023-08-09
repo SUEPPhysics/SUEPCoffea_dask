@@ -106,11 +106,13 @@ class SUEP_cluster(processor.ProcessorABC):
                 "eta": Jets.eta,
                 "phi": Jets.phi,
                 "mass": Jets.mass,
-            }
+            },
+            with_name="Momentum4D",
         )
-        jet_awk_Cut = (Jets.pt > 30) & (abs(Jets.eta) < 2.4)
-        jet_HEM_Cut, _ = jetHEMFilter(self, Jets)
+        jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+        jet_HEM_Cut, _ = jetHEMFilter(self, Jets_awk)
         Jets_correct = Jets_awk[jet_awk_Cut * jet_HEM_Cut]
+
         return Jets_correct
 
     def eventSelection(self, events):
@@ -245,49 +247,78 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
 
     def getLooseLeptons(self, events):
-        looseMuons = ak.zip(
-            {
-                "pt": events.Muon.pt,
-                "eta": events.Muon.eta,
-                "phi": events.Muon.phi,
-                "mass": events.Muon.mass,
-                "charge": events.Muon.pdgId / (-13),
-            },
-            with_name="Momentum4D",
-        )
-
-        looseElectrons = ak.zip(
-            {
-                "pt": events.Electron.pt,
-                "eta": events.Electron.eta,
-                "phi": events.Electron.phi,
-                "mass": events.Electron.mass,
-                "charge": events.Electron.pdgId / (-11),
-            },
-            with_name="Momentum4D",
-        )
-
-        cutLooseMuons = (
-            (events.Muon.looseId)
-            & (events.Muon.pt >= 1)
-            & (abs(events.Muon.dxy) <= 0.02)
-            & (abs(events.Muon.dz) <= 0.1)
-            & (abs(events.Muon.eta) < 2.4)
-        )
-        cutLooseElectrons = (
-            (events.Electron.cutBased >= 1)
-            & (events.Electron.pt >= 1)
-            & (
-                abs(events.Electron.dxy)
-                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+        if self.scouting == 1:
+            looseMuons = ak.zip(
+                {
+                    "pt": events.Muon.pt,
+                    "eta": events.Muon.eta,
+                    "phi": events.Muon.phi,
+                    "mass": events.Muon.mass,
+                },
+                with_name="Momentum4D",
             )
-            & (
-                abs(events.Electron.dz)
-                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+
+            looseElectrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                },
+                with_name="Momentum4D",
             )
-            & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
-            & (abs(events.Electron.eta) < 2.5)
-        )
+
+            cutLooseMuons = (events.Muon.pt >= 1) & (abs(events.Muon.eta) < 2.4)
+            cutLooseElectrons = (events.Electron.pt >= 1) & (
+                abs(events.Electron.eta) < 2.5
+            )
+        else:
+            looseMuons = ak.zip(
+                {
+                    "pt": events.Muon.pt,
+                    "eta": events.Muon.eta,
+                    "phi": events.Muon.phi,
+                    "mass": events.Muon.mass,
+                    "charge": events.Muon.pdgId / (-13),
+                },
+                with_name="Momentum4D",
+            )
+
+            looseElectrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                    "charge": events.Electron.pdgId / (-11),
+                },
+                with_name="Momentum4D",
+            )
+
+            cutLooseMuons = (
+                (events.Muon.looseId)
+                & (events.Muon.pt >= 1)
+                & (abs(events.Muon.dxy) <= 0.02)
+                & (abs(events.Muon.dz) <= 0.1)
+                & (abs(events.Muon.eta) < 2.4)
+            )
+            cutLooseElectrons = (
+                (events.Electron.cutBased >= 1)
+                & (events.Electron.pt >= 1)
+                & (
+                    abs(events.Electron.dxy)
+                    < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+                )
+                & (
+                    abs(events.Electron.dz)
+                    < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+                )
+                & (
+                    (abs(events.Electron.eta) < 1.444)
+                    | (abs(events.Electron.eta) > 1.566)
+                )
+                & (abs(events.Electron.eta) < 2.5)
+            )
 
         ### Apply the cuts
         # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
@@ -315,9 +346,8 @@ class SUEP_cluster(processor.ProcessorABC):
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
         jets_c = apply_jecs(
-            isMC=self.isMC,
+            self,
             Sample=self.sample,
-            era=self.era,
             events=events,
             prefix=prefix,
         )
@@ -339,6 +369,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.out_vars["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
+
         if out_label == "":
             self.out_vars["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
             self.out_vars["ht_JEC" + out_label] = ak.sum(jets_jec.pt, axis=-1).to_list()
@@ -370,6 +401,9 @@ class SUEP_cluster(processor.ProcessorABC):
                 self.out_vars["HLT_PFHT1050" + out_label] = events.HLT.PFHT1050
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
             if self.scouting == 1:
+                if self.isMC:
+                    GetPSWeights(self, events)  # Parton Shower weights
+                    GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
             else:
                 if self.isMC:
@@ -448,11 +482,12 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         # golden jsons for offline data
-        if not self.isMC and self.scouting != 1:
+        if self.isMC == 0:
             events = applyGoldenJSON(self, events)
         events, _, _ = ZH_utils.selectByLeptons(self, events, lepveto=True)
         events = self.eventSelection(events)
-        events = self.selectByFilters(events)
+        if self.scouting != 1:
+            events = self.selectByFilters(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -469,12 +504,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Track selection
         # Prepare the clean PFCand matched to tracks collection
         #####################################################################################
-
         if self.scouting == 1:
             tracks, Cleaned_cands = self.getScoutingTracks(events)
         else:
             tracks, Cleaned_cands = self.getTracks(events)
-
         looseElectrons, looseMuons = self.getLooseLeptons(events)
 
         if self.isMC and do_syst:
@@ -486,8 +519,13 @@ class SUEP_cluster(processor.ProcessorABC):
         # The jet clustering part
         #####################################################################################
 
+        if self.scouting == 1:
+            min_FastJet = 50
+        else:
+            min_FastJet = 150
+
         ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, minPt=150
+            tracks, r=1.5, minPt=min_FastJet
         )
 
         #####################################################################################
@@ -514,7 +552,7 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Cut Based Analysis
         #####################################################################################
 
-        # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
+        # remove events with less than 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
@@ -575,6 +613,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # run the analysis
         self.analysis(events)
+        print(self.out_vars)
 
         # output result to dask dataframe accumulator
         if self.accum:

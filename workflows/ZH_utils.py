@@ -4,48 +4,102 @@ import awkward as ak
 def selectByLeptons(self, events, extraColls=[], lepveto=False):
     ###lepton selection criteria--4momenta collection for plotting
 
-    muons = ak.zip(
-        {
-            "pt": events.Muon.pt,
-            "eta": events.Muon.eta,
-            "phi": events.Muon.phi,
-            "mass": events.Muon.mass,
-            "charge": events.Muon.pdgId / (-13),
-        },
-        with_name="Momentum4D",
-    )
+    if self.scouting == 1:
+        muons = ak.zip(
+            {
+                "pt": events.Muon.pt,
+                "eta": events.Muon.eta,
+                "phi": events.Muon.phi,
+                "mass": events.Muon.mass,
+                "charge": events.Muon.charge,
+            },
+            with_name="Momentum4D",
+        )
 
-    electrons = ak.zip(
-        {
-            "pt": events.Electron.pt,
-            "eta": events.Electron.eta,
-            "phi": events.Electron.phi,
-            "mass": events.Electron.mass,
-            "charge": events.Electron.pdgId / (-11),
-        },
-        with_name="Momentum4D",
-    )
+        electrons = ak.zip(
+            {
+                "pt": events.Electron.pt,
+                "eta": events.Electron.eta,
+                "phi": events.Electron.phi,
+                "mass": events.Electron.mass,
+                "charge": events.Electron.charge,
+            },
+            with_name="Momentum4D",
+        )
+    else:
+        muons = ak.zip(
+            {
+                "pt": events.Muon.pt,
+                "eta": events.Muon.eta,
+                "phi": events.Muon.phi,
+                "mass": events.Muon.mass,
+                "charge": events.Muon.pdgId / (-13),
+            },
+            with_name="Momentum4D",
+        )
+
+        electrons = ak.zip(
+            {
+                "pt": events.Electron.pt,
+                "eta": events.Electron.eta,
+                "phi": events.Electron.phi,
+                "mass": events.Electron.mass,
+                "charge": events.Electron.pdgId / (-11),
+            },
+            with_name="Momentum4D",
+        )
 
     ###  Some very simple selections on ID ###
     ###  Muons: loose ID + dxy dz cuts mimicking the medium prompt ID https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
     ###  Electrons: loose ID + dxy dz cuts for promptness https://twiki.cern.ch/twiki/bin/view/CMS/EgammaCutBasedIdentification
-    cutMuons = (
-        (events.Muon.looseId)
-        & (events.Muon.pt >= 10)
-        & (abs(events.Muon.dxy) <= 0.02)
-        & (abs(events.Muon.dz) <= 0.1)
-        & (events.Muon.pfIsoId >= 2)
-        & (abs(events.Muon.eta) < 2.4)
-    )
-    cutElectrons = (
-        (events.Electron.cutBased >= 2)
-        & (events.Electron.pt >= 15)
-        & (events.Electron.mvaFall17V2Iso_WP90)
-        & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
-        & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
-        & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
-        & (abs(events.Electron.eta) < 2.5)
-    )
+    if self.scouting == 1:
+        cutMuons = (
+            # (events.Muon.isGlobalMuon == 1 | events.Muon.isTrackerMuon == 1)
+            (events.Muon.isGlobalMuon == 1)
+            & (events.Muon.pt >= 10)
+            & (abs(events.Muon.dxy) <= 0.02)
+            & (abs(events.Muon.dz) <= 0.1)
+            & (events.Muon.trkiso < 0.10)
+            & (abs(events.Muon.eta) < 2.4)
+        )
+        cutElectrons = (
+            (events.Electron.ID == 1)
+            & (events.Electron.pt >= 15)
+            & (
+                abs(events.Electron.d0)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
+            & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+            & (abs(events.Electron.eta) < 2.5)
+        )
+    else:
+        cutMuons = (
+            (events.Muon.looseId)
+            & (events.Muon.pt >= 10)
+            & (abs(events.Muon.dxy) <= 0.02)
+            & (abs(events.Muon.dz) <= 0.1)
+            & (events.Muon.pfIsoId >= 2)
+            & (abs(events.Muon.eta) < 2.4)
+        )
+        cutElectrons = (
+            (events.Electron.cutBased >= 2)
+            & (events.Electron.pt >= 15)
+            & (events.Electron.mvaFall17V2Iso_WP90)
+            & (
+                abs(events.Electron.dxy)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
+            & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+            & (abs(events.Electron.eta) < 2.5)
+        )
 
     ### Apply the cuts
     # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
