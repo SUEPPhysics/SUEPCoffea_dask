@@ -402,6 +402,9 @@ class SUEP_cluster(processor.ProcessorABC):
                 self.out_vars["HLT_PFHT1050" + out_label] = events.HLT.PFHT1050
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
             if self.scouting == 1:
+                if self.isMC:
+                    GetPSWeights(self, events)  # Parton Shower weights
+                    GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
             else:
                 if self.isMC:
@@ -480,7 +483,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         # golden jsons for offline data
-        if not self.isMC and self.scouting != 1:
+        if self.isMC == 0:
             events = applyGoldenJSON(self, events)
         events, _, _ = ZH_utils.selectByLeptons(self, events, lepveto=True)
         events = self.eventSelection(events)
