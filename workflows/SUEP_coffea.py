@@ -382,6 +382,19 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
         output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
+        # store n_muons in each ak4 jet (up to 5 jets)
+        delta_r = ak4jets.metric_table(muons)
+        nMuonsInJets = ak.sum(delta_r < 0.4, axis=-1)
+        nMuonsInJets = ak.sort(nMuonsInJets, axis=-1, ascending=False)
+        nMuonsInJets = ak.fill_none(ak.pad_none(nMuonsInJets, 5, axis=-1), 0)
+        for i in range(4):
+            output[dataset]["vars"][f"nMuonsInJet{i+1}" + out_label] = nMuonsInJets[
+                :, i
+            ].to_list()
+        output[dataset]["vars"]["nMuonsInJet5" + out_label] = ak.sum(
+            nMuonsInJets[:, 5:], axis=-1
+        ).to_list()
+
         # nMuons
         output[dataset]["vars"]["nMuons" + out_label] = ak.num(events.Muon).to_list()
         output[dataset]["vars"]["nMuons_highPurity" + out_label] = ak.sum(
