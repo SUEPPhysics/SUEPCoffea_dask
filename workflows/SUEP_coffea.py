@@ -383,6 +383,9 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
         # store n_muons in each ak4 jet (up to 5 jets)
+        ak4jets = events.Jet
+        jet_cleaning = (ak4jets.pt > 30) & (abs(ak4jets.eta) < 2.4)
+        ak4jets = ak4jets[jet_cleaning]
         delta_r = ak4jets.metric_table(muons)
         nMuonsInJets = ak.sum(delta_r < 0.4, axis=-1)
         nMuonsInJets = ak.sort(nMuonsInJets, axis=-1, ascending=False)
