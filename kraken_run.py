@@ -124,10 +124,18 @@ def main():
 
     # script parameters
     username = getpass.getuser()
-    outdir = "/data/submit/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
-    outdir_condor = "/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
+    outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
+    if os.path.isdir("/data/submit/cms/store/user/" + username):
+        outdir = "/data/submit/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
+        outdir_condor = "/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
+    elif os.path.isdir("/data/submit/" + username):
+        outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
+        outdir_condor = "/" + username + "/SUEP/{tag}/{sample}/"
+    else:
+        print("Cannot access /data/submit/$USER or /data/submit/cms/store/user/$USER!")
+        exit()
     workdir = os.getcwd()
-    logdir = "/work/submit/" + username + "/SUEP/logs/"
+    logdir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
     redirector = "root://submit50.mit.edu/"
     proxy_base = f"x509up_u{os.getuid()}"
     home_base = os.environ["HOME"]
@@ -185,9 +193,14 @@ def main():
 
             # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
             if options.scout == 1:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00".format(
-                    sample_name
-                )
+                if options.isMC:
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E07/{}/RawFiles.00".format(
+                        sample_name
+                    )
+                else:
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E08/{}/RawFiles.00".format(
+                        sample_name
+                    )
                 Raw_list = open(input_list)
             elif options.private == 1:
                 # some wrangling to get them in the same format as the RawFiles.00
