@@ -406,6 +406,9 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
             if self.scouting == 1:
                 if self.isMC:
+                    self.out_vars[
+                        "Pileup_nTrueInt" + out_label
+                    ] = events.PU.num
                     GetPSWeights(self, events)  # Parton Shower weights
                     GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)

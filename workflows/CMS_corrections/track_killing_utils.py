@@ -23,6 +23,7 @@ def track_killing(self, tracks):
     block2_indices = tracks.pt >= 20
 
     new_indices = []
+
     for i in range(len(tracks)):
         event_indices = np.arange(len(tracks[i]))
         event_bool = np.array([True] * len(tracks[i]))
