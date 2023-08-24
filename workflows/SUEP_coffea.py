@@ -394,8 +394,10 @@ class SUEP_cluster(processor.ProcessorABC):
             )
 
             # store event weights for MC
-            if self.isMC:
+            if self.isMC and self.scouting == 0:
                 self.out_vars["genweight"] = events.genWeight
+            elif self.isMC and self.scouting == 0:
+                self.out_vars["genweight"] =  [1.0 for e in (len(events)*[0])]#create awkward array of ones
 
             if "2016" in self.era and self.scouting == 0:
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900

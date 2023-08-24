@@ -17,7 +17,7 @@ def load_jets(self, events):
                 "mass_raw": events.OffJet.mass,  # I think there should be another factor here?
                 "pt_raw": events.OffJet.pt,
                 "passId": events.OffJet.passId,
-                "ptGen": ak.values_astype(
+                "pt_gen": ak.values_astype(
                     ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
                 ),
                 "rho": events.rho,
@@ -35,7 +35,7 @@ def load_jets(self, events):
                 "mass_raw": events.Jet.mass,  # I think there should be another factor here?
                 "pt_raw": events.Jet.pt,
                 "passId": events.Jet.passId,
-                "ptGen": ak.values_astype(
+                "pt_gen": ak.values_astype(
                     ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
                 ),
                 "rho": events.rho,  # /events.Jet.area
