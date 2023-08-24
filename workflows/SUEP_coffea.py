@@ -394,8 +394,12 @@ class SUEP_cluster(processor.ProcessorABC):
             )
 
             # store event weights for MC
-            if self.isMC:
+            if self.isMC and self.scouting == 0:
                 self.out_vars["genweight"] = events.genWeight
+            elif self.isMC and self.scouting == 1:
+                self.out_vars["genweight"] = [
+                    1.0 for e in (len(events) * [0])
+                ]  # create awkward array of ones
 
             if "2016" in self.era and self.scouting == 0:
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
@@ -404,6 +408,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
             if self.scouting == 1:
                 if self.isMC:
+                    self.out_vars["Pileup_nTrueInt" + out_label] = events.PU.num
                     GetPSWeights(self, events)  # Parton Shower weights
                     GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
@@ -432,6 +437,12 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_genPt = [g[-1].pt if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genPhi = [g[-1].phi if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
+
+        if self.isMC and self.scouting and "SUEP" in self.sample:
+            SUEP_genMass = events.gen.mass
+            SUEP_genPt = events.gen.pt
+            SUEP_genPhi = events.gen.phi
+            SUEP_genEta = events.gen.eta
 
         self.out_vars["SUEP_genMass" + out_label] = SUEP_genMass
         self.out_vars["SUEP_genPt" + out_label] = SUEP_genPt
