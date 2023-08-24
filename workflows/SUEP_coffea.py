@@ -397,7 +397,9 @@ class SUEP_cluster(processor.ProcessorABC):
             if self.isMC and self.scouting == 0:
                 self.out_vars["genweight"] = events.genWeight
             elif self.isMC and self.scouting == 1:
-                self.out_vars["genweight"] =  [1.0 for e in (len(events)*[0])]#create awkward array of ones
+                self.out_vars["genweight"] = [
+                    1.0 for e in (len(events) * [0])
+                ]  # create awkward array of ones
 
             if "2016" in self.era and self.scouting == 0:
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
@@ -406,9 +408,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
             if self.scouting == 1:
                 if self.isMC:
-                    self.out_vars[
-                        "Pileup_nTrueInt" + out_label
-                    ] = events.PU.num
+                    self.out_vars["Pileup_nTrueInt" + out_label] = events.PU.num
                     GetPSWeights(self, events)  # Parton Shower weights
                     GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
