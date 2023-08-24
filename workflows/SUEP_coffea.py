@@ -438,7 +438,7 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_genPhi = [g[-1].phi if len(g) > 0 else 0 for g in genSUEP]
             SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
 
-        if self.isMC and not self.scouting:
+        if self.isMC and self.scouting:
             SUEP_genMass = events.gen.mass
             SUEP_genPt = events.gen.pt
             SUEP_genPhi = events.gen.phi
