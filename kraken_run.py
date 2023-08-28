@@ -215,14 +215,18 @@ def main():
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
-                comm = subprocess.Popen(["xrdfs", "root://xrootd5.cmsaf.mit.edu/", "ls", sample_path], stdout=subprocess.PIPE)
+                comm = subprocess.Popen(
+                    ["xrdfs", "root://xrootd5.cmsaf.mit.edu/", "ls", sample_path],
+                    stdout=subprocess.PIPE,
+                )
                 raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
                 Raw_list = []
                 for f in raw_input_list:
-                    if len(f) == 0: continue
-                    new_f = "root://xrootd.cmsaf.mit.edu/{} 0 0 1 1 1 1".format(f)
+                    if len(f) == 0:
+                        continue
+                    new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
                     Raw_list.append(new_f)
-                    
+
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A02/{}/RawFiles.00".format(
                     sample_name
