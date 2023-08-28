@@ -25,7 +25,7 @@ from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.CMS_corrections.track_killing_utils import track_killing
+from workflows.CMS_corrections.track_killing_utils import *  # track_killing
 
 # Set vector behavior
 vector.register_awkward()
@@ -350,9 +350,8 @@ class SUEP_cluster(processor.ProcessorABC):
             events=events,
             prefix=prefix,
         )
-        jet_HEM_Cut, _ = jetHEMFilter(self, jets_c)
-        HEM_run_Cut = events.run > 319077
-        jets_c = jets_c[jet_HEM_Cut * HEM_run_Cut]
+        jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
+        jets_c = jets_c[jet_HEM_Cut]
         jets_jec = self.jet_awkward(jets_c)
         if self.isMC:
             jets_jec_JERUp = self.jet_awkward(jets_c["JER"].up)
@@ -523,7 +522,11 @@ class SUEP_cluster(processor.ProcessorABC):
             tracks, Cleaned_cands = self.getTracks(events)
         looseElectrons, looseMuons = self.getLooseLeptons(events)
 
-        if self.isMC and do_syst:
+        if self.isMC and do_syst and self.scouting == 1:
+            tracks = scout_track_killing(self, tracks)
+            Cleaned_cands = scout_track_killing(self, Cleaned_cands)
+
+        if self.isMC and do_syst and self.scouting == 0:
             tracks = track_killing(self, tracks)
             Cleaned_cands = track_killing(self, Cleaned_cands)
 
