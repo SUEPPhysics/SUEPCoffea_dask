@@ -211,24 +211,18 @@ def main():
                 else:
                     sys.exit("Double check this.")
 
-                if not os.path.isdir(
-                    "/mnt/T2_US_MIT/hadoop/cms/store/user/{}/official_private/{}/{}".format(
-                        userOwner, options.era, sample_name
-                    )
-                ):
-                    raw_input_list = []
-                else:
-                    raw_input_list = os.listdir(
-                        "/mnt/T2_US_MIT/hadoop/cms/store/user/{}/official_private/{}/{}".format(
-                            userOwner, options.era, sample_name
-                        )
-                    )
+                # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
+                sample_path = "/store/user/{}/official_private/{}/{}".format(
+                    userOwner, options.era, sample_name
+                )
+                comm = subprocess.Popen(["xrdfs", "root://xrootd5.cmsaf.mit.edu/", "ls", sample_path], stdout=subprocess.PIPE)
+                raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
                 Raw_list = []
                 for f in raw_input_list:
-                    new_f = "root://xrootd.cmsaf.mit.edu//store/user/{}/official_private/{}/{}/{} 0 0 1 1 1 1".format(
-                        userOwner, options.era, sample_name, f
-                    )
+                    if len(f) == 0: continue
+                    new_f = "root://xrootd.cmsaf.mit.edu/{} 0 0 1 1 1 1".format(f)
                     Raw_list.append(new_f)
+                    
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A02/{}/RawFiles.00".format(
                     sample_name
