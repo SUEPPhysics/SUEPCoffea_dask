@@ -1,5 +1,5 @@
 """
-A submitter for processing many samples parallely, using either Slurm or multithread.
+A submitter for processing many samples parallelly, using either Slurm or multithread.
 Pass to this script the same options you would pass make_plots.py or merge_plots.py,
 specify whether you want to plot or merge (--code),
 and specify if you want multithread or Slurm (--method).
