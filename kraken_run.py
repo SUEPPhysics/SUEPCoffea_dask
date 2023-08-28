@@ -15,6 +15,7 @@ source /cvmfs/cms.cern.ch/cmsset_default.sh
 export X509_USER_PROXY={proxy}
 export PATH=$USER_PATH:$PATH
 export PATH=$PATH:/opt/conda/bin
+export PYTHONWARNINGS="ignore"
 
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
