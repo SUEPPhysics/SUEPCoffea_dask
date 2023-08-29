@@ -25,7 +25,7 @@ from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.CMS_corrections.track_killing_utils import track_killing
+from workflows.CMS_corrections.track_killing_utils import *  # track_killing
 
 # Set vector behavior
 vector.register_awkward()
@@ -522,7 +522,11 @@ class SUEP_cluster(processor.ProcessorABC):
             tracks, Cleaned_cands = self.getTracks(events)
         looseElectrons, looseMuons = self.getLooseLeptons(events)
 
-        if self.isMC and do_syst:
+        if self.isMC and do_syst and self.scouting == 1:
+            tracks = scout_track_killing(self, tracks)
+            Cleaned_cands = scout_track_killing(self, Cleaned_cands)
+
+        if self.isMC and do_syst and self.scouting == 0:
             tracks = track_killing(self, tracks)
             Cleaned_cands = track_killing(self, Cleaned_cands)
 

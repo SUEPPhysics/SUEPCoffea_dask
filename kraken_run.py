@@ -15,6 +15,7 @@ source /cvmfs/cms.cern.ch/cmsset_default.sh
 export X509_USER_PROXY={proxy}
 export PATH=$USER_PATH:$PATH
 export PATH=$PATH:/opt/conda/bin
+export PYTHONWARNINGS="ignore"
 
 export SCRAM_ARCH=slc7_amd64_gcc820
 export HOME=.
@@ -210,7 +211,6 @@ def main():
                     userOwner = "cfreer/suep_correct"
                 else:
                     sys.exit("Double check this.")
-
                 # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
