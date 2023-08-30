@@ -226,6 +226,7 @@ def main():
                         continue
                     new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
                     Raw_list.append(new_f)
+
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A02/{}/RawFiles.00".format(
                     sample_name
