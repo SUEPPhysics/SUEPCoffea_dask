@@ -1,3 +1,4 @@
+import numpy as np
 def GetPSWeights(self, events):
     if self.scouting == 1:
         if len(events.PSweights[0]) == 10:
@@ -13,8 +14,10 @@ def GetPSWeights(self, events):
             self.out_vars["PSWeight_FSR_down"] = (
                 events.PSweights[:, 0] * events.PSweights[:, 9]
             )
-        else:
+        elif len(events.PSweights[0]) > 0:
             self.out_vars["PSWeight"] = events.PSweights[:, 0]
+        else:
+            self.out_vars["PSWeight"] = np.ones(len(events.PSweights))
     else:
         if len(events.PSWeight[0]) == 4:
             self.out_vars["PSWeight_ISR_up"] = events.PSWeight[:, 0]
