@@ -1,4 +1,6 @@
 import numpy as np
+
+
 def GetPSWeights(self, events):
     if self.scouting == 1:
         if len(events.PSweights[0]) == 10:
