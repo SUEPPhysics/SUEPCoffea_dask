@@ -193,17 +193,7 @@ def main():
                 os.mkdir(jobs_dir)
 
             # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-            if options.scout == 1:
-                if options.isMC:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E07/{}/RawFiles.00".format(
-                        sample_name
-                    )
-                else:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E08/{}/RawFiles.00".format(
-                        sample_name
-                    )
-                Raw_list = open(input_list)
-            elif options.private == 1:
+            if options.private == 1:
                 # some wrangling to get them in the same format as the RawFiles.00
                 if options.era == "2018" or options.era == "2017":
                     userOwner = "bmaier/suep"
@@ -226,7 +216,16 @@ def main():
                         continue
                     new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
                     Raw_list.append(new_f)
-
+            elif options.scout == 1:
+                if options.isMC:
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E07/{}/RawFiles.00".format(
+                        sample_name
+                    )
+                else:
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E08/{}/RawFiles.00".format(
+                        sample_name
+                    )
+                Raw_list = open(input_list)
             else:
                 input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A02/{}/RawFiles.00".format(
                     sample_name
