@@ -44,7 +44,7 @@ def main():
     )
     out_dir_xrd = "/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
-    jobs_base_dir = "/work/submit/" + username + "/SUEP/logs/"
+    jobs_base_dir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
 
     if options.move:
         if not os.path.isdir("/work/submit/" + username + "/SUEP/" + options.tag):
@@ -109,6 +109,10 @@ def main():
             logging.info(jobs_dir)
 
             # We write the original list. inputfiles.dat will now contain missing files. Compare with original list
+            if not os.path.isfile(jobs_dir + "/" + "inputfiles.dat"):
+                logging.warning("Cannot find " + jobs_dir + "/" + "inputfiles.dat")
+                missing_samples.append(sample_name)
+                continue
             if os.path.isfile(jobs_dir + "/" + "original_inputfiles.dat") != True:
                 copyfile(
                     jobs_dir + "/" + "inputfiles.dat",

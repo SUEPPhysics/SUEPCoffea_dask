@@ -179,7 +179,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         return genParts
 
-    def getTracks(self, events):
+    def getOfflineTracks(self, events):
         Cands = ak.zip(
             {
                 "pt": events.PFCands.trkPt,
@@ -519,7 +519,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.scouting == 1:
             tracks, Cleaned_cands = self.getScoutingTracks(events)
         else:
-            tracks, Cleaned_cands = self.getTracks(events)
+            tracks, Cleaned_cands = self.getOfflineTracks(events)
         looseElectrons, looseMuons = self.getLooseLeptons(events)
 
         if self.isMC and do_syst and self.scouting == 1:
