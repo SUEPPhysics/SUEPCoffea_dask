@@ -8,7 +8,7 @@ import subprocess
 import fill_utils
 import numpy as np
 import uproot
-
+import plot_utils
 # Import our own functions
 from CMS_corrections import (
     GNN_syst,
@@ -88,16 +88,26 @@ options = parser.parse_args()
 outDir = f"/data/submit/{getpass.getuser()}/SUEP/outputs/"
 if options.save is not None and options.save != "None" and options != "none":
     outDir = options.save
-# define these if --xrootd 0
-dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
-    getpass.getuser(), options.tag, options.dataset
-)
-# and these if --xrootd 1
 redirector = "root://submit50.mit.edu/"
-dataDirXRootD = "/cms/store/user/{}/SUEP/{}/{}/".format(
-    getpass.getuser(), options.tag, options.dataset
-)
-
+username=getpass.getuser()
+if os.path.isdir("/data/submit/cms/store/user/" + username):
+    # define these if --xrootd 0
+    dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
+        getpass.getuser(), options.tag, options.dataset
+    )
+    # and these if --xrootd 1
+    dataDirXRootD = "/cms/store/user/{}/SUEP/{}/{}/".format(
+        getpass.getuser(), options.tag, options.dataset
+    )
+elif os.path.isdir("/data/submit/" + username):
+    # define these if --xrootd 0
+    dataDirLocal = "/data/submit/{}/SUEP/{}/{}/".format(
+        getpass.getuser(), options.tag, options.dataset
+    )
+    # and these if --xrootd 1
+    dataDirXRootD = "/{}/SUEP/{}/{}/".format(
+        getpass.getuser(), options.tag, options.dataset
+    )
 """
 Define output plotting methods, each draws from an input_method (outputs of SUEPCoffea),
 and can have its own selections, ABCD regions, and signal region.
@@ -105,27 +115,67 @@ Multiple plotting methods can be defined for the same input method, as different
 selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
-config = {
-    "Cluster70": {
-        "input_method": "CL",
-        "xvar": "SUEP_S1_CL",
-        "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-        "yvar": "SUEP_nconst_CL",
-        "yvar_regions": [30, 50, 70, 1000],
-        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-        "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    },
-    "ClusterInverted": {
-        "input_method": "CL",
-        "xvar": "ISR_S1_CL",
-        "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-        "yvar": "ISR_nconst_CL",
-        "yvar_regions": [30, 50, 70, 1000],
-        # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
-        "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-        "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-    },
-}
+if options.scouting:
+    config = {
+          "Cluster": {
+            "input_method": "CL",
+            "xvar": "SUEP_S1_CL",
+            "xvar_regions": [0.3, 0.34, 0.5, 2.0],
+            "yvar": "SUEP_nconst_CL",
+            "yvar_regions": [0, 18, 50, 1000],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
+            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+        },
+        #"ClusterSR": {
+        #    "input_method": "CL",
+        #    "xvar": "SUEP_S1_CL",
+        #    "xvar_regions": [0.5, 2.0],
+        #    "yvar": "SUEP_nconst_CL",
+        #    "yvar_regions": [50,70,90, 1000],
+        #    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=",50]],
+        #    "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+        #},
+       "ClusterInverted": {
+            "input_method": "CL",
+            "xvar": "ISR_S1_CL",
+            "xvar_regions": [0.3, 0.34, 0.5, 2.0],
+            "yvar": "ISR_nconst_CL",
+            "yvar_regions": [0, 18, 50, 1000],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
+            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+        },
+        #"ClusterSRInverted": {
+        #    "input_method": "CL",
+        #    "xvar": "ISR_S1_CL",
+        #    "xvar_regions": [0.5, 2.0],
+        #    "yvar": "ISR_nconst_CL",
+        #    "yvar_regions": [50,70,90, 1000],
+        #    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=",50]],
+        #    "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+        #},
+    }
+else:
+    config = {
+        "Cluster70": {
+            "input_method": "CL",
+            "xvar": "SUEP_S1_CL",
+            "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+            "yvar": "SUEP_nconst_CL",
+            "yvar_regions": [30, 50, 70, 1000],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+            "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+        },
+        "ClusterInverted": {
+            "input_method": "CL",
+            "xvar": "ISR_S1_CL",
+            "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+            "yvar": "ISR_nconst_CL",
+            "yvar_regions": [30, 50, 70, 1000],
+            # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+           "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+       },
+   }
 
 if options.doInf:
     config.update(
