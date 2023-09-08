@@ -7,8 +7,9 @@ import subprocess
 
 import fill_utils
 import numpy as np
-import uproot
 import plot_utils
+import uproot
+
 # Import our own functions
 from CMS_corrections import (
     GNN_syst,
@@ -89,7 +90,7 @@ outDir = f"/data/submit/{getpass.getuser()}/SUEP/outputs/"
 if options.save is not None and options.save != "None" and options != "none":
     outDir = options.save
 redirector = "root://submit50.mit.edu/"
-username=getpass.getuser()
+username = getpass.getuser()
 if os.path.isdir("/data/submit/cms/store/user/" + username):
     # define these if --xrootd 0
     dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
@@ -117,7 +118,7 @@ N.B.: Include lower and upper bounds for all ABCD regions.
 """
 if options.scouting:
     config = {
-          "Cluster": {
+        "Cluster": {
             "input_method": "CL",
             "xvar": "SUEP_S1_CL",
             "xvar_regions": [0.3, 0.34, 0.5, 2.0],
@@ -126,7 +127,7 @@ if options.scouting:
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
             "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
         },
-        #"ClusterSR": {
+        # "ClusterSR": {
         #    "input_method": "CL",
         #    "xvar": "SUEP_S1_CL",
         #    "xvar_regions": [0.5, 2.0],
@@ -134,8 +135,8 @@ if options.scouting:
         #    "yvar_regions": [50,70,90, 1000],
         #    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=",50]],
         #    "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-        #},
-       "ClusterInverted": {
+        # },
+        "ClusterInverted": {
             "input_method": "CL",
             "xvar": "ISR_S1_CL",
             "xvar_regions": [0.3, 0.34, 0.5, 2.0],
@@ -144,7 +145,7 @@ if options.scouting:
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
             "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
         },
-        #"ClusterSRInverted": {
+        # "ClusterSRInverted": {
         #    "input_method": "CL",
         #    "xvar": "ISR_S1_CL",
         #    "xvar_regions": [0.5, 2.0],
@@ -152,7 +153,7 @@ if options.scouting:
         #    "yvar_regions": [50,70,90, 1000],
         #    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=",50]],
         #    "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-        #},
+        # },
     }
 else:
     config = {
@@ -173,9 +174,9 @@ else:
             "yvar_regions": [30, 50, 70, 1000],
             # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-           "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-       },
-   }
+            "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+        },
+    }
 
 if options.doInf:
     config.update(
