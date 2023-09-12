@@ -109,7 +109,10 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
-        jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+        if self.scouting == 1:
+            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.6)
+        else:
+            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
         Jets_correct = Jets_awk[jet_awk_Cut]
 
         return Jets_correct
@@ -237,7 +240,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         cut = (
             (events.PFcand.pt >= 0.75)
-            & (abs(events.PFcand.eta) <= 2.5)
+            & (abs(events.PFcand.eta) <= 2.4)
             & (events.PFcand.vertex == 0)
             & (events.PFcand.q != 0)
         )
