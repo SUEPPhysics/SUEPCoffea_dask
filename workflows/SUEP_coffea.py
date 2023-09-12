@@ -438,10 +438,10 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
 
         if self.isMC and self.scouting and "SUEP" in self.sample:
-            SUEP_genMass = events.gen.mass
-            SUEP_genPt = events.gen.pt
-            SUEP_genPhi = events.gen.phi
-            SUEP_genEta = events.gen.eta
+            SUEP_genMass = events.scalar.mass
+            SUEP_genPt = events.scalar.pt
+            SUEP_genPhi = events.scalar.phi
+            SUEP_genEta = events.scalar.eta
 
         self.out_vars["SUEP_genMass" + out_label] = SUEP_genMass
         self.out_vars["SUEP_genPt" + out_label] = SUEP_genPt
