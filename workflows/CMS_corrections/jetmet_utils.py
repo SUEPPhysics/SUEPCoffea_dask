@@ -7,47 +7,61 @@ from coffea.lookup_tools import extractor
 
 def load_jets(self, events):
     if (self.isMC == 1) and ("2016" in self.era):
-        vals_jet0 = ak.zip(
-            {
-                "pt": events.OffJet.pt,
-                "eta": events.OffJet.eta,
-                "phi": events.OffJet.phi,
-                "mass": events.OffJet.mass,
-                "area": events.OffJet.area,
-                "mass_raw": events.OffJet.mass,  # I think there should be another factor here?
-                "pt_raw": events.OffJet.pt,
-                "passId": events.OffJet.passId,
-                "pt_gen": ak.values_astype(
+        vals_jet0 = events.OffJet
+        vals_jet0["pt_raw"] = events.OffJet.pt
+        vals_jet0["mass_raw"] = events.OffJet.mass
+        vals_jet0["pt_gen"] = ak.values_astype(
                     ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
-                ),
-                "rho": events.rho,
-            },
-            with_name="Momentum4D",
-        )
+                )
+        vals_jet0["rho"] = events.rho
+        #vals_jet0 = ak.zip(
+        #    {
+        #        "area": events.OffJet.area,
+        #        "eta": events.OffJet.eta,
+        #        "mass": events.OffJet.mass,
+        #        "phi": events.OffJet.phi,
+        #        "pt": events.OffJet.pt,
+        #        "pt_raw": events.OffJet.pt,
+        #        "mass_raw": events.OffJet.mass,  # I think there should be another factor here?
+        #        "passId": events.OffJet.passId,
+        #        "pt_gen": ak.values_astype(
+        #            ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
+        #        ),
+        #        "rho": events.rho,
+        #    },
+        #    with_name="Momentum4D",
+        #)
     else:
-        vals_jet0 = ak.zip(
-            {
-                "pt": events.Jet.pt,
-                "eta": events.Jet.eta,
-                "phi": events.Jet.phi,
-                "mass": events.Jet.mass,
-                "area": events.Jet.area,
-                "mass_raw": events.Jet.mass,  # I think there should be another factor here?
-                "pt_raw": events.Jet.pt,
-                "passId": events.Jet.passId,
-                "pt_gen": ak.values_astype(
+        vals_jet0 = events.Jet
+        vals_jet0["pt_raw"] = events.Jet.pt
+        vals_jet0["mass_raw"] = events.Jet.mass
+        vals_jet0["rho"] = events.rho
+        vals_jet0["pt_gen"] = ak.values_astype(
                     ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
-                ),
-                "rho": events.rho,  # /events.Jet.area
-            },
-            with_name="Momentum4D",
-        )
+                )
+        #vals_jet0 = ak.zip(
+        #    {
+        #        "area": events.Jet.area,
+        #        "eta": events.Jet.eta,
+        #        "mass": events.Jet.mass,
+        #        "phi": events.Jet.phi,
+        #        "pt": events.Jet.pt,
+        #        "pt_raw": events.Jet.pt,
+        #        "mass_raw": events.Jet.mass,  # I think there should be another factor here?
+        #        "passId": events.Jet.passId,
+        #        "pt_gen": ak.values_astype(
+        #            ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
+        #        ),
+        #        "rho": events.rho,  # /events.Jet.area
+        #    },
+        #    with_name="Momentum4D",
+        #)
     # if datatype == "Trigger":
     #       vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"] #ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
     # else:
     #       vals_jet0['rho'] = ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
-    # vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
-    # vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])#[0]
+    #vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
+    #vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])[0]
 
     return vals_jet0
 
@@ -135,21 +149,12 @@ def apply_jecs(self, Sample, events, prefix=""):
     else:
         ext_ak4.add_weight_sets(
             [  # change to correct files
-                "* * "
-                + jec_path
-                + jecdir
-                + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
+                "* * " + jec_path + jecdir + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
                 "* * " + jec_path + jecdir + "_L1RC_AK4PFchs.jec.txt",  # needs area
                 "* * " + jec_path + jecdir + "_L2Relative_AK4PFchs.jec.txt",
-                "* * "
-                + jec_path
-                + jecdir
-                + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
+                "* * " + jec_path + jecdir + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
                 "* * " + jec_path + jecdir + "_L2L3Residual_AK4PFchs.jec.txt",
                 "* * " + jec_path + jecdir + "_L2Residual_AK4PFchs.jec.txt",
-                #'* * ' + jec_path + jecdir +"_Uncertainty_AK4PFchs.junc.txt",
-                #'* * ' + jer_path + jerdir +"_PtResolution_AK4PFchs.jr.txt",
-                #'* * ' + jer_path + jerdir +"_SF_AK4PFchs.jersf.txt",
             ]
         )
 
@@ -179,9 +184,6 @@ def apply_jecs(self, Sample, events, prefix=""):
             jecdir + "_L3Absolute_AK4PFchs",
             jecdir + "_L2L3Residual_AK4PFchs",
             jecdir + "_L2Residual_AK4PFchs",
-            # jerdir + "_PtResolution_AK4PFchs",
-            # jerdir + "_SF_AK4PFchs",
-            # jecdir + "_Uncertainty_AK4PFchs",
         ]
 
     jec_inputs_ak4 = {name: evaluator_ak4[name] for name in jec_stack_names_ak4}
@@ -199,7 +201,6 @@ def apply_jecs(self, Sample, events, prefix=""):
                 ak.fill_none(jets.matched_gen.pt, 0), np.float32
             )
         jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-
     # Create the map (for both MC and data)
     name_map = jec_stack_ak4.blank_name_map
     name_map["JetPt"] = "pt"
@@ -216,5 +217,4 @@ def apply_jecs(self, Sample, events, prefix=""):
     jec_cache = cachetools.Cache(np.inf)
     jet_factory = CorrectedJetsFactory(name_map, jec_stack_ak4)
     corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
-
     return corrected_jets
