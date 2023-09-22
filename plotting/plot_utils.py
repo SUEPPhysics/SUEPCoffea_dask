@@ -65,6 +65,14 @@ lumis = {
     "all": 19497.914 + 16810.813 + 41471.589 + 59817.406,
 }
 
+lumis_scouting = {
+    "2016_apv": 16478,
+    "2016": 10845,
+    "2017": 34617,
+    "2018": 60686,
+    "all": 16478+10845+34617+60686,
+}
+
 
 def lumiLabel(year):
     if year in ["2017", "2018"]:
@@ -75,22 +83,31 @@ def lumiLabel(year):
         return round(lumis[year] / 1000, 1)
 
 
-def findLumi(year, auto_lumi, infile_name):
+def findLumi(year, auto_lumi, infile_name, scouting):
+    if scouting:
+      lumidir = lumis_scouting
+    else:
+      lumidir = lumis
     if auto_lumi:
+        print(infile_name)
         if "20UL16MiniAODv2" in infile_name:
-            lumi = lumis["2016"]
-        if "20UL17MiniAODv2" in infile_name:
-            lumi = lumis["2017"]
-        if "20UL16MiniAODAPVv2" in infile_name:
-            lumi = lumis["2016_apv"]
-        if "20UL18" in infile_name:
-            lumi = lumis["2018"]
-        if "SUEP-m" in infile_name:
-            lumi = lumis["2018"]
-        if "JetHT+Run" in infile_name:
+            lumi = lumidir["2016"]
+        elif "20UL17" in infile_name:
+            lumi = lumidir["2017"]
+        elif "20UL16MiniAODAPVv2" in infile_name:
+            lumi = lumidir["2016_apv"]
+        elif "20UL18" in infile_name:
+            lumi = lumidir["2018"]
+        elif "SUEP-m" in infile_name:
+            lumi = lumidir["2018"]
+        elif "JetHT+Run" in infile_name and not scouting:
             lumi = 1
+        elif "ScoutingPFHT+Run" in infile_name and scouting: 
+            lumi = 1
+        else:
+            raise Exception("I cannot find luminosity matched to file name: "+infile_name)
     if year and not auto_lumi:
-        lumi = lumis[str(year)]
+        lumi = lumidir[str(year)]
     if year and auto_lumi:
         raise Exception("Apply lumis automatically or based on year")
     return lumi
@@ -200,7 +217,7 @@ def fillSample(infile_name, plots, lumi):
 
 
 # load file(s)
-def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
+def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False,scouting=False):
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name):
@@ -210,7 +227,8 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
             continue
 
         # sets the lumi based on year
-        lumi = findLumi(year, auto_lumi, infile_name)
+        lumi = findLumi(year, auto_lumi, infile_name,scouting)
+        print(f'Lumi: {lumi}')
 
         # exclude low bins
         if exclude_low_bins:
