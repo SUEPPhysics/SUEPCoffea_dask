@@ -48,7 +48,7 @@ echo " ------ THE END (everyone dies !) ----- "
 condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 2GB
-request_memory        = 2GB
+request_memory        = 3GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -222,7 +222,7 @@ def main():
                         sample_name
                     )
                 else:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E08/{}/RawFiles.00".format(
+                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E06/{}/RawFiles.00".format(
                         sample_name
                     )
                 Raw_list = open(input_list)
