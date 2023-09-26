@@ -104,7 +104,7 @@ python kraken_run.py --isMC=1 --era=2018 --tag=<tag name> --scout=1 --input=file
 Signal samples are produced privately. To process these samples:
 
 ```
-python kraken_run.py --isMC=1 --era=2018/2017/2016/2016apv --tag=<tag name> --scout=1 --private=1 --input=filelist/list_noHighMS_signal_scout.txt
+python kraken_run.py --isMC=1 --era=2018/2017/2016/2016apv --tag=<tag name> --private=1 --scout=1 --input=filelist/list_noHighMS_signal_scout.txt
 ```
 
 All other commands listed above in the offline section will work similarly.
