@@ -955,7 +955,7 @@ if options.doABCD and options.blind and options.predictSR:
 
         # Calculate SR from ABCD method
         # sum_var = 'x' corresponds to scaling F histogram
-        SR, SR_exp, alpha, sigma_alpha = plot_utils.ABCD_9regions_errorProp(
+        SR, SR_exp = plot_utils.ABCD_9regions_errorProp(
             output[hist_name], xregions, yregions, sum_var="x"
         )
 

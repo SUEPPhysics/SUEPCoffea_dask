@@ -76,11 +76,11 @@ lumis_scouting = {
 
 def lumiLabel(year):
     if year in ["2017", "2018"]:
-        return round(lumis[year] / 1000, 1)
+        return round(lumis_scouting[year] / 1000, 1)
     elif year == "2016":
-        return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
+        return round((lumis_scouting[year] + lumis[year + "_apv"]) / 1000, 1)
     elif year == "all":
-        return round(lumis[year] / 1000, 1)
+        return round(lumis_scouting[year] / 1000, 1)
 
 
 def findLumi(year, auto_lumi, infile_name, scouting):

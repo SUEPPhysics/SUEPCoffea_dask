@@ -41,7 +41,7 @@ def main():
     proxy_copy = os.path.join(home_base, proxy_base)
 
     out_dir = (
-        "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
+        "/data/submit/" + username + "/SUEP/" + options.tag + "/{}/"
     )
     out_dir_xrd = "/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
