@@ -78,7 +78,7 @@ lumis_scouting = {
     "2016": 10845,
     "2017": 34617,
     "2018": 60686,
-    "all": 16478+10845+34617+60686,
+    "all": 16478 + 10845 + 34617 + 60686,
 }
 
 
@@ -96,11 +96,13 @@ def findLumi(year, auto_lumi, infile_name, scouting):
         lumidir = lumis_scouting
     else:
         lumidir = lumis
+
+
 def findLumi(year, auto_lumi, infile_name, scouting):
     if scouting:
-      lumidir = lumis_scouting
+        lumidir = lumis_scouting
     else:
-      lumidir = lumis
+        lumidir = lumis
     if auto_lumi:
         print(infile_name)
         if "20UL16MiniAODv2" in infile_name:
