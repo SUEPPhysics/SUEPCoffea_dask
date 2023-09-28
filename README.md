@@ -118,6 +118,7 @@ Explained here is an example workflow. Each of these scripts should have more de
 1. Find datasets to run (specified in a .txt file in `filelist/`), and lists of the .root files for the datasets (usually in `/home/tier3/cmsprod/catalog/t2mit/nanosc/E02/{}/RawFiles.00` as specified in `kraken_run.py`).
 2. Run `kraken_run.py` to submit these jobs to HTCondor. Make sure to set the correct output and log directories in the python script.
 3. These usually take a couple hours, which you can monitor using HTCondor. We don't expect perfect efficiency here, as normal in batch submission systems, but 80-90% is typical: if it's much less, the errors need to be investigated using the logs produced (found in `logdir`, specified in step 2). You can check how many of them have successfully finished using `python monitor.py -r=0`. Once a good amount of them have finished running (successfully or not), usually after a couple hours, kill the currently running jobs, and resubmit using `python monitor.py -r=1`.
+   You can use the resubmit.py file to automatically resubmit the failed jobs for a few times. Example `nohup python resubmit.py  --tag=wj_test_PFHT --input=filelist/list_2018_scout_data.txt &`, which runs `python monitor.py --tag=wj_test_PFHT --input=filelist/list_2018_scout_data.txt` once an hour for 10 times (you can changes the default setups.)
 4. Repeat step 3. until you have achieved desired completion rate (suggested: >95% for MC, >99% for data).
 
 **(Optional) Merge and Move NTuples**
