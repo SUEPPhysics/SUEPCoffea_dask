@@ -573,8 +573,9 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
     offset = 0
     mids = []
     for i, r in enumerate(regions):
-        h1 = plots[sample1][plot_label.replace("A_", r + "_")]
-        h2 = plots[sample2][plot_label.replace("A_", r + "_")]
+
+        h1 = plots[sample1][plot_label.replace("A_", r + "_")].copy()
+        h2 = plots[sample2][plot_label.replace("A_", r + "_")].copy()
 
         if density:
             h1 = h1 / h1.sum().value
@@ -586,7 +587,7 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         x2 = x2[:-1]
 
         xmin1 = np.argwhere(y1 > 0)[0] if any(y1 > 0) else [len(x1)]
-        xmin2 = np.argwhere(y2 > 0)[0] if any(y2 > 0) else [len(x1)]
+        xmin2 = np.argwhere(y2 > 0)[0] if any(y2 > 0) else [len(x2)]
         xmax1 = np.argwhere(y1 > 0)[-1] if any(y1 > 0) else [0]
         xmax2 = np.argwhere(y2 > 0)[-1] if any(y2 > 0) else [0]
         xmin = min(np.concatenate((xmin1, xmin2)))
@@ -609,21 +610,23 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         y1_errs = np.sqrt(h1.variances())
         y1_errs = y1_errs[xmin : xmax + 1]
         if i == 0:
+            print(sample1)
             ax1.step(x1, y1, color="midnightblue", label=sample1, where="mid")
         else:
             ax1.step(x1, y1, color="midnightblue", where="mid")
         ax1.errorbar(
-            x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle="steps-mid"
+            x1, y1, yerr=y1_errs, color="midnightblue".upper(), fmt="", drawstyle="steps-mid"
         )
 
         y2_errs = np.sqrt(h2.variances())
         y2_errs = y2_errs[xmin : xmax + 1]
         if i == 0:
+            print(sample2)
             ax1.step(x2, y2, color="maroon", label=sample2, where="mid")
         else:
             ax1.step(x2, y2, color="maroon", where="mid")
         ax1.errorbar(
-            x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle="steps-mid"
+            x2, y2, yerr=y2_errs, color="maroon".upper(), fmt="", drawstyle="steps-mid"
         )
 
         ax1.axvline(x2[0], ls="--", color="black")
@@ -716,6 +719,7 @@ def plot_all_regions(
             y_errs = np.sqrt(h.variances())
             y_errs = y_errs[xmin : xmax + 1]
             if i == 0:
+                if label == 'I': label == 'SR'
                 ax.step(x, y, color=getColor(sample), label=label, where="mid")
             else:
                 ax.step(x, y, color=getColor(sample), where="mid")
