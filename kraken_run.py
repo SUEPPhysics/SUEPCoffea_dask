@@ -165,6 +165,8 @@ def main():
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
     proxy_copy = os.path.join(home_base, proxy_base)
 
+    missing_samples = []
+
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
             if len(sample) < 1:
@@ -210,6 +212,9 @@ def main():
                     stdout=subprocess.PIPE,
                 )
                 raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
+
+                if raw_input_list == [""]:
+                    missing_samples.append(sample_name)
                 Raw_list = []
                 for f in raw_input_list:
                     if len(f) == 0:
@@ -302,6 +307,10 @@ def main():
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info(f"condor submission status : {exit_status}")
+
+    logging.info("\nMissing samples:")
+    for s in missing_samples:
+        logging.info(s)
 
 
 if __name__ == "__main__":
