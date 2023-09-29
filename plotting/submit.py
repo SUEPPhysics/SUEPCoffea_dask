@@ -143,7 +143,9 @@ elif options.method == "multithread":
     os.system(f"mkdir {work_dir}")
     os.system(f"cp -R ../* {work_dir}/.")
     print("Working in", work_dir)
-    pool = Pool(min([multiprocessing.cpu_count(), 40, len(samples)]), maxtasksperchild=1000)
+    pool = Pool(
+        min([multiprocessing.cpu_count(), 40, len(samples)]), maxtasksperchild=1000
+    )
     results = []
 
 # Read samples from input file
@@ -157,8 +159,7 @@ if options.xrootd:
 
 # Loop over samples
 for i, sample in enumerate(samples):
-
-    if '/' in sample:
+    if "/" in sample:
         sample = sample.split("/")[-1]
     if (
         os.path.isfile(

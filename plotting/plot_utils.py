@@ -593,7 +593,6 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
     offset = 0
     mids = []
     for i, r in enumerate(regions):
-
         h1 = plots[sample1][plot_label.replace("A_", r + "_")].copy()
         h2 = plots[sample2][plot_label.replace("A_", r + "_")].copy()
 
@@ -635,7 +634,12 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         else:
             ax1.step(x1, y1, color="midnightblue", where="mid")
         ax1.errorbar(
-            x1, y1, yerr=y1_errs, color="midnightblue".upper(), fmt="", drawstyle="steps-mid"
+            x1,
+            y1,
+            yerr=y1_errs,
+            color="midnightblue".upper(),
+            fmt="",
+            drawstyle="steps-mid",
         )
 
         y2_errs = np.sqrt(h2.variances())
@@ -739,7 +743,8 @@ def plot_all_regions(
             y_errs = np.sqrt(h.variances())
             y_errs = y_errs[xmin : xmax + 1]
             if i == 0:
-                if label == 'I': label == 'SR'
+                if label == "I":
+                    label == "SR"
                 ax.step(x, y, color=getColor(sample), label=label, where="mid")
             else:
                 ax.step(x, y, color=getColor(sample), where="mid")

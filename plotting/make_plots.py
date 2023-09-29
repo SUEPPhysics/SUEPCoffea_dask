@@ -718,7 +718,7 @@ def calculate_systematic(
                 df["event_weight"] *= df[syst]
 
             # 3) prefire weights
-            if options.era == '2016' or options.era == '2017':
+            if options.era == "2016" or options.era == "2017":
                 if "prefire" in syst and syst in df.keys():
                     df["event_weight"] *= df[syst]
                 else:

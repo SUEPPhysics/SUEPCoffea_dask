@@ -213,7 +213,7 @@ def main():
                 )
                 raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
 
-                if raw_input_list == ['']:
+                if raw_input_list == [""]:
                     missing_samples.append(sample_name)
                 Raw_list = []
                 for f in raw_input_list:
@@ -308,9 +308,9 @@ def main():
             exit_status = htc.returncode
             logging.info(f"condor submission status : {exit_status}")
 
-
     logging.info("\nMissing samples:")
-    for s in missing_samples: logging.info(s)
+    for s in missing_samples:
+        logging.info(s)
 
 
 if __name__ == "__main__":
