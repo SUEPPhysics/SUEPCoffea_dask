@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description="Famous Submitter")
 parser.add_argument("-t", "--tag", type=str, help="Dataset tag.")
+parser.add_argument("-i", "--input", type=str, help="Input filelist")
 parser.add_argument(
     "-r",
     "--resubmits",
@@ -49,7 +50,7 @@ nHours = options.hours
 tag = options.tag
 
 username = os.environ["USER"]
-dataDir = f"/mnt/T3_US_MIT/hadoop/scratch/{username}/SUEP/{tag}/"
+dataDir = f"/data/submit/{username}/SUEP/{tag}/"
 moveDir = f"/work/submit/{username}/SUEP/{tag}/"
 
 # Making sure that the proxy is good
@@ -102,17 +103,12 @@ for i in range(nResubmits):
                 subprocess.run(["rm", dataDir + subDir + "/" + file])
 
     if not options.dryrun:
-        logging.info("Executing monitor.py for data...")
+        logging.info("Executing monitor.py ...")
         os.system(
             "python3 monitor.py --tag={} --input={} -r=1 -m={}".format(
-                tag, "filelist/list_2018_data_A01.txt", options.movesample
+                tag, options.input, options.movesample
             )
         )
-        logging.info("Executing monitor.py for MC...")
-        os.system(
-            "python3 monitor.py --tag={} --input={} -r=1 -m={}".format(
-                tag, "filelist/list_2018_MC_A01.txt", options.movesample
-            )
         )
 
     if options.move:
@@ -142,8 +138,8 @@ for i in range(nResubmits):
                 subprocess.run(
                     [
                         "xrdcp",
-                        "root://t3serv017.mit.edu/"
-                        + dataDir.split("hadoop")[-1]
+                        "root://submit50.mit.edu/"
+                        + dataDir
                         + subDir
                         + "/"
                         + file,

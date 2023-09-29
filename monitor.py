@@ -39,6 +39,7 @@ def main():
     home_base = os.environ["HOME"]
     username = os.environ["USER"]
     proxy_copy = os.path.join(home_base, proxy_base)
+
     out_dir = (
         "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
     )
@@ -47,9 +48,14 @@ def main():
     jobs_base_dir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
 
     if options.move:
-        if not os.path.isdir("/work/submit/" + username + "/SUEP/" + options.tag):
+        if not os.path.isdir(
+            "/work/submit/" + username + "/SUEPCoffea_dask/" + options.tag
+        ):
             subprocess.run(
-                ["mkdir", "/work/submit/" + username + "/SUEP/" + options.tag]
+                [
+                    "mkdir",
+                    "/work/submit/" + username + "/SUEPCoffea_dask/" + options.tag,
+                ]
             )
 
     regenerate_proxy = False

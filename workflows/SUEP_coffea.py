@@ -109,7 +109,10 @@ class SUEP_cluster(processor.ProcessorABC):
             },
             with_name="Momentum4D",
         )
-        jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+        if self.scouting == 1:
+            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.6)
+        else:
+            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
         Jets_correct = Jets_awk[jet_awk_Cut]
 
         return Jets_correct
@@ -135,7 +138,20 @@ class SUEP_cluster(processor.ProcessorABC):
                 else:
                     trigger = events.HLT.PFHT1050 == 1
             events = events[trigger]
-
+        else:
+            if self.era == "2016" or self.era == "2016apv":
+                trigger = (
+                    events.hltResult[:, 3] == 1
+                )  # require trigger DST_HT410_PFScouting_v2
+            elif self.era == "2017":
+                trigger = (
+                    events.hltResult[:, 5] == 1
+                )  # require trigger DST_HT410_PFScouting_v12
+            elif self.era == "2018":
+                trigger = (
+                    events.hltResult[:, 7] == 1
+                )  # require trigger DST_HT410_PFScouting_v16
+            events = events[trigger]
         return events
 
     def selectByFilters(self, events):
@@ -179,7 +195,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         return genParts
 
-    def getOfflineTracks(self, events):
+    def getTracks(self, events):
         Cands = ak.zip(
             {
                 "pt": events.PFCands.trkPt,
@@ -237,7 +253,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         cut = (
             (events.PFcand.pt >= 0.75)
-            & (abs(events.PFcand.eta) <= 2.5)
+            & (abs(events.PFcand.eta) <= 2.4)
             & (events.PFcand.vertex == 0)
             & (events.PFcand.q != 0)
         )
@@ -438,10 +454,10 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_genEta = [g[-1].eta if len(g) > 0 else 0 for g in genSUEP]
 
         if self.isMC and self.scouting and "SUEP" in self.sample:
-            SUEP_genMass = events.gen.mass
-            SUEP_genPt = events.gen.pt
-            SUEP_genPhi = events.gen.phi
-            SUEP_genEta = events.gen.eta
+            SUEP_genMass = events.scalar.mass
+            SUEP_genPt = events.scalar.pt
+            SUEP_genPhi = events.scalar.phi
+            SUEP_genEta = events.scalar.eta
 
         self.out_vars["SUEP_genMass" + out_label] = SUEP_genMass
         self.out_vars["SUEP_genPt" + out_label] = SUEP_genPt
@@ -519,7 +535,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.scouting == 1:
             tracks, Cleaned_cands = self.getScoutingTracks(events)
         else:
-            tracks, Cleaned_cands = self.getOfflineTracks(events)
+            tracks, Cleaned_cands = self.getTracks(events)
         looseElectrons, looseMuons = self.getLooseLeptons(events)
 
         if self.isMC and do_syst and self.scouting == 1:
