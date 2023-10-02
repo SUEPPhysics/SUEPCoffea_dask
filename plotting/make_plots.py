@@ -124,8 +124,7 @@ if options.scouting:
             "yvar": "SUEP_nconst_CL",
             "yvar_regions": [0, 18, 50, 1000],
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-            "selections": [["ht", ">", 560], ["ntracks", ">", 0]],
-            #"selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
         },
        "ClusterInverted": {
             "input_method": "CL",
@@ -134,8 +133,7 @@ if options.scouting:
             "yvar": "ISR_nconst_CL",
             "yvar_regions": [0, 18, 35, 1000],
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
-            "selections": [["ht", ">", 560], ["ntracks", ">", 0]],
-            #"selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
         },
     }
 else:
