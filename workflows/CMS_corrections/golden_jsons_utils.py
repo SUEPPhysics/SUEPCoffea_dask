@@ -2,9 +2,17 @@ from coffea import lumi_tools
 
 
 def applyGoldenJSON(self, events):
-    if self.era == "2016" or self.era == "2016apv":
+    if self.era == "2016" or self.era == "2016apv" and self.scouting != 1:
         LumiJSON = lumi_tools.LumiMask(
             "data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt"
+        )
+    elif self.era == "2016" and self.scouting == 1:
+        LumiJSON = lumi_tools.LumiMask(
+            "data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON_scout.txt"
+        )
+    elif self.era == "2016apv" and self.scouting == 1:
+        LumiJSON = lumi_tools.LumiMask(
+            "data/GoldenJSON/Cert_271036-284044_13TeV_Legacy2016_Collisions16APV_JSON_scout.txt"
         )
     elif self.era == "2017":
         LumiJSON = lumi_tools.LumiMask(
