@@ -123,36 +123,20 @@ if options.scouting:
             "xvar_regions": [0.3, 0.34, 0.5, 2.0],
             "yvar": "SUEP_nconst_CL",
             "yvar_regions": [0, 18, 50, 1000],
-            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
-            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+            "selections": [["ht", ">", 560], ["ntracks", ">", 0]],
+            #"selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
         },
-        #"ClusterSR": {
-        #    "input_method": "CL",
-        #    "xvar": "SUEP_S1_CL",
-        #    "xvar_regions": [0.5, 2.0],
-        #    "yvar": "SUEP_nconst_CL",
-        #    "yvar_regions": [50,70,90, 1000],
-        #    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=",50]],
-        #    "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-        #},
        "ClusterInverted": {
             "input_method": "CL",
             "xvar": "ISR_S1_CL",
             "xvar_regions": [0.3, 0.34, 0.5, 2.0],
             "yvar": "ISR_nconst_CL",
-            "yvar_regions": [0, 18, 50, 1000],
+            "yvar_regions": [0, 18, 35, 1000],
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
-            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+            "selections": [["ht", ">", 560], ["ntracks", ">", 0]],
+            #"selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
         },
-        #"ClusterSRInverted": {
-        #    "input_method": "CL",
-        #    "xvar": "ISR_S1_CL",
-        #    "xvar_regions": [0.5, 2.0],
-        #    "yvar": "ISR_nconst_CL",
-        #    "yvar_regions": [50,70,90, 1000],
-        #    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=",50]],
-        #    "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-        #},
     }
 else:
     config = {
@@ -923,7 +907,7 @@ if options.isMC and options.doSyst:
 
 # apply normalization
 if options.isMC:
-    print(xsection, total_gensumweight)
+    print("xsection",xsection, "total_gensumweight", total_gensumweight)
     output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
 
 # Make ABCD expected histogram for signal region
@@ -954,11 +938,11 @@ if options.doABCD and options.blind and options.predictSR:
 
         # Calculate SR from ABCD method
         # sum_var = 'x' corresponds to scaling F histogram
-        SR, SR_exp, alpha, sigma_alpha = plot_utils.ABCD_9regions_errorProp(
+        SR, SR_exp = plot_utils.ABCD_9regions_errorProp(
             output[hist_name], xregions, yregions, sum_var="x"
         )
 
-        output[f"I_{yvar}_{label_out}"] = SR_exp
+        output[f"I_{yvar}_{label_out}_exp"] = SR_exp
 
 if options.dataset:
     outFile = outDir + "/" + options.dataset + "_" + options.output
