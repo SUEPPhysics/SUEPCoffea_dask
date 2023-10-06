@@ -277,7 +277,7 @@
   "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 622.6	
+    "xsec": 622.6
   },
   "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
     "br": 1,
@@ -307,7 +307,7 @@
   "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 87740.0	
+    "xsec": 87740.0
   },
   "DYJetsToMuMu_M-50_massWgtFix_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos": {
     "br": 1,
@@ -384,6 +384,16 @@
     "kr": 1,
     "xsec": 0.5598
   },
+  "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 20460.0
+  },
+  "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 15810.0
+  },
   "DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer19UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
@@ -437,12 +447,12 @@
   "ZToMuMu_M-120To200_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 20.58	
+    "xsec": 20.58
   },
   "ZToMuMu_M-200To400_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 2.89	
+    "xsec": 2.89
   },
   "ZToMuMu_M-400To800_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
@@ -462,22 +472,22 @@
   "ZToMuMu_M-2300To3500_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 8.282e-05
+    "xsec": 8.282e-5
   },
   "ZToMuMu_M-3500To4500_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 3.414e-06
+    "xsec": 3.414e-6
   },
   "ZToMuMu_M-4500To6000_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 3.65e-07
+    "xsec": 3.65e-7
   },
   "ZToMuMu_M-6000ToInf_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
     "kr": 1,
-    "xsec": 2.526e-08	
+    "xsec": 2.526e-8
   },
   "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8": {
     "br": 1,
