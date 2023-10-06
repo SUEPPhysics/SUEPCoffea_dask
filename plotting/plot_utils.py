@@ -293,7 +293,10 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         else:
             plotsToAdd = openpkl(infile_name)
             for plot in list(plotsToAdd.keys()):
-                plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
+                if plot not in list(plots[sample].keys()):
+                    plots[sample][plot] = plotsToAdd[plot] * lumi
+                else:
+                    plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
 
     return plots
 
@@ -470,21 +473,39 @@ def bin_midpoints(bins):
     return np.array(midpoints)
 
 
-def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
+def plot_ratio(
+    hlist,
+    labels=None,
+    systs=None,
+    density=False,
+    cmap=None,
+    plot_label=None,
+    xlim="default",
+    log=True,
+):
+    """
+    Plots ratio of a list of Hist histograms, the ratio is wrt to the first one in the list.
+    The errors in the ratio are taken to be independent between histograms.
+    """
+
     # Set up variables for the stacked histogram
-    fig = plt.figure(figsize=(12, 10))
+    fig = plt.figure()
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
+    if density:
+        for h in hlist:
+            h /= h.sum().value
+
     if labels is None:
         labels = [None] * len(hlist)
-
-    cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
+    if cmap is None:
+        cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
     for c, h, l in zip(cmap, hlist, labels):
         y, x = h.to_numpy()
         x_mid = h.axes.centers[0]
         y_errs = np.sqrt(h.variances())
-        ax1.stairs(h.values(), x, color=c, label=l)
+        ax1.stairs(y, x, color=c, label=l)
         ax1.errorbar(
             x_mid,
             y,
@@ -529,7 +550,7 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
     ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
 
-    # calculate the ratio, with poisson errors, and plot them
+    # calculate the ratio, with error propagation, and plot them
     for i, (c, h) in enumerate(zip(cmap, hlist)):
         if i == 0:
             continue
@@ -539,7 +560,14 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
             out=np.ones_like(h.values()),
             where=hlist[0].values() != 0,
         )
-        ratio_err = hist.intervals.ratio_uncertainty(h.values(), hlist[0].values())
+        ratio_err = np.where(
+            hlist[0].values() > 0,
+            np.sqrt(
+                (hlist[0].values() ** -2) * (h.variances())
+                + (h.values() ** 2 * hlist[0].values() ** -4) * (hlist[0].variances())
+            ),
+            0,
+        )
         ax2.errorbar(
             hlist[0].axes.centers[0],
             ratio,
@@ -551,6 +579,30 @@ def plot_ratio(hlist, labels=None, plot_label=None, xlim="default", log=True):
 
     ax2.axhline(1, ls="--", color="gray")
     ax2.set_ylabel("Ratio", y=1, ha="right")
+
+    if systs is not None:
+        assert len(systs) == len(hlist[0].axes.centers[0])
+        widths = hlist[0].axes.widths[0]
+        up_height = np.where(systs > 0, systs, 0)
+        down_height = np.where(systs > 0, 1 / (1 + systs) - 1, 0)
+        ax2.bar(
+            hlist[0].axes.centers[0],
+            height=up_height,
+            bottom=1,
+            width=widths,
+            alpha=0.3,
+            color="gray",
+        )
+        ax2.bar(
+            hlist[0].axes.centers[0],
+            height=down_height,
+            bottom=1,
+            width=widths,
+            alpha=0.3,
+            color="gray",
+        )
+        # add to legend
+        ax1.plot([0, 0], color="gray", label="Systematics")
 
     if plot_label is None:
         plot_label = hlist[0].axes[0].label

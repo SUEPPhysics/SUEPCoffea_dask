@@ -20,6 +20,7 @@ from CMS_corrections import (
     triggerSF,
 )
 from hist import Hist
+import hist
 from rich.pretty import pprint
 from tqdm import tqdm
 
@@ -532,7 +533,12 @@ def create_output_file(label, abcd):
     output.update(
         {
             f"muon_pt_mean_{label}": Hist.new.Reg(
-                400, 0, 100, name=f"muon_pt_mean_{label}", label="mean muon pt in Event"
+                100, 
+                2, 
+                200, 
+                transform=hist.axis.transform.log, 
+                name=f"muon_pt_mean_{label}", 
+                label="mean muon pt in Event",
             ).Weight(),
             f"muon_dxy_mean_{label}": Hist.new.Reg(
                 100,
@@ -556,16 +562,18 @@ def create_output_file(label, abcd):
                 label="mean muon ip3d in Event",
             ).Weight(),
             f"muon_pt_leading_{label}": Hist.new.Reg(
-                200,
-                0,
-                200,
+                100, 
+                2, 
+                200, 
+                transform=hist.axis.transform.log,
                 name=f"muon_pt_leading_{label}",
                 label="leading muon pt in Event",
             ).Weight(),
             f"muon_pt_subleading_{label}": Hist.new.Reg(
-                200,
-                0,
-                200,
+                100, 
+                2, 
+                200, 
+                transform=hist.axis.transform.log,
                 name=f"muon_pt_subleading_{label}",
                 label="subleading muon pt in Event",
             ).Weight(),
@@ -626,30 +634,34 @@ def create_output_file(label, abcd):
                 label="S1 using tracks in Event",
             ).Weight(),
             f"muon_interIsolation_0p2_{label}": Hist.new.Reg(
-                25,
-                0,
-                10,
+                50,
+                0.01,
+                20,
+                transform=hist.axis.transform.log,
                 name=f"muon_interIsolation_0p2_{label}",
                 label="leading muon inter-isolation cone 0.2",
             ).Weight(),
             f"muon_interIsolation_0p4_{label}": Hist.new.Reg(
-                25,
-                0,
-                10,
+                50,
+                0.01,
+                20,
+                transform=hist.axis.transform.log,
                 name=f"muon_interIsolation_0p4_{label}",
                 label="leading muon inter-isolation cone 0.4",
             ).Weight(),
             f"muon_interIsolation_0p8_{label}": Hist.new.Reg(
-                25,
-                0,
-                10,
+                50,
+                0.01,
+                20,
+                transform=hist.axis.transform.log,
                 name=f"muon_interIsolation_0p8_{label}",
                 label="leading muon inter-isolation cone 0.8",
             ).Weight(),
             f"muon_interIsolation_1p6_{label}": Hist.new.Reg(
-                25,
-                0,
-                10,
+                50,
+                0.01,
+                20,
+                transform=hist.axis.transform.log,
                 name=f"muon_interIsolation_1p6_{label}",
                 label="leading muon inter-isolation cone 1.6",
             ).Weight(),

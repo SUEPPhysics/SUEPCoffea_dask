@@ -90,7 +90,7 @@ def get_main_parser():
         "--wf",
         "--workflow",
         dest="workflow",
-        choices=["SUEP", "SUEP_slim", "SUEP_fastjet_testing"],
+        choices=["SUEP", "SUEP_slim", "SUEP_fastjet_testing", "SUEP_ttbar_sources"],
         help="Which processor to run",
         required=True,
     )
@@ -316,7 +316,13 @@ def daskExecutor(args, env_extra):
             log_directory="/uscmst1b_scratch/lpc1/3DayLifetime/chpapage/",
             scheduler_options={"dashboard_address": ":44890"},
         )
-        cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
+        cluster.adapt(
+            minimum=args.scaleout,
+            maximum=args.max_scaleout,
+            interval="1m",
+            target_duration="30s",
+            wait_count=10,
+        )
         client = Client(cluster)
 
         class SettingSitePath(WorkerPlugin):
@@ -329,6 +335,7 @@ def daskExecutor(args, env_extra):
         client.upload_file("workflows.zip")
         print("Waiting for at least one worker...")
         client.wait_for_workers(1)
+
     elif "casa" in args.executor:
 
         class SettingSitePath(WorkerPlugin):
@@ -556,6 +563,30 @@ def setupSUEP_fastjet_testing(args, sample_dict):
     return instance
 
 
+def setupSUEP_ttbar_sources(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_ttbar_sources import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        scouting=args.scouting,
+        do_inf=args.doInf,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -622,6 +653,13 @@ def saveOutput(args, output, sample, gensumweight=None):
             open(cutflowName, "wb"),
         )
 
+    if "histograms" in output.keys():
+        histName = f"{outputName.replace('.hdf5', '')}_histograms.pkl"
+        print(f"Saving the following histograms to {histName}")
+        for p in output["histograms"].keys():
+            output["histograms"][p] /= metadata["gensumweight"]
+        pickle.dump(output["histograms"], open(histName, "wb"))
+
 
 if __name__ == "__main__":
     parser = get_main_parser()
@@ -649,6 +687,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_slim(args, sample_dict)
     elif args.workflow == "SUEP_fastjet_testing":
         processor_instance = setupSUEP_fastjet_testing(args, sample_dict)
+    elif args.workflow == "SUEP_ttbar_sources":
+        processor_instance = setupSUEP_ttbar_sources(args, sample_dict)
     else:
         raise NotImplementedError
 

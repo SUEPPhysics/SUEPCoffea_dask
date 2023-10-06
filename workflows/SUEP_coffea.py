@@ -128,7 +128,7 @@ class SUEP_cluster(processor.ProcessorABC):
             events = events[trigger]
         return events
 
-    def muon_filter(self, events, nMuons=4):
+    def muon_filter(self, events, nMuons=None, pt_limit=None, avpt_cut=None):
         """
         Filter events after the TripleMu trigger.
         Cleans muons and electrons.
@@ -143,6 +143,8 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.dz) <= 0.1)
             & (abs(events.Muon.eta) < 2.4)
         )
+        if pt_limit is not None:
+            clean_muons = clean_muons & (events.Muon.pt < pt_limit)
         clean_electrons = (
             (events.Electron.mvaFall17V2noIso_WPL)
             & (events.Electron.pt > 3)
@@ -159,10 +161,16 @@ class SUEP_cluster(processor.ProcessorABC):
         )
         muons = muons[clean_muons]
         electrons = electrons[clean_electrons]
-        select_by_muons = ak.num(muons, axis=-1) >= nMuons
-        events = events[select_by_muons]
-        muons = muons[select_by_muons]
-        electrons = electrons[select_by_muons]
+        if nMuons is not None:
+            select_by_muons = ak.num(muons, axis=-1) >= nMuons
+            events = events[select_by_muons]
+            muons = muons[select_by_muons]
+            electrons = electrons[select_by_muons]
+        if avpt_cut is not None:
+            avpt = ak.mean(muons.pt, axis=-1)
+            events = events[avpt < avpt_cut]
+            muons = muons[avpt < avpt_cut]
+            electrons = electrons[avpt < avpt_cut]
         return events, electrons, muons
 
     def getGenTracks(self, events):
@@ -540,6 +548,41 @@ class SUEP_cluster(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
+    def count_events(
+        self, events, nMuons=None, pt_limit=None, interiso_cut=None, avpt_cut=None
+    ):
+        # first apply the muon filter
+        events, electrons, muons = self.muon_filter(
+            events, nMuons=nMuons, pt_limit=pt_limit, avpt_cut=avpt_cut
+        )
+        # then calculate the inter-isolation
+        if interiso_cut is not None:
+            muonsCollection = ak.zip(
+                {
+                    "pt": muons.pt,
+                    "eta": muons.eta,
+                    "phi": muons.phi,
+                    "mass": muons.mass,
+                    "charge": muons.pdgId / (-13),
+                },
+                with_name="Momentum4D",
+            )
+            electronsCollection = ak.zip(
+                {
+                    "pt": electrons.pt,
+                    "eta": electrons.eta,
+                    "phi": electrons.phi,
+                    "mass": electrons.mass,
+                    "charge": electrons.pdgId / (-11),
+                },
+                with_name="Momentum4D",
+            )
+            leptons = ak.concatenate([muonsCollection, electronsCollection], axis=-1)
+            leading_muons = leptons[:, 0]
+            I15 = SUEP_utils.inter_isolation(leading_muons, leptons, dR=1.6)
+            events = events[I15 > interiso_cut]
+        return events
+
     def analysis(self, events, output, do_syst=False, col_label=""):
         #####################################################################################
         # ---- Trigger event selection
@@ -549,15 +592,10 @@ class SUEP_cluster(processor.ProcessorABC):
         # get dataset name
         dataset = events.metadata["dataset"]
 
-        # some cutflow stuff
+        # Fill the cutflow columns for all and trigger
+        output[dataset]["cutflow"].fill(len(events) * ["all"], weight=events.genWeight)
         output[dataset]["cutflow"].fill(
-            len(events) * ["all events"], weight=events.genWeight
-        )
-        output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.PFHT430 == 1) * ["HLT_PFHT430"]
-        )
-        output[dataset]["cutflow"].fill(
-            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["HLT_TripleMu_5_3_3"],
+            ak.sum(events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) * ["trigger"],
             weight=events[events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1].genWeight,
         )
 
@@ -571,17 +609,78 @@ class SUEP_cluster(processor.ProcessorABC):
             )
         events = self.eventSelection(events)
 
-        # make sure we have at least 3 muons with loose ID
-        if self.trigger == "TripleMu":
-            events, electrons, muons = self.muon_filter(events, 4)
+        events_n4 = self.count_events(events, nMuons=4)
         output[dataset]["cutflow"].fill(
-            len(events) * ["nMuon_mediumId >= 4"], weight=events.genWeight
+            len(events_n4) * ["nMu>=4"],
+            weight=events_n4.genWeight,
         )
-        n_muons = ak.num(muons)
+        events_n4_i16 = self.count_events(events, nMuons=4, interiso_cut=1.0)
         output[dataset]["cutflow"].fill(
-            len(events[n_muons >= 6]) * ["nMuon_mediumId >= 6"],
-            weight=events[n_muons >= 6].genWeight,
+            len(events_n4_i16) * ["nMu>=4 & I16>1"],
+            weight=events_n4_i16.genWeight,
         )
+        events_n4_pt10 = self.count_events(events, nMuons=4, pt_limit=10)
+        output[dataset]["cutflow"].fill(
+            len(events_n4_pt10) * ["nMu>=4 & ptMu<10"],
+            weight=events_n4_pt10.genWeight,
+        )
+        events_n4_pt10_i16 = self.count_events(
+            events, nMuons=4, pt_limit=10, interiso_cut=1.0
+        )
+        output[dataset]["cutflow"].fill(
+            len(events_n4_pt10_i16) * ["nMu>=4 & ptMu<10 & I16>1"],
+            weight=events_n4_pt10_i16.genWeight,
+        )
+        events_n4_avpt10 = self.count_events(events, nMuons=4, avpt_cut=10)
+        output[dataset]["cutflow"].fill(
+            len(events_n4_avpt10) * ["nMu>=4 & avpt<10"],
+            weight=events_n4_avpt10.genWeight,
+        )
+        events_n4_avpt10_i16 = self.count_events(
+            events, nMuons=4, avpt_cut=10, interiso_cut=1.0
+        )
+        output[dataset]["cutflow"].fill(
+            len(events_n4_avpt10_i16) * ["nMu>=4 & avpt<10 & I16>1"],
+            weight=events_n4_avpt10_i16.genWeight,
+        )
+
+        events_n6 = self.count_events(events, nMuons=4)
+        output[dataset]["cutflow"].fill(
+            len(events_n6) * ["nMu>=6"],
+            weight=events_n6.genWeight,
+        )
+        events_n6_i16 = self.count_events(events, nMuons=6, interiso_cut=1.0)
+        output[dataset]["cutflow"].fill(
+            len(events_n6_i16) * ["nMu>=6 & I16>1"],
+            weight=events_n6_i16.genWeight,
+        )
+        events_n6_pt10 = self.count_events(events, nMuons=6, pt_limit=10)
+        output[dataset]["cutflow"].fill(
+            len(events_n6_pt10) * ["nMu>=6 & ptMu<10"],
+            weight=events_n6_pt10.genWeight,
+        )
+        events_n6_pt10_i16 = self.count_events(
+            events, nMuons=6, pt_limit=10, interiso_cut=1.0
+        )
+        output[dataset]["cutflow"].fill(
+            len(events_n6_pt10_i16) * ["nMu>=6 & ptMu<10 & I16>1"],
+            weight=events_n6_pt10_i16.genWeight,
+        )
+        events_n6_avpt10 = self.count_events(events, nMuons=6, avpt_cut=10)
+        output[dataset]["cutflow"].fill(
+            len(events_n6_avpt10) * ["nMu>=6 & avpt<10"],
+            weight=events_n6_avpt10.genWeight,
+        )
+        events_n6_avpt10_i16 = self.count_events(
+            events, nMuons=6, avpt_cut=10, interiso_cut=1.0
+        )
+        output[dataset]["cutflow"].fill(
+            len(events_n6_avpt10_i16) * ["nMu>=6 & avpt<10 & I16>1"],
+            weight=events_n6_avpt10_i16.genWeight,
+        )
+
+        # now actually run the muon filter
+        events, electrons, muons = self.muon_filter(events, nMuons=4)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
@@ -607,7 +706,7 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
 
         ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, min_pt=50
+            tracks, r=1.5, min_pt=30
         )
 
         #####################################################################################
@@ -634,19 +733,6 @@ class SUEP_cluster(processor.ProcessorABC):
         #####################################################################################
         # ---- Cut Based Analysis
         #####################################################################################
-
-        # Check the effect of higher pT cuts on the SUEP and ISR jets
-        (
-            ak_inclusive_jets_highPt,
-            ak_inclusive_cluster_highPt,
-        ) = SUEP_utils.FastJetReclustering(tracks, r=1.5, min_pt=150)
-        clusterCut_highPt = ak.num(ak_inclusive_jets_highPt, axis=1) > 0
-        output[dataset]["cutflow"].fill(
-            len(events[clusterCut_highPt]) * ["n_ak15 >= 1 (150 GeV)"],
-            weight=events[clusterCut_highPt].genWeight,
-        )
-
-        # remove events with at least 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 0
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
@@ -654,7 +740,7 @@ class SUEP_cluster(processor.ProcessorABC):
         indices = indices[clusterCut]
         events = events[clusterCut]
         output[dataset]["cutflow"].fill(
-            len(events) * ["n_ak15 >= 1 (50 GeV)"],
+            len(events) * ["n_ak15>=1 (30 GeV)"],
             weight=events.genWeight,
         )
 
@@ -685,7 +771,7 @@ class SUEP_cluster(processor.ProcessorABC):
             ISR_cand,
             SUEP_cluster_tracks,
             ISR_cluster_tracks,
-            do_inverted=True,
+            do_inverted=False,
             out_label=col_label,
         )
 
@@ -707,12 +793,21 @@ class SUEP_cluster(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         cutflow = hist.Hist.new.StrCategory(
             [
-                "all events",
-                "HLT_TripleMu_5_3_3",
-                "nMuon_mediumId >= 4",
-                "nMuon_mediumId >= 6",
-                "n_ak15 >= 1 (50 GeV)",
-                "n_ak15 >= 1 (150 GeV)",
+                "all",
+                "trigger",
+                "nMu>=4",
+                "nMu>=4 & I16>1",
+                "nMu>=4 & ptMu<10",
+                "nMu>=4 & ptMu<10 & I16>1",
+                "nMu>=4 & avpt<10",
+                "nMu>=4 & avpt<10 & I16>1",
+                "nMu>=6",
+                "nMu>=6 & I16>1",
+                "nMu>=6 & ptMu<10",
+                "nMu>=6 & ptMu<10 & I16>1",
+                "nMu>=6 & avpt<10",
+                "nMu>=6 & avpt<10 & I16>1",
+                "n_ak15>=1 (30 GeV)",
             ],
             name="cutflow",
             label="cutflow",

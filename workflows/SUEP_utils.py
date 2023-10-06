@@ -104,7 +104,7 @@ def ClusterMethod(
     output[dataset]["vars"]["SUEP_genPhi_diff_CL" + out_label] = SUEP_genPhi_diff_CL
     output[dataset]["vars"]["SUEP_genR_diff_CL" + out_label] = SUEP_genR_diff_CL
 
-    # inverted selection
+    # inverted selection - will keep it off for now...
     if do_inverted:
         boost_ISR = ak.zip(
             {
@@ -466,21 +466,22 @@ def FastJetReclustering(tracks, r, min_pt):
 
 def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster):
     # order the reclustered jets by pT (will take top 2 for ISR removal method)
+    # make sure there are at least 2 entries in the array
+    ak_inclusive_jets = ak.pad_none(ak_inclusive_jets, 2, axis=1)
+    ak_inclusive_cluster = ak.pad_none(ak_inclusive_cluster, 2, axis=1)
     highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
     jets_pTsorted = ak_inclusive_jets[highpt_jet]
     clusters_pTsorted = ak_inclusive_cluster[highpt_jet]
 
-    # at least 2 tracks in SUEP and ISR
-    singletrackCut = (ak.num(clusters_pTsorted[:, 0]) > 1) & (
-        ak.num(clusters_pTsorted[:, 1]) > 1
-    )
+    # at least 2 tracks in SUEP
+    singletrackCut = ak.num(clusters_pTsorted[:, 0]) > 1
     jets_pTsorted = jets_pTsorted[singletrackCut]
     clusters_pTsorted = clusters_pTsorted[singletrackCut]
     tracks = tracks[singletrackCut]
     indices = indices[singletrackCut]
 
     # number of constituents per jet, sorted by pT
-    nconst_pTsorted = ak.num(clusters_pTsorted, axis=-1)
+    nconst_pTsorted = ak.fill_none(ak.num(clusters_pTsorted, axis=-1), 0)
 
     # Top 2 pT jets. If jet1 has fewer tracks than jet2 then swap
     SUEP_cand = ak.where(
@@ -488,6 +489,7 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
         jets_pTsorted[:, 0],
         jets_pTsorted[:, 1],
     )
+    SUEP_cand = ak.where(ak.is_none(SUEP_cand), jets_pTsorted[:, 0], SUEP_cand)
     ISR_cand = ak.where(
         nconst_pTsorted[:, 1] > nconst_pTsorted[:, 0],
         jets_pTsorted[:, 0],
@@ -497,6 +499,9 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
         nconst_pTsorted[:, 1] <= nconst_pTsorted[:, 0],
         clusters_pTsorted[:, 0],
         clusters_pTsorted[:, 1],
+    )
+    SUEP_cluster_tracks = ak.where(
+        ak.is_none(SUEP_cluster_tracks), clusters_pTsorted[:, 0], SUEP_cluster_tracks
     )
     ISR_cluster_tracks = ak.where(
         nconst_pTsorted[:, 1] > nconst_pTsorted[:, 0],
@@ -651,3 +656,102 @@ def n_eta_ring(muonsCollection, eta_cutoff):
     return ak.num(
         muonsCollection[abs(leading_muon_eta - muonsCollection.eta) < eta_cutoff]
     )
+
+
+def transverse_mass(particles, met):
+    """Return the transverse mass of an array of particles and the missing transverse energy"""
+    return np.sqrt(2 * particles.pt * met.pt * (1 - np.cos(particles.delta_phi(met))))
+
+
+def get_last_parents(genParts):
+    # Begin with the matched gen muons
+    temp_parents = genParts
+    # This mask keeps track of which non-muon parents have not appeared already. Initialize to True.
+    has_not_appeared = ak.full_like(temp_parents.pt, True, dtype=bool)
+    # The useful parents are the last non-muon parents. It should be empty initially.
+    last_parents = ak.mask(temp_parents, ~has_not_appeared)
+    # Terminate when none of the particles is a muon
+    while ak.any(abs(temp_parents.pdgId) == abs(genParts.pdgId)):
+        # Create mask of the particles that are not muons and have not already been kept
+        mask = (abs(temp_parents.pdgId) != abs(genParts.pdgId)) & has_not_appeared
+        # Create the parents collection that includes all non-muon parents
+        parents = ak.zip(
+            {
+                "pt": ak.mask(temp_parents, mask).pt,
+                "eta": ak.mask(temp_parents, mask).eta,
+                "phi": ak.mask(temp_parents, mask).phi,
+                "M": ak.mask(temp_parents, mask).mass,
+                "pdgId": ak.mask(temp_parents, mask).pdgId,
+                "status": ak.mask(temp_parents, mask).status,
+            },
+            with_name="Momentum4D",
+        )
+        # Remove the parents that were found from the mask
+        has_not_appeared = has_not_appeared & ~mask
+        # Add the parents that are not None
+        last_parents = ak.where(ak.fill_none(parents.pt, 0) > 0, parents, last_parents)
+        # Get the parents of the particles
+        temp_parents = temp_parents.parent
+    return last_parents
+
+
+def probabilistic_removal(muons_genPartFlav):
+    """Will return a mask that will remove 7.2% of muons with flavor 0"""
+    is_matched = muons_genPartFlav != 0
+    rng = np.random.default_rng(12345)
+    counts = ak.num(muons_genPartFlav)
+    numbers = rng.random(len(ak.flatten(muons_genPartFlav)))
+    probs = ak.unflatten(numbers, counts)
+    unmatched_muons_passing = probs > 0.072
+    return is_matched | unmatched_muons_passing
+
+
+def LLP_free_muons(events, muons):
+    """Will return a mask that will remove the non-0 muons that have an LLP in their gen history"""
+    genParts = events.GenPart[muons.genPartIdx]
+    is_unmatched = muons.genPartFlav == 0
+    temp_parents = genParts
+    has_matched = ak.full_like(temp_parents.pt, False, dtype=bool)
+    while not ak.all(ak.is_none(temp_parents.pt, axis=-1)):
+        mask = ak.fill_none(
+            (abs(temp_parents.pdgId) == 130)
+            | (abs(temp_parents.pdgId) == 211)
+            | (abs(temp_parents.pdgId) == 321),
+            False,
+        )
+        has_matched = ak.where(
+            mask, ak.full_like(temp_parents.pt, True, dtype=bool), has_matched
+        )
+        temp_parents = temp_parents.parent
+    return ~has_matched | is_unmatched
+
+
+def discritize_pdg_codes(pdf_codes, extended=False):
+    discritized_codes = ak.where(pdf_codes == 0, 0, -1)
+    if extended:
+        discritized_codes = ak.where(pdf_codes == 1, 1, discritized_codes)
+        discritized_codes = ak.where(pdf_codes == 2, 2, discritized_codes)
+        discritized_codes = ak.where(pdf_codes == 3, 3, discritized_codes)
+        discritized_codes = ak.where(pdf_codes == 4, 4, discritized_codes)
+        discritized_codes = ak.where(pdf_codes == 5, 5, discritized_codes)
+    discritized_codes = ak.where(pdf_codes == 11, 11, discritized_codes)
+    discritized_codes = ak.where(pdf_codes == 13, 13, discritized_codes)
+    discritized_codes = ak.where(pdf_codes == 15, 15, discritized_codes)
+    discritized_codes = ak.where(pdf_codes == 22, 22, discritized_codes)
+    discritized_codes = ak.where(
+        (100 <= pdf_codes) & (pdf_codes < 200), 100, discritized_codes
+    )
+    discritized_codes = ak.where(
+        (200 <= pdf_codes) & (pdf_codes < 300), 200, discritized_codes
+    )
+    discritized_codes = ak.where(
+        (300 <= pdf_codes) & (pdf_codes < 400), 300, discritized_codes
+    )
+    discritized_codes = ak.where(
+        (400 <= pdf_codes) & (pdf_codes < 500), 400, discritized_codes
+    )
+    discritized_codes = ak.where(
+        (500 <= pdf_codes) & (pdf_codes < 600), 500, discritized_codes
+    )
+    discritized_codes = ak.where(1000 <= pdf_codes, 1000, discritized_codes)
+    return discritized_codes
