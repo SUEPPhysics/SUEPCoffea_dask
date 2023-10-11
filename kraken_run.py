@@ -195,18 +195,20 @@ def main():
                 os.mkdir(jobs_dir)
 
             # ---- getting the list of file for the dataset by xrdfs ls
-            
+
             if (options.era == "2018" or options.era == "2017") and options.private:
                 userOwner = "bmaier/suep"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
-            elif (options.era == "2016" or options.era == "2016apv") and options.private:
+            elif (
+                options.era == "2016" or options.era == "2016apv"
+            ) and options.private:
                 userOwner = "cfreer/suep_correct"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
-            elif not options.private and '/' in sample:
+            elif not options.private and "/" in sample:
                 sample_path = sample
             else:
                 sys.exit("Double check this.")
@@ -226,7 +228,6 @@ def main():
                     continue
                 new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
                 Raw_list.append(new_f)
-           
 
             # write list of files to inputfiles.dat
             nfiles = 0
