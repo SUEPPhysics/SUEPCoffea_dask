@@ -1,0 +1,160 @@
+{
+    "schema_version": 1,
+    "corrections": [
+        {
+            "name": "NUM_TrackerMuons_DEN_genTracks",
+            "description": "NUM_TrackerMuons_DEN_genTracks",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "abseta",
+                    "type": "real"
+                },
+                {
+                    "name": "pt",
+                    "type": "real"
+                },
+                {
+                    "name": "uncertainties",
+                    "type": "string"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real"
+            },
+            "data": {
+                "nodetype": "binning",
+                "edges": [
+                    0.0,
+                    0.9,
+                    1.2,
+                    2.1,
+                    2.4
+                ],
+                "content": [
+                    {
+                        "nodetype": "binning",
+                        "edges": [
+                            40.0,
+                            60.0
+                        ],
+                        "content": [
+                            {
+                                "nodetype": "category",
+                                "keys": [
+                                    "value",
+                                    "stat",
+                                    "syst",
+                                    "NominalOld",
+                                    "tagIso",
+                                    "massBin",
+                                    "massRange"
+                                ],
+                                "content": [
+                                    0.9998088006315689,
+                                    6.498845788247257e-05,
+                                    0.0003823987368622994,
+                                    0.0001911993684311497,
+                                    0.0001911993684311497,
+                                    0.0001911993684311497,
+                                    0.0001911993684311497
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "binning",
+                        "edges": [
+                            40.0,
+                            60.0
+                        ],
+                        "content": [
+                            {
+                                "nodetype": "category",
+                                "keys": [
+                                    "value",
+                                    "stat",
+                                    "syst",
+                                    "NominalOld",
+                                    "tagIso",
+                                    "massBin",
+                                    "massRange"
+                                ],
+                                "content": [
+                                    0.999754701980269,
+                                    0.00011054079511271507,
+                                    0.0005221124230931915,
+                                    0.0003034600911097085,
+                                    0.00024529801973105503,
+                                    0.00024529801973105503,
+                                    0.00024529801973105503
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "binning",
+                        "edges": [
+                            40.0,
+                            60.0
+                        ],
+                        "content": [
+                            {
+                                "nodetype": "category",
+                                "keys": [
+                                    "value",
+                                    "stat",
+                                    "syst",
+                                    "NominalOld",
+                                    "tagIso",
+                                    "massBin",
+                                    "massRange"
+                                ],
+                                "content": [
+                                    0.9995842791862117,
+                                    7.574443994874554e-05,
+                                    0.0008314416275765346,
+                                    0.0004157208137882673,
+                                    0.0004157208137882673,
+                                    0.0004157208137882673,
+                                    0.0004157208137882673
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "nodetype": "binning",
+                        "edges": [
+                            40.0,
+                            60.0
+                        ],
+                        "content": [
+                            {
+                                "nodetype": "category",
+                                "keys": [
+                                    "value",
+                                    "stat",
+                                    "syst",
+                                    "NominalOld",
+                                    "tagIso",
+                                    "massBin",
+                                    "massRange"
+                                ],
+                                "content": [
+                                    0.9990341741614288,
+                                    0.00019911479235592246,
+                                    0.0017237408292350668,
+                                    0.0004157208137882673,
+                                    0.0009658258385711882,
+                                    0.0009658258385711882,
+                                    0.0009658258385711882
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
