@@ -25,7 +25,7 @@ python make_plots.py --dataset <dataset> --output <output_tag> --tag <tag> --era
 
 The expected structure of your data is: `/path/<tag>/<dataset>/`. The xrootd option tells the script whether you need xrootd to access the files, or whether they are stored locally. You might need to change the dataDir in the script for it to point to the correct spot.
 
-To automatically run make_plots.py over all the \<dataset\>s, use mutlithreading:
+To automatically run make_plots.py over all the \<dataset\>s, use multithreading:
 
 ```
 python multithread.py --tag=<tag> --xrootd=0 --code=plot --inputList=<filelist>

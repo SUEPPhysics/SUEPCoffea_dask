@@ -109,7 +109,6 @@ for i in range(nResubmits):
                 tag, options.input, options.movesample
             )
         )
-        )
 
     if options.move:
         if not os.path.isdir(moveDir):
