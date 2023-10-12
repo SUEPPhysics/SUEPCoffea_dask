@@ -625,7 +625,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
             "SR": [{}, []],  # SR selection
         }
 
-        # Data dependant stuff
+        # Data dependent stuff
         dataset = events.metadata["dataset"]
         if self.isMC:
             self.gensumweight = ak.sum(events.genWeight)
