@@ -61,6 +61,7 @@ parser.add_argument("--merged", type=int, default=1, help="Use merged files")
 # some info about the files, highly encouraged to specify every time
 parser.add_argument("-e", "--era", type=str, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
+parser.add_argument("--isSignal", type=int, help="Is this signal sample or not",default=0)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
@@ -704,6 +705,25 @@ def calculate_systematic(
             #     else"
             #         df["event_weight"] *= df["prefire_nom"]
 
+        else:
+            # 1) pileup weights
+            puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
+                options.era
+            )
+            pu = pileup_weight.get_pileup_weights(
+                df, syst, puweights, puweights_up, puweights_down
+            )
+            df["event_weight"] *= pu
+
+            # 2) TriggerSF weights
+            trigSF = triggerSF.get_scout_trigSF_weight(np.array(df["ht"]).astype(int), syst, options.era)
+            df["event_weight"] *= trigSF
+
+            # 3) PS weights
+            if "PSWeight" in syst and syst in df.keys():
+                df["event_weight"] *= df[syst]
+
+
         # 5) Higgs_pt weights
         if "mS125" in options.dataset:
             (
@@ -793,7 +813,7 @@ else:
 # get cross section
 xsection = 1.0
 if options.isMC:
-    xsection = fill_utils.getXSection(options.dataset, options.era, SUEP=False)
+    xsection = fill_utils.getXSection(options.dataset, options.era, SUEP=bool(options.isSignal))
 
 # custom per region weights
 scaling_weights = None

@@ -139,12 +139,13 @@ class SUEP_cluster(processor.ProcessorABC):
                     trigger = events.HLT.PFHT1050 == 1
             events = events[trigger]
         else:
-            if self.era == "2016" or self.era == "2016apv":
-                trigger = events.hltResult[:,3] == 1 # require trigger DST_HT410_PFScouting_v2
-            elif self.era == "2017":
-                trigger = events.hltResult[:,5] == 1 # require trigger DST_HT410_PFScouting_v12
-            elif self.era == "2018":
-                trigger = events.hltResult[:,7] == 1 # require trigger DST_HT410_PFScouting_v16
+            #if self.era == "2016" or self.era == "2016apv":
+            #    trigger = events.hltResult[:,3] == 1 # require trigger DST_HT410_PFScouting_v2
+            #elif self.era == "2017":
+            #    trigger = events.hltResult[:,5] == 1 # require trigger DST_HT410_PFScouting_v12
+            #elif self.era == "2018":
+            #    trigger = events.hltResult[:,7] == 1 # require trigger DST_HT410_PFScouting_v16
+            trigger = (events.scouting.trig == 1)
             events = events[trigger]
         return events
 
@@ -345,6 +346,7 @@ class SUEP_cluster(processor.ProcessorABC):
         electrons,
         muons,
         out_label="",
+        debug_offjet = False
     ):
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
@@ -359,6 +361,7 @@ class SUEP_cluster(processor.ProcessorABC):
             Sample=self.sample,
             events=events,
             prefix=prefix,
+            debug_offjet = debug_offjet
         )
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
         jets_c = jets_c[jet_HEM_Cut]
@@ -497,7 +500,7 @@ class SUEP_cluster(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
-    def analysis(self, events, do_syst=False, col_label=""):
+    def analysis(self, events, do_syst=False, col_label="",debug_offjet=True):
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -566,6 +569,7 @@ class SUEP_cluster(processor.ProcessorABC):
             looseElectrons,
             looseMuons,
             out_label=col_label,
+            debug_offjet = debug_offjet
         )
 
         # indices of events in tracks, used to keep track which events pass selections
