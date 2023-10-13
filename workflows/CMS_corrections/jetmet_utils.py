@@ -5,8 +5,8 @@ from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
 from coffea.lookup_tools import extractor
 
 
-def load_jets(self, events):
-    if (self.isMC == 1) and ("2016" in self.era):
+def load_jets(self, events, debug_offjet=False):
+    if ((self.isMC == 1) and ("2016" in self.era)) or debug_offjet:
         vals_jet0 = events.OffJet
         vals_jet0["pt_raw"] = events.OffJet.pt
         vals_jet0["mass_raw"] = events.OffJet.mass
@@ -66,7 +66,7 @@ def load_jets(self, events):
     return vals_jet0
 
 
-def apply_jecs(self, Sample, events, prefix=""):
+def apply_jecs(self, Sample, events, prefix="", debug_offjet=False):
     # Find the Collection we want to look at
     if self.isMC:
         if self.era == "2016":
@@ -191,7 +191,7 @@ def apply_jecs(self, Sample, events, prefix=""):
 
     # Prepare the jets from the events
     if self.scouting == 1:
-        jets = load_jets(self, events)
+        jets = load_jets(self, events, debug_offjet)
     else:
         jets = events.Jet
         jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]

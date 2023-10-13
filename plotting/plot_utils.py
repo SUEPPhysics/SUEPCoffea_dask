@@ -74,13 +74,17 @@ lumis_scouting = {
 }
 
 
-def lumiLabel(year):
+def lumiLabel(year,scouting=False):
+    if scouting:
+      lumidir = lumis_scouting
+    else:
+      lumidir = lumis
     if year in ["2017", "2018"]:
-        return round(lumis[year] / 1000, 1)
+        return round(lumidir[year] / 1000, 1)
     elif year == "2016":
-        return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
+        return round((lumidir[year] + lumidir[year + "_apv"]) / 1000, 1)
     elif year == "all":
-        return round(lumis[year] / 1000, 1)
+        return round(lumidir[year] / 1000, 1)
 
 
 def findLumi(year, auto_lumi, infile_name, scouting):
@@ -629,7 +633,7 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         else:
             ax1.step(x1, y1, color="midnightblue", where="mid")
         ax1.errorbar(
-            x1, y1, yerr=y1_errs, color="maroon".upper(), fmt="", drawstyle="steps-mid"
+            x1, y1, yerr=y1_errs, color="midnightblue".upper(), fmt="", drawstyle="steps-mid"
         )
 
         y2_errs = np.sqrt(h2.variances())
@@ -639,7 +643,7 @@ def plot_ratio_regions(plots, plot_label, sample1, sample2, regions, density=Fal
         else:
             ax1.step(x2, y2, color="maroon", where="mid")
         ax1.errorbar(
-            x2, y2, yerr=y2_errs, color="blue".upper(), fmt="", drawstyle="steps-mid"
+            x2, y2, yerr=y2_errs, color="maroon".upper(), fmt="", drawstyle="steps-mid"
         )
 
         ax1.axvline(x2[0], ls="--", color="black")
