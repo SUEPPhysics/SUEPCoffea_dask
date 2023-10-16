@@ -19,5 +19,3 @@ function suepRun(){
     singularity run $CONTAINER "$@"
 }
 echo "Created function suepRun"
-
-
