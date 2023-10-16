@@ -359,10 +359,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # saving lepton kinematics
 
-        self.out_vars["lepton_pt" + out_label] = lepton.pt[0]
-        self.out_vars["lepton_eta" + out_label] = events.lepton.eta[0]
-        self.out_vars["lepton_phi" + out_label] =events.lepton.phi[0]
-        self.out_vars["lepton_mass" + out_label] =events.lepton.mass[0]
+        self.out_vars["lepton_pt" + out_label] = lepton.pt[:,0]
+        self.out_vars["lepton_eta" + out_label] = lepton.eta[:,0]
+        self.out_vars["lepton_phi" + out_label] = lepton.phi[:,0]
+        self.out_vars["lepton_mass" + out_label] = lepton.mass[:,0]
 
 
     def initializeColumns(self, label=""):
@@ -459,9 +459,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # ---- Event level information
         #####################################################################################
 
-        print()
-        print(selLeptons)
-        print()
 
         self.storeEventVars(
             events,
@@ -488,13 +485,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
-
-        # output file if no events pass selections, avoids errors later on
-        if len(tracks) == 0:
-            print("No events pass clusterCut.")
-            for c in self.columns:
-                self.out_vars[c] = np.nan
-            return
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
