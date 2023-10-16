@@ -1,6 +1,6 @@
 #!/bin/bash
-
-export SUEP_BASE=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+export _THISDIR=$(dirname "${BASH_SOURCE[0]}")
+export SUEP_BASE=$( cd "$_THISDIR" )" && pwd )
 echo "Created env. variable SUEP_BASE=${SUEP_BASE}"
 
 hostname=$(hostname)
@@ -16,6 +16,8 @@ CONTAINER=/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask
 
 # Add function for script wrapper
 function suepRun(){
-    singularity run $CONTAINER $@
+    singularity run $CONTAINER "$@"
 }
 echo "Created function suepRun"
+
+
