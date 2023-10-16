@@ -274,7 +274,7 @@ def main():
                     dataset=sample_name,
                     condor_file=condor_file,
                     outfile=outfile,
-                    outCutflow='cutflow',
+                    outCutflow="cutflow",
                     file_ext=file_ext,
                     redirector=redirector,
                 )
