@@ -135,6 +135,8 @@ sample_names = {
     "DY4JetsToLL": "DYNJetsToLL",
     "DYJetsToLL_M-50_HT": "DYJetsToLL_HT",
     "DYJetsToLL_M-4to50_HT": "DYJetsToLL_HT",
+    "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8": "DYLowMass_NLO",
+    "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8+": "DYLowMass_LO",
     "TTJets": "TTJets",
     "TTTo2L2Nu": "TTTo2L2Nu",
     "ttZJets": "ttZJets",
@@ -184,6 +186,8 @@ def fill_background(infile_name, plots, lumi):
         "DY2JetsToLL",
         "DY3JetsToLL",
         "DY4JetsToLL",
+        "DYLowMass_LO",
+        "DYLowMass_NLO",
         "TTJets",
         "ttZJets",
         "WWZ_4F",
@@ -250,13 +254,22 @@ def fillSample(infile_name, plots, lumi):
             ]  # hack for Carlos naming convention
         else:
             sample = infile_name.split("/")
+    elif "DoubleMuon" in infile_name:
+        sample = infile_name.split("/")[-1].split(".pkl")[0]
     elif sample is None:
         sample = infile_name
     return sample, plots
 
 
 # load file(s)
-def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
+def loader(
+    infile_names,
+    year=None,
+    auto_lumi=False,
+    custom_lumi=None,
+    is_data=False,
+    exclude_low_bins=False,
+):
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name):
@@ -270,8 +283,12 @@ def loader(infile_names, year=None, auto_lumi=False, exclude_low_bins=False):
         ):
             continue
 
-        # sets the lumi based on year
+        # set the lumi based on year or override using a custom value (in /pb). Data shouldn't be scaled.
         lumi = findLumi(year, auto_lumi, infile_name)
+        if custom_lumi is not None:
+            lumi = custom_lumi
+        if is_data:
+            lumi = 1
 
         # exclude low bins
         if exclude_low_bins:
@@ -471,6 +488,156 @@ def bin_midpoints(bins):
     for i in range(len(bins) - 1):
         midpoints.append((bins[i] + bins[i + 1]) / 2)
     return np.array(midpoints)
+
+
+def plot_ratio_stack(
+    plots, bkg_list, label, slc=None, ylim=None, xlog=False, ylog=False, per_muon=False
+):
+    """
+    Plots ratio of a list of bkg Hist histograms over a data Hist histogram.
+    The errors in the ratio are taken to be independent between histograms.
+
+    Parameters
+    ----------
+    plots : dict
+        Dictionary of Hist histograms
+    bkg_list : list
+        List of background samples to be stacked
+    label : tuple of str
+        Tuple of two strings: [0]: Label of the plot, [0]: Label of the axis
+    slc : tuple
+        Tuple of slices to apply to the histograms
+    """
+
+    # Set up figure and axes
+    fig = plt.figure(figsize=(10, 10))
+    plt.subplots_adjust(bottom=0.15, left=0.17)
+    ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
+
+    # Get the histograms
+    lbl_plot, lbl_axis = label
+    if slc is None:
+        slc = slice()
+    hists = []
+    hist_bkg_total = None
+    for bkg in bkg_list:
+        h_temp = plots[bkg][lbl_plot].project(lbl_axis)[slc]
+        hists.append(h_temp.copy())
+        if hist_bkg_total is None:
+            hist_bkg_total = h_temp.copy()
+        else:
+            hist_bkg_total += h_temp.copy()
+    data_name = "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018"
+    hist_data = plots[data_name][lbl_plot].project(lbl_axis)[slc]
+
+    # Plot the stacked histogram
+    hep.histplot(
+        hists,
+        label=[b.replace("_2018", "") for b in bkg_list],
+        stack=True,
+        histtype="fill",
+        ec="black",
+        lw=2,
+        ax=ax1,
+        zorder=1,
+    )
+
+    # Overlay an uncertainty hatch
+    sumw_total = hist_bkg_total.values()
+    unc = np.sqrt(hist_bkg_total.variances())
+    print(hist_bkg_total.axes[0].edges[1:])
+    print(sumw_total)
+    print(unc)
+    ax1.fill_between(
+        x=hist_bkg_total.axes[0].edges[1:],
+        y1=sumw_total - unc,
+        y2=sumw_total + unc,
+        label="Stat. Unc.",
+        step="pre",
+        facecolor="none",
+        edgecolor=(0, 0, 0, 0.5),
+        linewidth=0,
+        hatch="///",
+        zorder=2,
+    )
+
+    # Plot the data points
+    hep.histplot(
+        hist_data,
+        label=["Data"],
+        histtype="errorbar",
+        mec="black",
+        mfc="black",
+        ecolor="black",
+        ax=ax1,
+    )
+
+    ax1.legend(ncol=2, loc="best")
+    if xlog:
+        ax1.set_xscale("log")
+    if ylog:
+        ax1.set_yscale("log")
+    if ylim is not None:
+        ax1.set_ylim(*ylim)
+    ax1.set_xlabel("")
+    ax1.set_ylabel("Events")
+    if per_muon:
+        ax1.set_ylabel("Muons")
+    hep.cms.label(llabel="Preliminary", data=False, lumi=r"1")
+
+    # Calculate the ratio, with error propagation, and plot it
+    ax2 = plt.subplot2grid((4, 1), (3, 0), sharex=ax1)
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    ratio = np.divide(
+        hist_data.values(),
+        hist_bkg_total.values(),
+        out=np.ones_like(hist_data.values()),
+        where=hist_bkg_total.values() != 0,
+    )
+    ratio_err = np.where(
+        hist_bkg_total.values() > 0,
+        np.sqrt(
+            (hist_bkg_total.values() ** -2) * (hist_data.variances())
+            + (hist_data.values() ** 2 * hist_bkg_total.values() ** -4)
+            * (hist_bkg_total.variances())
+        ),
+        0,
+    )
+    ax2.errorbar(
+        hist_data.axes.centers[0],
+        ratio,
+        yerr=ratio_err,
+        color="black",
+        fmt="o",
+        linestyle="none",
+    )
+
+    # Draw a filled hatch area with the relative uncertainty of the MC in the ratio plot.
+    mc_rel_unc = np.divide(
+        np.sqrt(hist_bkg_total.variances()),
+        hist_bkg_total.values(),
+        out=np.zeros_like(hist_bkg_total.values()),
+        where=hist_bkg_total.values() != 0,
+    )
+    ax2.fill_between(
+        x=hist_bkg_total.axes[0].edges[1:],
+        y1=np.ones_like(hist_bkg_total.values()) - mc_rel_unc,
+        y2=np.ones_like(hist_bkg_total.values()) + mc_rel_unc,
+        # label="Stat. Unc.",
+        step="pre",
+        facecolor="none",
+        edgecolor=(0, 0, 0, 0.5),
+        linewidth=0,
+        hatch="///",
+        # zorder=2,
+    )
+
+    ax2.axhline(1, ls="--", color="gray")
+    ax2.set_xlabel(hist_data.axes.name[0])
+    ax2.set_ylabel("Ratio")
+    ax2.set_ylim(0, 2)
+    plt.plot()
+    return
 
 
 def plot_ratio(
