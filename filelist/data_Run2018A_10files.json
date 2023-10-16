@@ -1,0 +1,14 @@
+{
+  "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD": [
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_1.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_2.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_3.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_4.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_5.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_6.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_7.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_8.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_9.root",
+    "root://cmseos.fnal.gov//store/user/lpcsuep/SUEPNano_skimmed_merged/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD/skim_10.root"
+  ]
+}
