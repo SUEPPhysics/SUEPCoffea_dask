@@ -1,5 +1,7 @@
 import awkward as ak
+
 from workflows.SUEP_utils import sphericity
+
 
 def selectByLeptons(self, events, extraColls=[], lepveto=False):
     ###lepton selection criteria--4momenta collection for plotting
@@ -82,15 +84,15 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     selMuons = muons[cutMuons]
     selElectrons = electrons[cutElectrons]
 
-    cutHasOneMuon = (
-        (ak.num(selMuons, axis=1) == 1)
-        & (ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25)
+    cutHasOneMuon = (ak.num(selMuons, axis=1) == 1) & (
+        ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25
     )
-    cutHasOneElec = (
-        (ak.num(selElectrons, axis=1) == 1)
-        & (ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25)
+    cutHasOneElec = (ak.num(selElectrons, axis=1) == 1) & (
+        ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25
     )
-    cutOneLep = (ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)) < 2 #is this removing events with BOTH muons and electrons?
+    cutOneLep = (
+        ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)
+    ) < 2  # is this removing events with BOTH muons and electrons?
     cutHasOneLep = ((cutHasOneMuon) | (cutHasOneElec)) & cutOneLep
 
     ### Cut the events, also return the selected leptons for operation down the line
@@ -98,7 +100,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     selElectrons = selElectrons[cutHasOneLep]
     selMuons = selMuons[cutHasOneLep]
 
-    selLeptons = ak.concatenate([selElectrons, selMuons], axis=1) 
+    selLeptons = ak.concatenate([selElectrons, selMuons], axis=1)
 
     return events, selLeptons  # , [coll[cutHasTwoLeps] for coll in extraColls]
 
@@ -120,11 +122,11 @@ def TopPTMethod(
     highpt_jet = ak.argsort(jets.pt, axis=1, ascending=False, stable=True)
     jets_pTsorted = jets[highpt_jet]
     clusters_pTsorted = clusters[highpt_jet]
-    SUEP_cand = jets_pTsorted[:,0]
-    SUEP_cand_constituents = clusters_pTsorted[:,0]
+    SUEP_cand = jets_pTsorted[:, 0]
+    SUEP_cand_constituents = clusters_pTsorted[:, 0]
 
-    # at least 2 tracks 
-    singleTrackCut = (ak.num(SUEP_cand_constituents) > 1)
+    # at least 2 tracks
+    singleTrackCut = ak.num(SUEP_cand_constituents) > 1
     SUEP_cand = SUEP_cand[singleTrackCut]
     SUEP_cand_constituents = SUEP_cand_constituents[singleTrackCut]
     tracks = tracks[singleTrackCut]
@@ -176,7 +178,9 @@ def TopPTMethod(
         self.out_vars["SUEP_phi_TopPT" + out_label]
         - self.out_vars["SUEP_genPhi" + out_label]
     )
-    SUEP_genR_diff_TopPT = (SUEP_genEta_diff_TopPT**2 + SUEP_genPhi_diff_TopPT**2) ** 0.5
+    SUEP_genR_diff_TopPT = (
+        SUEP_genEta_diff_TopPT**2 + SUEP_genPhi_diff_TopPT**2
+    ) ** 0.5
     self.out_vars["SUEP_deltaEtaGen_TopPT" + out_label] = SUEP_genEta_diff_TopPT
     self.out_vars["SUEP_deltaPhiGen_TopPT" + out_label] = SUEP_genPhi_diff_TopPT
     self.out_vars["SUEP_deltaRGen_TopPT" + out_label] = SUEP_genR_diff_TopPT
