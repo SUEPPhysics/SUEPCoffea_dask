@@ -1,7 +1,5 @@
 #!/bin/bash
-export _BASHSOURCE=${BASH_SOURCE[0]}
-export _THISDIR=$(dirname "$_BASHSOURCE")
-SUEP_BASE=$(cd "$_THISDIR" && pwd )
+SUEP_BASE=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 export SUEP_BASE
 echo "Created env. variable SUEP_BASE=${SUEP_BASE}"
 
