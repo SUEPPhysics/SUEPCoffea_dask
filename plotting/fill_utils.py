@@ -159,7 +159,7 @@ def prepareDataFrame(df, abcd, label_out, blind=True, isMC=False):
                    the config dictionary.
         sys: str of systematic being applied.
 
-    OUTPUT: df: iinput DataFrame preapred for plotting
+    OUTPUT: df: input DataFrame prepared for plotting
     """
 
     # 1. keep only events that passed this method

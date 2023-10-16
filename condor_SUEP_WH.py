@@ -44,7 +44,7 @@ for instance in modules_era:
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
         chunksize=1000,
-        maxchunks=3#100000000,
+        maxchunks=3,  # 100000000,
     )
 
     output = runner.automatic_retries(

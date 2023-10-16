@@ -25,7 +25,10 @@ from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.CMS_corrections.track_killing_utils import *  # track_killing
+from workflows.CMS_corrections.track_killing_utils import (
+    scout_track_killing,
+    track_killing,
+)
 
 # Set vector behavior
 vector.register_awkward()
@@ -71,11 +74,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "total": processor.defaultdict_accumulator(float),
                 "triggerSingleMuon": processor.defaultdict_accumulator(float),
                 "triggerDoubleMuon": processor.defaultdict_accumulator(float),
-                "triggerEGamma":  processor.defaultdict_accumulator(float),
+                "triggerEGamma": processor.defaultdict_accumulator(float),
                 "all_triggers": processor.defaultdict_accumulator(float),
                 "oneLepton": processor.defaultdict_accumulator(float),
                 "qualityFilters": processor.defaultdict_accumulator(float),
-                "MET": processor.defaultdict_accumulator(float)
+                "MET": processor.defaultdict_accumulator(float),
             }
         )
 
@@ -111,36 +114,43 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         Default is PFHT triggers. Can use selection variable for customization.
         """
 
-        triggerSingleMuon = (events.HLT.IsoMu30 | events.HLT.IsoMu27 | events.HLT.IsoMu24 | events.HLT.Mu50)
-        triggerDoubleMuon =  (events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 |
-            events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass8 |
-            events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 |
-            events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass3p8
+        triggerSingleMuon = (
+            events.HLT.IsoMu30
+            | events.HLT.IsoMu27
+            | events.HLT.IsoMu24
+            | events.HLT.Mu50
         )
-        triggerEGamma = (events.HLT.Ele27_WPTight_Gsf |
-            events.HLT.Ele32_WPTight_Gsf |
-            events.HLT.Ele35_WPTight_Gsf |
-            events.HLT.Ele38_WPTight_Gsf |
-            events.HLT.Ele40_WPTight_Gsf |
-            events.HLT.Ele115_CaloIdVT_GsfTrkIdT |
-            events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL |
-            events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ |
-            events.HLT.Ele32_WPTight_Gsf_L1DoubleEG |
-            events.HLT.DoubleEle27_CaloIdL_MW |
-            events.HLT.DoubleEle25_CaloIdL_MW |
-            events.HLT.DoubleEle33_CaloIdL_MW |
-            events.HLT.DiEle27_WPTightCaloOnly_L1DoubleEG |
-            events.HLT.Photon200 |
-            events.HLT.DoublePhoton70
+        triggerDoubleMuon = (
+            events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8
+            | events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass8
+            | events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8
+            | events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass3p8
+        )
+        triggerEGamma = (
+            events.HLT.Ele27_WPTight_Gsf
+            | events.HLT.Ele32_WPTight_Gsf
+            | events.HLT.Ele35_WPTight_Gsf
+            | events.HLT.Ele38_WPTight_Gsf
+            | events.HLT.Ele40_WPTight_Gsf
+            | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+            | events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL
+            | events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ
+            | events.HLT.Ele32_WPTight_Gsf_L1DoubleEG
+            | events.HLT.DoubleEle27_CaloIdL_MW
+            | events.HLT.DoubleEle25_CaloIdL_MW
+            | events.HLT.DoubleEle33_CaloIdL_MW
+            | events.HLT.DiEle27_WPTightCaloOnly_L1DoubleEG
+            | events.HLT.Photon200
+            | events.HLT.DoublePhoton70
         )
 
         # this is just for cutflow
-        output['triggerSingleMuon'][dataset] += len(events[triggerSingleMuon])
-        output['triggerDoubleMuon'][dataset] += len(events[triggerDoubleMuon])
-        output['triggerEGamma'][dataset] += len(events[triggerEGamma])
+        output["triggerSingleMuon"][dataset] += len(events[triggerSingleMuon])
+        output["triggerDoubleMuon"][dataset] += len(events[triggerDoubleMuon])
+        output["triggerEGamma"][dataset] += len(events[triggerEGamma])
 
         events = events[triggerDoubleMuon | triggerEGamma | triggerSingleMuon]
-                  
+
         return events
 
     def selectByFilters(self, events):
@@ -200,7 +210,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             & (events.PFCands.trkPt >= 1)
             & (abs(events.PFCands.trkEta) <= 2.5)
             & (abs(events.PFCands.dz) < 0.05)
-            #& (events.PFCands.dzErr < 0.05)
+            # & (events.PFCands.dzErr < 0.05)
             & (abs(events.PFCands.d0) < 0.05)
             & (events.PFCands.puppiWeight > 0.1)
         )
@@ -223,7 +233,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             & (abs(events.lostTracks.eta) <= 2.5)
             & (abs(events.lostTracks.dz) < 0.05)
             & (abs(events.lostTracks.d0) < 0.05)
-            #& (events.lostTracks.dzErr < 0.05)
+            # & (events.lostTracks.dzErr < 0.05)
             & (events.lostTracks.puppiWeight > 0.1)
         )
         Lost_Tracks_cands = LostTracks[cut]
@@ -236,8 +246,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if leptonIsolation:
             # Sorting out the tracks that overlap with the lepton
             tracks = tracks[
-                (tracks.deltaR(lepton[:,0]) >= leptonIsolation)
-                #& (tracks.deltaR(lepton) >= 0.4)
+                (tracks.deltaR(lepton[:, 0]) >= leptonIsolation)
+                # & (tracks.deltaR(lepton) >= 0.4)
             ]
 
         return tracks, Cleaned_cands
@@ -311,11 +321,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 ]  # create awkward array of ones
 
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
-         
+
             if self.isMC:
-                self.out_vars[
-                    "Pileup_nTrueInt" + out_label
-                ] = events.Pileup.nTrueInt
+                self.out_vars["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
                 GetPSWeights(self, events)  # Parton Shower weights
                 GetPrefireWeights(self, events)  # Prefire weights
             self.out_vars["PV_npvs" + out_label] = events.PV.npvs
@@ -390,7 +398,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             self.columns[iCol] = self.columns[iCol] + label
 
     def analysis(self, events, output, dataset, do_syst=False, col_label=""):
-
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -399,20 +406,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # golden jsons for offline data
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
-            
-        output['total'][dataset] += len(events)
-        
+
+        output["total"][dataset] += len(events)
+
         events = self.triggerSelection(events, output, dataset)
-        output['all_triggers'][dataset] += len(events)
+        output["all_triggers"][dataset] += len(events)
 
         events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
-        output['oneLepton'][dataset] += len(events)
+        output["oneLepton"][dataset] += len(events)
 
         events = self.selectByFilters(events)
-        output['qualityFilters'][dataset] += len(events)
+        output["qualityFilters"][dataset] += len(events)
 
         # TODO: MET
-        output['MET'][dataset] += len(events)
+        output["MET"][dataset] += len(events)
 
         # output empty dataframe if no events pass trigger -- to be fixed by Luca
         if len(events) == 0:
@@ -430,8 +437,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Prepare the clean PFCand matched to tracks collection, imposing a dR > 0.4
         # cut on tracks from the selected lepton
         #####################################################################################
-     
-        tracks, Cleaned_cands = self.getTracks(events, lepton=selLeptons, leptonIsolation=0.4)
+
+        tracks, Cleaned_cands = self.getTracks(
+            events, lepton=selLeptons, leptonIsolation=0.4
+        )
 
         if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
@@ -512,7 +521,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
-            self.analysis(events, output, dataset, do_syst=True, col_label="_track_down")
+            self.analysis(
+                events, output, dataset, do_syst=True, col_label="_track_down"
+            )
 
         # run the analysis
         self.analysis(events, output, dataset)
@@ -522,9 +533,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             self,
             [self.out_vars],
             ["vars"],
-            events.behavior["__events_factory__"]._partition_key.replace(
-                "/", "_"
-            )
+            events.behavior["__events_factory__"]._partition_key.replace("/", "_")
             + ".hdf5",
         )
         return output
