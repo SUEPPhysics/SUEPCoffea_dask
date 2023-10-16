@@ -213,7 +213,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "pt": events.lostTracks.pt,
                 "eta": events.lostTracks.eta,
                 "phi": events.lostTracks.phi,
-                "mass": 0.0,
+                "mass": ak.zeros_like(events.lostTracks.pt),
             },
             with_name="Momentum4D",
         )
@@ -583,12 +583,13 @@ class SUEP_cluster(processor.ProcessorABC):
             events = events[I15 > interiso_cut]
         return events
 
-    def fill_histograms(self, events, muons, output):
+    def fill_histograms(self, events, muons, tracks, output):
         dataset = events.metadata["dataset"]
 
         # These arrays need to be broadcasted to the per muon dims from per event dims
         nMuons = ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0])
         weights = ak.flatten(ak.broadcast_arrays(events.genWeight, muons.pt)[0])
+        muons_genPartFlav = ak.flatten(muons.genPartFlav).to_numpy().astype(int)
 
         output[dataset]["histograms"]["muon_pt_vs_nMuon"].fill(
             ak.flatten(muons.pt), nMuons, weight=weights
@@ -600,23 +601,23 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.flatten(mT_MET), nMuons, weight=weights
         )
         output[dataset]["histograms"]["muon_METmt_vs_genflavor_vs_nMuon"].fill(
-            ak.flatten(mT_MET), ak.flatten(muons.genPartFlav), nMuons, weight=weights
+            ak.flatten(mT_MET), muons_genPartFlav, nMuons, weight=weights
         )
         output[dataset]["histograms"]["muon_mt_vs_nMuon"].fill(
             ak.flatten(mT), nMuons, weight=weights
         )
         output[dataset]["histograms"]["muon_mt_vs_genflavor_vs_nMuon"].fill(
-            ak.flatten(mT), ak.flatten(muons.genPartFlav), nMuons, weight=weights
+            ak.flatten(mT), muons_genPartFlav, nMuons, weight=weights
         )
         output[dataset]["histograms"]["muon_pt_vs_genflavor_vs_nMuon"].fill(
-            ak.flatten(muons.pt), ak.flatten(muons.genPartFlav), nMuons, weight=weights
+            ak.flatten(muons.pt), muons_genPartFlav, nMuons, weight=weights
         )
         output[dataset]["histograms"][
             "muon_dxy_vs_miniPFRelIso_vs_genflavor_vs_nMuon"
         ].fill(
             ak.flatten(abs(muons.dxy)),
             ak.flatten(muons.miniPFRelIso_all),
-            ak.flatten(muons.genPartFlav),
+            muons_genPartFlav,
             nMuons,
             weight=weights,
         )
@@ -625,19 +626,19 @@ class SUEP_cluster(processor.ProcessorABC):
         ].fill(
             ak.flatten(muons.pt),
             ak.flatten(muons.miniPFRelIso_all),
-            ak.flatten(muons.genPartFlav),
+            muons_genPartFlav,
             nMuons,
             weight=weights,
         )
         output[dataset]["histograms"]["muon_dz_vs_genflavor_vs_nMuon"].fill(
             ak.flatten(abs(muons.dz)),
-            ak.flatten(muons.genPartFlav),
+            muons_genPartFlav,
             nMuons,
             weight=weights,
         )
         output[dataset]["histograms"]["muon_ip3d_vs_genflavor_vs_nMuon"].fill(
             ak.flatten(muons.ip3d),
-            ak.flatten(muons.genPartFlav),
+            muons_genPartFlav,
             nMuons,
             weight=weights,
         )
@@ -653,7 +654,7 @@ class SUEP_cluster(processor.ProcessorABC):
             SUEP_utils.discritize_pdg_codes(
                 ak.flatten(ak.fill_none(abs(last_parents.pdgId), 0)), extended=True
             ),
-            ak.flatten(muons.genPartFlav),
+            muons_genPartFlav,
             nMuons,
             weight=weights,
         )
@@ -682,6 +683,18 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.sum(matched_LLP_free, axis=-1),
             ak.sum(unmatched_LLP_free, axis=-1),
             ak.sum(matched_LLP_free & unmatched_LLP_free, axis=-1),
+            weight=events.genWeight,
+        )
+
+        # nTracks plots
+        output[dataset]["histograms"]["nTrack_nMuon"].fill(
+            ak.num(tracks),
+            ak.num(muons),
+            weight=events.genWeight,
+        )
+        output[dataset]["histograms"]["nTrack_log_nMuon"].fill(
+            ak.num(tracks),
+            ak.num(muons),
             weight=events.genWeight,
         )
 
@@ -786,24 +799,16 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # fill the histograms
         events, electrons, muons = self.muon_filter(events)
-        self.fill_histograms(events, muons, output)
+        tracks, Cleaned_cands = self.getTracks(events)
+        self.fill_histograms(events, muons, tracks, output)
 
         # now actually run the muon filter
         events, electrons, muons = self.muon_filter(events, nMuons=4)
+        tracks, Cleaned_cands = self.getTracks(events)
 
         # output empty dataframe if no events pass trigger
         if len(events) == 0:
             return output
-
-        #####################################################################################
-        # ---- Track selection
-        # Prepare the clean PFCand matched to tracks collection
-        #####################################################################################
-
-        if self.scouting == 1:
-            tracks, Cleaned_cands = self.getScoutingTracks(events)
-        else:
-            tracks, Cleaned_cands = self.getTracks(events)
 
         if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
@@ -1092,6 +1097,26 @@ class SUEP_cluster(processor.ProcessorABC):
                 label="nMuon_nounmatchedLLPs",
             )
             .Reg(10, 0, 10, name="nMuon_noLLPs", label="nMuon_noLLPs")
+            .Weight(),
+            # nTracks plot
+            "nTrack_nMuon": hist.Hist.new.Reg(
+                100,
+                0,
+                200,
+                name="nTrack",
+                label="nTrack",
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            "nTrack_log_nMuon": hist.Hist.new.Reg(
+                50,
+                1,
+                1e3,
+                name="nTrack",
+                label="nTrack",
+                transform=hist.axis.transform.log,
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
         }
         output = {
