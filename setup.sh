@@ -1,6 +1,6 @@
 #!/bin/bash
 export _THISDIR=$(dirname "${BASH_SOURCE[0]}")
-export SUEP_BASE=$( cd "$_THISDIR" )" && pwd )
+export SUEP_BASE=$(cd "$_THISDIR" && pwd )
 echo "Created env. variable SUEP_BASE=${SUEP_BASE}"
 
 hostname=$(hostname)
