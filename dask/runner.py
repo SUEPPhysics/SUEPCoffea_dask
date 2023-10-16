@@ -90,7 +90,13 @@ def get_main_parser():
         "--wf",
         "--workflow",
         dest="workflow",
-        choices=["SUEP", "SUEP_slim", "SUEP_fastjet_testing", "SUEP_ttbar_sources"],
+        choices=[
+            "SUEP",
+            "SUEP_slim",
+            "SUEP_fastjet_testing",
+            "SUEP_ttbar_sources",
+            "SUEP_data",
+        ],
         help="Which processor to run",
         required=True,
     )
@@ -587,6 +593,29 @@ def setupSUEP_ttbar_sources(args, sample_dict):
     return instance
 
 
+def setupSUEP_data(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_data import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -616,7 +645,7 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     return output
 
 
-def saveOutput(args, output, sample, gensumweight=None):
+def saveOutput(args, processor_instance, output, sample, gensumweight=None):
     """
     Save the output to file(s)
     Will calculate weights if necessary
@@ -647,17 +676,20 @@ def saveOutput(args, output, sample, gensumweight=None):
     # Save the cutflow (normalized to the gensumweight)
     if "cutflow" in output.keys():
         cutflowName = f"{outputName.replace('.hdf5', '')}_cutflow.pkl"
+        if args.isMC:
+            output["cutflow"] /= output["gensumweight"].value
         print(f"Saving the following cutflow to {cutflowName}")
         pickle.dump(
-            {"cutflow": output["cutflow"] / output["gensumweight"].value},
+            {"cutflow": output["cutflow"]},
             open(cutflowName, "wb"),
         )
 
     if "histograms" in output.keys():
         histName = f"{outputName.replace('.hdf5', '')}_histograms.pkl"
         print(f"Saving the following histograms to {histName}")
-        for p in output["histograms"].keys():
-            output["histograms"][p] /= metadata["gensumweight"]
+        if args.isMC:
+            for p in output["histograms"].keys():
+                output["histograms"][p] /= metadata["gensumweight"]
         pickle.dump(output["histograms"], open(histName, "wb"))
 
 
@@ -689,6 +721,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_fastjet_testing(args, sample_dict)
     elif args.workflow == "SUEP_ttbar_sources":
         processor_instance = setupSUEP_ttbar_sources(args, sample_dict)
+    elif args.workflow == "SUEP_data":
+        processor_instance = setupSUEP_data(args, sample_dict)
     else:
         raise NotImplementedError
 
@@ -711,10 +745,13 @@ if __name__ == "__main__":
     # Save the output
     for sample in sample_dict:
         if args.skimmed:
-            saveOutput(args, output[sample], sample, weights[sample].value)
+            saveOutput(
+                args, processor_instance, output[sample], sample, weights[sample].value
+            )
         else:
             saveOutput(
                 args,
+                processor_instance,
                 output[sample],
                 sample,
             )
