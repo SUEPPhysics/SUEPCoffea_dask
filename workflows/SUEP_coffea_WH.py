@@ -356,14 +356,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.out_vars["SUEP_genEta" + out_label] = SUEP_genEta
         self.out_vars["SUEP_genPhi" + out_label] = SUEP_genPhi
 
-
         # saving lepton kinematics
 
-        self.out_vars["lepton_pt" + out_label] = lepton.pt[:,0]
-        self.out_vars["lepton_eta" + out_label] = lepton.eta[:,0]
-        self.out_vars["lepton_phi" + out_label] = lepton.phi[:,0]
-        self.out_vars["lepton_mass" + out_label] = lepton.mass[:,0]
-
+        self.out_vars["lepton_pt" + out_label] = lepton.pt[:, 0]
+        self.out_vars["lepton_eta" + out_label] = lepton.eta[:, 0]
+        self.out_vars["lepton_phi" + out_label] = lepton.phi[:, 0]
+        self.out_vars["lepton_mass" + out_label] = lepton.mass[:, 0]
 
     def initializeColumns(self, label=""):
         # need to add these to dataframe when no events pass to make the merging work
@@ -458,7 +456,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
         # ---- Event level information
         #####################################################################################
-
 
         self.storeEventVars(
             events,
