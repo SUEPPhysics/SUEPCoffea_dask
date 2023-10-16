@@ -1,8 +1,8 @@
 """
-SUEP_coffea.py
-Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
+SUEP_coffea_WH.py
+Coffea producer for SUEP WH analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
-Chad Freer, and Luca Lavezzo, 2021
+Pietro Lugato, Chad Freer, Luca Lavezzo, 2023
 """
 from typing import Optional
 
@@ -17,7 +17,7 @@ import workflows.pandas_utils as pandas_utils
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
-import workflows.ZH_utils as ZH_utils
+import workflows.WH_utils as WH_utils
 
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
@@ -42,7 +42,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         syst_var: str,
         weight_syst: bool,
         flag: bool,
-        do_inf: bool,
         output_location: Optional[str],
         accum: Optional[bool] = None,
         trigger: Optional[str] = None,
@@ -59,37 +58,26 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             (syst_var, f"_sys_{syst_var}") if do_syst and syst_var else ("", "")
         )
         self.weight_syst = weight_syst
-        self.do_inf = do_inf
         self.prefixes = {"SUEP": "SUEP"}
         self.doOF = False
         self.accum = accum
         self.trigger = trigger
         self.out_vars = pd.DataFrame()
 
-        if self.do_inf:
-            # ML settings
-            self.batch_size = 1024
-
-            # GNN settings
-            # model names and configs should be in data/GNN/
-            self.dgnn_model_names = [
-                "single_l5_bPfcand_S1_SUEPtracks"
-            ]  # Name for output
-            self.configs = ["config.yml"]  # config paths
-            self.obj = "bPFcand"
-            self.coords = "cyl"
-
-            # SSD settings
-            self.ssd_models = []  # Add to this list. There will be an output for each
-            self.eta_pix = 280
-            self.phi_pix = 360
-            self.eta_span = (-2.5, 2.5)
-            self.phi_span = (-np.pi, np.pi)
-            self.eta_scale = self.eta_pix / (self.eta_span[1] - self.eta_span[0])
-            self.phi_scale = self.phi_pix / (self.phi_span[1] - self.phi_span[0])
-
         # Set up for the histograms
-        self._accumulator = processor.dict_accumulator({})
+        self._accumulator = processor.dict_accumulator(
+            {
+                "sumw": processor.defaultdict_accumulator(float),
+                "total": processor.defaultdict_accumulator(float),
+                "triggerSingleMuon": processor.defaultdict_accumulator(float),
+                "triggerDoubleMuon": processor.defaultdict_accumulator(float),
+                "triggerEGamma":  processor.defaultdict_accumulator(float),
+                "all_triggers": processor.defaultdict_accumulator(float),
+                "oneLepton": processor.defaultdict_accumulator(float),
+                "qualityFilters": processor.defaultdict_accumulator(float),
+                "MET": processor.defaultdict_accumulator(float)
+            }
+        )
 
     @property
     def accumulator(self):
@@ -117,20 +105,42 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         return Jets_correct
 
-    def triggerSelection(self, events):
+    def triggerSelection(self, events, output, dataset):
         """
         Applies trigger, returns events.
         Default is PFHT triggers. Can use selection variable for customization.
         """
-        # NOTE: Might be a good idea to make this a 'match-case' statement
-        # once we can move to Python 3.10 for good.
-        trigger = (events.HLT.IsoMu20 | events.HLT.IsoMu22 | events.HLT.IsoMu24 | events.HLT.IsoTkMu20 | events.HLT.IsoTkMu22 | events.HLT.IsoTkMu24 | 
-                   events.HLT.Ele35_WPLoose_Gsf | events.HLT.Ele25_eta2p1_WPTight_Gsf | events.HLT.Ele27_WPTight_Gsf | events.HLT.Ele27_eta2p1_WPLoose_Gsf
-        )
-        events = events[trigger]
-        
 
-            
+        triggerSingleMuon = (events.HLT.IsoMu30 | events.HLT.IsoMu27 | events.HLT.IsoMu24 | events.HLT.Mu50)
+        triggerDoubleMuon =  (events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8 |
+            events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass8 |
+            events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 |
+            events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass3p8
+        )
+        triggerEGamma = (events.HLT.Ele27_WPTight_Gsf |
+            events.HLT.Ele32_WPTight_Gsf |
+            events.HLT.Ele35_WPTight_Gsf |
+            events.HLT.Ele38_WPTight_Gsf |
+            events.HLT.Ele40_WPTight_Gsf |
+            events.HLT.Ele115_CaloIdVT_GsfTrkIdT |
+            events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL |
+            events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ |
+            events.HLT.Ele32_WPTight_Gsf_L1DoubleEG |
+            events.HLT.DoubleEle27_CaloIdL_MW |
+            events.HLT.DoubleEle25_CaloIdL_MW |
+            events.HLT.DoubleEle33_CaloIdL_MW |
+            events.HLT.DiEle27_WPTightCaloOnly_L1DoubleEG |
+            events.HLT.Photon200 |
+            events.HLT.DoublePhoton70
+        )
+
+        # this is just for cutflow
+        output['triggerSingleMuon'][dataset] += len(events[triggerSingleMuon])
+        output['triggerDoubleMuon'][dataset] += len(events[triggerDoubleMuon])
+        output['triggerEGamma'][dataset] += len(events[triggerEGamma])
+
+        events = events[triggerDoubleMuon | triggerEGamma | triggerSingleMuon]
+                  
         return events
 
     def selectByFilters(self, events):
@@ -174,14 +184,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
         return genParts
 
-    def getTracks(self, events):
+    def getTracks(self, events, lepton=None, leptonIsolation=None):
         Cands = ak.zip(
             {
                 "pt": events.PFCands.trkPt,
                 "eta": events.PFCands.trkEta,
                 "phi": events.PFCands.trkPhi,
                 "mass": events.PFCands.mass,
-                "pdgID": events.PFCands.pdgID
+                # "pdgID": events.PFCands.pdgID
             },
             with_name="Momentum4D",
         )
@@ -223,108 +233,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # dimensions of tracks = events x tracks in event x 4 momenta
         tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
 
+        if leptonIsolation:
+            # Sorting out the tracks that overlap with the lepton
+            tracks = tracks[
+                (tracks.deltaR(lepton[:,0]) >= leptonIsolation)
+                #& (tracks.deltaR(lepton) >= 0.4)
+            ]
+
         return tracks, Cleaned_cands
-
-    def getScoutingTracks(self, events):
-        Cands = ak.zip(
-            {
-                "pt": events.PFcand.pt,
-                "eta": events.PFcand.eta,
-                "phi": events.PFcand.phi,
-                "mass": events.PFcand.mass,
-            },
-            with_name="Momentum4D",
-        )
-        cut = (
-            (events.PFcand.pt >= 0.75)
-            & (abs(events.PFcand.eta) <= 2.4)
-            & (events.PFcand.vertex == 0)
-            & (events.PFcand.q != 0)
-        )
-        Cleaned_cands = Cands[cut]
-        tracks = ak.packed(Cleaned_cands)
-        return tracks, Cleaned_cands
-
-    def getLooseLeptons(self, events):
-        if self.scouting == 1:
-            looseMuons = ak.zip(
-                {
-                    "pt": events.Muon.pt,
-                    "eta": events.Muon.eta,
-                    "phi": events.Muon.phi,
-                    "mass": events.Muon.mass,
-                },
-                with_name="Momentum4D",
-            )
-
-            looseElectrons = ak.zip(
-                {
-                    "pt": events.Electron.pt,
-                    "eta": events.Electron.eta,
-                    "phi": events.Electron.phi,
-                    "mass": events.Electron.mass,
-                },
-                with_name="Momentum4D",
-            )
-
-            cutLooseMuons = (events.Muon.pt >= 1) & (abs(events.Muon.eta) < 2.4)
-            cutLooseElectrons = (events.Electron.pt >= 1) & (
-                abs(events.Electron.eta) < 2.5
-            )
-        else:
-            looseMuons = ak.zip(
-                {
-                    "pt": events.Muon.pt,
-                    "eta": events.Muon.eta,
-                    "phi": events.Muon.phi,
-                    "mass": events.Muon.mass,
-                    "charge": events.Muon.pdgId / (-13),
-                },
-                with_name="Momentum4D",
-            )
-
-            looseElectrons = ak.zip(
-                {
-                    "pt": events.Electron.pt,
-                    "eta": events.Electron.eta,
-                    "phi": events.Electron.phi,
-                    "mass": events.Electron.mass,
-                    "charge": events.Electron.pdgId / (-11),
-                },
-                with_name="Momentum4D",
-            )
-
-            cutLooseMuons = (
-                (events.Muon.looseId)
-                & (events.Muon.pt >= 1)
-                & (abs(events.Muon.dxy) <= 0.02)
-                & (abs(events.Muon.dz) <= 0.1)
-                & (abs(events.Muon.eta) < 2.4)
-            )
-            cutLooseElectrons = (
-                (events.Electron.cutBased >= 1)
-                & (events.Electron.pt >= 1)
-                & (
-                    abs(events.Electron.dxy)
-                    < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
-                )
-                & (
-                    abs(events.Electron.dz)
-                    < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
-                )
-                & (
-                    (abs(events.Electron.eta) < 1.444)
-                    | (abs(events.Electron.eta) > 1.566)
-                )
-                & (abs(events.Electron.eta) < 2.5)
-            )
-
-        ### Apply the cuts
-        # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
-        looseMuons = looseMuons[cutLooseMuons]
-        looseElectrons = looseElectrons[cutLooseElectrons]
-
-        return looseElectrons, looseMuons
 
     def storeEventVars(
         self,
@@ -332,8 +248,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         tracks,
         ak_inclusive_jets,
         ak_inclusive_cluster,
-        electrons,
-        muons,
         out_label="",
     ):
         # select out ak4jets
@@ -386,11 +300,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             self.out_vars["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
-            self.out_vars["n_sel_electrons"] = ak.to_numpy(ak.num(electrons))
-            self.out_vars["n_sel_muons"] = ak.to_numpy(ak.num(muons))
-            self.out_vars["n_sel_leps"] = ak.to_numpy(ak.num(electrons)) + ak.to_numpy(
-                ak.num(muons)
-            )
 
             # store event weights for MC
             if self.isMC and self.scouting == 0:
@@ -400,26 +309,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     1.0 for e in (len(events) * [0])
                 ]  # create awkward array of ones
 
-            if "2016" in self.era and self.scouting == 0:
-                self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
-            elif self.scouting == 0:
-                self.out_vars["HLT_PFHT1050" + out_label] = events.HLT.PFHT1050
             self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
-            if self.scouting == 1:
-                if self.isMC:
-                    self.out_vars["Pileup_nTrueInt" + out_label] = events.PU.num
-                    GetPSWeights(self, events)  # Parton Shower weights
-                    GetPrefireWeights(self, events)  # Prefire weights
-                self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
-            else:
-                if self.isMC:
-                    self.out_vars[
-                        "Pileup_nTrueInt" + out_label
-                    ] = events.Pileup.nTrueInt
-                    GetPSWeights(self, events)  # Parton Shower weights
-                    GetPrefireWeights(self, events)  # Prefire weights
-                self.out_vars["PV_npvs" + out_label] = events.PV.npvs
-                self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
+         
+            if self.isMC:
+                self.out_vars[
+                    "Pileup_nTrueInt" + out_label
+                ] = events.Pileup.nTrueInt
+                GetPSWeights(self, events)  # Parton Shower weights
+                GetPrefireWeights(self, events)  # Prefire weights
+            self.out_vars["PV_npvs" + out_label] = events.PV.npvs
+            self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
@@ -468,13 +367,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
 
         self.columns_ML, self.columns_ML_ISR = [], []
-        if self.do_inf:
-            self.columns_ML = ["SUEP_" + m + "_GNN" for m in self.dgnn_model_names] + [
-                "SUEP_S1_GNN",
-                "SUEP_nconst_GNN",
-            ]
-            self.columns_ML += [m + "_ssd" for m in self.ssd_models]
-            self.columns_ML_ISR = [c.replace("SUEP", "ISR") for c in self.columns_ML]
 
         self.columns = (
             self.columns_CL
@@ -487,7 +379,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
-    def analysis(self, events, do_syst=False, col_label=""):
+    def analysis(self, events, output, dataset, do_syst=False, col_label=""):
+
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -496,9 +389,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # golden jsons for offline data
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
-        events, _, _ = ZH_utils.selectByLeptons(self, events, lepveto=True)
-        events = self.triggerSelection(events)
-        events = self.selectByFilters(events) #check w chad
+            
+        output['total'][dataset] += len(events)
+        
+        events = self.triggerSelection(events, output, dataset)
+        output['all_triggers'][dataset] += len(events)
+
+        events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
+        output['oneLepton'][dataset] += len(events)
+
+        events = self.selectByFilters(events)
+        output['qualityFilters'][dataset] += len(events)
+
+        # TODO: MET
+        output['MET'][dataset] += len(events)
 
         # output empty dataframe if no events pass trigger -- to be fixed by Luca
         if len(events) == 0:
@@ -513,20 +417,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         #####################################################################################
         # ---- Track selection
-        # Prepare the clean PFCand matched to tracks collection
+        # Prepare the clean PFCand matched to tracks collection, imposing a dR > 0.4
+        # cut on tracks from the selected lepton
         #####################################################################################
-        #if self.scouting == 1:                                     | no scouting   
-        #    tracks, Cleaned_cands = self.getScoutingTracks(events) | here,
-        #else:                                                      | take out
+     
+        tracks, Cleaned_cands = self.getTracks(events, lepton=selLeptons, leptonIsolation=0.4)
 
-        tracks, Cleaned_cands = self.getTracks(events)
-        looseElectrons, looseMuons = self.getLooseLeptons(events)
-
-        if self.isMC and do_syst and self.scouting == 1:
-            tracks = scout_track_killing(self, tracks)
-            Cleaned_cands = scout_track_killing(self, Cleaned_cands)
-
-        if self.isMC and do_syst and self.scouting == 0:
+        if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
             Cleaned_cands = track_killing(self, Cleaned_cands)
 
@@ -535,13 +432,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # The jet clustering part
         #####################################################################################
 
-        if self.scouting == 1:
-            min_FastJet = 50
-        else:
-            min_FastJet = 150
-
         ak_inclusive_jets, ak_inclusive_cluster = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, minPt=min_FastJet
+            tracks, r=1.5, minPt=60
         )
 
         #####################################################################################
@@ -553,8 +445,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             tracks,
             ak_inclusive_jets,
             ak_inclusive_cluster,
-            looseElectrons,
-            looseMuons,
             out_label=col_label,
         )
 
@@ -568,8 +458,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # ---- Cut Based Analysis
         #####################################################################################
 
-        # remove events with less than 2 clusters (i.e. need at least SUEP and ISR jets for IRM)
-        clusterCut = ak.num(ak_inclusive_jets, axis=1) > 1
+        # remove events with less than 1 cluster (i.e. need at least SUEP candidate cluster)
+        clusterCut = ak.num(ak_inclusive_jets, axis=1) > 0
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
         tracks = tracks[clusterCut]
@@ -582,80 +472,47 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 self.out_vars[c] = np.nan
             return
 
-        tracks, indices, topTwoJets = SUEP_utils.getTopTwoJets(
-            self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
-        )
-        SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
+        # output file if no events pass selections, avoids errors later on
+        if len(tracks) == 0:
+            print("No events pass clusterCut.")
+            for c in self.columns:
+                self.out_vars[c] = np.nan
+            return
 
-        SUEP_utils.ClusterMethod(
+        WH_utils.TopPTMethod(
             self,
             indices,
             tracks,
-            SUEP_cand,
-            ISR_cand,
-            SUEP_cluster_tracks,
-            ISR_cluster_tracks,
-            do_inverted=True,
+            ak_inclusive_jets,
+            ak_inclusive_cluster,
             out_label=col_label,
         )
-
-        if self.do_inf:
-            import workflows.ML_utils as ML_utils
-
-            ML_utils.DGNNMethod(
-                self,
-                indices,
-                SUEP_tracks=SUEP_cluster_tracks,
-                SUEP_cand=SUEP_cand,
-                ISR_tracks=ISR_cluster_tracks,
-                ISR_cand=ISR_cand,
-                out_label=col_label,
-                do_inverted=True,
-            )
 
     def process(self, events):
         output = self.accumulator.identity()
         dataset = events.metadata["dataset"]
 
         # gen weights
-        if self.isMC and self.scouting == 1:
-            self.gensumweight = ak.num(events.PFcand.pt, axis=0)
-        elif self.isMC:
-            self.gensumweight = ak.sum(events.genWeight)
+        self.gensumweight = ak.sum(events.genWeight)
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
-            self.analysis(events, do_syst=True, col_label="_track_down")
+            self.analysis(events, output, dataset, do_syst=True, col_label="_track_down")
 
         # run the analysis
-        self.analysis(events)
-        print(self.out_vars)
+        self.analysis(events, output, dataset)
 
-        # output result to dask dataframe accumulator
-        if self.accum:
-            if "dask" in self.accum:
-                return self.out_vars
-
-            # output result to iterative/futures accumulator
-            if "iterative" in self.accum or "futures" in self.accum:
-                # Convert output to the desired format when the accumulator is used
-                for c in self.out_vars.columns:
-                    output[c] = self.out_vars[c].to_list()
-                output = {dataset: self.out_vars}
-                return output
-
-            if "pandas_merger" == self.accum:
-                # save the out_vars object as a Pandas DataFrame
-                pandas_utils.save_dfs(
-                    self,
-                    [self.out_vars],
-                    ["vars"],
-                    events.behavior["__events_factory__"]._partition_key.replace(
-                        "/", "_"
-                    )
-                    + ".hdf5",
-                )
-                return output
+        # save the out_vars object as a Pandas DataFrame
+        pandas_utils.save_dfs(
+            self,
+            [self.out_vars],
+            ["vars"],
+            events.behavior["__events_factory__"]._partition_key.replace(
+                "/", "_"
+            )
+            + ".hdf5",
+        )
+        return output
 
     def postprocess(self, accumulator):
         return accumulator

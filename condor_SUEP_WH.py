@@ -2,6 +2,7 @@ import argparse
 import os
 
 # Import coffea specific features
+import coffea
 from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
@@ -17,7 +18,6 @@ parser.add_argument("--doSyst", type=int, default=1, help="")
 parser.add_argument("--infile", required=True, type=str, default=None, help="")
 parser.add_argument("--dataset", type=str, default="X", help="")
 parser.add_argument("--nevt", type=str, default=-1, help="")
-parser.add_argument("--doInf", type=int, default=0, help="")
 options = parser.parse_args()
 
 out_dir = os.getcwd()
@@ -33,7 +33,6 @@ modules_era.append(
         sample=options.dataset,
         weight_syst="",
         flag=False,
-        do_inf=options.doInf,
         output_location=out_dir,
         accum="pandas_merger",
     )
@@ -48,7 +47,7 @@ for instance in modules_era:
         maxchunks=3#100000000,
     )
 
-    runner.automatic_retries(
+    output = runner.automatic_retries(
         retries=3,
         skipbadfiles=False,
         func=runner.run,
@@ -57,4 +56,5 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
+    coffea.util.save(output, "cutflow.coffea")
     merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
