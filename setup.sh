@@ -16,6 +16,6 @@ CONTAINER=/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask
 
 # Add function for script wrapper
 function suepRun(){
-    singularity run $CONTAINER "$@"
+    singularity run $CONTAINER python "$@"
 }
 echo "Created function suepRun"
