@@ -410,14 +410,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = self.triggerSelection(events, output, dataset)
         output["all_triggers"][dataset] += len(events)
 
-        events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
-        output["oneLepton"][dataset] += len(events)
-
         events = self.selectByFilters(events)
         output["qualityFilters"][dataset] += len(events)
 
         # TODO: MET
         output["MET"][dataset] += len(events)
+
+        events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
+        output["oneLepton"][dataset] += len(events)
 
         # output empty dataframe if no events pass trigger -- to be fixed by Luca
         if len(events) == 0:

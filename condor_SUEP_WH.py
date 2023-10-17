@@ -18,6 +18,7 @@ parser.add_argument("--doSyst", type=int, default=1, help="")
 parser.add_argument("--infile", required=True, type=str, default=None, help="")
 parser.add_argument("--dataset", type=str, default="X", help="")
 parser.add_argument("--nevt", type=str, default=-1, help="")
+parser.add_argument("--doInf", type=str, default=-1, help="")
 options = parser.parse_args()
 
 out_dir = os.getcwd()
