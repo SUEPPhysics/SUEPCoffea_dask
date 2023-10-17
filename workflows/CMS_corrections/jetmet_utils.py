@@ -6,7 +6,7 @@ from coffea.lookup_tools import extractor
 
 
 def load_jets(self, events):
-    if ((self.isMC == 1) and ("2016" in self.era)):
+    if (self.isMC == 1) and ("2016" in self.era):
         vals_jet0 = events.OffJet
         vals_jet0["pt_raw"] = events.OffJet.pt
         vals_jet0["mass_raw"] = events.OffJet.mass

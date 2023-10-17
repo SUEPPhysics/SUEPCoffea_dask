@@ -142,13 +142,13 @@ class SUEP_cluster(processor.ProcessorABC):
                     trigger = events.HLT.PFHT1050 == 1
             events = events[trigger]
         else:
-            #if self.era == "2016" or self.era == "2016apv":
+            # if self.era == "2016" or self.era == "2016apv":
             #    trigger = events.hltResult[:,3] == 1 # require trigger DST_HT410_PFScouting_v2
-            #elif self.era == "2017":
+            # elif self.era == "2017":
             #    trigger = events.hltResult[:,5] == 1 # require trigger DST_HT410_PFScouting_v12
-            #elif self.era == "2018":
+            # elif self.era == "2018":
             #    trigger = events.hltResult[:,7] == 1 # require trigger DST_HT410_PFScouting_v16
-            trigger = (events.scouting.trig == 1)
+            trigger = events.scouting.trig == 1
             events = events[trigger]
         return events
 
@@ -348,7 +348,7 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_cluster,
         electrons,
         muons,
-        out_label=""
+        out_label="",
     ):
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
@@ -358,12 +358,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.accum:
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
-        jets_c = apply_jecs(
-            self,
-            Sample=self.sample,
-            events=events,
-            prefix=prefix
-        )
+        jets_c = apply_jecs(self, Sample=self.sample, events=events, prefix=prefix)
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
         jets_c = jets_c[jet_HEM_Cut]
         jets_jec = self.jet_awkward(jets_c)
@@ -569,7 +564,7 @@ class SUEP_cluster(processor.ProcessorABC):
             ak_inclusive_cluster,
             looseElectrons,
             looseMuons,
-            out_label=col_label
+            out_label=col_label,
         )
 
         # indices of events in tracks, used to keep track which events pass selections

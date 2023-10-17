@@ -70,15 +70,18 @@ lumis_scouting = {
     "2016": 16705.324242775104523,
     "2017": 35718.640387367889404,
     "2018": 58965.346247952011108,
-    "all": 18843.384721292190552 + 16705.324242775104523 + 35718.640387367889404 + 58965.346247952011108,
+    "all": 18843.384721292190552
+    + 16705.324242775104523
+    + 35718.640387367889404
+    + 58965.346247952011108,
 }
 
 
-def lumiLabel(year,scouting=False):
+def lumiLabel(year, scouting=False):
     if scouting:
-      lumidir = lumis_scouting
+        lumidir = lumis_scouting
     else:
-      lumidir = lumis
+        lumidir = lumis
     if year in ["2017", "2018"]:
         return round(lumidir[year] / 1000, 1)
     elif year == "2016":
