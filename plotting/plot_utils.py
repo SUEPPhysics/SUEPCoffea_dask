@@ -66,21 +66,28 @@ lumis = {
 }
 
 lumis_scouting = {
-    "2016_apv": 16478,
-    "2016": 10845,
-    "2017": 34617,
-    "2018": 60686,
-    "all": 16478 + 10845 + 34617 + 60686,
+    "2016_apv": 18843.384721292190552,
+    "2016": 16705.324242775104523,
+    "2017": 35718.640387367889404,
+    "2018": 58965.346247952011108,
+    "all": 18843.384721292190552
+    + 16705.324242775104523
+    + 35718.640387367889404
+    + 58965.346247952011108,
 }
 
 
-def lumiLabel(year):
+def lumiLabel(year, scouting=False):
+    if scouting:
+        lumidir = lumis_scouting
+    else:
+        lumidir = lumis
     if year in ["2017", "2018"]:
-        return round(lumis[year] / 1000, 1)
+        return round(lumidir[year] / 1000, 1)
     elif year == "2016":
-        return round((lumis[year] + lumis[year + "_apv"]) / 1000, 1)
+        return round((lumidir[year] + lumidir[year + "_apv"]) / 1000, 1)
     elif year == "all":
-        return round(lumis[year] / 1000, 1)
+        return round(lumidir[year] / 1000, 1)
 
 
 def findLumi(year, auto_lumi, infile_name, scouting):
