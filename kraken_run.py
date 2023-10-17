@@ -260,12 +260,16 @@ def main():
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
-                extras=''
+                extras = ""
                 if options.cutflow:
                     extras += """
                     echo "xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea"
                     xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea
-                    """.format(outdir=fin_outdir_condor, outCutflow='cutflow', redirector=redirector)
+                    """.format(
+                        outdir=fin_outdir_condor,
+                        outCutflow="cutflow",
+                        redirector=redirector,
+                    )
                 script = script_TEMPLATE.format(
                     proxy=proxy_base,
                     ismc=options.isMC,
@@ -278,7 +282,7 @@ def main():
                     outfile=outfile,
                     file_ext=file_ext,
                     redirector=redirector,
-                    extras=extras
+                    extras=extras,
                 )
                 scriptfile.write(script)
                 scriptfile.close()
