@@ -25,7 +25,10 @@ from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.CMS_corrections.track_killing_utils import *  # track_killing
+from workflows.CMS_corrections.track_killing_utils import (
+    scout_track_killing,
+    track_killing,
+)
 
 # Set vector behavior
 vector.register_awkward()
@@ -110,9 +113,9 @@ class SUEP_cluster(processor.ProcessorABC):
             with_name="Momentum4D",
         )
         if self.scouting == 1:
-          jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.6)
+            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.6)
         else:
-          jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
         Jets_correct = Jets_awk[jet_awk_Cut]
 
         return Jets_correct

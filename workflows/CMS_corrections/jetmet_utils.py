@@ -11,10 +11,10 @@ def load_jets(self, events):
         vals_jet0["pt_raw"] = events.OffJet.pt
         vals_jet0["mass_raw"] = events.OffJet.mass
         vals_jet0["pt_gen"] = ak.values_astype(
-                    ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
-                )
+            ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
+        )
         vals_jet0["rho"] = events.rho
-        #vals_jet0 = ak.zip(
+        # vals_jet0 = ak.zip(
         #    {
         #        "area": events.OffJet.area,
         #        "eta": events.OffJet.eta,
@@ -30,16 +30,16 @@ def load_jets(self, events):
         #        "rho": events.rho,
         #    },
         #    with_name="Momentum4D",
-        #)
+        # )
     else:
         vals_jet0 = events.Jet
         vals_jet0["pt_raw"] = events.Jet.pt
         vals_jet0["mass_raw"] = events.Jet.mass
         vals_jet0["rho"] = events.rho
         vals_jet0["pt_gen"] = ak.values_astype(
-                    ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
-                )
-        #vals_jet0 = ak.zip(
+            ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
+        )
+        # vals_jet0 = ak.zip(
         #    {
         #        "area": events.Jet.area,
         #        "eta": events.Jet.eta,
@@ -55,13 +55,13 @@ def load_jets(self, events):
         #        "rho": events.rho,  # /events.Jet.area
         #    },
         #    with_name="Momentum4D",
-        #)
+        # )
     # if datatype == "Trigger":
     #       vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"] #ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
     # else:
     #       vals_jet0['rho'] = ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
-    #vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
-    #vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])[0]
+    # vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
+    # vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])[0]
 
     return vals_jet0
 
@@ -149,10 +149,16 @@ def apply_jecs(self, Sample, events, prefix=""):
     else:
         ext_ak4.add_weight_sets(
             [  # change to correct files
-                "* * " + jec_path + jecdir + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
+                "* * "
+                + jec_path
+                + jecdir
+                + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
                 "* * " + jec_path + jecdir + "_L1RC_AK4PFchs.jec.txt",  # needs area
                 "* * " + jec_path + jecdir + "_L2Relative_AK4PFchs.jec.txt",
-                "* * " + jec_path + jecdir + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
+                "* * "
+                + jec_path
+                + jecdir
+                + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
                 "* * " + jec_path + jecdir + "_L2L3Residual_AK4PFchs.jec.txt",
                 "* * " + jec_path + jecdir + "_L2Residual_AK4PFchs.jec.txt",
             ]

@@ -165,6 +165,8 @@ def main():
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
     proxy_copy = os.path.join(home_base, proxy_base)
 
+    missing_samples = []
+
     with open(options.input) as stream:
         for sample in stream.read().split("\n"):
             if len(sample) < 1:
@@ -192,45 +194,40 @@ def main():
             else:
                 os.mkdir(jobs_dir)
 
-            # ---- getting the list of file for the dataset (For Kraken these are stored in catalogues on T2)
-            if options.private == 1:
-                # some wrangling to get them in the same format as the RawFiles.00
-                if options.era == "2018" or options.era == "2017":
-                    userOwner = "bmaier/suep"
-                elif options.era == "2016" or options.era == "2016apv":
-                    userOwner = "cfreer/suep_correct"
-                else:
-                    sys.exit("Double check this.")
-                # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
+            # ---- getting the list of file for the dataset by xrdfs ls
+
+            if (options.era == "2018" or options.era == "2017") and options.private:
+                userOwner = "bmaier/suep"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
-                comm = subprocess.Popen(
-                    ["xrdfs", "root://xrootd5.cmsaf.mit.edu/", "ls", sample_path],
-                    stdout=subprocess.PIPE,
+            elif (
+                options.era == "2016" or options.era == "2016apv"
+            ) and options.private:
+                userOwner = "cfreer/suep_correct"
+                sample_path = "/store/user/{}/official_private/{}/{}".format(
+                    userOwner, options.era, sample_name
                 )
-                raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
-                Raw_list = []
-                for f in raw_input_list:
-                    if len(f) == 0:
-                        continue
-                    new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
-                    Raw_list.append(new_f)
-            elif options.scout == 1:
-                if options.isMC:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E07/{}/RawFiles.00".format(
-                        sample_name
-                    )
-                else:
-                    input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosc/E06/{}/RawFiles.00".format(
-                        sample_name
-                    )
-                Raw_list = open(input_list)
+            elif not options.private and "/" in sample:
+                sample_path = sample
             else:
-                input_list = "/home/tier3/cmsprod/catalog/t2mit/nanosu/A02/{}/RawFiles.00".format(
-                    sample_name
-                )
-                Raw_list = open(input_list)
+                sys.exit("Double check this.")
+
+            # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
+            comm = subprocess.Popen(
+                ["xrdfs", "root://xrootd5.cmsaf.mit.edu/", "ls", sample_path],
+                stdout=subprocess.PIPE,
+            )
+            raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
+
+            if raw_input_list == [""]:
+                missing_samples.append(sample_name)
+            Raw_list = []
+            for f in raw_input_list:
+                if len(f) == 0:
+                    continue
+                new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
+                Raw_list.append(new_f)
 
             # write list of files to inputfiles.dat
             nfiles = 0
@@ -302,6 +299,11 @@ def main():
             out, err = htc.communicate()
             exit_status = htc.returncode
             logging.info(f"condor submission status : {exit_status}")
+
+    if len(missing_samples) > 0:
+        logging.info("\nMissing samples:")
+        for s in missing_samples:
+            logging.info(s)
 
 
 if __name__ == "__main__":

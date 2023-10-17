@@ -137,11 +137,7 @@ for i in range(nResubmits):
                 subprocess.run(
                     [
                         "xrdcp",
-                        "root://submit50.mit.edu/"
-                        + dataDir
-                        + subDir
-                        + "/"
-                        + file,
+                        "root://submit50.mit.edu/" + dataDir + subDir + "/" + file,
                         moveDir + subDir + "/",
                     ]
                 )

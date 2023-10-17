@@ -7,8 +7,9 @@ import subprocess
 
 import fill_utils
 import numpy as np
-import uproot
 import plot_utils
+import uproot
+
 # Import our own functions
 from CMS_corrections import (
     GNN_syst,
@@ -90,7 +91,7 @@ outDir = f"/data/submit/{getpass.getuser()}/SUEP/outputs/"
 if options.save is not None and options.save != "None" and options != "none":
     outDir = options.save
 redirector = "root://submit50.mit.edu/"
-username=getpass.getuser()
+username = getpass.getuser()
 if os.path.isdir("/data/submit/cms/store/user/" + username):
     # define these if --xrootd 0
     dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
@@ -116,9 +117,10 @@ Multiple plotting methods can be defined for the same input method, as different
 selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
+
 if options.scouting:
     config = {
-          "Cluster": {
+        "Cluster": {
             "input_method": "CL",
             "xvar": "SUEP_S1_CL",
             "xvar_regions": [0.3, 0.34, 0.5, 2.0],
@@ -156,9 +158,9 @@ else:
             "yvar_regions": [30, 50, 70, 1000],
             # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
             "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-           "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-       },
-   }
+            "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+        },
+    }
 
 if options.doInf:
     config.update(
@@ -699,11 +701,11 @@ def calculate_systematic(
                 df["event_weight"] *= df[syst]
 
             # 3) prefire weights
-            # if options.era == 2016 or options.era == 2017:
-            #     if "prefire" in syst and syst in df.keys():
-            #         df["event_weight"] *= df[syst]
-            #     else"
-            #         df["event_weight"] *= df["prefire_nom"]
+            if options.era == "2016" or options.era == "2017":
+                if "prefire" in syst and syst in df.keys():
+                    df["event_weight"] *= df[syst]
+                else:
+                    df["event_weight"] *= df["prefire_nom"]
 
         else:
             # 1) pileup weights

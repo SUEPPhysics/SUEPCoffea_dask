@@ -16,8 +16,6 @@ def GetPSWeights(self, events):
             self.out_vars["PSWeight_FSR_down"] = (
                 events.PSweights[:, 0] * events.PSweights[:, 9]
             )
-        elif len(events.PSweights[0]) > 0:
-            self.out_vars["PSWeight"] = events.PSweights[:, 0]
         else:
             self.out_vars["PSWeight"] = np.ones(len(events.PSweights))
     else:
