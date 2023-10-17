@@ -345,8 +345,7 @@ class SUEP_cluster(processor.ProcessorABC):
         ak_inclusive_cluster,
         electrons,
         muons,
-        out_label="",
-        debug_offjet = False
+        out_label=""
     ):
         # select out ak4jets
         ak4jets = self.jet_awkward(events.Jet)
@@ -360,8 +359,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self,
             Sample=self.sample,
             events=events,
-            prefix=prefix,
-            debug_offjet = debug_offjet
+            prefix=prefix
         )
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
         jets_c = jets_c[jet_HEM_Cut]
@@ -500,7 +498,7 @@ class SUEP_cluster(processor.ProcessorABC):
         for iCol in range(len(self.columns)):
             self.columns[iCol] = self.columns[iCol] + label
 
-    def analysis(self, events, do_syst=False, col_label="",debug_offjet=True):
+    def analysis(self, events, do_syst=False, col_label=""):
         #####################################################################################
         # ---- Trigger event selection
         # Cut based on ak4 jets to replicate the trigger
@@ -568,8 +566,7 @@ class SUEP_cluster(processor.ProcessorABC):
             ak_inclusive_cluster,
             looseElectrons,
             looseMuons,
-            out_label=col_label,
-            debug_offjet = debug_offjet
+            out_label=col_label
         )
 
         # indices of events in tracks, used to keep track which events pass selections
