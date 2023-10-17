@@ -36,9 +36,9 @@ python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --do
 
 #echo "----- transferring output to scratch :"
 echo "xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}"
-echo "xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea"
 xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}
-xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea
+
+{extras}
 
 echo "rm *.{file_ext}"
 rm *.{file_ext}
@@ -159,10 +159,6 @@ def main():
         condor_file = "condor_ML.py"
         outfile = "out"
         file_ext = "hdf5"
-    elif options.cutflow == 1:
-        condor_file = "condor_SUEP_cutflow.py"
-        outfile = "output"
-        file_ext = "coffea"
     elif options.WH == 1:
         condor_file = "condor_SUEP_WH.py"
         outfile = "out"
@@ -264,6 +260,12 @@ def main():
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
+                extras=''
+                if options.cutflow:
+                    extras += """
+                    echo "xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea"
+                    xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea
+                    """.format(outdir=fin_outdir_condor, outCutflow='cutflow', redirector=redirector)
                 script = script_TEMPLATE.format(
                     proxy=proxy_base,
                     ismc=options.isMC,
@@ -274,9 +276,9 @@ def main():
                     dataset=sample_name,
                     condor_file=condor_file,
                     outfile=outfile,
-                    outCutflow="cutflow",
                     file_ext=file_ext,
                     redirector=redirector,
+                    extras=extras
                 )
                 scriptfile.write(script)
                 scriptfile.close()
