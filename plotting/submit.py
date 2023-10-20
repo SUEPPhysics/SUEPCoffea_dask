@@ -131,8 +131,6 @@ if options.method not in ["slurm", "multithread"]:
 
 # Set up where you're gonna work
 if options.method == "slurm":
-<<<<<<< HEAD
-    # work_dir = os.getcwd()
     # Found it necessary to run on a space with enough memory
     work_dir = "/work/submit/{}/dummy_directory{}".format(
         getpass.getuser(), np.random.randint(0, 10000)
@@ -145,11 +143,6 @@ if options.method == "slurm":
         os.environ["USER"],
         options.code,
         options.output if options.code == "plot" else options.tag,
-=======
-    work_dir = os.getcwd()
-    log_dir = "/work/submit/{}/SUEPCoffea_dask/logs/slurm_{}/".format(
-        os.environ["USER"], options.output
->>>>>>> e244ba3cb2761ae02467931e562023b855d76a30
     )
     if not os.path.isdir(log_dir):
         os.mkdir(log_dir)
