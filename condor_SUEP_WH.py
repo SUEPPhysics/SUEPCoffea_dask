@@ -7,7 +7,8 @@ from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea_WH, merger
+from workflows import SUEP_coffea_WH
+from workflows import pandas_utils
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -17,7 +18,8 @@ parser.add_argument("--era", type=str, default="2018", help="")
 parser.add_argument("--doSyst", type=int, default=1, help="")
 parser.add_argument("--infile", required=True, type=str, default=None, help="")
 parser.add_argument("--dataset", type=str, default="X", help="")
-parser.add_argument("--nevt", type=str, default=-1, help="")
+parser.add_argument("--maxChunks", type=int, default=None, help="")
+parser.add_argument("--chunkSize", type=int, default=100000, help="")
 parser.add_argument("--doInf", type=str, default=-1, help="")
 options = parser.parse_args()
 
@@ -44,8 +46,8 @@ for instance in modules_era:
         executor=processor.FuturesExecutor(compression=None, workers=1),
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
-        chunksize=1000,
-        maxchunks=3,  # 100000000,
+        chunksize=options.chunkSize,
+        maxchunks=options.maxChunks
     )
 
     output = runner.automatic_retries(
@@ -57,5 +59,12 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    coffea.util.save(output, "cutflow.coffea")
-    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
+    # save output
+    df = output["out"][options.dataset]["vars"].value
+    metadata = dict(
+        era=options.era,
+        mc=options.isMC,
+        sample=options.dataset,
+    )
+    metadata.update({key:output['out'][options.dataset][key] for key in output['out'][options.dataset].keys() if key != 'vars'})
+    pandas_utils.save_dfs(instance, [df], ["vars"], "out.hdf5", metadata=metadata)
