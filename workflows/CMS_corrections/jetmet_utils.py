@@ -1,7 +1,7 @@
 import awkward as ak
 import cachetools
 import numpy as np
-from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
+from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 from coffea.lookup_tools import extractor
 
 
@@ -223,4 +223,32 @@ def apply_jecs(self, Sample, events, prefix=""):
     jec_cache = cachetools.Cache(np.inf)
     jet_factory = CorrectedJetsFactory(name_map, jec_stack_ak4)
     corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
-    return corrected_jets
+
+    if self.scouting == 1:
+        return corrected_jets
+
+    else:
+        name_map["METpt"] = "pt"
+        name_map["METphi"] = "phi"
+        name_map["JetPhi"] = "phi"
+        name_map["UnClusteredEnergyDeltaX"] = "MetUnclustEnUpDeltaX"
+        name_map["UnClusteredEnergyDeltaY"] = "MetUnclustEnUpDeltaY"
+    
+        met_factory = CorrectedMETFactory(name_map)
+        met = ak.packed(events.MET, highlevel=True)
+        met["pt"] = met["pt"]
+        met["phi"] = met["phi"]
+        met["UnClusteredEnergyDeltaX"] = met["MetUnclustEnUpDeltaX"]
+        met["UnClusteredEnergyDeltaY"] = met["MetUnclustEnUpDeltaY"]
+        corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
+        print("Let's test the MET")
+        print("The OG MET is: ", met.pt)
+        print("The new MET is: ", corrected_met.pt)
+        print("throwaway line")
+    
+        for unc in jet_factory.uncertainties() + met_factory.uncertainties():
+            print(unc)
+            print(corrected_met[unc].up.pt)
+            print(corrected_met[unc].down.pt)
+    
+        return corrected_jets, corrected_met
