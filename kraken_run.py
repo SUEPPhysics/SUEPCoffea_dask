@@ -241,7 +241,7 @@ def main():
                     continue
                 new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
                 Raw_list.append(new_f)
-            
+
             # write list of files to inputfiles.dat
             nfiles = 0
             with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
