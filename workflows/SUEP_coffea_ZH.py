@@ -2132,7 +2132,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
         }
 
     def doJECJERVariations(self, events, jets):
-        jets_corrected = apply_jecs(
+        jets_corrected, met_c = apply_jecs(
             isMC=self.isMC,
             Sample=self.sample,
             era=self.era,
