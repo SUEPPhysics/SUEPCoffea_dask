@@ -66,4 +66,3 @@ class pandas_accumulator(AccumulatorABC):
         Returns a numpy array where the first dimension is the column dimension
         """
         return self._value
-

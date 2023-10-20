@@ -14,7 +14,6 @@ from coffea import processor
 
 # IO utils
 import workflows.pandas_utils as pandas_utils
-from workflows.pandas_accumulator import pandas_accumulator
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
@@ -30,6 +29,7 @@ from workflows.CMS_corrections.track_killing_utils import (
     scout_track_killing,
     track_killing,
 )
+from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
@@ -127,9 +127,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
 
         # this is just for cutflow
-        output["triggerSingleMuon"+out_label] += len(events[triggerSingleMuon])
-        output["triggerDoubleMuon"+out_label] += len(events[triggerDoubleMuon])
-        output["triggerEGamma"+out_label] += len(events[triggerEGamma])
+        output["triggerSingleMuon" + out_label] += len(events[triggerSingleMuon])
+        output["triggerDoubleMuon" + out_label] += len(events[triggerDoubleMuon])
+        output["triggerEGamma" + out_label] += len(events[triggerEGamma])
 
         events = events[triggerDoubleMuon | triggerEGamma | triggerSingleMuon]
 
@@ -314,100 +314,110 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             MET_JEC_pt_UnclusteredEnergyDown = met_c.pt
 
         # save per event variables to a dataframe
-        output['vars']["ntracks" + out_label] = ak.num(tracks).to_list()
-        output['vars']["ngood_fastjets" + out_label] = ak.num(
+        output["vars"]["ntracks" + out_label] = ak.num(tracks).to_list()
+        output["vars"]["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
 
         if out_label == "":
-            output['vars']["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
-            output['vars']["ht_JEC" + out_label] = ak.sum(jets_jec.pt, axis=-1).to_list()
-            output['vars']["ht_JEC" + out_label + "_JER_up"] = ak.sum(
+            output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
+            output["vars"]["ht_JEC" + out_label] = ak.sum(
+                jets_jec.pt, axis=-1
+            ).to_list()
+            output["vars"]["ht_JEC" + out_label + "_JER_up"] = ak.sum(
                 jets_jec_JERUp.pt, axis=-1
             ).to_list()
-            output['vars']["ht_JEC" + out_label + "_JER_down"] = ak.sum(
+            output["vars"]["ht_JEC" + out_label + "_JER_down"] = ak.sum(
                 jets_jec_JERDown.pt, axis=-1
             ).to_list()
-            output['vars']["ht_JEC" + out_label + "_JES_up"] = ak.sum(
+            output["vars"]["ht_JEC" + out_label + "_JES_up"] = ak.sum(
                 jets_jec_JESUp.pt, axis=-1
             ).to_list()
-            output['vars']["ht_JEC" + out_label + "_JES_down"] = ak.sum(
+            output["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
 
-            output['vars']["CaloMET_pt" + out_label] = events.CaloMET.pt
-            output['vars']["CaloMET_phi" + out_label] = events.CaloMET.phi
-            output['vars']["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
-            output['vars']["ChsMET_pt" + out_label] = events.ChsMET.pt
-            output['vars']["ChsMET_phi" + out_label] = events.ChsMET.phi
-            output['vars']["ChsMET_sumEt" + out_label] = events.ChsMET.sumEt
-            output['vars']["TkMET_pt" + out_label] = events.TkMET.pt
-            output['vars']["TkMET_phi" + out_label] = events.TkMET.phi
-            output['vars']["TkMET_sumEt" + out_label] = events.TkMET.sumEt
-            output['vars']["RawMET_pt" + out_label] = events.RawMET.pt
-            output['vars']["RawMET_phi" + out_label] = events.RawMET.phi
-            output['vars']["RawMET_sumEt" + out_label] = events.RawMET.sumEt
-            output['vars']["PuppiMET_pt" + out_label] = events.PuppiMET.pt
-            output['vars']["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
-            output['vars']["PuppiMET_pt" + out_label + "_JER_down"] = PuppiMET_pt_JERDown
-            output['vars']["PuppiMET_pt" + out_label + "_JES_up"] = PuppiMET_pt_JESUp
-            output['vars']["PuppiMET_pt" + out_label + "_JES_down"] = PuppiMET_pt_JESDown
-            output['vars']["PuppiMET_phi" + out_label] = events.PuppiMET.phi
-            output['vars']["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
-            output['vars'][
+            output["vars"]["CaloMET_pt" + out_label] = events.CaloMET.pt
+            output["vars"]["CaloMET_phi" + out_label] = events.CaloMET.phi
+            output["vars"]["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
+            output["vars"]["ChsMET_pt" + out_label] = events.ChsMET.pt
+            output["vars"]["ChsMET_phi" + out_label] = events.ChsMET.phi
+            output["vars"]["ChsMET_sumEt" + out_label] = events.ChsMET.sumEt
+            output["vars"]["TkMET_pt" + out_label] = events.TkMET.pt
+            output["vars"]["TkMET_phi" + out_label] = events.TkMET.phi
+            output["vars"]["TkMET_sumEt" + out_label] = events.TkMET.sumEt
+            output["vars"]["RawMET_pt" + out_label] = events.RawMET.pt
+            output["vars"]["RawMET_phi" + out_label] = events.RawMET.phi
+            output["vars"]["RawMET_sumEt" + out_label] = events.RawMET.sumEt
+            output["vars"]["PuppiMET_pt" + out_label] = events.PuppiMET.pt
+            output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JER_down"
+            ] = PuppiMET_pt_JERDown
+            output["vars"]["PuppiMET_pt" + out_label + "_JES_up"] = PuppiMET_pt_JESUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JES_down"
+            ] = PuppiMET_pt_JESDown
+            output["vars"]["PuppiMET_phi" + out_label] = events.PuppiMET.phi
+            output["vars"]["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
+            output["vars"][
                 "PuppiMET_phi" + out_label + "_JER_down"
             ] = PuppiMET_phi_JERDown
-            output['vars']["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
-            output['vars'][
+            output["vars"]["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
+            output["vars"][
                 "PuppiMET_phi" + out_label + "_JES_down"
             ] = PuppiMET_phi_JESDown
-            output['vars']["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
-            output['vars']["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
-            output['vars']["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
-            output['vars']["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt
-            output['vars']["MET_pt" + out_label] = events.MET.pt
-            output['vars']["MET_phi" + out_label] = events.MET.phi
-            output['vars']["MET_sumEt" + out_label] = events.MET.sumEt
-            output['vars']["MET_JEC_pt" + out_label] = met_c.pt
-            output['vars']["MET_JEC_pt" + out_label + "_JER_up"] = MET_JEC_pt_JERUp
-            output['vars']["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
-            output['vars']["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
-            output['vars']["MET_JEC_pt" + out_label + "_JES_down"] = MET_JEC_pt_JESDown
-            output['vars'][
+            output["vars"]["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
+            output["vars"]["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
+            output["vars"]["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
+            output["vars"]["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt
+            output["vars"]["MET_pt" + out_label] = events.MET.pt
+            output["vars"]["MET_phi" + out_label] = events.MET.phi
+            output["vars"]["MET_sumEt" + out_label] = events.MET.sumEt
+            output["vars"]["MET_JEC_pt" + out_label] = met_c.pt
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_up"] = MET_JEC_pt_JERUp
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
+            output["vars"]["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
+            output["vars"]["MET_JEC_pt" + out_label + "_JES_down"] = MET_JEC_pt_JESDown
+            output["vars"][
                 "MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"
             ] = MET_JEC_pt_UnclusteredEnergyUp
-            output['vars'][
+            output["vars"][
                 "MET_JEC_pt" + out_label + "_UnclusteredEnergy_down"
             ] = MET_JEC_pt_UnclusteredEnergyDown
-            output['vars']["MET_JEC_phi" + out_label] = met_c.phi
-            output['vars']["MET_JEC_phi" + out_label + "_JER_up"] = MET_JEC_phi_JERUp
-            output['vars']["MET_JEC_phi" + out_label + "_JER_down"] = MET_JEC_phi_JERDown
-            output['vars']["MET_JEC_phi" + out_label + "_JES_up"] = MET_JEC_phi_JESUp
-            output['vars']["MET_JEC_phi" + out_label + "_JES_down"] = MET_JEC_phi_JESDown
-            output['vars'][
+            output["vars"]["MET_JEC_phi" + out_label] = met_c.phi
+            output["vars"]["MET_JEC_phi" + out_label + "_JER_up"] = MET_JEC_phi_JERUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_JER_down"
+            ] = MET_JEC_phi_JERDown
+            output["vars"]["MET_JEC_phi" + out_label + "_JES_up"] = MET_JEC_phi_JESUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_JES_down"
+            ] = MET_JEC_phi_JESDown
+            output["vars"][
                 "MET_JEC_phi" + out_label + "_UnclusteredEnergy_up"
             ] = MET_JEC_phi_UnclusteredEnergyUp
-            output['vars'][
+            output["vars"][
                 "MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"
             ] = MET_JEC_phi_UnclusteredEnergyDown
-            output['vars']["MET_JEC_sumEt" + out_label] = met_c.sumEt
+            output["vars"]["MET_JEC_sumEt" + out_label] = met_c.sumEt
 
             # store event weights for MC
             if self.isMC and self.scouting == 0:
-                output['vars']["genweight"] = events.genWeight
+                output["vars"]["genweight"] = events.genWeight
             elif self.isMC and self.scouting == 1:
-                output['vars']["genweight"] = [
+                output["vars"]["genweight"] = [
                     1.0 for e in (len(events) * [0])
                 ]  # create awkward array of ones
 
-            output['vars']["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
+            output["vars"]["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
 
             if self.isMC:
-                output['vars']["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
+                output["vars"]["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
                 GetPSWeights(self, events)  # Parton Shower weights
                 GetPrefireWeights(self, events)  # Prefire weights
-            output['vars']["PV_npvs" + out_label] = events.PV.npvs
-            output['vars']["PV_npvsGood" + out_label] = events.PV.npvsGood
+            output["vars"]["PV_npvs" + out_label] = events.PV.npvs
+            output["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
@@ -431,18 +441,17 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             SUEP_genPhi = events.scalar.phi
             SUEP_genEta = events.scalar.eta
 
-        output['vars']["SUEP_genMass" + out_label] = SUEP_genMass
-        output['vars']["SUEP_genPt" + out_label] = SUEP_genPt
-        output['vars']["SUEP_genEta" + out_label] = SUEP_genEta
-        output['vars']["SUEP_genPhi" + out_label] = SUEP_genPhi
+        output["vars"]["SUEP_genMass" + out_label] = SUEP_genMass
+        output["vars"]["SUEP_genPt" + out_label] = SUEP_genPt
+        output["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
+        output["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
         # saving lepton kinematics
 
-        output['vars']["lepton_pt" + out_label] = lepton.pt[:, 0]
-        output['vars']["lepton_eta" + out_label] = lepton.eta[:, 0]
-        output['vars']["lepton_phi" + out_label] = lepton.phi[:, 0]
-        output['vars']["lepton_mass" + out_label] = lepton.mass[:, 0]
-
+        output["vars"]["lepton_pt" + out_label] = lepton.pt[:, 0]
+        output["vars"]["lepton_eta" + out_label] = lepton.eta[:, 0]
+        output["vars"]["lepton_phi" + out_label] = lepton.phi[:, 0]
+        output["vars"]["lepton_mass" + out_label] = lepton.mass[:, 0]
 
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################
@@ -450,25 +459,25 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Apply triggers, quality filters, MET, and one lepton selections.
         #####################################################################################
 
-        output["total"+out_label] += len(events)
+        output["total" + out_label] += len(events)
 
         # golden jsons for offline data
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
 
-        output["goldenJSON"+out_label] += len(events)
+        output["goldenJSON" + out_label] += len(events)
 
         events = self.triggerSelection(events, output, out_label)
-        output["all_triggers"+out_label] += len(events)
+        output["all_triggers" + out_label] += len(events)
 
         events = self.selectByFilters(events)
-        output["qualityFilters"+out_label] += len(events)
+        output["qualityFilters" + out_label] += len(events)
 
         # TODO: MET
-        output["MET"+out_label] += len(events)
+        output["MET" + out_label] += len(events)
 
         events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
-        output["oneLepton"+out_label] += len(events)
+        output["oneLepton" + out_label] += len(events)
 
         # output empty dataframe if no events pass basic event selection
         if len(events) == 0:
@@ -481,9 +490,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # cut on tracks from the selected lepton
         #####################################################################################
 
-        tracks, _ = self.getTracks(
-            events, lepton=selLeptons, leptonIsolation=0.4
-        )
+        tracks, _ = self.getTracks(events, lepton=selLeptons, leptonIsolation=0.4)
 
         if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
@@ -546,38 +553,45 @@ class SUEP_cluster_WH(processor.ProcessorABC):
     def process(self, events):
         dataset = events.metadata["dataset"]
 
-        output = processor.dict_accumulator({
-            "gensumweight": processor.value_accumulator(float, 0),
-            "total": processor.value_accumulator(float, 0),
-            "goldenJSON": processor.value_accumulator(float, 0),
-            "triggerSingleMuon": processor.value_accumulator(float, 0),
-            "triggerDoubleMuon": processor.value_accumulator(float, 0),
-            "triggerEGamma": processor.value_accumulator(float, 0),
-            "all_triggers": processor.value_accumulator(float, 0),
-            "oneLepton": processor.value_accumulator(float, 0),
-            "qualityFilters": processor.value_accumulator(float, 0),
-            "MET": processor.value_accumulator(float, 0),
-            "vars": pandas_accumulator(pd.DataFrame()),
-        })
+        output = processor.dict_accumulator(
+            {
+                "gensumweight": processor.value_accumulator(float, 0),
+                "total": processor.value_accumulator(float, 0),
+                "goldenJSON": processor.value_accumulator(float, 0),
+                "triggerSingleMuon": processor.value_accumulator(float, 0),
+                "triggerDoubleMuon": processor.value_accumulator(float, 0),
+                "triggerEGamma": processor.value_accumulator(float, 0),
+                "all_triggers": processor.value_accumulator(float, 0),
+                "oneLepton": processor.value_accumulator(float, 0),
+                "qualityFilters": processor.value_accumulator(float, 0),
+                "MET": processor.value_accumulator(float, 0),
+                "vars": pandas_accumulator(pd.DataFrame()),
+            }
+        )
 
         # gen weights
         if self.isMC:
-            output['gensumweight'] = ak.sum(events.genWeight)
-
+            output["gensumweight"] = ak.sum(events.genWeight)
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
-            output.update({
-                "total_track_down": processor.value_accumulator(float, 0),
-                "goldenJSON_track_down": processor.value_accumulator(float, 0),
-                "triggerSingleMuon_track_down": processor.value_accumulator(float, 0),
-                "triggerDoubleMuon_track_down": processor.value_accumulator(float, 0),
-                "triggerEGamma_track_down": processor.value_accumulator(float, 0),
-                "all_triggers_track_down": processor.value_accumulator(float, 0),
-                "oneLepton_track_down": processor.value_accumulator(float, 0),
-                "qualityFilters_track_down": processor.value_accumulator(float, 0),
-                "MET_track_down": processor.value_accumulator(float, 0),
-            })
+            output.update(
+                {
+                    "total_track_down": processor.value_accumulator(float, 0),
+                    "goldenJSON_track_down": processor.value_accumulator(float, 0),
+                    "triggerSingleMuon_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "triggerDoubleMuon_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "triggerEGamma_track_down": processor.value_accumulator(float, 0),
+                    "all_triggers_track_down": processor.value_accumulator(float, 0),
+                    "oneLepton_track_down": processor.value_accumulator(float, 0),
+                    "qualityFilters_track_down": processor.value_accumulator(float, 0),
+                    "MET_track_down": processor.value_accumulator(float, 0),
+                }
+            )
             output = self.analysis(
                 events, output, do_syst=True, out_label="_track_down"
             )

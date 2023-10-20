@@ -7,8 +7,7 @@ from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea_WH
-from workflows import pandas_utils
+from workflows import SUEP_coffea_WH, pandas_utils
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -47,7 +46,7 @@ for instance in modules_era:
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
         chunksize=options.chunkSize,
-        maxchunks=options.maxChunks
+        maxchunks=options.maxChunks,
     )
 
     output = runner.automatic_retries(
@@ -66,5 +65,11 @@ for instance in modules_era:
         mc=options.isMC,
         sample=options.dataset,
     )
-    metadata.update({key:output['out'][options.dataset][key] for key in output['out'][options.dataset].keys() if key != 'vars'})
+    metadata.update(
+        {
+            key: output["out"][options.dataset][key]
+            for key in output["out"][options.dataset].keys()
+            if key != "vars"
+        }
+    )
     pandas_utils.save_dfs(instance, [df], ["vars"], "out.hdf5", metadata=metadata)

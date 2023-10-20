@@ -153,18 +153,18 @@ def TopPTMethod(
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
     output["vars"].loc(indices, "SUEP_nconst_TopPT" + out_label, ak.num(SUEP_tracks_b))
-    output["vars"].loc(indices, "SUEP_pt_avg_b_TopPT" + out_label, ak.mean(
-        SUEP_tracks_b.pt, axis=-1
-    ))
-    output["vars"].loc(indices, "SUEP_S1_TopPT" + out_label, 1.5 * (
-        eigs[:, 1] + eigs[:, 0]
-    ))
+    output["vars"].loc(
+        indices, "SUEP_pt_avg_b_TopPT" + out_label, ak.mean(SUEP_tracks_b.pt, axis=-1)
+    )
+    output["vars"].loc(
+        indices, "SUEP_S1_TopPT" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
+    )
 
     # unboost for these
     SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
-    output["vars"].loc(indices, "SUEP_pt_avg_TopPT" + out_label, ak.mean(
-        SUEP_tracks.pt, axis=-1
-    ))
+    output["vars"].loc(
+        indices, "SUEP_pt_avg_TopPT" + out_label, ak.mean(SUEP_tracks.pt, axis=-1)
+    )
     output["vars"].loc(indices, "SUEP_pt_TopPT" + out_label, SUEP_cand.pt)
     output["vars"].loc(indices, "SUEP_eta_TopPT" + out_label, SUEP_cand.eta)
     output["vars"].loc(indices, "SUEP_phi_TopPT" + out_label, SUEP_cand.phi)
@@ -185,9 +185,13 @@ def TopPTMethod(
     output["vars"]["SUEP_deltaEtaGen_TopPT" + out_label] = SUEP_genEta_diff_TopPT
     output["vars"]["SUEP_deltaPhiGen_TopPT" + out_label] = SUEP_genPhi_diff_TopPT
     output["vars"]["SUEP_deltaRGen_TopPT" + out_label] = SUEP_genR_diff_TopPT
-    output["vars"].loc(indices, "SUEP_deltaMassGen_TopPT" + out_label, (
-        SUEP_cand.mass - output["vars"]["SUEP_genMass" + out_label][indices]
-    ))
-    output["vars"].loc(indices, "SUEP_deltaPtGen_TopPT" + out_label, (
-        SUEP_cand.pt - output["vars"]["SUEP_genPt" + out_label][indices]
-    ))
+    output["vars"].loc(
+        indices,
+        "SUEP_deltaMassGen_TopPT" + out_label,
+        (SUEP_cand.mass - output["vars"]["SUEP_genMass" + out_label][indices]),
+    )
+    output["vars"].loc(
+        indices,
+        "SUEP_deltaPtGen_TopPT" + out_label,
+        (SUEP_cand.pt - output["vars"]["SUEP_genPt" + out_label][indices]),
+    )
