@@ -252,7 +252,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if self.accum:
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
-        jets_c = apply_jecs(
+        jets_c, met_c = apply_jecs(
             self,
             Sample=self.sample,
             events=events,
@@ -266,12 +266,52 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
             jets_jec_JESUp = self.jet_awkward(jets_c["JES_jes"].up)
             jets_jec_JESDown = self.jet_awkward(jets_c["JES_jes"].down)
+            PuppiMET_phi_JERUp = events.PuppiMET.phiJERUp
+            PuppiMET_phi_JERDown = events.PuppiMET.phiJERDown
+            PuppiMET_phi_JESUp = events.PuppiMET.phiJESUp
+            PuppiMET_phi_JESDown = events.PuppiMET.phiJESDown
+            PuppiMET_pt_JERUp = events.PuppiMET.ptJERUp
+            PuppiMET_pt_JERDown = events.PuppiMET.ptJERDown
+            PuppiMET_pt_JESUp = events.PuppiMET.ptJESUp
+            PuppiMET_pt_JESDown = events.PuppiMET.ptJESDown
+            MET_JEC_phi_JERUp = met_c.JER.up.phi
+            MET_JEC_phi_JERDown = met_c.JER.down.phi
+            MET_JEC_phi_JESUp = met_c.JES_jes.up.phi
+            MET_JEC_phi_JESDown = met_c.JES_jes.down.phi
+            MET_JEC_phi_UnclusteredEnergyUp = met_c.MET_UnclusteredEnergy.up.phi
+            MET_JEC_phi_UnclusteredEnergyDown = met_c.MET_UnclusteredEnergy.down.phi
+            MET_JEC_pt_JERUp = met_c.JER.up.pt
+            MET_JEC_pt_JERDown = met_c.JER.up.pt
+            MET_JEC_pt_JESUp = met_c.JES_jes.up.pt
+            MET_JEC_pt_JESDown = met_c.JES_jes.down.pt
+            MET_JEC_pt_UnclusteredEnergyUp = met_c.MET_UnclusteredEnergy.up.pt
+            MET_JEC_pt_UnclusteredEnergyDown = met_c.MET_UnclusteredEnergy.down.pt
         # For data set these all to nominal so we can plot without switching all of the names
         else:
             jets_jec_JERUp = jets_jec
             jets_jec_JERDown = jets_jec
             jets_jec_JESUp = jets_jec
             jets_jec_JESDown = jets_jec
+            PuppiMET_phi_JERUp = events.PuppiMET.phi
+            PuppiMET_phi_JERDown = events.PuppiMET.phi
+            PuppiMET_phi_JESUp = events.PuppiMET.phi
+            PuppiMET_phi_JESDown = events.PuppiMET.phi
+            PuppiMET_pt_JERUp = events.PuppiMET.pt
+            PuppiMET_pt_JERDown = events.PuppiMET.pt
+            PuppiMET_pt_JESUp = events.PuppiMET.pt
+            PuppiMET_pt_JESDown = events.PuppiMET.pt
+            MET_JEC_phi_JERUp = met_c.phi
+            MET_JEC_phi_JERDown = met_c.phi
+            MET_JEC_phi_JESUp = met_c.phi
+            MET_JEC_phi_JESDown = met_c.phi
+            MET_JEC_phi_UnclusteredEnergyUp = met_c.phi
+            MET_JEC_phi_UnclusteredEnergyDown = met_c.phi
+            MET_JEC_pt_JERUp = met_c.pt
+            MET_JEC_pt_JERDown = met_c.pt
+            MET_JEC_pt_JESUp = met_c.pt
+            MET_JEC_pt_JESDown = met_c.pt
+            MET_JEC_pt_UnclusteredEnergyUp = met_c.pt
+            MET_JEC_pt_UnclusteredEnergyDown = met_c.pt
 
         # save per event variables to a dataframe
         output['vars']["ntracks" + out_label] = ak.num(tracks).to_list()
@@ -294,6 +334,63 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output['vars']["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
+
+            output['vars']["CaloMET_pt" + out_label] = events.CaloMET.pt
+            output['vars']["CaloMET_phi" + out_label] = events.CaloMET.phi
+            output['vars']["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
+            output['vars']["ChsMET_pt" + out_label] = events.ChsMET.pt
+            output['vars']["ChsMET_phi" + out_label] = events.ChsMET.phi
+            output['vars']["ChsMET_sumEt" + out_label] = events.ChsMET.sumEt
+            output['vars']["TkMET_pt" + out_label] = events.TkMET.pt
+            output['vars']["TkMET_phi" + out_label] = events.TkMET.phi
+            output['vars']["TkMET_sumEt" + out_label] = events.TkMET.sumEt
+            output['vars']["RawMET_pt" + out_label] = events.RawMET.pt
+            output['vars']["RawMET_phi" + out_label] = events.RawMET.phi
+            output['vars']["RawMET_sumEt" + out_label] = events.RawMET.sumEt
+            output['vars']["PuppiMET_pt" + out_label] = events.PuppiMET.pt
+            output['vars']["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
+            output['vars']["PuppiMET_pt" + out_label + "_JER_down"] = PuppiMET_pt_JERDown
+            output['vars']["PuppiMET_pt" + out_label + "_JES_up"] = PuppiMET_pt_JESUp
+            output['vars']["PuppiMET_pt" + out_label + "_JES_down"] = PuppiMET_pt_JESDown
+            output['vars']["PuppiMET_phi" + out_label] = events.PuppiMET.phi
+            output['vars']["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
+            output['vars'][
+                "PuppiMET_phi" + out_label + "_JER_down"
+            ] = PuppiMET_phi_JERDown
+            output['vars']["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
+            output['vars'][
+                "PuppiMET_phi" + out_label + "_JES_down"
+            ] = PuppiMET_phi_JESDown
+            output['vars']["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
+            output['vars']["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
+            output['vars']["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
+            output['vars']["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt
+            output['vars']["MET_pt" + out_label] = events.MET.pt
+            output['vars']["MET_phi" + out_label] = events.MET.phi
+            output['vars']["MET_sumEt" + out_label] = events.MET.sumEt
+            output['vars']["MET_JEC_pt" + out_label] = met_c.pt
+            output['vars']["MET_JEC_pt" + out_label + "_JER_up"] = MET_JEC_pt_JERUp
+            output['vars']["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
+            output['vars']["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
+            output['vars']["MET_JEC_pt" + out_label + "_JES_down"] = MET_JEC_pt_JESDown
+            output['vars'][
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_pt_UnclusteredEnergyUp
+            output['vars'][
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_pt_UnclusteredEnergyDown
+            output['vars']["MET_JEC_phi" + out_label] = met_c.phi
+            output['vars']["MET_JEC_phi" + out_label + "_JER_up"] = MET_JEC_phi_JERUp
+            output['vars']["MET_JEC_phi" + out_label + "_JER_down"] = MET_JEC_phi_JERDown
+            output['vars']["MET_JEC_phi" + out_label + "_JES_up"] = MET_JEC_phi_JESUp
+            output['vars']["MET_JEC_phi" + out_label + "_JES_down"] = MET_JEC_phi_JESDown
+            output['vars'][
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_phi_UnclusteredEnergyUp
+            output['vars'][
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_phi_UnclusteredEnergyDown
+            output['vars']["MET_JEC_sumEt" + out_label] = met_c.sumEt
 
             # store event weights for MC
             if self.isMC and self.scouting == 0:
@@ -464,7 +561,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         })
 
         # gen weights
-        output['gensumweight'] = ak.sum(events.genWeight)
+        if self.isMC:
+            output['gensumweight'] = ak.sum(events.genWeight)
+
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:

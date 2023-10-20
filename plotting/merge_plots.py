@@ -24,10 +24,8 @@ username = getpass.getuser()
 tag = options.tag
 dataset = options.dataset
 redirector = "root://submit50.mit.edu/"
-localDataDir = "/data/submit/cms/store/user/{}/SUEP/{}/{}/".format(
-    username, tag, dataset
-)
-dataDir = f"/cms/store/user/{username}/SUEP/{tag}/{dataset}/"
+localDataDir = f"/data/submit/{username}/SUEP/{tag}/{dataset}/"
+dataDir = f"/{username}/SUEP/{tag}/{dataset}/"
 localOutDir = localDataDir + "/merged/"
 outDir = dataDir + "/merged/"
 
