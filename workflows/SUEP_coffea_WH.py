@@ -487,8 +487,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         # golden jsons for offline data
-        #if self.isMC == 0:
-        #    events = applyGoldenJSON(self, events)
+        if self.isMC == 0:
+            events = applyGoldenJSON(self, events)
 
         output["total"][dataset] += len(events)
 
