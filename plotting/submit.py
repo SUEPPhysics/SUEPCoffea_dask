@@ -36,7 +36,9 @@ slurm_script_template = """#!/bin/bash
 #SBATCH --partition=submit
 
 source ~/.bashrc
-conda activate SUEP
+export X509_USER_PROXY=/home/submit/{user}/{proxy} 
+source activate env
+#conda activate SUEP # Change to your own environment setup
 cd {work_dir}
 {cmd}
 """
@@ -130,7 +132,7 @@ if options.method not in ["slurm", "multithread"]:
 # Set up where you're gonna work
 if options.method == "slurm":
     work_dir = os.getcwd()
-    log_dir = "/work/submit/{}/SUEP/logs/slurm_{}/".format(
+    log_dir = "/work/submit/{}/SUEPCoffea_dask/logs/slurm_{}/".format(
         os.environ["USER"], options.output
     )
     if not os.path.isdir(log_dir):
@@ -202,7 +204,7 @@ for i, sample in enumerate(samples):
     elif options.method == "slurm":
         # Generate the SLURM script content
         slurm_script_content = slurm_script_template.format(
-            log_dir=log_dir, work_dir=work_dir, cmd=cmd, sample=sample
+            log_dir=log_dir, work_dir=work_dir, cmd=cmd, sample=sample, user = getpass.getuser(), proxy = f"x509up_u{os.getuid()}",
         )
 
         # Write the SLURM script to a file
