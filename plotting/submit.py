@@ -207,7 +207,7 @@ for i, sample in enumerate(samples):
             blind=options.blind,
             predictSR=options.predictSR,
             save=options.save,
-            id=os.getuid()
+            id=os.getuid(),
         )
 
     # Method to execute the code with
