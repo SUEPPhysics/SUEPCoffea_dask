@@ -11,7 +11,8 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "eta": events.Muon.eta,
             "phi": events.Muon.phi,
             "mass": events.Muon.mass,
-            "charge": events.Muon.pdgId / (-13),
+            #"charge": events.Muon.pdgId / (-13), , (potentially interested in flavour too):
+            "pdgID": events.Muon.pdgId
         },
         with_name="Momentum4D",
     )
@@ -22,7 +23,8 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "eta": events.Electron.eta,
             "phi": events.Electron.phi,
             "mass": events.Electron.mass,
-            "charge": events.Electron.pdgId / (-11),
+            #"charge": events.Electron.pdgId / (-11), (potentially interested in flavour too):
+            "pdgID": events.Muon.pdgId
         },
         with_name="Momentum4D",
     )
