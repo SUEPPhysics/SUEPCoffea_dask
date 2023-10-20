@@ -371,9 +371,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             self.out_vars["PuppiMET_pt" + out_label + "_JES_down"] = PuppiMET_pt_JESDown
             self.out_vars["PuppiMET_phi" + out_label] = events.PuppiMET.phi
             self.out_vars["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
-            self.out_vars["PuppiMET_phi" + out_label + "_JER_down"] = PuppiMET_phi_JERDown
+            self.out_vars[
+                "PuppiMET_phi" + out_label + "_JER_down"
+            ] = PuppiMET_phi_JERDown
             self.out_vars["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
-            self.out_vars["PuppiMET_phi" + out_label + "_JES_down"] = PuppiMET_phi_JESDown
+            self.out_vars[
+                "PuppiMET_phi" + out_label + "_JES_down"
+            ] = PuppiMET_phi_JESDown
             self.out_vars["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
             self.out_vars["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
             self.out_vars["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
@@ -386,15 +390,23 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             self.out_vars["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
             self.out_vars["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
             self.out_vars["MET_JEC_pt" + out_label + "_JES_down"] = MET_JEC_pt_JESDown
-            self.out_vars["MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"] = MET_JEC_pt_UnclusteredEnergyUp
-            self.out_vars["MET_JEC_pt" + out_label + "_UnclusteredEnergy_down"] = MET_JEC_pt_UnclusteredEnergyDown
+            self.out_vars[
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_pt_UnclusteredEnergyUp
+            self.out_vars[
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_pt_UnclusteredEnergyDown
             self.out_vars["MET_JEC_phi" + out_label] = met_c.phi
             self.out_vars["MET_JEC_phi" + out_label + "_JER_up"] = MET_JEC_phi_JERUp
             self.out_vars["MET_JEC_phi" + out_label + "_JER_down"] = MET_JEC_phi_JERDown
             self.out_vars["MET_JEC_phi" + out_label + "_JES_up"] = MET_JEC_phi_JESUp
             self.out_vars["MET_JEC_phi" + out_label + "_JES_down"] = MET_JEC_phi_JESDown
-            self.out_vars["MET_JEC_phi" + out_label + "_UnclusteredEnergy_up"] = MET_JEC_phi_UnclusteredEnergyUp
-            self.out_vars["MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"] = MET_JEC_phi_UnclusteredEnergyDown
+            self.out_vars[
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_phi_UnclusteredEnergyUp
+            self.out_vars[
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_phi_UnclusteredEnergyDown
             self.out_vars["MET_JEC_sumEt" + out_label] = met_c.sumEt
 
             # store event weights for MC

@@ -193,7 +193,7 @@ def apply_jecs(self, Sample, events, prefix=""):
         name_map["JetPhi"] = "phi"
         name_map["UnClusteredEnergyDeltaX"] = "MetUnclustEnUpDeltaX"
         name_map["UnClusteredEnergyDeltaY"] = "MetUnclustEnUpDeltaY"
-    
+
         met_factory = CorrectedMETFactory(name_map)
         met = ak.packed(events.MET, highlevel=True)
         met["pt"] = met["pt"]
@@ -201,5 +201,5 @@ def apply_jecs(self, Sample, events, prefix=""):
         met["UnClusteredEnergyDeltaX"] = met["MetUnclustEnUpDeltaX"]
         met["UnClusteredEnergyDeltaY"] = met["MetUnclustEnUpDeltaY"]
         corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
-    
+
         return corrected_jets, corrected_met
