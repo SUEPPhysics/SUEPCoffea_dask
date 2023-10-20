@@ -36,8 +36,8 @@ slurm_script_template = """#!/bin/bash
 #SBATCH --partition=submit
 
 source ~/.bashrc
-voms-proxy-info -file ~/x509up_u210253
-cp ~/x509up_u210253 /tmp/
+voms-proxy-info -file ~/x509up_u{id}
+cp ~/x509up_u{id} /tmp/
 
 conda activate SUEP
 cd {work_dir}
@@ -205,6 +205,7 @@ for i, sample in enumerate(samples):
             blind=options.blind,
             predictSR=options.predictSR,
             save=options.save,
+            id=os.getuid()
         )
 
     # Method to execute the code with
