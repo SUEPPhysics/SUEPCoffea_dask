@@ -14,23 +14,6 @@ def load_jets(self, events):
             ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
         )
         vals_jet0["rho"] = events.rho
-        # vals_jet0 = ak.zip(
-        #    {
-        #        "area": events.OffJet.area,
-        #        "eta": events.OffJet.eta,
-        #        "mass": events.OffJet.mass,
-        #        "phi": events.OffJet.phi,
-        #        "pt": events.OffJet.pt,
-        #        "pt_raw": events.OffJet.pt,
-        #        "mass_raw": events.OffJet.mass,  # I think there should be another factor here?
-        #        "passId": events.OffJet.passId,
-        #        "pt_gen": ak.values_astype(
-        #            ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
-        #        ),
-        #        "rho": events.rho,
-        #    },
-        #    with_name="Momentum4D",
-        # )
     else:
         vals_jet0 = events.Jet
         vals_jet0["pt_raw"] = events.Jet.pt
@@ -39,29 +22,6 @@ def load_jets(self, events):
         vals_jet0["pt_gen"] = ak.values_astype(
             ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
         )
-        # vals_jet0 = ak.zip(
-        #    {
-        #        "area": events.Jet.area,
-        #        "eta": events.Jet.eta,
-        #        "mass": events.Jet.mass,
-        #        "phi": events.Jet.phi,
-        #        "pt": events.Jet.pt,
-        #        "pt_raw": events.Jet.pt,
-        #        "mass_raw": events.Jet.mass,  # I think there should be another factor here?
-        #        "passId": events.Jet.passId,
-        #        "pt_gen": ak.values_astype(
-        #            ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
-        #        ),
-        #        "rho": events.rho,  # /events.Jet.area
-        #    },
-        #    with_name="Momentum4D",
-        # )
-    # if datatype == "Trigger":
-    #       vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"] #ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
-    # else:
-    #       vals_jet0['rho'] = ak.broadcast_arrays(arrays["rho"], vals_jet0["pt"])[0]
-    # vals_jet0['rho'] = vals_jet0["pt"]/vals_jet0["area"]
-    # vals_jet0['rho'] = ak.broadcast_arrays(events.rho, vals_jet0["pt"])[0]
 
     return vals_jet0
 
@@ -241,14 +201,5 @@ def apply_jecs(self, Sample, events, prefix=""):
         met["UnClusteredEnergyDeltaX"] = met["MetUnclustEnUpDeltaX"]
         met["UnClusteredEnergyDeltaY"] = met["MetUnclustEnUpDeltaY"]
         corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
-        print("Let's test the MET")
-        print("The OG MET is: ", met.pt)
-        print("The new MET is: ", corrected_met.pt)
-        print("throwaway line")
-    
-        for unc in jet_factory.uncertainties() + met_factory.uncertainties():
-            print(unc)
-            print(corrected_met[unc].up.pt)
-            print(corrected_met[unc].down.pt)
     
         return corrected_jets, corrected_met

@@ -492,8 +492,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         output["total"][dataset] += len(events)
 
-        #events = self.triggerSelection(events, output, dataset)
-        #output["all_triggers"][dataset] += len(events)
+        events = self.triggerSelection(events, output, dataset)
+        output["all_triggers"][dataset] += len(events)
 
         events = self.selectByFilters(events)
         output["qualityFilters"][dataset] += len(events)
