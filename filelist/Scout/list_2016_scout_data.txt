@@ -1,0 +1,3 @@
+/store/user/paus/nanosc/E06/ScoutingPFHT+Run2016F-v1+RAW
+/store/user/paus/nanosc/E06/ScoutingPFHT+Run2016G-v1+RAW
+/store/user/paus/nanosc/E06/ScoutingPFHT+Run2016H-v1+RAW

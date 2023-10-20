@@ -25,7 +25,10 @@ from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.CMS_corrections.track_killing_utils import *  # track_killing
+from workflows.CMS_corrections.track_killing_utils import (
+    scout_track_killing,
+    track_killing,
+)
 
 # Set vector behavior
 vector.register_awkward()
@@ -139,18 +142,13 @@ class SUEP_cluster(processor.ProcessorABC):
                     trigger = events.HLT.PFHT1050 == 1
             events = events[trigger]
         else:
-            if self.era == "2016" or self.era == "2016apv":
-                trigger = (
-                    events.hltResult[:, 3] == 1
-                )  # require trigger DST_HT410_PFScouting_v2
-            elif self.era == "2017":
-                trigger = (
-                    events.hltResult[:, 5] == 1
-                )  # require trigger DST_HT410_PFScouting_v12
-            elif self.era == "2018":
-                trigger = (
-                    events.hltResult[:, 7] == 1
-                )  # require trigger DST_HT410_PFScouting_v16
+            # if self.era == "2016" or self.era == "2016apv":
+            #    trigger = events.hltResult[:,3] == 1 # require trigger DST_HT410_PFScouting_v2
+            # elif self.era == "2017":
+            #    trigger = events.hltResult[:,5] == 1 # require trigger DST_HT410_PFScouting_v12
+            # elif self.era == "2018":
+            #    trigger = events.hltResult[:,7] == 1 # require trigger DST_HT410_PFScouting_v16
+            trigger = events.scouting.trig == 1
             events = events[trigger]
         return events
 
@@ -360,11 +358,8 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.accum:
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
-        jets_c = apply_jecs(
-            self,
-            Sample=self.sample,
-            events=events,
-            prefix=prefix,
+        jets_c, met_c = apply_jecs(
+            self, Sample=self.sample, events=events, prefix=prefix
         )
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
         jets_c = jets_c[jet_HEM_Cut]

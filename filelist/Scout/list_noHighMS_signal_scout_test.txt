@@ -1,0 +1,3 @@
+GluGluToSUEP_HT400_T4p00_mS1000.000_mPhi4.000_T4.000_modehadronic_TuneCP5_13TeV
+GluGluToSUEP_HT400_T4p00_mS125.000_mPhi4.000_T4.000_modegeneric_TuneCP5_13TeV
+GluGluToSUEP_HT400_T4p00_mS400.000_mPhi4.000_T4.000_modeleptonic_TuneCP5_13TeV

@@ -1,0 +1,15 @@
+/store/user/paus/nanosu/A02/DoubleMuon+Run2017B-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/DoubleMuon+Run2017C-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/DoubleMuon+Run2017D-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/DoubleMuon+Run2017E-UL2017_MiniAODv2-v2+MINIAOD
+/store/user/paus/nanosu/A02/DoubleMuon+Run2017F-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleElectron+Run2017B-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleElectron+Run2017C-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleElectron+Run2017D-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleElectron+Run2017E-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleElectron+Run2017F-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleMuon+Run2017B-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleMuon+Run2017C-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleMuon+Run2017D-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleMuon+Run2017E-UL2017_MiniAODv2-v1+MINIAOD
+/store/user/paus/nanosu/A02/SingleMuon+Run2017F-UL2017_MiniAODv2-v1+MINIAOD
