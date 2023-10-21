@@ -96,10 +96,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         Trigger single muon and EGamma.
         """
 
-        triggerSingleMuon = (
-            events.HLT.IsoMu27
-            | events.HLT.Mu50
-        )
+        triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
         triggerEGamma = (
             events.HLT.Ele32_WPTight_Gsf
             | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
@@ -426,11 +423,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
         # saving lepton kinematics
-        output["vars"]["lepton_pt" + out_label] = lepton.pt[:,0]
-        output["vars"]["lepton_eta" + out_label] = lepton.eta[:,0]
-        output["vars"]["lepton_phi" + out_label] = lepton.phi[:,0]
-        output["vars"]["lepton_mass" + out_label] = lepton.mass[:,0]
-        output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:,0]
+        output["vars"]["lepton_pt" + out_label] = lepton.pt[:, 0]
+        output["vars"]["lepton_eta" + out_label] = lepton.eta[:, 0]
+        output["vars"]["lepton_phi" + out_label] = lepton.phi[:, 0]
+        output["vars"]["lepton_mass" + out_label] = lepton.mass[:, 0]
+        output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:, 0]
 
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################
