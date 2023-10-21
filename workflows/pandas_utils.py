@@ -28,27 +28,28 @@ def h5store(
     store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(self, dfs, df_names, fname):
+def save_dfs(self, dfs, df_names, fname, metadata=None):
     # fname = "out.hdf5"
     subdirs = []
     store = pd.HDFStore(fname)
     if self.output_location is not None:
         # pandas to hdf5
         for out, gname in zip(dfs, df_names):
-            if self.isMC:
-                metadata = dict(
-                    gensumweight=self.gensumweight,
-                    era=self.era,
-                    mc=self.isMC,
-                    sample=self.sample,
-                )
-                # metadata.update({gensumweight:self.gensumweight})
-            else:
-                metadata = dict(era=self.era, mc=self.isMC, sample=self.sample)
+            if metadata is None:
+                if self.isMC:
+                    metadata = dict(
+                        gensumweight=self.gensumweight,
+                        era=self.era,
+                        mc=self.isMC,
+                        sample=self.sample,
+                    )
+                else:
+                    metadata = dict(era=self.era, mc=self.isMC, sample=self.sample)
 
             store_fin = h5store(self, store, out, fname, gname, **metadata)
 
         store.close()
+
         dump_table(self, fname, self.output_location, subdirs)
     else:
         print("self.output_location is None")

@@ -2,7 +2,7 @@
 SUEP_coffea_WH.py
 Coffea producer for SUEP WH analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
-Chad Freer, Luca Lavezzo, Pietro Lugato 2023
+Pietro Lugato, Chad Freer, Luca Lavezzo 2023
 """
 from typing import Optional
 
@@ -29,6 +29,7 @@ from workflows.CMS_corrections.track_killing_utils import (
     scout_track_killing,
     track_killing,
 )
+from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
@@ -67,25 +68,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.trigger = trigger
         self.out_vars = pd.DataFrame()
 
-        # Set up for the histograms
-        self._accumulator = processor.dict_accumulator(
-            {
-                "sumw": processor.defaultdict_accumulator(float),
-                "total": processor.defaultdict_accumulator(float),
-                "triggerSingleMuon": processor.defaultdict_accumulator(float),
-                "triggerDoubleMuon": processor.defaultdict_accumulator(float),
-                "triggerEGamma": processor.defaultdict_accumulator(float),
-                "all_triggers": processor.defaultdict_accumulator(float),
-                "oneLepton": processor.defaultdict_accumulator(float),
-                "qualityFilters": processor.defaultdict_accumulator(float),
-                "MET": processor.defaultdict_accumulator(float),
-            }
-        )
-
-    @property
-    def accumulator(self):
-        return self._accumulator
-
     def jet_awkward(self, Jets):
         """
         Create awkward array of jets. Applies basic selections.
@@ -108,10 +90,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         return Jets_correct
 
-    def triggerSelection(self, events, output, dataset):
+    def triggerSelection(self, events, output, out_label):
         """
         Applies trigger, returns events.
-        Trigger single muon and EGamma (triggers udpated as of 10/18/23 WH group meeting).
+        Trigger single muon and EGamma.
         """
 
         triggerSingleMuon = (
@@ -125,8 +107,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
 
         # this is just for cutflow
-        output["triggerSingleMuon"][dataset] += len(events[triggerSingleMuon])
-        output["triggerEGamma"][dataset] += len(events[triggerEGamma])
+        output["triggerSingleMuon" + out_label] += len(events[triggerSingleMuon])
+        output["triggerEGamma" + out_label] += len(events[triggerEGamma])
 
         events = events[triggerEGamma | triggerSingleMuon]
 
@@ -238,6 +220,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ak_inclusive_jets,
         ak_inclusive_cluster,
         lepton,
+        output,
         out_label="",
     ):
         # select out ak4jets
@@ -248,7 +231,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if self.accum:
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
-        jets_c = apply_jecs(
+        jets_c, met_c = apply_jecs(
             self,
             Sample=self.sample,
             events=events,
@@ -262,51 +245,158 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             jets_jec_JERDown = self.jet_awkward(jets_c["JER"].down)
             jets_jec_JESUp = self.jet_awkward(jets_c["JES_jes"].up)
             jets_jec_JESDown = self.jet_awkward(jets_c["JES_jes"].down)
+            PuppiMET_phi_JERUp = events.PuppiMET.phiJERUp
+            PuppiMET_phi_JERDown = events.PuppiMET.phiJERDown
+            PuppiMET_phi_JESUp = events.PuppiMET.phiJESUp
+            PuppiMET_phi_JESDown = events.PuppiMET.phiJESDown
+            PuppiMET_pt_JERUp = events.PuppiMET.ptJERUp
+            PuppiMET_pt_JERDown = events.PuppiMET.ptJERDown
+            PuppiMET_pt_JESUp = events.PuppiMET.ptJESUp
+            PuppiMET_pt_JESDown = events.PuppiMET.ptJESDown
+            MET_JEC_phi_JERUp = met_c.JER.up.phi
+            MET_JEC_phi_JERDown = met_c.JER.down.phi
+            MET_JEC_phi_JESUp = met_c.JES_jes.up.phi
+            MET_JEC_phi_JESDown = met_c.JES_jes.down.phi
+            MET_JEC_phi_UnclusteredEnergyUp = met_c.MET_UnclusteredEnergy.up.phi
+            MET_JEC_phi_UnclusteredEnergyDown = met_c.MET_UnclusteredEnergy.down.phi
+            MET_JEC_pt_JERUp = met_c.JER.up.pt
+            MET_JEC_pt_JERDown = met_c.JER.up.pt
+            MET_JEC_pt_JESUp = met_c.JES_jes.up.pt
+            MET_JEC_pt_JESDown = met_c.JES_jes.down.pt
+            MET_JEC_pt_UnclusteredEnergyUp = met_c.MET_UnclusteredEnergy.up.pt
+            MET_JEC_pt_UnclusteredEnergyDown = met_c.MET_UnclusteredEnergy.down.pt
         # For data set these all to nominal so we can plot without switching all of the names
         else:
             jets_jec_JERUp = jets_jec
             jets_jec_JERDown = jets_jec
             jets_jec_JESUp = jets_jec
             jets_jec_JESDown = jets_jec
+            PuppiMET_phi_JERUp = events.PuppiMET.phi
+            PuppiMET_phi_JERDown = events.PuppiMET.phi
+            PuppiMET_phi_JESUp = events.PuppiMET.phi
+            PuppiMET_phi_JESDown = events.PuppiMET.phi
+            PuppiMET_pt_JERUp = events.PuppiMET.pt
+            PuppiMET_pt_JERDown = events.PuppiMET.pt
+            PuppiMET_pt_JESUp = events.PuppiMET.pt
+            PuppiMET_pt_JESDown = events.PuppiMET.pt
+            MET_JEC_phi_JERUp = met_c.phi
+            MET_JEC_phi_JERDown = met_c.phi
+            MET_JEC_phi_JESUp = met_c.phi
+            MET_JEC_phi_JESDown = met_c.phi
+            MET_JEC_phi_UnclusteredEnergyUp = met_c.phi
+            MET_JEC_phi_UnclusteredEnergyDown = met_c.phi
+            MET_JEC_pt_JERUp = met_c.pt
+            MET_JEC_pt_JERDown = met_c.pt
+            MET_JEC_pt_JESUp = met_c.pt
+            MET_JEC_pt_JESDown = met_c.pt
+            MET_JEC_pt_UnclusteredEnergyUp = met_c.pt
+            MET_JEC_pt_UnclusteredEnergyDown = met_c.pt
 
         # save per event variables to a dataframe
-        self.out_vars["ntracks" + out_label] = ak.num(tracks).to_list()
-        self.out_vars["ngood_fastjets" + out_label] = ak.num(
+        output["vars"]["ntracks" + out_label] = ak.num(tracks).to_list()
+        output["vars"]["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
 
         if out_label == "":
-            self.out_vars["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
-            self.out_vars["ht_JEC" + out_label] = ak.sum(jets_jec.pt, axis=-1).to_list()
-            self.out_vars["ht_JEC" + out_label + "_JER_up"] = ak.sum(
+            output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
+            output["vars"]["ht_JEC" + out_label] = ak.sum(
+                jets_jec.pt, axis=-1
+            ).to_list()
+            output["vars"]["ht_JEC" + out_label + "_JER_up"] = ak.sum(
                 jets_jec_JERUp.pt, axis=-1
             ).to_list()
-            self.out_vars["ht_JEC" + out_label + "_JER_down"] = ak.sum(
+            output["vars"]["ht_JEC" + out_label + "_JER_down"] = ak.sum(
                 jets_jec_JERDown.pt, axis=-1
             ).to_list()
-            self.out_vars["ht_JEC" + out_label + "_JES_up"] = ak.sum(
+            output["vars"]["ht_JEC" + out_label + "_JES_up"] = ak.sum(
                 jets_jec_JESUp.pt, axis=-1
             ).to_list()
-            self.out_vars["ht_JEC" + out_label + "_JES_down"] = ak.sum(
+            output["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
             ).to_list()
 
+            output["vars"]["CaloMET_pt" + out_label] = events.CaloMET.pt
+            output["vars"]["CaloMET_phi" + out_label] = events.CaloMET.phi
+            output["vars"]["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
+            output["vars"]["ChsMET_pt" + out_label] = events.ChsMET.pt
+            output["vars"]["ChsMET_phi" + out_label] = events.ChsMET.phi
+            output["vars"]["ChsMET_sumEt" + out_label] = events.ChsMET.sumEt
+            output["vars"]["TkMET_pt" + out_label] = events.TkMET.pt
+            output["vars"]["TkMET_phi" + out_label] = events.TkMET.phi
+            output["vars"]["TkMET_sumEt" + out_label] = events.TkMET.sumEt
+            output["vars"]["RawMET_pt" + out_label] = events.RawMET.pt
+            output["vars"]["RawMET_phi" + out_label] = events.RawMET.phi
+            output["vars"]["RawMET_sumEt" + out_label] = events.RawMET.sumEt
+            output["vars"]["PuppiMET_pt" + out_label] = events.PuppiMET.pt
+            output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JER_down"
+            ] = PuppiMET_pt_JERDown
+            output["vars"]["PuppiMET_pt" + out_label + "_JES_up"] = PuppiMET_pt_JESUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JES_down"
+            ] = PuppiMET_pt_JESDown
+            output["vars"]["PuppiMET_phi" + out_label] = events.PuppiMET.phi
+            output["vars"]["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
+            output["vars"][
+                "PuppiMET_phi" + out_label + "_JER_down"
+            ] = PuppiMET_phi_JERDown
+            output["vars"]["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
+            output["vars"][
+                "PuppiMET_phi" + out_label + "_JES_down"
+            ] = PuppiMET_phi_JESDown
+            output["vars"]["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
+            output["vars"]["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
+            output["vars"]["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
+            output["vars"]["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt
+            output["vars"]["MET_pt" + out_label] = events.MET.pt
+            output["vars"]["MET_phi" + out_label] = events.MET.phi
+            output["vars"]["MET_sumEt" + out_label] = events.MET.sumEt
+            output["vars"]["MET_JEC_pt" + out_label] = met_c.pt
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_up"] = MET_JEC_pt_JERUp
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
+            output["vars"]["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
+            output["vars"]["MET_JEC_pt" + out_label + "_JES_down"] = MET_JEC_pt_JESDown
+            output["vars"][
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_pt_UnclusteredEnergyUp
+            output["vars"][
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_pt_UnclusteredEnergyDown
+            output["vars"]["MET_JEC_phi" + out_label] = met_c.phi
+            output["vars"]["MET_JEC_phi" + out_label + "_JER_up"] = MET_JEC_phi_JERUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_JER_down"
+            ] = MET_JEC_phi_JERDown
+            output["vars"]["MET_JEC_phi" + out_label + "_JES_up"] = MET_JEC_phi_JESUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_JES_down"
+            ] = MET_JEC_phi_JESDown
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_phi_UnclusteredEnergyUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_phi_UnclusteredEnergyDown
+            output["vars"]["MET_JEC_sumEt" + out_label] = met_c.sumEt
+
             # store event weights for MC
             if self.isMC and self.scouting == 0:
-                self.out_vars["genweight"] = events.genWeight
+                output["vars"]["genweight"] = events.genWeight
             elif self.isMC and self.scouting == 1:
-                self.out_vars["genweight"] = [
+                output["vars"]["genweight"] = [
                     1.0 for e in (len(events) * [0])
                 ]  # create awkward array of ones
 
-            self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
+            output["vars"]["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
 
             if self.isMC:
-                self.out_vars["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
+                output["vars"]["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
                 GetPSWeights(self, events)  # Parton Shower weights
                 GetPrefireWeights(self, events)  # Prefire weights
-            self.out_vars["PV_npvs" + out_label] = events.PV.npvs
-            self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
+            output["vars"]["PV_npvs" + out_label] = events.PV.npvs
+            output["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
@@ -330,87 +420,48 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             SUEP_genPhi = events.scalar.phi
             SUEP_genEta = events.scalar.eta
 
-        self.out_vars["SUEP_genMass" + out_label] = SUEP_genMass
-        self.out_vars["SUEP_genPt" + out_label] = SUEP_genPt
-        self.out_vars["SUEP_genEta" + out_label] = SUEP_genEta
-        self.out_vars["SUEP_genPhi" + out_label] = SUEP_genPhi
-
+        output["vars"]["SUEP_genMass" + out_label] = SUEP_genMass
+        output["vars"]["SUEP_genPt" + out_label] = SUEP_genPt
+        output["vars"]["SUEP_genEta" + out_label] = SUEP_genEta
+        output["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
         # saving lepton kinematics
+        output["vars"]["lepton_pt" + out_label] = lepton.pt[:,0]
+        output["vars"]["lepton_eta" + out_label] = lepton.eta[:,0]
+        output["vars"]["lepton_phi" + out_label] = lepton.phi[:,0]
+        output["vars"]["lepton_mass" + out_label] = lepton.mass[:,0]
+        output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:,0]
 
-        self.out_vars["lepton_pt" + out_label] = lepton.pt[:,0]
-        self.out_vars["lepton_eta" + out_label] = lepton.eta[:,0]
-        self.out_vars["lepton_phi" + out_label] = lepton.phi[:,0]
-        self.out_vars["lepton_mass" + out_label] = lepton.mass[:,0]
-        self.out_vars["lepton_flavor" + out_label] = lepton.pdgID[:,0]
-
-
-    def initializeColumns(self, label=""):
-        # need to add these to dataframe when no events pass to make the merging work
-        # for some reason, initializing these as empty and then trying to fill them doesn't work
-        self.columns_CL = [
-            "SUEP_nconst_CL",
-            "SUEP_ntracks_CL",
-            "SUEP_pt_avg_CL",
-            "SUEP_pt_avg_b_CL",
-            "SUEP_S1_CL",
-            "SUEP_rho0_CL",
-            "SUEP_rho1_CL",
-            "SUEP_pt_CL",
-            "SUEP_eta_CL",
-            "SUEP_phi_CL",
-            "SUEP_mass_CL",
-            "dphi_SUEP_ISR_CL",
-        ]
-        self.columns_CL_ISR = [c.replace("SUEP", "ISR") for c in self.columns_CL]
-
-        self.columns_ML, self.columns_ML_ISR = [], []
-
-        self.columns = (
-            self.columns_CL
-            + self.columns_CL_ISR
-            + self.columns_ML
-            + self.columns_ML_ISR
-        )
-
-        # add a specific label to all columns
-        for iCol in range(len(self.columns)):
-            self.columns[iCol] = self.columns[iCol] + label
-
-    def analysis(self, events, output, dataset, do_syst=False, col_label=""):
+    def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################
-        # ---- Trigger event selection
-        # Cut based on ak4 jets to replicate the trigger
+        # ---- Basic event selection
+        # Apply triggers, quality filters, MET, and one lepton selections.
         #####################################################################################
+
+        output["total" + out_label] += len(events)
 
         # golden jsons for offline data
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
 
-        output["total"][dataset] += len(events)
+        output["goldenJSON" + out_label] += len(events)
 
-        events = self.triggerSelection(events, output, dataset)
-        output["all_triggers"][dataset] += len(events)
-
-        events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
-        output["oneLepton"][dataset] += len(events)
+        events = self.triggerSelection(events, output, out_label)
+        output["all_triggers" + out_label] += len(events)
 
         events = self.selectByFilters(events)
-        output["qualityFilters"][dataset] += len(events)
+        output["qualityFilters" + out_label] += len(events)
 
         # TODO: MET
-        output["MET"][dataset] += len(events)
+        output["MET" + out_label] += len(events)
 
-        # output empty dataframe if no events pass trigger -- to be fixed by Luca
+        events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
+        output["oneLepton" + out_label] += len(events)
+
+        # output empty dataframe if no events pass basic event selection
         if len(events) == 0:
-            print("No events passed trigger. Saving empty outputs.")
-            if self.accum == "pandas_merger":
-                self.out_vars = pd.DataFrame(["empty"], columns=["empty"])
-            elif self.accum:
-                self.initializeColumns(col_label)
-                for c in self.columns:
-                    self.out_vars[c] = np.nan
-            return
+            print("No events passed basic event selection. Saving empty outputs.")
+            return output
 
         #####################################################################################
         # ---- Track selection
@@ -418,13 +469,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # cut on tracks from the selected lepton
         #####################################################################################
 
-        tracks, Cleaned_cands = self.getTracks(
-            events, lepton=selLeptons, leptonIsolation=0.4
-        )
+        tracks, _ = self.getTracks(events, lepton=selLeptons, leptonIsolation=0.4)
 
         if self.isMC and do_syst:
             tracks = track_killing(self, tracks)
-            Cleaned_cands = track_killing(self, Cleaned_cands)
 
         #####################################################################################
         # ---- FastJet reclustering
@@ -436,9 +484,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
 
         #####################################################################################
-        # ---- Event level information
+        # ---- Store event level information
         #####################################################################################
-
 
         self.storeEventVars(
             events,
@@ -446,32 +493,29 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ak_inclusive_jets,
             ak_inclusive_cluster,
             lepton=selLeptons,
-            out_label=col_label,
+            output=output,
+            out_label=out_label,
         )
-
-        # indices of events in tracks, used to keep track which events pass selections
-        indices = np.arange(0, len(tracks))
-
-        # initialize the columns with all the variables that you want to fill
-        self.initializeColumns(col_label)
 
         #####################################################################################
         # ---- Cut Based Analysis
         #####################################################################################
 
+        # indices of events in tracks, used to keep track which events pass selections
+        indices = np.arange(0, len(tracks))
+
         # remove events with less than 1 cluster (i.e. need at least SUEP candidate cluster)
         clusterCut = ak.num(ak_inclusive_jets, axis=1) > 0
         ak_inclusive_cluster = ak_inclusive_cluster[clusterCut]
         ak_inclusive_jets = ak_inclusive_jets[clusterCut]
+        selLeptons = selLeptons[clusterCut]
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
 
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass clusterCut.")
-            for c in self.columns:
-                self.out_vars[c] = np.nan 
-            return
+            return output
 
         WH_utils.TopPTMethod(
             self,
@@ -479,34 +523,62 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             tracks,
             ak_inclusive_jets,
             ak_inclusive_cluster,
-            out_label=col_label,
+            output=output,
+            out_label=out_label,
         )
 
+        return output
+
     def process(self, events):
-        output = self.accumulator.identity()
         dataset = events.metadata["dataset"]
 
+        output = processor.dict_accumulator(
+            {
+                "gensumweight": processor.value_accumulator(float, 0),
+                "total": processor.value_accumulator(float, 0),
+                "goldenJSON": processor.value_accumulator(float, 0),
+                "triggerSingleMuon": processor.value_accumulator(float, 0),
+                "triggerDoubleMuon": processor.value_accumulator(float, 0),
+                "triggerEGamma": processor.value_accumulator(float, 0),
+                "all_triggers": processor.value_accumulator(float, 0),
+                "oneLepton": processor.value_accumulator(float, 0),
+                "qualityFilters": processor.value_accumulator(float, 0),
+                "MET": processor.value_accumulator(float, 0),
+                "vars": pandas_accumulator(pd.DataFrame()),
+            }
+        )
+
         # gen weights
-        self.gensumweight = ak.sum(events.genWeight)
+        if self.isMC:
+            output["gensumweight"] = ak.sum(events.genWeight)
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
-            self.analysis(
-                events, output, dataset, do_syst=True, col_label="_track_down"
+            output.update(
+                {
+                    "total_track_down": processor.value_accumulator(float, 0),
+                    "goldenJSON_track_down": processor.value_accumulator(float, 0),
+                    "triggerSingleMuon_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "triggerDoubleMuon_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "triggerEGamma_track_down": processor.value_accumulator(float, 0),
+                    "all_triggers_track_down": processor.value_accumulator(float, 0),
+                    "oneLepton_track_down": processor.value_accumulator(float, 0),
+                    "qualityFilters_track_down": processor.value_accumulator(float, 0),
+                    "MET_track_down": processor.value_accumulator(float, 0),
+                }
+            )
+            output = self.analysis(
+                events, output, do_syst=True, out_label="_track_down"
             )
 
         # run the analysis
-        self.analysis(events, output, dataset)
+        output = self.analysis(events, output)
 
-        # save the out_vars object as a Pandas DataFrame
-        pandas_utils.save_dfs(
-            self,
-            [self.out_vars],
-            ["vars"],
-            events.behavior["__events_factory__"]._partition_key.replace("/", "_")
-            + ".hdf5",
-        )
-        return output
+        return {dataset: output}
 
     def postprocess(self, accumulator):
         return accumulator

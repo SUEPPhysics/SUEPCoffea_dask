@@ -38,6 +38,8 @@ python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --do
 echo "xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}"
 xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}
 
+{extras}
+
 echo "rm *.{file_ext}"
 rm *.{file_ext}
 
@@ -48,7 +50,7 @@ echo " ------ THE END (everyone dies !) ----- "
 condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 2GB
-request_memory        = 3GB
+request_memory        = 5GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -109,6 +111,9 @@ def main():
         "-ML", "--ML", type=int, default=0, help="ML samples production."
     )
     parser.add_argument(
+        "-WH", "--WH", type=int, default=0, help="WH ntuples production."
+    )
+    parser.add_argument(
         "-cutflow", "--cutflow", type=int, default=0, help="Cutflow analyzer."
     )
     parser.add_argument("-q", "--queue", type=str, default="espresso", help="")
@@ -118,6 +123,9 @@ def main():
     )
     parser.add_argument(
         "-dry", "--dryrun", action="store_true", help="running without submission"
+    )
+    parser.add_argument(
+        "-m", "--maxFiles", type=int, default=-1, help="maximum number of files"
     )
     parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
 
@@ -151,10 +159,10 @@ def main():
         condor_file = "condor_ML.py"
         outfile = "out"
         file_ext = "hdf5"
-    elif options.cutflow == 1:
-        condor_file = "condor_SUEP_cutflow.py"
-        outfile = "output"
-        file_ext = "coffea"
+    elif options.WH == 1:
+        condor_file = "condor_SUEP_WH.py"
+        outfile = "out"
+        file_ext = "hdf5"
     else:
         condor_file = "condor_SUEP_WS.py"
         outfile = "out"
@@ -222,6 +230,11 @@ def main():
 
             if raw_input_list == [""]:
                 missing_samples.append(sample_name)
+
+            # limit to max number of files, if specified
+            if options.maxFiles > 0:
+                raw_input_list = raw_input_list[: options.maxFiles]
+
             Raw_list = []
             for f in raw_input_list:
                 if len(f) == 0:
@@ -247,6 +260,16 @@ def main():
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
+                extras = ""
+                if options.cutflow:
+                    extras += """
+                    echo "xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea"
+                    xrdcp {outCutflow}.coffea {redirector}/{outdir}/$3_cutflow.coffea
+                    """.format(
+                        outdir=fin_outdir_condor,
+                        outCutflow="cutflow",
+                        redirector=redirector,
+                    )
                 script = script_TEMPLATE.format(
                     proxy=proxy_base,
                     ismc=options.isMC,
@@ -259,6 +282,7 @@ def main():
                     outfile=outfile,
                     file_ext=file_ext,
                     redirector=redirector,
+                    extras=extras,
                 )
                 scriptfile.write(script)
                 scriptfile.close()
