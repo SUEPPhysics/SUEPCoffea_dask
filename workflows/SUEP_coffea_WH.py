@@ -2,7 +2,7 @@
 SUEP_coffea_WH.py
 Coffea producer for SUEP WH analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
-Pietro Lugato, Chad Freer, Luca Lavezzo, 2023
+Pietro Lugato, Chad Freer, Luca Lavezzo 2023
 """
 from typing import Optional
 
@@ -93,45 +93,21 @@ class SUEP_cluster_WH(processor.ProcessorABC):
     def triggerSelection(self, events, output, out_label):
         """
         Applies trigger, returns events.
-        Default is PFHT triggers. Can use selection variable for customization.
+        Trigger single muon and EGamma.
         """
 
-        triggerSingleMuon = (
-            events.HLT.IsoMu30
-            | events.HLT.IsoMu27
-            | events.HLT.IsoMu24
-            | events.HLT.Mu50
-        )
-        triggerDoubleMuon = (
-            events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8
-            | events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass8
-            | events.HLT.Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8
-            | events.HLT.Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ_Mass3p8
-        )
+        triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
         triggerEGamma = (
-            events.HLT.Ele27_WPTight_Gsf
-            | events.HLT.Ele32_WPTight_Gsf
-            | events.HLT.Ele35_WPTight_Gsf
-            | events.HLT.Ele38_WPTight_Gsf
-            | events.HLT.Ele40_WPTight_Gsf
+            events.HLT.Ele32_WPTight_Gsf
             | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
-            | events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL
-            | events.HLT.Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ
-            | events.HLT.Ele32_WPTight_Gsf_L1DoubleEG
-            | events.HLT.DoubleEle27_CaloIdL_MW
-            | events.HLT.DoubleEle25_CaloIdL_MW
-            | events.HLT.DoubleEle33_CaloIdL_MW
-            | events.HLT.DiEle27_WPTightCaloOnly_L1DoubleEG
             | events.HLT.Photon200
-            | events.HLT.DoublePhoton70
         )
 
         # this is just for cutflow
         output["triggerSingleMuon" + out_label] += len(events[triggerSingleMuon])
-        output["triggerDoubleMuon" + out_label] += len(events[triggerDoubleMuon])
         output["triggerEGamma" + out_label] += len(events[triggerEGamma])
 
-        events = events[triggerDoubleMuon | triggerEGamma | triggerSingleMuon]
+        events = events[triggerEGamma | triggerSingleMuon]
 
         return events
 
@@ -447,11 +423,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["SUEP_genPhi" + out_label] = SUEP_genPhi
 
         # saving lepton kinematics
-
         output["vars"]["lepton_pt" + out_label] = lepton.pt[:, 0]
         output["vars"]["lepton_eta" + out_label] = lepton.eta[:, 0]
         output["vars"]["lepton_phi" + out_label] = lepton.phi[:, 0]
         output["vars"]["lepton_mass" + out_label] = lepton.mass[:, 0]
+        output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:, 0]
 
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################
