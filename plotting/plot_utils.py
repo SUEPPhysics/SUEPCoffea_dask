@@ -4,12 +4,15 @@ import pickle
 import shutil
 import subprocess
 from collections import defaultdict
+from typing import List, Tuple, Dict, Optional
 
 import boost_histogram as bh
 import hist
 import hist.intervals
+import matplotlib
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator, LogLocator
 import mplhep as hep
 import numpy as np
 from sympy import diff, sqrt, symbols
@@ -490,9 +493,238 @@ def bin_midpoints(bins):
     return np.array(midpoints)
 
 
+def convert_permuon_to_perevent(h):
+    h_new = hist.Hist.new.Reg(
+        10, 0, 10, name=h.axes[0].name, label=h.axes[0].label
+    ).Weight()
+    h_new[0] = h[0]
+    for i in range(1, 10):
+        h_new[i] = hist.accumulators.WeightedSum(
+            h[i].value / i, h[i].variance / (i**2)
+        )
+    return h_new
+
+
+def apply_cut(plots, plot_list, plot_label, axis, cut):
+    if cut is None:
+        cut = slice(None)
+    hists = []
+    for plt_i in plot_list:
+        h_temp = plots[plt_i][plot_label].project(axis)[cut]
+        hists.append(h_temp.copy())
+    return hists
+
+
+def split_bkgs_per_process(
+    plots: Dict[str, Dict[str, hist.Hist]], bkg_list: List[float]
+) -> Dict[str, Dict[str, Dict[str, hist.Hist]]]:
+    plots_out = {}
+    for bkg in bkg_list:
+        plots_for_process = {
+            "c/b": {},
+            "light/other": {},
+            "prompt": {},
+        }
+        for plot in plots[bkg].keys():
+            if "genPartFlav" not in plot:
+                continue
+            htemp = plots[bkg][plot]
+            slc_cb = [slice(None)] * len(htemp.axes.name)
+            slc_pion1 = [slice(None)] * len(htemp.axes.name)
+            slc_pion2 = [slice(None)] * len(htemp.axes.name)
+            slc_prompt = [slice(None)] * len(htemp.axes.name)
+            for i_n, name in enumerate(htemp.axes.name):
+                if name == "Muon_genPartFlav":
+                    slc_cb[i_n] = slice(4j, 6j, sum)
+                    slc_pion1[i_n] = slice(0, 1j, sum)
+                    slc_pion2[i_n] = slice(3j, 4j, sum)
+                    slc_prompt[i_n] = slice(1j, 3j, sum)
+            plots_for_process["c/b"][plot] = htemp[tuple(slc_cb)].copy()
+            plots_for_process["light/other"][plot] = (
+                htemp[tuple(slc_pion1)].copy() + htemp[tuple(slc_pion2)].copy()
+            )
+            plots_for_process["prompt"][plot] = htemp[tuple(slc_prompt)].copy()
+        plots_out[bkg] = plots_for_process
+    return plots_out
+
+
+def split_bkgs(
+    plots: Dict[str, Dict[str, hist.Hist]], bkg_list: List[float]
+) -> Dict[str, Dict[str, hist.Hist]]:
+    plots_out = {
+        "c/b": {},
+        "light/other": {},
+        "prompt": {},
+    }
+    for bkg in bkg_list:
+        for plot in plots[bkg].keys():
+            if "genPartFlav" not in plot:
+                continue
+            htemp = plots[bkg][plot]
+            slc_cb = [slice(None)] * len(htemp.axes.name)
+            slc_pion1 = [slice(None)] * len(htemp.axes.name)
+            slc_pion2 = [slice(None)] * len(htemp.axes.name)
+            slc_prompt = [slice(None)] * len(htemp.axes.name)
+            for i_n, name in enumerate(htemp.axes.name):
+                if name == "Muon_genPartFlav":
+                    slc_cb[i_n] = slice(4j, 6j, sum)
+                    slc_pion1[i_n] = slice(0, 1j, sum)
+                    slc_pion2[i_n] = slice(3j, 4j, sum)
+                    slc_prompt[i_n] = slice(1j, 3j, sum)
+            if plot not in plots_out["c/b"].keys():
+                plots_out["c/b"][plot] = htemp[tuple(slc_cb)].copy()
+                plots_out["light/other"][plot] = (
+                    htemp[tuple(slc_pion1)].copy() + htemp[tuple(slc_pion2)].copy()
+                )
+                plots_out["prompt"][plot] = htemp[tuple(slc_prompt)].copy()
+            else:
+                plots_out["c/b"][plot] += htemp[tuple(slc_cb)].copy()
+                plots_out["light/other"][plot] += (
+                    htemp[tuple(slc_pion1)].copy() + htemp[tuple(slc_pion2)].copy()
+                )
+                plots_out["prompt"][plot] += htemp[tuple(slc_prompt)].copy()
+    return plots_out
+
+
+def invert_dict(plots, processes, sources):
+    """
+    Gets dictionary of sources for each process.
+    Returns dictionary of processes for each source.
+    """
+    inverted = {}
+    for source in sources:
+        inverted[source] = {}
+    for process in processes:
+        for source in sources:
+            if source in plots[process].keys():
+                inverted[source][process] = plots[process][source]
+    return inverted
+
+
+def plot_stack(
+    plots: Dict[str, Dict[str, hist.Hist]],
+    bkg_list: List[str],
+    label: tuple[str, str],
+    fig: Optional[plt.Figure] = None,
+    ax: Optional[plt.Axes] = None,
+    slc: Optional[slice] = None,
+    ylim: Optional[tuple[float, float]] = None,
+    xlog: Optional[bool] = False,
+    ylog: Optional[bool] = False,
+    per_muon: Optional[bool] = False,
+    text_to_show: Optional[str] = None,
+) -> None:
+    """
+    Plots the stack of a list of bkg Hist histograms
+
+    Parameters
+    ----------
+    plots : dict
+        Dictionary of Hist histograms
+    bkg_list : list
+        List of background samples to be stacked
+    label : tuple of str
+        Tuple of two strings: [0]: Label of the plot, [0]: Label of the axis
+    slc : tuple
+        Tuple of slices to apply to the histograms
+    """
+
+    # Set up figure and axes
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(11, 8))
+
+    # Get the histograms
+    lbl_plot, lbl_axis = label
+    if slc is None:
+        slc = slice()
+    hists = []
+    hist_bkg_total = None
+    for bkg in bkg_list:
+        h_temp = plots[bkg][lbl_plot].project(lbl_axis)[slc]
+        hists.append(h_temp.copy())
+        if hist_bkg_total is None:
+            hist_bkg_total = h_temp.copy()
+        else:
+            hist_bkg_total += h_temp.copy()
+
+    # calculate desired y-axis range
+    if ylim is None:
+        ylim = (0, hist_bkg_total.values().max() * 1.5)
+
+    # Plot the stacked histogram
+    hep.histplot(
+        hists,
+        label=[b.replace("_2018", "") for b in bkg_list],
+        stack=True,
+        histtype="fill",
+        ec="black",
+        lw=2,
+        ax=ax,
+        zorder=1,
+    )
+
+    # Overlay an uncertainty hatch
+    # NOTE: the fill_between function requires the bin edges and the y, y_err values
+    #       to be duplicated in order for the hatch to be drawn correctly.
+    x_hatch = np.vstack(
+        (hist_bkg_total.axes[0].edges[:-1], hist_bkg_total.axes[0].edges[1:])
+    ).reshape((-1,), order="F")
+    y_hatch1 = np.vstack((hist_bkg_total.values(), hist_bkg_total.values())).reshape(
+        (-1,), order="F"
+    )
+    y_hatch1_unc = np.vstack(
+        (np.sqrt(hist_bkg_total.variances()), np.sqrt(hist_bkg_total.variances()))
+    ).reshape((-1,), order="F")
+    ax.fill_between(
+        x=x_hatch,
+        y1=y_hatch1 - y_hatch1_unc,
+        y2=y_hatch1 + y_hatch1_unc,
+        label="Stat. Unc.",
+        step="pre",
+        facecolor="none",
+        edgecolor=(0, 0, 0, 0.5),
+        linewidth=0,
+        hatch="///",
+        zorder=2,
+    )
+
+    ax.legend(ncol=2, loc="best")
+    if xlog:
+        ax.set_xscale("log")
+    if ylog:
+        ax.set_yscale("log")
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+    ax.set_xlabel(hist_bkg_total.axes.name[0])
+    ax.set_ylabel("Events")
+    if per_muon:
+        ax.set_ylabel("Muons")
+    hep.cms.label(llabel="Preliminary", data=False, lumi=r"1", ax=ax)
+
+    if xlog:
+        ax.xaxis.set_minor_locator(LogLocator(numticks=999, subs="all"))
+
+    if text_to_show is not None:
+        midpoint = int(len(hist_bkg_total.axes[0].edges) / 2)
+        x_txt = hist_bkg_total.axes[0].edges[midpoint]
+        y_txt = hist_bkg_total.values().max() * 1.1
+        ax.text(x_txt, y_txt, text_to_show, horizontalalignment="center")
+
+    plt.tight_layout()
+    plt.plot()
+    return
+
+
 def plot_ratio_stack(
-    plots, bkg_list, label, slc=None, ylim=None, xlog=False, ylog=False, per_muon=False
-):
+    plots: Dict[str, Dict[str, hist.Hist]],
+    bkg_list: List[str],
+    label: tuple[str, str],
+    slc: Optional[slice] = None,
+    ylim: Optional[tuple[float, float]] = None,
+    xlog: bool = False,
+    ylog: bool = False,
+    per_muon: bool = False,
+) -> None:
     """
     Plots ratio of a list of bkg Hist histograms over a data Hist histogram.
     The errors in the ratio are taken to be independent between histograms.
@@ -530,6 +762,12 @@ def plot_ratio_stack(
     data_name = "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018"
     hist_data = plots[data_name][lbl_plot].project(lbl_axis)[slc]
 
+    # calculate desired y-axis range
+    if ylim is None:
+        ylim = (0, hist_bkg_total.values().max() * 1.8)
+        if ylog:
+            ylim = (1e-1, 1e10)
+
     # Plot the stacked histogram
     hep.histplot(
         hists,
@@ -543,15 +781,21 @@ def plot_ratio_stack(
     )
 
     # Overlay an uncertainty hatch
-    sumw_total = hist_bkg_total.values()
-    unc = np.sqrt(hist_bkg_total.variances())
-    print(hist_bkg_total.axes[0].edges[1:])
-    print(sumw_total)
-    print(unc)
+    # NOTE: the fill_between function requires the bin edges and the y, y_err values
+    #       to be duplicated in order for the hatch to be drawn correctly.
+    x_hatch = np.vstack(
+        (hist_bkg_total.axes[0].edges[:-1], hist_bkg_total.axes[0].edges[1:])
+    ).reshape((-1,), order="F")
+    y_hatch1 = np.vstack((hist_bkg_total.values(), hist_bkg_total.values())).reshape(
+        (-1,), order="F"
+    )
+    y_hatch1_unc = np.vstack(
+        (np.sqrt(hist_bkg_total.variances()), np.sqrt(hist_bkg_total.variances()))
+    ).reshape((-1,), order="F")
     ax1.fill_between(
-        x=hist_bkg_total.axes[0].edges[1:],
-        y1=sumw_total - unc,
-        y2=sumw_total + unc,
+        x=x_hatch,
+        y1=y_hatch1 - y_hatch1_unc,
+        y2=y_hatch1 + y_hatch1_unc,
         label="Stat. Unc.",
         step="pre",
         facecolor="none",
@@ -619,23 +863,27 @@ def plot_ratio_stack(
         out=np.zeros_like(hist_bkg_total.values()),
         where=hist_bkg_total.values() != 0,
     )
+    y_hatch2 = np.vstack(
+        (np.ones_like(hist_bkg_total.values()), np.ones_like(hist_bkg_total.values()))
+    ).reshape((-1,), order="F")
+    y_hatch2_unc = np.vstack((mc_rel_unc, mc_rel_unc)).reshape((-1,), order="F")
     ax2.fill_between(
-        x=hist_bkg_total.axes[0].edges[1:],
-        y1=np.ones_like(hist_bkg_total.values()) - mc_rel_unc,
-        y2=np.ones_like(hist_bkg_total.values()) + mc_rel_unc,
-        # label="Stat. Unc.",
+        x=x_hatch,
+        y1=y_hatch2 - y_hatch2_unc,
+        y2=y_hatch2 + y_hatch2_unc,
         step="pre",
         facecolor="none",
         edgecolor=(0, 0, 0, 0.5),
         linewidth=0,
         hatch="///",
-        # zorder=2,
     )
 
     ax2.axhline(1, ls="--", color="gray")
     ax2.set_xlabel(hist_data.axes.name[0])
     ax2.set_ylabel("Ratio")
     ax2.set_ylim(0, 2)
+    if xlog:
+        ax1.xaxis.set_minor_locator(LogLocator(numticks=999, subs="all"))
     plt.plot()
     return
 

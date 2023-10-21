@@ -138,7 +138,7 @@ class SUEP_cluster(processor.ProcessorABC):
         muons = muons[clean_muons]
         electrons = electrons[clean_electrons]
         if blind:
-            select_by_muons = ak.num(muons, axis=-1) == 3
+            select_by_muons = ak.num(muons, axis=-1) < 5
             events = events[select_by_muons]
             muons = muons[select_by_muons]
             electrons = electrons[select_by_muons]
@@ -262,53 +262,37 @@ class SUEP_cluster(processor.ProcessorABC):
         # These arrays need to be broadcasted to the per muon dims from per event dims
         nMuons = ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0])
         weights = np.ones(len(events))
+        muons_genPartFlav = ak.flatten(ak.zeros_like(muons.pt, dtype=int))
         if self.isMC:
             weights = events.genWeight
+            muons_genPartFlav = ak.flatten(muons.genPartFlav).to_numpy().astype(int)
         weights_per_muon = ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0])
 
-        output[dataset]["histograms"]["muon_pt_vs_nMuon"].fill(
-            ak.flatten(muons.pt), nMuons, weight=weights_per_muon
+        # Fill the histograms
+        # First, pt histograms
+        output[dataset]["histograms"]["muon_pt_vs_genPartFlav_vs_nMuon"].fill(
+            ak.flatten(muons.pt), muons_genPartFlav, nMuons, weight=weights_per_muon
         )
-
-        mT_MET = SUEP_utils.transverse_mass(muons, events.MET)
-        mT = np.sqrt(muons.E**2 - muons.pz**2)
-        output[dataset]["histograms"]["muon_METmt_vs_nMuon"].fill(
-            ak.flatten(mT_MET), nMuons, weight=weights_per_muon
-        )
-        output[dataset]["histograms"]["muon_METmt_vs_nMuon"].fill(
-            ak.flatten(mT_MET), nMuons, weight=weights_per_muon
-        )
-        output[dataset]["histograms"]["muon_mt_vs_nMuon"].fill(
-            ak.flatten(mT), nMuons, weight=weights_per_muon
-        )
-        output[dataset]["histograms"]["muon_mt_vs_nMuon"].fill(
-            ak.flatten(mT), nMuons, weight=weights_per_muon
-        )
-        output[dataset]["histograms"]["muon_pt_vs_nMuon"].fill(
-            ak.flatten(muons.pt), nMuons, weight=weights_per_muon
-        )
-        output[dataset]["histograms"]["muon_dxy_vs_miniPFRelIso_vs_nMuon"].fill(
-            ak.flatten(abs(muons.dxy)),
-            ak.flatten(muons.miniPFRelIso_all),
-            nMuons,
-            weight=weights_per_muon,
-        )
-        output[dataset]["histograms"]["muon_pt_vs_miniPFRelIso_vs_nMuon"].fill(
+        output[dataset]["histograms"][
+            "muon_pt_vs_miniPFRelIso_vs_genPartFlav_vs_nMuon"
+        ].fill(
             ak.flatten(muons.pt),
             ak.flatten(muons.miniPFRelIso_all),
+            muons_genPartFlav,
             nMuons,
             weight=weights_per_muon,
         )
-        output[dataset]["histograms"]["muon_dz_vs_nMuon"].fill(
-            ak.flatten(abs(muons.dz)),
+        # Then, impact parameter histograms
+        output[dataset]["histograms"][
+            "muon_dxy_vs_miniPFRelIso_vs_genPartFlav_vs_nMuon"
+        ].fill(
+            ak.flatten(abs(muons.dxy)),
+            ak.flatten(muons.miniPFRelIso_all),
+            muons_genPartFlav,
             nMuons,
             weight=weights_per_muon,
         )
-        output[dataset]["histograms"]["muon_ip3d_vs_nMuon"].fill(
-            ak.flatten(muons.ip3d),
-            nMuons,
-            weight=weights_per_muon,
-        )
+        # Finally, per event quantities
         output[dataset]["histograms"]["nTrack_vs_nMuon"].fill(
             ak.num(tracks),
             ak.num(muons),
@@ -318,6 +302,70 @@ class SUEP_cluster(processor.ProcessorABC):
             ak.num(tracks),
             ak.num(muons),
             weight=weights,
+        )
+
+        # OS dimuon mass
+        dimuons = ak.combinations(
+            muons, n=2, axis=-1, highlevel=True, with_name="Momentum4D"
+        )
+        mu1, mu2 = ak.unzip(dimuons)
+        opposite_charges = mu1.charge != mu2.charge
+        osdimuons = mu1[opposite_charges] + mu2[opposite_charges]
+        nMuon_per_dm = ak.flatten(ak.broadcast_arrays(ak.num(muons), osdimuons.pt)[0])
+        weights_per_dm = ak.flatten(ak.broadcast_arrays(weights, osdimuons.pt)[0])
+        output[dataset]["histograms"]["mass_vs_nMuon"].fill(
+            ak.flatten(osdimuons.mass),
+            nMuon_per_dm,
+            weight=weights_per_dm,
+        )
+        output[dataset]["histograms"]["mass_log_vs_nMuon"].fill(
+            ak.flatten(osdimuons.mass),
+            nMuon_per_dm,
+            weight=weights_per_dm,
+        )
+
+        # B-tagging & associated jet stuff
+        nBjet = ak.sum(events.Jet.btagDeepFlavB > 0.0490, axis=1)
+        output[dataset]["histograms"]["nBjet_vs_nMuon"].fill(
+            nBjet,
+            ak.num(muons),
+            weight=weights,
+        )
+        output[dataset]["histograms"][
+            "muon_pt_vs_btagDeepFlavB_vs_genPartFlav_vs_nMuon"
+        ].fill(
+            ak.flatten(muons.pt),
+            ak.flatten(ak.fill_none(muons.matched_jet.btagDeepFlavB, 0)),
+            muons_genPartFlav,
+            nMuons,
+            weight=weights_per_muon,
+        )
+        output[dataset]["histograms"][
+            "muon_mjet_pt_vs_jetPtRelv2_vs_genPartFlav_vs_nMuon"
+        ].fill(
+            ak.flatten(ak.fill_none(muons.matched_jet.pt, 0)),
+            ak.flatten(muons.jetPtRelv2),
+            muons_genPartFlav,
+            nMuons,
+            weight=weights_per_muon,
+        )
+        output[dataset]["histograms"][
+            "muon_mjet_pt_vs_jetRelIso_vs_genPartFlav_vs_nMuon"
+        ].fill(
+            ak.flatten(ak.fill_none(muons.matched_jet.pt, 0)),
+            ak.flatten(muons.jetRelIso),
+            muons_genPartFlav,
+            nMuons,
+            weight=weights_per_muon,
+        )
+        output[dataset]["histograms"][
+            "muon_jetPtRelv2_vs_jetRelIso_vs_genPartFlav_vs_nMuon"
+        ].fill(
+            ak.flatten(muons.jetPtRelv2),
+            ak.flatten(muons.jetRelIso),
+            muons_genPartFlav,
+            nMuons,
+            weight=weights_per_muon,
         )
 
         return
@@ -385,50 +433,38 @@ class SUEP_cluster(processor.ProcessorABC):
         histograms = {
             # Muon pt histogram - per muon entry
             # Add an axis for nMuon
-            "muon_pt_vs_nMuon": hist.Hist.new.Reg(
-                150, 0, 150, name="muon_pt", label="Muon p_{T} [GeV]"
+            "muon_pt_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
+                150, 0, 150, name="Muon_pt", label="Muon_pt"
+            )
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
             )
             .Reg(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
-            # Transverse mass histogram between muons and MET
-            "muon_METmt_vs_nMuon": hist.Hist.new.Reg(
-                150, 0, 150, name="mt", label="m_{T} [GeV]"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_mt_vs_nMuon": hist.Hist.new.Reg(
-                150, 0, 150, name="mt", label="m_{T} [GeV]"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_pt_vs_nMuon": hist.Hist.new.Reg(
-                150, 0, 150, name="pt", label="p_{T} [GeV]"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_METmt_vs_nMuon": hist.Hist.new.Reg(
-                150, 0, 150, name="mt", label="m_{T} [GeV]"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_mt_vs_nMuon": hist.Hist.new.Reg(
-                150, 0, 150, name="mt", label="m_{T} [GeV]"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_dz_vs_nMuon": hist.Hist.new.Regular(
-                200, 0, 0.1, name="Muon_dz", label="Muon_dz"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_ip3d_vs_nMuon": hist.Hist.new.Regular(
-                200, 0, 0.1, name="Muon_ip3d", label="Muon_ip3d"
-            )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_dxy_vs_miniPFRelIso_vs_nMuon": hist.Hist.new.Regular(
+            "muon_pt_vs_miniPFRelIso_vs_genPartFlav_vs_nMuon": hist.Hist.new.Regular(
                 50,
+                1,
+                1e3,
+                name="Muon_pt",
+                label="Muon_pt",
+                transform=hist.axis.transform.log,
+            )
+            .Regular(
+                100,
                 1e-4,
+                1e3,
+                name="Muon_miniPFRelIso_all",
+                label="Muon_miniPFRelIso_all",
+                transform=hist.axis.transform.log,
+            )
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            "muon_dxy_vs_miniPFRelIso_vs_genPartFlav_vs_nMuon": hist.Hist.new.Regular(
+                50,
+                1e-5,
                 1e-1,
                 name="Muon_dxy",
                 label="Muon_dxy",
@@ -436,29 +472,14 @@ class SUEP_cluster(processor.ProcessorABC):
             )
             .Regular(
                 50,
-                1e-3,
+                1e-4,
                 1e3,
                 name="Muon_miniPFRelIso_all",
                 label="Muon_miniPFRelIso_all",
                 transform=hist.axis.transform.log,
             )
-            .Reg(10, 0, 10, name="nMuon", label="nMuon")
-            .Weight(),
-            "muon_pt_vs_miniPFRelIso_vs_nMuon": hist.Hist.new.Regular(
-                50,
-                1,
-                1e3,
-                name="pt",
-                label="p_{T} [GeV]",
-                transform=hist.axis.transform.log,
-            )
-            .Regular(
-                50,
-                1e-3,
-                1e3,
-                name="Muon_miniPFRelIso_all",
-                label="Muon_miniPFRelIso_all",
-                transform=hist.axis.transform.log,
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
             )
             .Reg(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
@@ -480,6 +501,116 @@ class SUEP_cluster(processor.ProcessorABC):
                 transform=hist.axis.transform.log,
             )
             .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            # OS dimuon mass
+            "mass_vs_nMuon": hist.Hist.new.Reg(
+                100,
+                0,
+                200,
+                name="mass_mumu",
+                label="mass_mumu",
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            "mass_log_vs_nMuon": hist.Hist.new.Reg(
+                100,
+                1,
+                1e3,
+                name="mass_mumu",
+                label="mass_mumu",
+                transform=hist.axis.transform.log,
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            # B-tagging stuff
+            "nBjet_vs_nMuon": hist.Hist.new.Reg(
+                20,
+                0,
+                20,
+                name="nBjet",
+                label="nBjet",
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            "muon_pt_vs_btagDeepFlavB_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
+                50,
+                0,
+                100,
+                name="Muon_pt",
+                label="Muon_pt",
+            )
+            .Reg(
+                100,
+                0,
+                1,
+                name="matched_jet_btagDeepFlavB",
+                label="matched_jet_btagDeepFlavB",
+            )
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
+            )
+            .Reg(10, 0, 10, name="nMuon", label="nMuon")
+            .Weight(),
+            "muon_mjet_pt_vs_jetPtRelv2_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
+                25,
+                0,
+                50,
+                name="matched_jet_pt",
+                label="matched_jet_pt",
+            )
+            .Reg(
+                40,
+                1e-3,
+                1e2,
+                name="matched_jet_jetPtRelv2",
+                label="matched_jet_jetPtRelv2",
+                transform=hist.axis.transform.log,
+            )
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
+            )
+            .Reg(8, 0, 8, name="nMuon", label="nMuon")
+            .Weight(),
+            "muon_mjet_pt_vs_jetRelIso_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
+                25,
+                0,
+                50,
+                name="matched_jet_pt",
+                label="matched_jet_pt",
+            )
+            .Reg(
+                40,
+                1e-3,
+                1e2,
+                name="matched_jet_jetRelIso",
+                label="matched_jet_jetRelIso",
+                transform=hist.axis.transform.log,
+            )
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
+            )
+            .Reg(8, 0, 8, name="nMuon", label="nMuon")
+            .Weight(),
+            "muon_jetPtRelv2_vs_jetRelIso_vs_genPartFlav_vs_nMuon": hist.Hist.new.Reg(
+                40,
+                1e-3,
+                1e2,
+                name="matched_jet_jetPtRelv2",
+                label="matched_jet_jetPtRelv2",
+                transform=hist.axis.transform.log,
+            )
+            .Reg(
+                40,
+                1e-3,
+                1e2,
+                name="matched_jet_jetRelIso",
+                label="matched_jet_jetRelIso",
+                transform=hist.axis.transform.log,
+            )
+            .IntCategory(
+                [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
+            )
+            .Reg(8, 0, 8, name="nMuon", label="nMuon")
             .Weight(),
         }
         output = {
