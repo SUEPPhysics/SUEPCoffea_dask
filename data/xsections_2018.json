@@ -267,19 +267,19 @@
     "kr": 1
   },
   "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "xsec": 1,
     "br": 1,
-    "br": 1,
-    "br": 6435.0,
+    "kr": 6435.0
   },
   "DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "xsec": 1,
     "br": 1,
-    "br": 1,
-    "br": 1485.0,
+    "kr": 1485.0
   },
   "DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "xsec": 1,
     "br": 1,
-    "br": 1,
-    "br": 97.2,
+    "kr": 97.2,
   },
   "DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
