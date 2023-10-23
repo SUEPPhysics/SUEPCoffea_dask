@@ -11,7 +11,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "eta": events.Muon.eta,
             "phi": events.Muon.phi,
             "mass": events.Muon.mass,
-            "charge": events.Muon.charge,
+            "pdgID": events.Muon.pdgId,
         },
         with_name="Momentum4D",
     )
@@ -22,7 +22,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "eta": events.Electron.eta,
             "phi": events.Electron.phi,
             "mass": events.Electron.mass,
-            "charge": events.Electron.charge,
+            "pdgID": events.Muon.pdgId,
         },
         with_name="Momentum4D",
     )
@@ -111,6 +111,7 @@ def TopPTMethod(
     tracks,
     jets,
     clusters,
+    output,
     out_label=None,
 ):
     #####################################################################################
@@ -151,42 +152,46 @@ def TopPTMethod(
 
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-    self.out_vars.loc[indices, "SUEP_nconst_TopPT" + out_label] = ak.num(SUEP_tracks_b)
-    self.out_vars.loc[indices, "SUEP_pt_avg_b_TopPT" + out_label] = ak.mean(
-        SUEP_tracks_b.pt, axis=-1
+    output["vars"].loc(indices, "SUEP_nconst_TopPT" + out_label, ak.num(SUEP_tracks_b))
+    output["vars"].loc(
+        indices, "SUEP_pt_avg_b_TopPT" + out_label, ak.mean(SUEP_tracks_b.pt, axis=-1)
     )
-    self.out_vars.loc[indices, "SUEP_S1_TopPT" + out_label] = 1.5 * (
-        eigs[:, 1] + eigs[:, 0]
+    output["vars"].loc(
+        indices, "SUEP_S1_TopPT" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
     )
 
     # unboost for these
     SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
-    self.out_vars.loc[indices, "SUEP_pt_avg_TopPT" + out_label] = ak.mean(
-        SUEP_tracks.pt, axis=-1
+    output["vars"].loc(
+        indices, "SUEP_pt_avg_TopPT" + out_label, ak.mean(SUEP_tracks.pt, axis=-1)
     )
-    self.out_vars.loc[indices, "SUEP_pt_TopPT" + out_label] = SUEP_cand.pt
-    self.out_vars.loc[indices, "SUEP_eta_TopPT" + out_label] = SUEP_cand.eta
-    self.out_vars.loc[indices, "SUEP_phi_TopPT" + out_label] = SUEP_cand.phi
-    self.out_vars.loc[indices, "SUEP_mass_TopPT" + out_label] = SUEP_cand.mass
+    output["vars"].loc(indices, "SUEP_pt_TopPT" + out_label, SUEP_cand.pt)
+    output["vars"].loc(indices, "SUEP_eta_TopPT" + out_label, SUEP_cand.eta)
+    output["vars"].loc(indices, "SUEP_phi_TopPT" + out_label, SUEP_cand.phi)
+    output["vars"].loc(indices, "SUEP_mass_TopPT" + out_label, SUEP_cand.mass)
 
     # Calculate gen SUEP and candidate SUEP differences
     SUEP_genEta_diff_TopPT = (
-        self.out_vars["SUEP_eta_TopPT" + out_label]
-        - self.out_vars["SUEP_genEta" + out_label]
+        output["vars"]["SUEP_eta_TopPT" + out_label]
+        - output["vars"]["SUEP_genEta" + out_label]
     )
     SUEP_genPhi_diff_TopPT = (
-        self.out_vars["SUEP_phi_TopPT" + out_label]
-        - self.out_vars["SUEP_genPhi" + out_label]
+        output["vars"]["SUEP_phi_TopPT" + out_label]
+        - output["vars"]["SUEP_genPhi" + out_label]
     )
     SUEP_genR_diff_TopPT = (
         SUEP_genEta_diff_TopPT**2 + SUEP_genPhi_diff_TopPT**2
     ) ** 0.5
-    self.out_vars["SUEP_deltaEtaGen_TopPT" + out_label] = SUEP_genEta_diff_TopPT
-    self.out_vars["SUEP_deltaPhiGen_TopPT" + out_label] = SUEP_genPhi_diff_TopPT
-    self.out_vars["SUEP_deltaRGen_TopPT" + out_label] = SUEP_genR_diff_TopPT
-    self.out_vars.loc[indices, "SUEP_deltaMassGen_TopPT" + out_label] = (
-        SUEP_cand.mass - self.out_vars["SUEP_genMass" + out_label][indices]
+    output["vars"]["SUEP_deltaEtaGen_TopPT" + out_label] = SUEP_genEta_diff_TopPT
+    output["vars"]["SUEP_deltaPhiGen_TopPT" + out_label] = SUEP_genPhi_diff_TopPT
+    output["vars"]["SUEP_deltaRGen_TopPT" + out_label] = SUEP_genR_diff_TopPT
+    output["vars"].loc(
+        indices,
+        "SUEP_deltaMassGen_TopPT" + out_label,
+        (SUEP_cand.mass - output["vars"]["SUEP_genMass" + out_label][indices]),
     )
-    self.out_vars.loc[indices, "SUEP_deltaPtGen_TopPT" + out_label] = (
-        SUEP_cand.pt - self.out_vars["SUEP_genPt" + out_label][indices]
+    output["vars"].loc(
+        indices,
+        "SUEP_deltaPtGen_TopPT" + out_label,
+        (SUEP_cand.pt - output["vars"]["SUEP_genPt" + out_label][indices]),
     )
