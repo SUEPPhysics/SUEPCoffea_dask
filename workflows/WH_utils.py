@@ -22,7 +22,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "eta": events.Electron.eta,
             "phi": events.Electron.phi,
             "mass": events.Electron.mass,
-            "pdgID": events.Muon.pdgId,
+            "pdgID": events.Electron.pdgId,
         },
         with_name="Momentum4D",
     )
