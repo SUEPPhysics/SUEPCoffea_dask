@@ -414,6 +414,31 @@
     "br": 1,
     "xsec": 0.5269
   },
+  "GJets_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL17MiniAODv2-4cores5k_106X_mc2017_realistic_v9-v2+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 8639.0
+  },
+  "GJets_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v2+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 2173.0
+  },
+  "GJets_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v2+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 260.7
+  },
+  "GJets_HT-40To100_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v2+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 18650.0
+  },
+  "GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v2+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 86.55
+  },
   "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM": {
     "kr": 1,
     "br": 1,
