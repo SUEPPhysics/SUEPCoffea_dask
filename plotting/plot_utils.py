@@ -131,7 +131,7 @@ def getHistLists(plotDir, tag, filename):
     return hists
 
 
-def formatNaming(file):
+def formatSUEPNaming(file):
     tokens = file.split("_")
     temp = tokens[2]
     mS = tokens[3]
@@ -160,11 +160,8 @@ def fillSample(infile_name, plots, lumi):
         sample = "QCD_Pt"
 
         # include this block to import the QCD bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -172,12 +169,9 @@ def fillSample(infile_name, plots, lumi):
         sample = "QCD_HT"
 
         # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
+        plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -185,26 +179,51 @@ def fillSample(infile_name, plots, lumi):
         sample = "TTJets"
 
         # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("_Tune")[0]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
+        plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
+            
+    elif "WJetsToLNu_HT" in infile_name:
+        sample = "WJetsToLNu_HT"
+        
+        # include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_Tune")[0]
+        plots[temp_sample] = openHistFile(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+            
+    elif "WJetsToLNu_Pt" in infile_name:
+        sample = "WJetsToLNu_Pt"
+        
+        # include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_Tune")[0]
+        plots[temp_sample] = openHistFile(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+            
+    elif "DYJetsToLL_LHEFilterPtZ-" in infile_name:
+        sample = "DYJetsToLL_LHEFilterPtZ"
+        
+        # include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_MatchEWPDG20")[0]
+        plots[temp_sample] = openHistFile(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+            
+        
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
 
         # include this block to import the eras bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        temp_sample = temp_sample.split("Run")[1].split("-UL")[0]
-        temp_sample = "data_" + temp_sample[4:]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("+")[1].split("-")[0]
+        temp_sample = "data_" + temp_sample[3:]
+        plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
@@ -212,7 +231,7 @@ def fillSample(infile_name, plots, lumi):
         if "+" in infile_name:  # historical naming convention
             sample = infile_name.split("/")[-1].split("+")[0]
         elif "GluGluToSUEP" in infile_name:  # private samples naming convention
-            sample = formatNaming(infile_name.split("/")[-1])
+            sample = formatSUEPNaming(infile_name.split("/")[-1])
         elif (
             "generic" in infile_name and "MS" in infile_name
         ):  # hack for Carlos naming convention
@@ -261,23 +280,26 @@ def loader(
         sample, plots = fillSample(infile_name, plots, lumi)
 
         if sample not in list(plots.keys()):
-            if ".root" in infile_name:
-                infile = openroot(infile_name)
-            elif ".pkl" in infile_name:
-                infile = openpickle(infile_name)
-            plots[sample] = infile
+            plots[sample] = openHistFile(infile_name)
             for plot in list(plots[sample].keys()):
                 plots[sample][plot] = plots[sample][plot] * lumi
         else:
-            if ".root" in infile_name:
-                plotsToAdd = openroot(infile_name)
-            elif ".pkl" in infile_name:
-                plotsToAdd = openpickle(infile_name)
-            for plot in list(plotsToAdd.keys()):
-                plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
+            plotsToAdd = openHistFile(infile_name)
+            try:
+                for plot in list(plotsToAdd.keys()):
+                    plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
+            except KeyError:
+                print("WARNING: " + infile_name + " has a different set of plots")
+                continue
 
     return plots
 
+def openHistFile(infile_name):
+    if ".root" in infile_name:
+        infile = openroot(infile_name)
+    elif ".pkl" in infile_name:
+        infile = openpickle(infile_name)
+    return infile
 
 def combineMCSamples(plots, year, samples=["QCD_HT", "TTJets"]):
     assert len(samples) > 0

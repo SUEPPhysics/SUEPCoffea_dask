@@ -37,8 +37,8 @@ slurm_script_template = """#!/bin/bash
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
-source activate env
-#conda activate SUEP # Change to your own environment setup
+#source activate env
+conda activate SUEP # Change to your own environment setup
 cd {work_dir}
 {cmd}
 """
@@ -123,6 +123,7 @@ parser.add_argument(
     default="None",
     help="Pass the filename of the weights, e.g. --weights weights.npy",
 )
+parser.add_argument("--channel", type=str, help="Analysis channel: ggF, WH", required=True)
 options = parser.parse_args()
 
 
@@ -189,7 +190,7 @@ for i, sample in enumerate(samples):
         )
 
     elif options.code == "plot":
-        cmd = "python3 make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save}".format(
+        cmd = "python3 make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -205,6 +206,7 @@ for i, sample in enumerate(samples):
             blind=options.blind,
             predictSR=options.predictSR,
             save=options.save,
+			channel=options.channel,
             id=os.getuid(),
         )
 
