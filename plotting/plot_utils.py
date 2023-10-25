@@ -184,38 +184,37 @@ def fillSample(infile_name, plots, lumi):
         plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-            
+
     elif "WJetsToLNu_HT" in infile_name:
         sample = "WJetsToLNu_HT"
-        
+
         # include this block to import the HT bins individually
         temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("_Tune")[0]
         plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-            
+
     elif "WJetsToLNu_Pt" in infile_name:
         sample = "WJetsToLNu_Pt"
-        
+
         # include this block to import the HT bins individually
         temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("_Tune")[0]
         plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-            
+
     elif "DYJetsToLL_LHEFilterPtZ-" in infile_name:
         sample = "DYJetsToLL_LHEFilterPtZ"
-        
+
         # include this block to import the HT bins individually
         temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("_MatchEWPDG20")[0]
         plots[temp_sample] = openHistFile(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-            
-        
+
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
 
@@ -294,12 +293,14 @@ def loader(
 
     return plots
 
+
 def openHistFile(infile_name):
     if ".root" in infile_name:
         infile = openroot(infile_name)
     elif ".pkl" in infile_name:
         infile = openpickle(infile_name)
     return infile
+
 
 def combineMCSamples(plots, year, samples=["QCD_HT", "TTJets"]):
     assert len(samples) > 0

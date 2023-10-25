@@ -123,7 +123,9 @@ parser.add_argument(
     default="None",
     help="Pass the filename of the weights, e.g. --weights weights.npy",
 )
-parser.add_argument("--channel", type=str, help="Analysis channel: ggF, WH", required=True)
+parser.add_argument(
+    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
+)
 options = parser.parse_args()
 
 
@@ -206,7 +208,7 @@ for i, sample in enumerate(samples):
             blind=options.blind,
             predictSR=options.predictSR,
             save=options.save,
-			channel=options.channel,
+            channel=options.channel,
             id=os.getuid(),
         )
 

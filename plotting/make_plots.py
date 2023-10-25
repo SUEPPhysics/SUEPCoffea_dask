@@ -65,7 +65,9 @@ parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True
 parser.add_argument(
     "--isSignal", type=int, help="Is this signal sample or not", default=0
 )
-parser.add_argument("--channel", type=str, help="Analysis channel: ggF, WH", required=True)
+parser.add_argument(
+    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
+)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
@@ -120,14 +122,14 @@ Multiple plotting methods can be defined for the same input method, as different
 selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
-if options.channel == 'WH':
+if options.channel == "WH":
     config = {
         "TopPT": {
             "input_method": "TopPT",
             "selections": [],
         },
-        }
-if options.channel == 'ggF':
+    }
+if options.channel == "ggF":
     if options.scouting:
         config = {
             "Cluster": {
@@ -772,56 +774,56 @@ def create_output_file(label, abcd, options):
                 1000,
                 name=f"MET_JEC_pt_UnclusteredEnergy_up_{label}",
                 label="MET JEC pt",
-            ).Weight(),            
+            ).Weight(),
             f"MET_JEC_pt_UnclusteredEnergy_down_{label}": Hist.new.Reg(
                 100,
                 0,
                 1000,
                 name=f"MET_JEC_pt_UnclusteredEnergy_down_{label}",
                 label="MET JCE pt",
-            ).Weight(),       
+            ).Weight(),
             f"MET_JEC_phi_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"MET_JEC_phi_{label}",
                 label="MET JEC phi",
-            ).Weight(),       
+            ).Weight(),
             f"MET_JEC_phi_JER_up_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"MET_JEC_phi_JER_up_{label}",
                 label="MET JEC phi",
-            ).Weight(),       
+            ).Weight(),
             f"MET_JEC_phi_JER_down_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"MET_JEC_phi_JER_down_{label}",
                 label="MET JEC phi",
-            ).Weight(),    
+            ).Weight(),
             f"MET_JEC_phi_JES_up_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"MET_JEC_phi_JES_up_{label}",
                 label="MET JEC phi",
-            ).Weight(),       
+            ).Weight(),
             f"MET_JEC_phi_JES_down_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"MET_JEC_phi_JES_down_{label}",
                 label="MET JEC phi",
-            ).Weight(),                   
+            ).Weight(),
             f"MET_JEC_phi_UnclusteredEnergy_up_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"MET_JEC_phi_UnclusteredEnergy_up_{label}",
                 label="MET JEC phi",
-            ).Weight(),                 
+            ).Weight(),
             f"MET_JEC_phi_UnclusteredEnergy_down_{label}": Hist.new.Reg(
                 100,
                 -4,
@@ -835,7 +837,7 @@ def create_output_file(label, abcd, options):
                 5000,
                 name=f"MET_JEC_sumEt_{label}",
                 label="MET JEC sumEt",
-            ).Weight()
+            ).Weight(),
         }
     )
 
