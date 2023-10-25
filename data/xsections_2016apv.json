@@ -375,268 +375,293 @@
     "kr": 1
   },
   "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 6404.0,
+    "xsec": 6404.0
   },
   "DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 1485.0,
+    "xsec": 1485.0
   },
   "DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 397.4,
+    "xsec": 397.4
   },
   "DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 97.2,
+    "xsec": 97.2
   },
   "DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 3.701,
+    "xsec": 3.71
   },
   "DYJetsToLL_LHEFilterPtZ-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.5086,
+    "xsec": 0.586
   },
   "DYJetsToLL_LHEFilterPtZ-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.04728,
+    "xsec": 0.0728
   },
   "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 67350.0,
+    "xsec": 67350.0
   },
   "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 687.1,
+    "xsec": 687.1
   },
   "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 687.1,
+    "xsec": 687.1
   },
   "ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 3.289,
+    "xsec": 3.29
   },
   "WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 11.09,
+    "xsec": 11.0
   },
   "WZTo3LNu_mllmin4p0_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 4.664,
+    "xsec": 4.64
   },
   "WZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 6.419,
+    "xsec": 6.49
   },
   "ZZTo2L2Nu_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.9738,
+    "xsec": 0.938
   },
   "ZZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 3.676,
+    "xsec": 3.66
   },
   "ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 1.325,
+    "xsec": 1.35
   },
   "ZGToLLG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 51.1,
+    "xsec": 51.1
   },
   "WGToLNuG_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 412.7,
+    "xsec": 412.7
   },
   "TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.2161,
+    "xsec": 0.261
   },
   "TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.4377,
+    "xsec": 0.477
   },
   "TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.5113,
+    "xsec": 0.513
   },
   "TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.2439,
+    "xsec": 0.239
   },
   "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 15890.0,
+    "xsec": 15890.0
   },
   "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 20460.0,
+    "xsec": 20460.0
   },
   "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 1256.0,
+    "xsec": 1256.0
   },
   "WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 1.16,
+    "xsec": 1.1
   },
   "WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11_ext1-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 1.16,
+    "xsec": 1.1
   },
   "WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 335.5,
+    "xsec": 335.5
   },
   "WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.02646,
+    "xsec": 0.0646
   },
   "WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11_ext1-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.02646,
+    "xsec": 0.0646
   },
   "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 45.25,
+    "xsec": 45.2
   },
   "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11_ext1-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 45.25,
+    "xsec": 45.2
   },
   "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 10.97,
+    "xsec": 10.9
   },
   "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11_ext1-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 10.97,
+    "xsec": 10.9
   },
   "WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 1264.0,
+    "xsec": 1264.0
   },
   "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 4.933,
+    "xsec": 4.93
   },
   "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11_ext1-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 4.933,
+    "xsec": 4.93
   },
   "WJetsToLNu_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 763.7,
+    "xsec": 763.7
   },
   "WJetsToLNu_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 27.55,
+    "xsec": 27.5
   },
   "WJetsToLNu_Pt-400To600_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 3.477,
+    "xsec": 3.47
   },
   "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.5415,
+    "xsec": 0.515
   },
   "WWTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 51.65,
+    "xsec": 51.6
   },
   "WZTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 9.119,
+    "xsec": 9.19
   },
   "WZTo1L3Nu_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 3.414,
+    "xsec": 3.44
   },
   "WplusH_HToBB_WToLNu_M-125_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.2832,
+    "xsec": 0.232
   },
   "WminusH_HToBB_WToLNu_M-125_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.177,
+    "xsec": 0.17
   },
   "ttHToNonbb_M125_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 0.5638,
+    "xsec": 0.538
   },
   "ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
+    "xsec": 0.569
+  },
+  "GJets_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-4cores5k_106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 0.5269,
+    "xsec": 8644.0
+  },
+  "GJets_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 2183.0
+  },
+  "GJets_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 260.2
+  },
+  "GJets_HT-40To100_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 18540.0
+  },
+  "GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 86.58
   },
   "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v3+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 67.93,
+    "xsec": 67.9
   },
   "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 32.51,
+    "xsec": 32.5
   },
   "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 32.45,
+    "xsec": 32.4
   },
   "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v3+MINIAODSIM": {
+    "kr": 1,
     "br": 1,
-    "br": 1,
-    "br": 113.4,
+    "xsec": 113.4
   }
 }
