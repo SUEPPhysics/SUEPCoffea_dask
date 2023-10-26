@@ -21,5 +21,5 @@ function suepRun(){
 echo "Created function suepRun"
 
 # Add alias for singularity
-alias suepSing="singularity shell --bind /work/,/data/ ${CONTAINER}"
+alias suepSing='singularity shell --bind /work/,/data/ ${CONTAINER}'
 echo "Created alias suepSing"
