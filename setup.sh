@@ -19,3 +19,7 @@ function suepRun(){
     singularity run $CONTAINER python "$@"
 }
 echo "Created function suepRun"
+
+# Add alias for singularity
+alias suepSing="singularity shell --bind /work/,/data/ ${CONTAINER}"
+echo "Created alias suepSing"
