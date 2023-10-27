@@ -74,7 +74,7 @@ parser.add_argument(
     "-m",
     "--method",
     type=str,
-    default='multithread',
+    default="multithread",
     help="Which system to use (supported: 'multithread' or 'slurm')",
     required=True,
 )
