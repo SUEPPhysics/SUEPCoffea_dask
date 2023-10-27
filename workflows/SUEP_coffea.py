@@ -549,15 +549,11 @@ class SUEP_cluster(processor.ProcessorABC):
         # ---- Track selection
         # Prepare the clean PFCand matched to tracks collection
         #####################################################################################
-        print("events.fields")
-        print(events.fields)
         if self.scouting == 1:
             tracks, Cleaned_cands = self.getScoutingTracks(events)
         else:
             tracks, Cleaned_cands = self.getTracks(events)
         looseElectrons, looseMuons = self.getLooseLeptons(events)
-        print("tracks")
-        print(tracks)
         if self.isMC and do_syst and self.scouting == 1:
             tracks = scout_track_killing(self, tracks)
             Cleaned_cands = scout_track_killing(self, Cleaned_cands)
