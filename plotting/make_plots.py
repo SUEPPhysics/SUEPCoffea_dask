@@ -65,6 +65,9 @@ parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True
 parser.add_argument(
     "--isSignal", type=int, help="Is this signal sample or not", default=0
 )
+parser.add_argument(
+    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
+)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
 parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
@@ -119,89 +122,96 @@ Multiple plotting methods can be defined for the same input method, as different
 selections and ABCD methods can be applied.
 N.B.: Include lower and upper bounds for all ABCD regions.
 """
-
-if options.scouting:
+if options.channel == "WH":
     config = {
-        "Cluster": {
-            "input_method": "CL",
-            "xvar": "SUEP_S1_CL",
-            "xvar_regions": [0.3, 0.34, 0.5, 2.0],
-            "yvar": "SUEP_nconst_CL",
-            "yvar_regions": [0, 18, 50, 1000],
-            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-        },
-        "ClusterInverted": {
-            "input_method": "CL",
-            "xvar": "ISR_S1_CL",
-            "xvar_regions": [0.3, 0.34, 0.5, 2.0],
-            "yvar": "ISR_nconst_CL",
-            "yvar_regions": [0, 18, 35, 1000],
-            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
-            "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+        "TopPT": {
+            "input_method": "TopPT",
+            "selections": [],
         },
     }
-else:
-    config = {
-        "Cluster70": {
-            "input_method": "CL",
-            "xvar": "SUEP_S1_CL",
-            "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-            "yvar": "SUEP_nconst_CL",
-            "yvar_regions": [30, 50, 70, 1000],
-            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-            "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-        },
-        "ClusterInverted": {
-            "input_method": "CL",
-            "xvar": "ISR_S1_CL",
-            "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-            "yvar": "ISR_nconst_CL",
-            "yvar_regions": [30, 50, 70, 1000],
-            # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
-            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-            "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
-        },
-    }
-
-if options.doInf:
-    config.update(
-        {
-            "GNN": {
-                "input_method": "GNN",
-                "xvar": "SUEP_S1_GNN",
-                "xvar_regions": [0.3, 0.4, 0.5, 1.0],
-                "yvar": "single_l5_bPfcand_S1_SUEPtracks_GNN",
-                "yvar_regions": [0.0, 0.5, 1.0],
-                "SR": [
-                    ["SUEP_S1_GNN", ">=", 0.5],
-                    ["single_l5_bPfcand_S1_SUEPtracks_GNN", ">=", 0.5],
-                ],
-                "SR2": [
-                    ["SUEP_S1_CL", ">=", 0.5],
-                    ["SUEP_nconst_CL", ">=", 80],
-                ],  # both are blinded
-                "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 40]],
-                "models": ["single_l5_bPfcand_S1_SUEPtracks"],
-                "fGNNsyst": "../data/GNN/GNNsyst.json",
-                "GNNsyst_bins": [0.0j, 0.25j, 0.5j, 0.75j, 1.0j],
+if options.channel == "ggF":
+    if options.scouting:
+        config = {
+            "Cluster": {
+                "input_method": "CL",
+                "xvar": "SUEP_S1_CL",
+                "xvar_regions": [0.3, 0.34, 0.5, 2.0],
+                "yvar": "SUEP_nconst_CL",
+                "yvar_regions": [0, 18, 50, 1000],
+                "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+                "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
             },
-            "GNNInverted": {
-                "input_method": "GNNInverted",
-                "xvar": "ISR_S1_GNNInverted",
-                "xvar_regions": [0.0, 1.5, 2.0],
-                "yvar": "single_l5_bPfcand_S1_SUEPtracks_GNNInverted",
-                "yvar_regions": [0.0, 1.5, 2.0],
-                "SR": [
-                    ["ISR_S1_GNNInverted", ">=", 10.0],
-                    ["single_l5_bPfcand_S1_SUEPtracks_GNNInverted", ">=", 10.0],
-                ],
-                # 'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
-                "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 40]],
-                "models": ["single_l5_bPfcand_S1_SUEPtracks"],
+            "ClusterInverted": {
+                "input_method": "CL",
+                "xvar": "ISR_S1_CL",
+                "xvar_regions": [0.3, 0.34, 0.5, 2.0],
+                "yvar": "ISR_nconst_CL",
+                "yvar_regions": [0, 18, 35, 1000],
+                "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
+                "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
             },
         }
-    )
+    else:
+        config = {
+            "Cluster70": {
+                "input_method": "CL",
+                "xvar": "SUEP_S1_CL",
+                "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+                "yvar": "SUEP_nconst_CL",
+                "yvar_regions": [30, 50, 70, 1000],
+                "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+                "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+            },
+            "ClusterInverted": {
+                "input_method": "CL",
+                "xvar": "ISR_S1_CL",
+                "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+                "yvar": "ISR_nconst_CL",
+                "yvar_regions": [30, 50, 70, 1000],
+                # "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 75]],
+                "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+                "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+            },
+        }
+
+    if options.doInf:
+        config.update(
+            {
+                "GNN": {
+                    "input_method": "GNN",
+                    "xvar": "SUEP_S1_GNN",
+                    "xvar_regions": [0.3, 0.4, 0.5, 1.0],
+                    "yvar": "single_l5_bPfcand_S1_SUEPtracks_GNN",
+                    "yvar_regions": [0.0, 0.5, 1.0],
+                    "SR": [
+                        ["SUEP_S1_GNN", ">=", 0.5],
+                        ["single_l5_bPfcand_S1_SUEPtracks_GNN", ">=", 0.5],
+                    ],
+                    "SR2": [
+                        ["SUEP_S1_CL", ">=", 0.5],
+                        ["SUEP_nconst_CL", ">=", 80],
+                    ],  # both are blinded
+                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 40]],
+                    "models": ["single_l5_bPfcand_S1_SUEPtracks"],
+                    "fGNNsyst": "../data/GNN/GNNsyst.json",
+                    "GNNsyst_bins": [0.0j, 0.25j, 0.5j, 0.75j, 1.0j],
+                },
+                "GNNInverted": {
+                    "input_method": "GNNInverted",
+                    "xvar": "ISR_S1_GNNInverted",
+                    "xvar_regions": [0.0, 1.5, 2.0],
+                    "yvar": "single_l5_bPfcand_S1_SUEPtracks_GNNInverted",
+                    "yvar_regions": [0.0, 1.5, 2.0],
+                    "SR": [
+                        ["ISR_S1_GNNInverted", ">=", 10.0],
+                        ["single_l5_bPfcand_S1_SUEPtracks_GNNInverted", ">=", 10.0],
+                    ],
+                    # 'SR2': [['ISR_S1_CL', '>=', 0.5], ['ISR_nconst_CL', '>=', 80]], # both are blinded
+                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 40]],
+                    "models": ["single_l5_bPfcand_S1_SUEPtracks"],
+                },
+            }
+        )
 
 
 def open_file(options, redirector, ifile):
@@ -424,26 +434,27 @@ def create_output_file(label, abcd, options):
     else:
         output["labels"].append(label)
 
-    # ABCD histogram
-    xvar = abcd["xvar"]
-    yvar = abcd["yvar"]
-    xvar_regions = abcd["xvar_regions"]
-    yvar_regions = abcd["yvar_regions"]
-    output.update(
-        {
-            f"ABCDvars_{label}": Hist.new.Reg(
-                100, yvar_regions[0], yvar_regions[-1], name=xvar
-            )
-            .Reg(100, xvar_regions[0], xvar_regions[-1], name=yvar)
-            .Weight()
-        }
-    )
+    if options.doABCD:
+        # ABCD histogram
+        xvar = abcd["xvar"]
+        yvar = abcd["yvar"]
+        xvar_regions = abcd["xvar_regions"]
+        yvar_regions = abcd["yvar_regions"]
+        output.update(
+            {
+                f"ABCDvars_{label}": Hist.new.Reg(
+                    100, yvar_regions[0], yvar_regions[-1], name=xvar
+                )
+                .Reg(100, xvar_regions[0], xvar_regions[-1], name=yvar)
+                .Weight()
+            }
+        )
 
-    # defnie all the regions, will be used to make historgams for each region
-    regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    n_regions = (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
+    # define all the regions, will be used to make historgams for each region
     regions_list = [""]
     if options.doABCD:
+        regions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        n_regions = (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
         regions_list += [regions[i] + "_" for i in range(n_regions)]
 
     ###########################################################################################################################
@@ -519,11 +530,319 @@ def create_output_file(label, abcd, options):
                 name=f"ngood_ak4jets_{label}",
                 label="# ak4jets in Event",
             ).Weight(),
+            f"CaloMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"CaloMET_pt_{label}",
+                label="CaloMET pT",
+            ).Weight(),
+            f"CaloMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"CaloMET_phi_{label}",
+                label="CaloMET phi",
+            ).Weight(),
+            f"CaloMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"CaloMET_sumEt_{label}",
+                label="CaloMET sumEt",
+            ).Weight(),
+            f"ChsMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"ChsMET_pt_{label}",
+                label="ChsMET pT",
+            ).Weight(),
+            f"ChsMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"ChsMET_phi_{label}",
+                label="ChsMET phi",
+            ).Weight(),
+            f"ChsMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"ChsMET_sumEt_{label}",
+                label="ChsMET sumEt",
+            ).Weight(),
+            f"TkMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"TkMET_pt_{label}",
+                label="TkMET pt",
+            ).Weight(),
+            f"TkMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"TkMET_phi_{label}",
+                label="TkMET phi",
+            ).Weight(),
+            f"TkMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"TkMET_sumEt_{label}",
+                label="TkMET sumEt",
+            ).Weight(),
+            f"RawMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"RawMET_pt_{label}",
+                label="RawMET pt",
+            ).Weight(),
+            f"RawMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"RawMET_phi_{label}",
+                label="RawMET phi",
+            ).Weight(),
+            f"RawMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"RawMET_sumEt_{label}",
+                label="RawMET sumEt",
+            ).Weight(),
+            f"PuppiMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JER_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JER_up_{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JER_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JER_down_{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JES_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JES_up{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JES_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JES_down{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JER_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JER_up_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JER_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JER_down_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JES_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JES_up_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JES_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JES_down_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"PuppiMET_sumEt_{label}",
+                label="PuppiMET sumEt",
+            ).Weight(),
+            f"RawPuppiMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"RawPuppiMET_pt_{label}",
+                label="RawPuppiMET pt",
+            ).Weight(),
+            f"RawPuppiMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"RawPuppiMET_phi_{label}",
+                label="RawPuppiMET phi",
+            ).Weight(),
+            f"RawPuppiMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"RawPuppiMET_sumEt_{label}",
+                label="RawPuppiMET sumEt",
+            ).Weight(),
+            f"MET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_pt_{label}",
+                label="MET pt",
+            ).Weight(),
+            f"MET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_phi_{label}",
+                label="MET phi",
+            ).Weight(),
+            f"MET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"MET_sumEt_{label}",
+                label="MET sumEt",
+            ).Weight(),
+            f"MET_JEC_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JER_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JER_up_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JER_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JER_down_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JES_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JES_up_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JES_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JES_down_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_UnclusteredEnergy_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_UnclusteredEnergy_up_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_UnclusteredEnergy_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_UnclusteredEnergy_down_{label}",
+                label="MET JCE pt",
+            ).Weight(),
+            f"MET_JEC_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JER_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JER_up_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JER_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JER_down_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JES_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JES_up_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JES_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JES_down_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_UnclusteredEnergy_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_UnclusteredEnergy_up_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_UnclusteredEnergy_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_UnclusteredEnergy_down_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"MET_JEC_sumEt_{label}",
+                label="MET JEC sumEt",
+            ).Weight(),
         }
     )
 
     ###########################################################################################################################
-    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone"]]):
+    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone", "TopPT"]]):
         # 2D histograms
         output.update(
             {

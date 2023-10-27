@@ -37,9 +37,10 @@ slurm_script_template = """#!/bin/bash
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
-source activate env
-#conda activate SUEP # Change to your own environment setup
 cd {work_dir}
+cd ..
+source setup.sh
+cd plotting/
 {cmd}
 """
 
@@ -73,6 +74,7 @@ parser.add_argument(
     "-m",
     "--method",
     type=str,
+    default="multithread",
     help="Which system to use (supported: 'multithread' or 'slurm')",
     required=True,
 )
@@ -122,6 +124,9 @@ parser.add_argument(
     "--weights",
     default="None",
     help="Pass the filename of the weights, e.g. --weights weights.npy",
+)
+parser.add_argument(
+    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
 )
 options = parser.parse_args()
 
@@ -184,12 +189,12 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "python3 merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+        cmd = "suepRun merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
             tag=options.tag, sample=sample, isMC=options.isMC
         )
 
     elif options.code == "plot":
-        cmd = "python3 make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save}".format(
+        cmd = "suepRun make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -205,6 +210,7 @@ for i, sample in enumerate(samples):
             blind=options.blind,
             predictSR=options.predictSR,
             save=options.save,
+            channel=options.channel,
             id=os.getuid(),
         )
 
