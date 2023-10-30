@@ -48,7 +48,7 @@ echo " ------ THE END (everyone dies !) ----- "
 condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 2GB
-request_memory        = 8GB
+request_memory        = 5GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
