@@ -242,7 +242,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def getScoutingTracks(self, events):
         if "2016" in self.era:
             Cands = ak.zip(
-                {   
+                {
                     "pt": events.offlineTrack.pt,
                     "eta": events.offlineTrack.eta,
                     "phi": events.offlineTrack.phi,
