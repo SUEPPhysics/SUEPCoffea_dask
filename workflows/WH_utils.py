@@ -1,4 +1,5 @@
 import awkward as ak
+import numpy as np
 
 from workflows.SUEP_utils import sphericity
 
@@ -195,3 +196,12 @@ def TopPTMethod(
         "SUEP_deltaPtGen_TopPT" + out_label,
         (SUEP_cand.pt - output["vars"]["SUEP_genPt" + out_label][indices]),
     )
+
+    # delta phi for SUEP and MET
+    output["vars"]["deltaPhi_topPT_SUEP_CaloMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["CaloMET_phi" + out_label])
+    output["vars"]["deltaPhi_topPT_SUEP_ChsMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["ChsMET_phi" + out_label])
+    output["vars"]["deltaPhi_topPT_SUEP_TkMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["TkMET_phi" + out_label])
+    output["vars"]["deltaPhi_topPT_SUEP_RawMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["RawMET_phi" + out_label])
+    output["vars"]["deltaPhi_topPT_SUEP_PuppiMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["PuppiMET_phi" + out_label])
+    output["vars"]["deltaPhi_topPT_SUEP_RawPuppiMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["RawPuppiMET_phi" + out_label])
+    output["vars"]["deltaPhi_topPT_SUEP_MET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["MET_phi" + out_label])

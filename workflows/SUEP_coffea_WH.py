@@ -429,6 +429,28 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["lepton_mass" + out_label] = lepton.mass[:, 0]
         output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:, 0]
 
+        # W transverse mass for different METs (done manually for now) -- zero mass for lepton, MET in Mt calculation
+        output["vars"]["W_Mt_CaloMET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.CaloMET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.CaloMET.phi)))
+        output["vars"]["W_Mt_ChsMET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.ChsMET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.ChsMET.phi)))
+        output["vars"]["W_Mt_TkMET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.TkMET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.TkMET.phi)))
+        output["vars"]["W_Mt_RawMET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.RawMET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.RawMET.phi)))
+        output["vars"]["W_Mt_PuppiMET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.PuppiMET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.PuppiMET.phi)))
+        output["vars"]["W_Mt_RawPuppiMET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.RawPuppiMET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.RawPuppiMET.phi)))
+        output["vars"]["W_Mt_MET" + out_label] = np.sqrt(2 * np.abs(lepton.pt[:, 0]) * np.abs(events.MET.pt) * (1 - np.cos(lepton.phi[:, 0] - events.MET.phi)))
+
+        # delta phi for lepton and MET
+
+        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = np.abs(lepton.phi[:,0] - events.CaloMET.phi)
+        output["vars"]["deltaPhi_lepton_ChsMET" + out_label] = np.abs(lepton.phi[:,0] - events.ChsMET.phi)
+        output["vars"]["deltaPhi_lepton_TkMET" + out_label] = np.abs(lepton.phi[:,0] - events.TkMET.phi)
+        output["vars"]["deltaPhi_lepton_RawMET" + out_label] = np.abs(lepton.phi[:,0] - events.RawMET.phi)
+        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = np.abs(lepton.phi[:,0] - events.PuppiMET.phi)
+        output["vars"]["deltaPhi_lepton_RawPuppiMET" + out_label] = np.abs(lepton.phi[:,0] - events.RawPuppiMET.phi)
+        output["vars"]["deltaPhi_lepton_MET" + out_label] = np.abs(lepton.phi[:,0] - events.MET.phi)
+
+        # use the above for delta phi for SUEP and W candidate...
+
+
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################
         # ---- Basic event selection
