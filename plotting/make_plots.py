@@ -127,6 +127,7 @@ if options.channel == "WH":
         "TopPT": {
             "input_method": "TopPT",
             "selections": [],
+            #"Mt": {""}
         },
     }
 if options.channel == "ggF":
@@ -149,6 +150,7 @@ if options.channel == "ggF":
                 "yvar_regions": [0, 18, 35, 1000],
                 "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
                 "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
+                #"derived value": {"deltaPhi": lambda phiMET, phiSUEP: abs(phiMET - phiSUEP)}
             },
         }
     else:
@@ -838,6 +840,157 @@ def create_output_file(label, abcd, options):
                 name=f"MET_JEC_sumEt_{label}",
                 label="MET JEC sumEt",
             ).Weight(),
+            # W Mt calculated from dif METs     ################################################################################# 
+            f"W_Mt_CaloMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_CaloMET_{label}",
+                label="W_Mt_CaloMET",
+            ).Weight(),
+            f"W_Mt_ChsMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_ChsMET_{label}",
+                label="W_Mt_ChsMET",
+            ).Weight(),
+            f"W_Mt_TkMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_TkMET_{label}",
+                label="W_Mt_TkMET",
+            ).Weight(),
+            f"W_Mt_RawMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_RawMET_{label}",
+                label="W_Mt_RawMET",
+            ).Weight(),
+            f"W_Mt_PuppiMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_PuppiMET_{label}",
+                label="W_Mt_PuppiMET",
+            ).Weight(),
+            f"W_Mt_RawPuppiMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_RawPuppiMET_{label}",
+                label="W_Mt_RawPuppiMET",
+            ).Weight(),
+            f"W_Mt_MET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_Mt_MET_{label}",
+                label="W_Mt_MET",
+            ).Weight(),
+            # delta phi of SUEP vs different MET #######################################################################
+            f"deltaPhi_topPT_SUEP_CaloMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_CaloMET_{label}",
+                label="deltaPhi_topPT_SUEP_CaloMET",
+            ).Weight(),
+            f"deltaPhi_topPT_SUEP_ChsMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_ChsMET_{label}",
+                label="deltaPhi_topPT_SUEP_ChsMET",
+            ).Weight(),
+            f"deltaPhi_topPT_SUEP_TkMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_TkMET_{label}",
+                label="deltaPhi_topPT_SUEP_TkMET",
+            ).Weight(),
+            f"deltaPhi_topPT_SUEP_RawMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_RawMET_{label}",
+                label="deltaPhi_topPT_SUEP_RawMET",
+            ).Weight(),
+            f"deltaPhi_topPT_SUEP_PuppiMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_PuppiMET_{label}",
+                label="deltaPhi_topPT_SUEP_PuppiMET",
+            ).Weight(),
+            f"deltaPhi_topPT_SUEP_RawPuppiMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_RawPuppiMET_{label}",
+                label="deltaPhi_topPT_SUEP_RawPuppiMET",
+            ).Weight(),
+            f"deltaPhi_topPT_SUEP_MET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_topPT_SUEP_MET_{label}",
+                label="deltaPhi_topPT_SUEP_MET",
+            ).Weight(),
+            # delta phi between lepton and different METs ##########################################################
+            f"deltaPhi_lepton_CaloMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_CaloMET_{label}",
+                label="deltaPhi_lepton_CaloMET",
+            ).Weight(),
+            f"deltaPhi_lepton_ChsMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_ChsMET_{label}",
+                label="deltaPhi_lepton_ChsMET",
+            ).Weight(),
+            f"deltaPhi_lepton_TkMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_TkMET_{label}",
+                label="deltaPhi_lepton_TkMET",
+            ).Weight(),
+            f"deltaPhi_lepton_RawMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_RawMET_{label}",
+                label="deltaPhi_lepton_RawMET",
+            ).Weight(),
+            f"deltaPhi_lepton_PuppiMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_PuppiMET_{label}",
+                label="deltaPhi_lepton_PuppiMET",
+            ).Weight(),
+            f"deltaPhi_lepton_RawPuppiMET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_RawPuppiMET_{label}",
+                label="deltaPhi_lepton_RawPuppiMET",
+            ).Weight(),
+            f"deltaPhi_lepton_MET_{label}": Hist.new.Reg(
+                50,
+                0,
+                2*np.pi,
+                name=f"deltaPhi_lepton_MET_{label}",
+                label="deltaPhi_lepton_MET",
+            ).Weight(),
+            
         }
     )
 
