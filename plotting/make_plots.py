@@ -1180,7 +1180,6 @@ for ifile in tqdm(files):
 
     # update the gensumweight
     if options.isMC and metadata != 0:
-        print(metadata)
         total_gensumweight += metadata["gensumweight"]
 
     # check if file is empty
