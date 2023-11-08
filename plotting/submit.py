@@ -191,8 +191,10 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "python merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
-            tag=options.tag, sample=sample, isMC=options.isMC
+        cmd = (
+            "python merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+                tag=options.tag, sample=sample, isMC=options.isMC
+            )
         )
 
     elif options.code == "plot":
@@ -215,7 +217,7 @@ for i, sample in enumerate(samples):
             channel=options.channel,
             id=os.getuid(),
         )
-        
+
     # execute the command with singularity
     singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
     cmd = singularity_prefix + cmd
