@@ -2,8 +2,9 @@ import os
 import pathlib
 import shutil
 from typing import List, Optional
-import coffea
+
 import awkward as ak
+import coffea
 import pandas as pd
 
 
@@ -21,9 +22,7 @@ def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
     return out_df
 
 
-def h5store(
-    self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str
-) -> None:
+def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str) -> None:
     store.put(gname, df)
 
 
@@ -40,6 +39,7 @@ def save_dfs(self, dfs, df_names, fname="out.hdf5"):
         print("self.output_location is None")
         store.close()
 
+
 def format_dataframe(dataframe):
     """
     hdf5 doesn't store well coffea accumulators, and we don't need them anymore,
@@ -48,8 +48,9 @@ def format_dataframe(dataframe):
     for key, value in dataframe.items():
         print(type(value))
         if type(value) == coffea.processor.accumulator.value_accumulator:
-            dataframe[key] = value.value            
-    return dataframe      
+            dataframe[key] = value.value
+    return dataframe
+
 
 def dump_table(
     self, fname: str, location: str, subdirs: Optional[List[str]] = None
