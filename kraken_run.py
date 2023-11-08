@@ -161,7 +161,7 @@ def main():
         file_ext = "hdf5"
     elif options.WH == 1:
         condor_file = "condor_SUEP_WH.py"
-        outfile = "condor_out"
+        outfile = "out"
         file_ext = "hdf5"
     else:
         condor_file = "condor_SUEP_WS.py"

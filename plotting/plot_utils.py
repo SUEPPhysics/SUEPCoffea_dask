@@ -175,8 +175,33 @@ def fillSample(infile_name, plots, lumi):
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
 
-    elif "TTJets" in infile_name:
-        sample = "TTJets"
+    elif any(
+        [
+            s in infile_name
+            for s in [
+                "TTJets",
+                "ttZJets",
+                "ttHTobb",
+                "ttHToNonbb",
+                "TTTo2L2Nu",
+                "TTToSemiLeptonic",
+                "TTWJetsToLNu",
+                "TTZToQQ",
+                "TTZToLLNuNu",
+            ]
+        ]
+    ):
+        sample = "TTBkg"
+
+        # include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_Tune")[0]
+        plots[temp_sample] = openHistFile(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+
+    elif any([s in infile_name for s in ["ST_t", "ST_tW"]]):
+        sample = "STBkg"
 
         # include this block to import the HT bins individually
         temp_sample = infile_name.split("/")[-1].split(".root")[0]
