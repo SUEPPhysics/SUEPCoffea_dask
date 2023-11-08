@@ -2,8 +2,9 @@ import os
 import pathlib
 import shutil
 from typing import List, Optional
-import coffea
+
 import awkward as ak
+import coffea
 import pandas as pd
 
 
@@ -21,9 +22,7 @@ def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
     return out_df
 
 
-def h5store(
-    self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str
-) -> None:
+def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str) -> None:
     store.put(gname, df)
 
 

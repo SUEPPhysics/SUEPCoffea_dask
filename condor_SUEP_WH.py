@@ -1,9 +1,9 @@
 import argparse
 import os
-import pandas as pd
 
 # Import coffea specific features
 import coffea
+import pandas as pd
 from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 

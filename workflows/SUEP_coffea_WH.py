@@ -100,7 +100,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         triggerEGamma = (
             events.HLT.Ele32_WPTight_Gsf
             | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
-           # | events.HLT.Photon200
+            # | events.HLT.Photon200
         )
 
         # this is just for cutflow
