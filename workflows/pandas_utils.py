@@ -40,15 +40,18 @@ def save_dfs(self, dfs, df_names, fname="out.hdf5"):
         print("self.output_location is None")
         store.close()
 
-def format_dataframe(dataframe):
+def format_dataframe(dataframe, reducePrecision=True):
     """
-    hdf5 doesn't store well coffea accumulators, and we don't need them anymore,
-    so convert them to their values
+    Applies some formatting to efficiently store the data
     """
     for key, value in dataframe.items():
-        print(type(value))
+        # hdf5 doesn't store well coffea accumulators, and we don't need them anymore, so convert them to their values
         if type(value) == coffea.processor.accumulator.value_accumulator:
-            dataframe[key] = value.value            
+            dataframe[key] = value.value  
+        # reduce the float precision
+        if reducePrecision:
+            if 'float' in str(df[col].dtype):
+                dataframe[col] = df[col].astype('float16')
     return dataframe      
 
 def dump_table(

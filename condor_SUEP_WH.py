@@ -61,6 +61,7 @@ for instance in modules_era:
 
     # save outputs
     df = output["out"][options.dataset]["vars"].value
+    df = format_dataframe(df, reducePrecision=True)
     metadata = dict(
         era=options.era,
         mc=options.isMC,
@@ -73,5 +74,6 @@ for instance in modules_era:
             if key != "vars"
         }
     )
-    df_metadata = pd.DataFrame([pandas_utils.format_dataframe(metadata)])
+    df_metadata = pd.DataFrame([metadata])
+    df_metadata = format_dataframe(df_metadata, reducePrecision=True)
     pandas_utils.save_dfs(instance, [df, df_metadata], ["vars", "metadata"], "out.hdf5")
