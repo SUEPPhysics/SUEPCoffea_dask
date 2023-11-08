@@ -39,7 +39,6 @@ source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
 cd {work_dir}
 cd ..
-source setup.sh
 cd plotting/
 {cmd}
 """
@@ -188,12 +187,12 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "source ../setup.sh && suepRun merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+        cmd = "python merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
             tag=options.tag, sample=sample, isMC=options.isMC
         )
 
     elif options.code == "plot":
-        cmd = "source ../setup.sh && suepRun make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
+        cmd = "python make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -212,6 +211,10 @@ for i, sample in enumerate(samples):
             channel=options.channel,
             id=os.getuid(),
         )
+        
+    # execute the command with singularity
+    singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
+    cmd = singularity_prefix + cmd
 
     # Method to execute the code with
     if options.method == "multithread":
