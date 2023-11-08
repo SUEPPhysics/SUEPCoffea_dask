@@ -48,13 +48,14 @@ def call_process(cmd, work_dir):
     """This runs in a separate thread."""
     print("----[%] :", cmd)
     p = subprocess.Popen(
-        ['bash', '-c', ' '.join(shlex.split(cmd))],
+        ["bash", "-c", " ".join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
     )
     out, err = p.communicate()
     return (out, err)
+
 
 parser = argparse.ArgumentParser(description="Famous Submitter")
 # Specific to this script
@@ -73,7 +74,7 @@ parser.add_argument(
     "--method",
     type=str,
     default="multithread",
-    choices=['multithread','slurm'],
+    choices=["multithread", "slurm"],
     help="Which system to use to run the script.",
 )
 # These are the same as make_plots.py, and are passed straight through it
@@ -127,7 +128,10 @@ parser.add_argument(
     "--channel", type=str, help="Analysis channel: ggF, WH", required=True
 )
 parser.add_argument(
-    "--cores", type=int, help="Maximum number of cores to run multithread on.", default=50
+    "--cores",
+    type=int,
+    help="Maximum number of cores to run multithread on.",
+    default=50,
 )
 options = parser.parse_args()
 
@@ -249,6 +253,6 @@ if options.method == "multithread":
             print(str(err))
             print(" ----------------- ")
             print()
-        
+
     # clean up
     os.system(f"rm -rf {work_dir}")
