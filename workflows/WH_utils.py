@@ -106,6 +106,15 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     return events, selLeptons  # , [coll[cutHasTwoLeps] for coll in extraColls]
 
 
+def delta_phi(phi1s, phi2s):
+    
+    diffs = []
+    for phi1, phi2 in zip(phi1s, phi2s):
+        diff = (phi2 - phi1) % (2*np.pi)
+        diffs.append(min(diff, 2*np.pi - diff))
+    #print(diffs)
+    return diffs
+
 def TopPTMethod(
     self,
     indices,
@@ -198,10 +207,12 @@ def TopPTMethod(
     )
 
     # delta phi for SUEP and MET
-    output["vars"]["deltaPhi_topPT_SUEP_CaloMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["CaloMET_phi" + out_label])
-    output["vars"]["deltaPhi_topPT_SUEP_ChsMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["ChsMET_phi" + out_label])
-    output["vars"]["deltaPhi_topPT_SUEP_TkMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["TkMET_phi" + out_label])
-    output["vars"]["deltaPhi_topPT_SUEP_RawMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["RawMET_phi" + out_label])
-    output["vars"]["deltaPhi_topPT_SUEP_PuppiMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["PuppiMET_phi" + out_label])
-    output["vars"]["deltaPhi_topPT_SUEP_RawPuppiMET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["RawPuppiMET_phi" + out_label])
-    output["vars"]["deltaPhi_topPT_SUEP_MET" + out_label] = np.abs(output["vars"]["SUEP_phi_TopPT" + out_label] - output["vars"]["MET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_CaloMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["CaloMET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_ChsMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["ChsMET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_TkMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["TkMET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_RawMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["RawMET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_PuppiMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["PuppiMET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_RawPuppiMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["RawPuppiMET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_MET" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["MET_phi" + out_label])
+    output["vars"]["deltaPhi_SUEP_MET_JEC" + out_label] = delta_phi(output["vars"]["SUEP_phi_TopPT" + out_label], output["vars"]["MET_JEC_phi" + out_label])
+

@@ -440,13 +440,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # delta phi for lepton and MET
 
-        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = np.abs(lepton.phi[:,0] - events.CaloMET.phi)
-        output["vars"]["deltaPhi_lepton_ChsMET" + out_label] = np.abs(lepton.phi[:,0] - events.ChsMET.phi)
-        output["vars"]["deltaPhi_lepton_TkMET" + out_label] = np.abs(lepton.phi[:,0] - events.TkMET.phi)
-        output["vars"]["deltaPhi_lepton_RawMET" + out_label] = np.abs(lepton.phi[:,0] - events.RawMET.phi)
-        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = np.abs(lepton.phi[:,0] - events.PuppiMET.phi)
-        output["vars"]["deltaPhi_lepton_RawPuppiMET" + out_label] = np.abs(lepton.phi[:,0] - events.RawPuppiMET.phi)
-        output["vars"]["deltaPhi_lepton_MET" + out_label] = np.abs(lepton.phi[:,0] - events.MET.phi)
+        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.CaloMET.phi)
+        output["vars"]["deltaPhi_lepton_ChsMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.ChsMET.phi)
+        output["vars"]["deltaPhi_lepton_TkMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.TkMET.phi)
+        output["vars"]["deltaPhi_lepton_RawMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.RawMET.phi)
+        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.PuppiMET.phi)
+        output["vars"]["deltaPhi_lepton_RawPuppiMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.RawPuppiMET.phi)
+        output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.MET.phi)
+        output["vars"]["deltaPhi_lepton_MET_JEC" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], met_c.phi)
 
         # use the above for delta phi for SUEP and W candidate...
 
