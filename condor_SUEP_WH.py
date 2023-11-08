@@ -1,5 +1,6 @@
 import argparse
 import os
+import pandas as pd
 
 # Import coffea specific features
 import coffea
@@ -58,7 +59,7 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    # save output
+    # save outputs
     df = output["out"][options.dataset]["vars"].value
     metadata = dict(
         era=options.era,
@@ -72,4 +73,5 @@ for instance in modules_era:
             if key != "vars"
         }
     )
-    pandas_utils.save_dfs(instance, [df], ["vars"], "out.hdf5", metadata=metadata)
+    df_metadata = pd.DataFrame([pandas_utils.format_dataframe(metadata)])
+    pandas_utils.save_dfs(instance, [df, df_metadata], ["vars", "metadata"], "out.hdf5")

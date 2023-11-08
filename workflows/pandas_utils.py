@@ -2,7 +2,7 @@ import os
 import pathlib
 import shutil
 from typing import List, Optional
-
+import coffea
 import awkward as ak
 import pandas as pd
 
@@ -22,38 +22,34 @@ def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
 
 
 def h5store(
-    self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float
+    self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str
 ) -> None:
     store.put(gname, df)
-    store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None):
+def save_dfs(self, dfs, df_names, fname="out.hdf5"):
     subdirs = []
     store = pd.HDFStore(fname)
     if self.output_location is not None:
         # pandas to hdf5
         for out, gname in zip(dfs, df_names):
-            if metadata is None:
-                if self.isMC:
-                    metadata = dict(
-                        gensumweight=self.gensumweight,
-                        era=self.era,
-                        mc=self.isMC,
-                        sample=self.sample,
-                    )
-                else:
-                    metadata = dict(era=self.era, mc=self.isMC, sample=self.sample)
-
-            store_fin = h5store(self, store, out, fname, gname, **metadata)
-
+            store_fin = h5store(self, store, out, fname, gname)
         store.close()
-
         dump_table(self, fname, self.output_location, subdirs)
     else:
         print("self.output_location is None")
         store.close()
 
+def format_dataframe(dataframe):
+    """
+    hdf5 doesn't store well coffea accumulators, and we don't need them anymore,
+    so convert them to their values
+    """
+    for key, value in dataframe.items():
+        print(type(value))
+        if type(value) == coffea.processor.accumulator.value_accumulator:
+            dataframe[key] = value.value            
+    return dataframe      
 
 def dump_table(
     self, fname: str, location: str, subdirs: Optional[List[str]] = None

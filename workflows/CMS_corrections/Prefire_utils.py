@@ -1,15 +1,15 @@
-def GetPrefireWeights(self, events):
+def StorePrefireWeights(self, events, output):
     if self.era == "2016" or self.era == "2017" or self.era == "2016apv":
         if self.scouting == 1:
-            self.out_vars["prefire_nom"] = events.prefire
-            self.out_vars["prefire_up"] = events.prefireup
-            self.out_vars["prefire_down"] = events.prefiredown
+            output['vars']["prefire_nom"] = events.prefire
+            output['vars']["prefire_up"] = events.prefireup
+            output['vars']["prefire_down"] = events.prefiredown
         else:
-            self.out_vars["prefire_nom"] = events.L1PreFiringWeight.Nom
-            self.out_vars["prefire_up"] = events.L1PreFiringWeight.Up
-            self.out_vars["prefire_down"] = events.L1PreFiringWeight.Dn
+            output['vars']["prefire_nom"] = events.L1PreFiringWeight.Nom
+            output['vars']["prefire_up"] = events.L1PreFiringWeight.Up
+            output['vars']["prefire_down"] = events.L1PreFiringWeight.Dn
     else:
-        self.out_vars["prefire_nom"] = 1.0
-        self.out_vars["prefire_up"] = 1.0
-        self.out_vars["prefire_down"] = 1.0
+        output['vars']["prefire_nom"] = 1.0
+        output['vars']["prefire_up"] = 1.0
+        output['vars']["prefire_down"] = 1.0
     return
