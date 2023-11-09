@@ -53,6 +53,7 @@ def call_process(cmd, work_dir):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
+        shell=True
     )
     out, err = p.communicate()
     return (out, err)
@@ -105,7 +106,7 @@ parser.add_argument(
 # optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
 parser.add_argument("--merged", type=int, default=0, help="Use merged files")
 # some info about the files, highly encouraged to specify every time
-parser.add_argument("-e", "--era", type=str, help="era", required=False)
+parser.add_argument("-e", "--era", type=str, help="era", required=True)
 parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
@@ -133,6 +134,10 @@ options = parser.parse_args()
 
 if options.method not in ["slurm", "multithread"]:
     raise Exception("This option for method is not supported.")
+
+# Read samples from input file
+with open(options.input) as f:
+    samples = f.read().splitlines()
 
 # Set up where you're gonna work
 if options.method == "slurm":
@@ -165,9 +170,7 @@ elif options.method == "multithread":
     )
     results = []
 
-# Read samples from input file
-with open(options.input) as f:
-    samples = f.read().splitlines()
+
 
 # Making sure that the proxy is good
 if options.xrootd:
