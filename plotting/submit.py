@@ -39,7 +39,6 @@ source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
 cd {work_dir}
 cd ..
-source setup.sh
 cd plotting/
 {cmd}
 """
@@ -49,7 +48,7 @@ def call_process(cmd, work_dir):
     """This runs in a separate thread."""
     print("----[%] :", cmd)
     p = subprocess.Popen(
-        shlex.split(cmd),
+        ["bash", "-c", " ".join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
@@ -76,8 +75,8 @@ parser.add_argument(
     "--method",
     type=str,
     default="multithread",
-    help="Which system to use (supported: 'multithread' or 'slurm')",
-    required=True,
+    choices=["multithread", "slurm"],
+    help="Which system to use to run the script.",
 )
 # These are the same as make_plots.py, and are passed straight through it
 parser.add_argument("-o", "--output", type=str, help="output tag", required=False)
@@ -129,11 +128,13 @@ parser.add_argument(
 parser.add_argument(
     "--channel", type=str, help="Analysis channel: ggF, WH", required=True
 )
+parser.add_argument(
+    "--cores",
+    type=int,
+    help="Maximum number of cores to run multithread on.",
+    default=50,
+)
 options = parser.parse_args()
-
-
-if options.method not in ["slurm", "multithread"]:
-    raise Exception("This option for method is not supported.")
 
 # Read samples from input file
 with open(options.input) as f:
@@ -166,7 +167,7 @@ elif options.method == "multithread":
     print("Working in", work_dir)
     work_dir += "/plotting/"
     pool = Pool(
-        min([multiprocessing.cpu_count(), 40, len(samples)]), maxtasksperchild=1000
+        min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
     )
     results = []
 
@@ -192,12 +193,14 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "suepRun merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
-            tag=options.tag, sample=sample, isMC=options.isMC
+        cmd = (
+            "python merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+                tag=options.tag, sample=sample, isMC=options.isMC
+            )
         )
 
     elif options.code == "plot":
-        cmd = "suepRun make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
+        cmd = "python make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -216,6 +219,10 @@ for i, sample in enumerate(samples):
             channel=options.channel,
             id=os.getuid(),
         )
+
+    # execute the command with singularity
+    singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
+    cmd = singularity_prefix + cmd
 
     # Method to execute the code with
     if options.method == "multithread":
@@ -246,9 +253,10 @@ if options.method == "multithread":
     pool.join()
     for result in results:
         out, err = result.get()
-        if "No such file or directory" in str(err):
+        if "error" in str(err).lower():
             print(str(err))
             print(" ----------------- ")
             print()
+
     # clean up
     os.system(f"rm -rf {work_dir}")
