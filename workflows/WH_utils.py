@@ -115,6 +115,12 @@ def delta_phi(phi1s, phi2s):
     #print(diffs)
     return diffs
 
+# transverse mass for m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
+def MT(pT1, pT2, phi1, phi2):
+    phi = phi1 - phi2 # cos even, don't care about sign
+    mt = 2 * np.abs(pT1) * np.abs(pT2) * (1 - np.cos(phi)) # from PDG review on kinematics, eq 38.61
+    return np.sqrt(mt)
+
 def TopPTMethod(
     self,
     indices,

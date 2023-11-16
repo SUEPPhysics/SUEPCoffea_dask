@@ -52,7 +52,6 @@ def call_process(cmd, work_dir):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
-        shell=True
     )
     out, err = p.communicate()
     return (out, err)
