@@ -1141,7 +1141,69 @@ def calculate_systematic(
         df["event_weight"] = np.ones(df.shape[0])
 
     if options.isMC == 1:
-        if options.scouting != 1:
+
+        if options.channel == 'ggF':
+            if options.scouting != 1:
+                # 1) pileup weights
+                puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
+                    options.era
+                )
+                pu = pileup_weight.get_pileup_weights(
+                    df, syst, puweights, puweights_up, puweights_down
+                )
+                df["event_weight"] *= pu
+
+                # 2) TriggerSF weights
+                (
+                    trig_bins,
+                    trig_weights,
+                    trig_weights_up,
+                    trig_weights_down,
+                ) = triggerSF.triggerSF(options.era)
+                trigSF = triggerSF.get_trigSF_weight(
+                    df,
+                    syst,
+                    trig_bins,
+                    trig_weights,
+                    trig_weights_up,
+                    trig_weights_down,
+                )
+                df["event_weight"] *= trigSF
+
+                # 3) PS weights
+                if "PSWeight" in syst and syst in df.keys():
+                    df["event_weight"] *= df[syst]
+
+                # 3) prefire weights
+                if options.era == "2016" or options.era == "2017":
+                    if "prefire" in syst and syst in df.keys():
+                        df["event_weight"] *= df[syst]
+                    else:
+                        df["event_weight"] *= df["prefire_nom"]
+
+            else:
+                # 1) pileup weights
+                puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
+                    options.era
+                )
+                pu = pileup_weight.get_pileup_weights(
+                    df, syst, puweights, puweights_up, puweights_down
+                )
+                df["event_weight"] *= pu
+
+                # 2) TriggerSF weights
+                trigSF = triggerSF.get_scout_trigSF_weight(
+                    np.array(df["ht"]).astype(int), syst, options.era
+                )
+                df["event_weight"] *= trigSF
+
+                # 3) PS weights
+                if "PSWeight" in syst and syst in df.keys():
+                    df["event_weight"] *= df[syst]
+
+        # REMOVE CODE DUPLICATION LATER...
+
+        elif options.channel == 'WH':
             # 1) pileup weights
             puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
                 options.era
@@ -1150,24 +1212,9 @@ def calculate_systematic(
                 df, syst, puweights, puweights_up, puweights_down
             )
             df["event_weight"] *= pu
-
-            # 2) TriggerSF weights
-            (
-                trig_bins,
-                trig_weights,
-                trig_weights_up,
-                trig_weights_down,
-            ) = triggerSF.triggerSF(options.era)
-            trigSF = triggerSF.get_trigSF_weight(
-                df,
-                syst,
-                trig_bins,
-                trig_weights,
-                trig_weights_up,
-                trig_weights_down,
-            )
-            df["event_weight"] *= trigSF
-
+                    
+            # 2) TriggerSF weights for WH -- 
+        
             # 3) PS weights
             if "PSWeight" in syst and syst in df.keys():
                 df["event_weight"] *= df[syst]
@@ -1179,25 +1226,7 @@ def calculate_systematic(
                 else:
                     df["event_weight"] *= df["prefire_nom"]
 
-        else:
-            # 1) pileup weights
-            puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
-                options.era
-            )
-            pu = pileup_weight.get_pileup_weights(
-                df, syst, puweights, puweights_up, puweights_down
-            )
-            df["event_weight"] *= pu
-
-            # 2) TriggerSF weights
-            trigSF = triggerSF.get_scout_trigSF_weight(
-                np.array(df["ht"]).astype(int), syst, options.era
-            )
-            df["event_weight"] *= trigSF
-
-            # 3) PS weights
-            if "PSWeight" in syst and syst in df.keys():
-                df["event_weight"] *= df[syst]
+        
 
         # 5) Higgs_pt weights
         if "mS125" in options.dataset:
