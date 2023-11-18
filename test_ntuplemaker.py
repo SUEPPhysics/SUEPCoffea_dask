@@ -17,18 +17,18 @@ runs = {
     #     'out_file': 'out.hdf5'
     # },
 
-    # 'ggF-Scouting': {
-    #     'script': 'condor_Scouting.py',
-    #     'options': [
-    #         '--isMC 1 --era 2018 --doSyst 1',
-    #         '--isMC 0 --era 2018 --doSyst 1',
-    #     ],
-    #     'root_files': [
-    #         'root://xrootd.cmsaf.mit.edu//store/user/paus/nanosc/E07/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18RECO-106X_upgrade2018_realistic_v11_L1v1-v2+AODSIM//FFEBDF0B-33D5-F84A-B899-0F8EF89FA734.root',
-    #         'root://xrootd.cmsaf.mit.edu//store/user/paus/nanosc/E08/ScoutingPFCommissioning+Run2016B-v2+RAW//FAF17B72-201D-E611-BA11-02163E012571.root'
-    #     ],
-    #     'out_file': 'out.hdf5'
-    # },
+    'ggF-Scouting': {
+        'script': 'condor_Scouting.py',
+        'options': [
+            '--isMC 1 --era 2018 --doSyst 1',
+            '--isMC 0 --era 2018 --doSyst 1',
+        ],
+        'root_files': [
+            'root://xrootd.cmsaf.mit.edu//store/user/paus/nanosc/E07/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18RECO-106X_upgrade2018_realistic_v11_L1v1-v2+AODSIM//FFEBDF0B-33D5-F84A-B899-0F8EF89FA734.root',
+            'root://xrootd.cmsaf.mit.edu//store/user/paus/nanosc/E08/ScoutingPFCommissioning+Run2016B-v2+RAW//FAF17B72-201D-E611-BA11-02163E012571.root'
+        ],
+        'out_file': 'out.hdf5'
+    },
     
     'WH': {
         'script': 'condor_SUEP_WH.py',
