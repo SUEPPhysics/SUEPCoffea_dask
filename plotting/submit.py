@@ -54,7 +54,7 @@ def call_process(cmd, work_dir):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
-        shell=True
+        shell=True,
     )
     out, err = p.communicate()
     return (out, err)
@@ -162,9 +162,7 @@ elif options.method == "multithread":
     os.system(f"cp -R ../* {work_dir}/.")
     print("Working in", work_dir)
     work_dir += "/plotting/"
-    pool = Pool(
-        min([multiprocessing.cpu_count(), 5]), maxtasksperchild=1000
-    )
+    pool = Pool(min([multiprocessing.cpu_count(), 5]), maxtasksperchild=1000)
     results = []
 
 # Read samples from input file
