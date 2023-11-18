@@ -37,8 +37,7 @@ slurm_script_template = """#!/bin/bash
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
-source activate env
-#conda activate SUEP # Change to your own environment setup
+conda activate SUEP # Change to your own environment setup
 cd {work_dir}
 {cmd}
 """
@@ -52,6 +51,7 @@ def call_process(cmd, work_dir):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
+        shell=True
     )
     out, err = p.communicate()
     return (out, err)
@@ -156,7 +156,7 @@ elif options.method == "multithread":
     print("Working in", work_dir)
     work_dir += "/plotting/"
     pool = Pool(
-        min([multiprocessing.cpu_count(), 40, len(samples)]), maxtasksperchild=1000
+        min([multiprocessing.cpu_count(), 5]), maxtasksperchild=1000
     )
     results = []
 

@@ -160,7 +160,7 @@ def fillSample(infile_name, plots, lumi):
         sample = "QCD_Pt"
 
         # include this block to import the QCD bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
         if ".root" in infile_name:
             plots[temp_sample] = openroot(infile_name)
         elif ".pkl" in infile_name:
@@ -172,7 +172,7 @@ def fillSample(infile_name, plots, lumi):
         sample = "QCD_HT"
 
         # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
         if ".root" in infile_name:
             plots[temp_sample] = openroot(infile_name)
@@ -185,7 +185,7 @@ def fillSample(infile_name, plots, lumi):
         sample = "TTJets"
 
         # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
         temp_sample = temp_sample.split("_Tune")[0]
         if ".root" in infile_name:
             plots[temp_sample] = openroot(infile_name)
@@ -193,14 +193,54 @@ def fillSample(infile_name, plots, lumi):
             plots[temp_sample] = openpickle(infile_name)
         for plot in list(plots[temp_sample].keys()):
             plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
+			
+    elif "WJetsToLNu_HT" in infile_name:
+        sample = "WJetsToLNu_HT"
+		
+		# include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_Tune")[0]
+        if ".root" in infile_name:
+            plots[temp_sample] = openroot(infile_name)
+        elif ".pkl" in infile_name:
+            plots[temp_sample] = openpickle(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+			
+    elif "WJetsToLNu_Pt" in infile_name:
+        sample = "WJetsToLNu_Pt"
+		
+		# include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_Tune")[0]
+        if ".root" in infile_name:
+            plots[temp_sample] = openroot(infile_name)
+        elif ".pkl" in infile_name:
+            plots[temp_sample] = openpickle(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+			
+    elif "DYJetsToLL_LHEFilterPtZ-" in infile_name:
+        sample = "DYJetsToLL_LHEFilterPtZ"
+		
+		# include this block to import the HT bins individually
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("_MatchEWPDG20")[0]
+        if ".root" in infile_name:
+            plots[temp_sample] = openroot(infile_name)
+        elif ".pkl" in infile_name:
+            plots[temp_sample] = openpickle(infile_name)
+        for plot in list(plots[temp_sample].keys()):
+            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+			
+		
     elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
         sample = "data"
 
         # include this block to import the eras bins individually
-        temp_sample = infile_name.split("/")[-1].split(".pkl")[0]
-        temp_sample = temp_sample.split("Run")[1].split("-UL")[0]
-        temp_sample = "data_" + temp_sample[4:]
+        temp_sample = infile_name.split("/")[-1].split(".root")[0]
+        temp_sample = temp_sample.split("+")[1].split("-")[0]
+        temp_sample = "data_" + temp_sample[3:]
         if ".root" in infile_name:
             plots[temp_sample] = openroot(infile_name)
         elif ".pkl" in infile_name:
@@ -1053,7 +1093,7 @@ def ABCD_9regions_yield(abcd, xregions, yregions):
         * (A**-1)
         * (E**-4)
     )
-    delta_SR_exp = (
+    sigma_SR_exp = (
         np.sqrt(
             4 * (F**-1)
             + 4 * (H**-1)
@@ -1067,7 +1107,7 @@ def ABCD_9regions_yield(abcd, xregions, yregions):
         * SR_exp
     )
 
-    return SR, SR_exp, delta_SR_exp
+    return SR, SR_exp, sigma_SR_exp
 
 
 def integrate(h, lower, upper):
