@@ -44,7 +44,7 @@ for instance in modules_era:
     runner = processor.Runner(
         executor=processor.FuturesExecutor(compression=None, workers=1),
         schema=processor.NanoAODSchema,
-        xrootdtimeout=60,
+        xrootdtimeout=120,
         chunksize=options.chunkSize,
         maxchunks=options.maxChunks,
     )

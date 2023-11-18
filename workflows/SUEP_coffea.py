@@ -240,21 +240,37 @@ class SUEP_cluster(processor.ProcessorABC):
         return tracks, Cleaned_cands
 
     def getScoutingTracks(self, events):
-        Cands = ak.zip(
-            {
-                "pt": events.PFcand.pt,
-                "eta": events.PFcand.eta,
-                "phi": events.PFcand.phi,
-                "mass": events.PFcand.mass,
-            },
-            with_name="Momentum4D",
-        )
-        cut = (
-            (events.PFcand.pt >= 0.75)
-            & (abs(events.PFcand.eta) <= 2.4)
-            & (events.PFcand.vertex == 0)
-            & (events.PFcand.q != 0)
-        )
+        if "2016" in self.era:
+            Cands = ak.zip(
+                {
+                    "pt": events.offlineTrack.pt,
+                    "eta": events.offlineTrack.eta,
+                    "phi": events.offlineTrack.phi,
+                    "mass": events.offlineTrack.mass,
+                },
+                with_name="Momentum4D",
+            )
+            cut = (
+                (events.offlineTrack.pt >= 0.75)
+                & (abs(events.offlineTrack.eta) <= 2.4)
+                & (events.offlineTrack.quality == 1)
+            )
+        else:
+            Cands = ak.zip(
+                {
+                    "pt": events.PFcand.pt,
+                    "eta": events.PFcand.eta,
+                    "phi": events.PFcand.phi,
+                    "mass": events.PFcand.mass,
+                },
+                with_name="Momentum4D",
+            )
+            cut = (
+                (events.PFcand.pt >= 0.75)
+                & (abs(events.PFcand.eta) <= 2.4)
+                & (events.PFcand.vertex == 0)
+                & (events.PFcand.q != 0)
+            )
         Cleaned_cands = Cands[cut]
         tracks = ak.packed(Cleaned_cands)
         return tracks, Cleaned_cands
@@ -351,7 +367,10 @@ class SUEP_cluster(processor.ProcessorABC):
         out_label="",
     ):
         # select out ak4jets
-        ak4jets = self.jet_awkward(events.Jet)
+        if self.scouting and "2016" in self.era:
+            ak4jets = self.jet_awkward(events.OffJet)
+        else:
+            ak4jets = self.jet_awkward(events.Jet)
 
         # work on JECs and systematics
         prefix = ""
@@ -532,7 +551,6 @@ class SUEP_cluster(processor.ProcessorABC):
         else:
             tracks, Cleaned_cands = self.getTracks(events)
         looseElectrons, looseMuons = self.getLooseLeptons(events)
-
         if self.isMC and do_syst and self.scouting == 1:
             tracks = scout_track_killing(self, tracks)
             Cleaned_cands = scout_track_killing(self, Cleaned_cands)

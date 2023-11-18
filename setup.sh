@@ -5,7 +5,7 @@ echo "Created env. variable SUEP_BASE=${SUEP_BASE}"
 
 hostname=$(hostname)
 if [[ "$hostname" == *"mit.edu"* ]]; then
-  export APPTAINER_BIND="/scratch,/data,/cvmfs,/home,/work"
+  export APPTAINER_BIND="/scratch,/data,/home,/work"
   export SUEP_LOGS="/work/submit/$USER/SUEP/logs/"
   echo "Created env. variable SUEP_LOGS=${SUEP_LOGS}"
   export SUEP_OUT="/data/submit/cms/store/user/$USER/SUEP/"
@@ -19,3 +19,7 @@ function suepRun(){
     singularity run $CONTAINER python "$@"
 }
 echo "Created function suepRun"
+
+# Add alias for singularity
+alias suepSing='singularity shell --bind /work/,/data/ ${CONTAINER}'
+echo "Created alias suepSing"
