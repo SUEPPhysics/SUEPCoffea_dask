@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     # read in 'kr' values from data/xsections_2018_SUEP.json
     # for all mS values that we have calculated the efficiency for and print them
-    with open("data/xsections_2018_SUEP.json") as json_file:
+    with open("../data/xsections_SUEP.json") as json_file:
         xsections = json.load(json_file)
 
     truth_values = {}
@@ -139,5 +139,5 @@ if __name__ == "__main__":
     ) in averaged_efficiency_by_ms.items():
         print(f"mS: {ms_value:.3f}")
         print(f"Average Efficiency: {efficiency:.5e} +- {efficiency_error:.5e}")
-        print(f"Truth value: {truth_values[ms_value]:.5e}")
+        print(f"Truth value: {truth_values.get(ms_value, 0):.5e}")
         print()
