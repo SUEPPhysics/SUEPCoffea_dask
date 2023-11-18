@@ -390,8 +390,15 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
             if self.isMC:
                 output["vars"]["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
-                GetPSWeights(self, events)  # Parton Shower weights
-                GetPrefireWeights(self, events)  # Prefire weights
+                psweights = GetPSWeights(self, events)  # Parton Shower weights
+                if len(psweights) == 4:
+                    output['vars']["PSWeight_ISR_up" + out_label] = psweights[0]
+                    output['vars']["PSWeight_ISR_down" + out_label] = psweights[1]
+                    output['vars']["PSWeight_FSR_up" + out_label] = psweights[2]
+                    output['vars']["PSWeight_FSR_down" + out_label] = psweights[3]
+                else:
+                    output['vars']["PSWeight" + out_label] = psweights
+
             output["vars"]["PV_npvs" + out_label] = events.PV.npvs
             output["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 

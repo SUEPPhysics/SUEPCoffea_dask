@@ -60,6 +60,6 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
+    merger.merge(options, pattern="ntuple_*.hdf5", outFile="out.hdf5")
 
 os.system("rm rewrite.root")
