@@ -185,7 +185,7 @@ def apply_jecs(self, Sample, events, prefix=""):
     corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
 
     if self.scouting == 1:
-        return corrected_jets
+        return corrected_jets, None
 
     else:
         name_map["METpt"] = "pt"
