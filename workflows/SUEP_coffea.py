@@ -437,7 +437,8 @@ class SUEP_cluster(processor.ProcessorABC):
                 self.out_vars["HLT_PFHT1050" + out_label] = events.HLT.PFHT1050
 
             if self.scouting == 1:
-                if self.isMC: self.out_vars["Pileup_nTrueInt" + out_label] = events.PU.num
+                if self.isMC:
+                    self.out_vars["Pileup_nTrueInt" + out_label] = events.PU.num
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
             else:
                 if self.isMC:
@@ -446,14 +447,14 @@ class SUEP_cluster(processor.ProcessorABC):
                     ] = events.Pileup.nTrueInt
                 self.out_vars["PV_npvs" + out_label] = events.PV.npvs
                 self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
-            
+
             if self.isMC:
                 psweights = GetPSWeights(self, events)  # Parton Shower weights
                 if len(psweights) == 4:
-                        self.out_vars["PSWeight_ISR_up" + out_label] = psweights[0]
-                        self.out_vars["PSWeight_ISR_down" + out_label] = psweights[1]
-                        self.out_vars["PSWeight_FSR_up" + out_label] = psweights[2]
-                        self.out_vars["PSWeight_FSR_down" + out_label] = psweights[3]
+                    self.out_vars["PSWeight_ISR_up" + out_label] = psweights[0]
+                    self.out_vars["PSWeight_ISR_down" + out_label] = psweights[1]
+                    self.out_vars["PSWeight_FSR_up" + out_label] = psweights[2]
+                    self.out_vars["PSWeight_FSR_down" + out_label] = psweights[3]
                 else:
                     self.out_vars["PSWeight" + out_label] = psweights
                 GetPrefireWeights(self, events)  # Prefire weights
@@ -685,8 +686,8 @@ class SUEP_cluster(processor.ProcessorABC):
                     self,
                     [self.out_vars],
                     ["vars"],
-                    'ntuple_' +
-                    events.behavior["__events_factory__"]._partition_key.replace(
+                    "ntuple_"
+                    + events.behavior["__events_factory__"]._partition_key.replace(
                         "/", "_"
                     )
                     + ".hdf5",

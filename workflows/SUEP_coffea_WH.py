@@ -24,7 +24,6 @@ from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
-from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import (
     scout_track_killing,
     track_killing,
@@ -392,12 +391,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output["vars"]["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
                 psweights = GetPSWeights(self, events)  # Parton Shower weights
                 if len(psweights) == 4:
-                    output['vars']["PSWeight_ISR_up" + out_label] = psweights[0]
-                    output['vars']["PSWeight_ISR_down" + out_label] = psweights[1]
-                    output['vars']["PSWeight_FSR_up" + out_label] = psweights[2]
-                    output['vars']["PSWeight_FSR_down" + out_label] = psweights[3]
+                    output["vars"]["PSWeight_ISR_up" + out_label] = psweights[0]
+                    output["vars"]["PSWeight_ISR_down" + out_label] = psweights[1]
+                    output["vars"]["PSWeight_FSR_up" + out_label] = psweights[2]
+                    output["vars"]["PSWeight_FSR_down" + out_label] = psweights[3]
                 else:
-                    output['vars']["PSWeight" + out_label] = psweights
+                    output["vars"]["PSWeight" + out_label] = psweights
 
             output["vars"]["PV_npvs" + out_label] = events.PV.npvs
             output["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
