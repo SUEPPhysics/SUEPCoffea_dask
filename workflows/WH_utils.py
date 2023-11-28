@@ -1,5 +1,7 @@
 import awkward as ak
 import numpy as np
+import vector
+from vector._methods import LorentzMomentum
 
 from workflows.SUEP_utils import sphericity
 
@@ -117,9 +119,35 @@ def delta_phi(phi1s, phi2s):
 
 # transverse mass for m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
 def MT(pT1, pT2, phi1, phi2):
+    
     phi = phi1 - phi2 # cos even, don't care about sign
     mt = 2 * np.abs(pT1) * np.abs(pT2) * (1 - np.cos(phi)) # from PDG review on kinematics, eq 38.61
+   
     return np.sqrt(mt)
+
+# transverse mass function from vector that takes lepton 4-vector and events.MET
+def MT_func(lepton_4v, MET):
+    vector.register_awkward()
+
+    MET_4v = ak.zip(
+        {
+            "pt": MET.pt,
+            "eta": 0,
+            "phi": MET.phi,
+            "mass": 0,
+        },
+        with_name="Momentum4D",
+    )
+ 
+    
+
+    W_4v = lepton_4v[:,0] + MET_4v
+
+
+    return W_4v.transverse_mass
+    
+
+
 
 def TopPTMethod(
     self,
