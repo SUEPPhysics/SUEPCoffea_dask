@@ -44,7 +44,7 @@ for instance in modules_era:
         executor=processor.FuturesExecutor(compression=None, workers=1),
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
-        chunksize=100000000,
+        chunksize=1000000,
     )
 
     runner.automatic_retries(
@@ -56,4 +56,4 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
+    merger.merge(options, pattern="ntuple_*.hdf5", outFile="out.hdf5")

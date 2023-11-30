@@ -97,24 +97,23 @@ if options.save is not None and options.save != "None" and options != "none":
     outDir = options.save
 redirector = "root://submit50.mit.edu/"
 username = getpass.getuser()
+username = "pmlugato"
 if os.path.isdir("/data/submit/cms/store/user/" + username):
     # define these if --xrootd 0
     dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(
-        getpass.getuser(), options.tag, options.dataset
+        username, options.tag, options.dataset
     )
     # and these if --xrootd 1
     dataDirXRootD = "/cms/store/user/{}/SUEP/{}/{}/".format(
-        getpass.getuser(), options.tag, options.dataset
+        username, options.tag, options.dataset
     )
 elif os.path.isdir("/data/submit/" + username):
     # define these if --xrootd 0
     dataDirLocal = "/data/submit/{}/SUEP/{}/{}/".format(
-        getpass.getuser(), options.tag, options.dataset
+        username, options.tag, options.dataset
     )
     # and these if --xrootd 1
-    dataDirXRootD = "/{}/SUEP/{}/{}/".format(
-        getpass.getuser(), options.tag, options.dataset
-    )
+    dataDirXRootD = f"/{username}/SUEP/{options.tag}/{options.dataset}/"
 """
 Define output plotting methods, each draws from an input_method (outputs of SUEPCoffea),
 and can have its own selections, ABCD regions, and signal region.
@@ -1117,7 +1116,6 @@ total_gensumweight = 0
 output = {"labels": []}
 
 # get list of files
-username = getpass.getuser()
 if options.file:
     files = [options.file]
 elif options.xrootd:
