@@ -105,7 +105,6 @@ def dump_table(
         if not os.path.samefile(local_file, destination):
             shutil.copy2(local_file, destination)
         else:
-            # if the file already exists at the destination and is identical to what we are trying to copy, no need to copy it again
             return
         assert os.path.isfile(destination)
     # delete the local file after copying it
