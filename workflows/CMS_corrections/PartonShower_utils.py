@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def StorePSWeights(self, events, output):
+def GetPSWeights(self, events):
     if self.scouting == 1:
         if len(events.PSweights[0]) >= 9:
             PSWeight_ISR_up = events.PSweights[:, 0] * events.PSweights[:, 6]
