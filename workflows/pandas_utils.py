@@ -56,7 +56,7 @@ def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None):
         store.close()
 
 
-def format_dataframe(dataframe, reducePrecision=True):
+def format_dataframe(dataframe: pd.DataFrame, reducePrecision: bool = False):
     """
     Applies some formatting to efficiently store the data
     """

@@ -9,7 +9,7 @@ from workflows import SUEP_coffea_WH, pandas_utils
 
 
 def form_ntuple(options, output):
-    df = pandas_utils.form_dataframe(output["out"][options.dataset]["vars"])
+    df = pandas_utils.format_dataframe(output["out"][options.dataset]["vars"].value, reducePrecision=True)
     return df
 
 
