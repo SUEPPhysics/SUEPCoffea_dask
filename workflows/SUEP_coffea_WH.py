@@ -24,7 +24,10 @@ from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
-from workflows.CMS_corrections.track_killing_utils import track_killing
+from workflows.CMS_corrections.track_killing_utils import (
+    scout_track_killing,
+    track_killing,
+)
 from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
@@ -96,7 +99,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         triggerEGamma = (
             events.HLT.Ele32_WPTight_Gsf
             | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
-            # | events.HLT.Photon200
+            | events.HLT.Photon200
         )
 
         # this is just for cutflow

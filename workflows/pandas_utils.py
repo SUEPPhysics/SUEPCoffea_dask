@@ -2,9 +2,8 @@ import os
 import pathlib
 import shutil
 from typing import List, Optional
-
-import awkward as ak
 import coffea
+import awkward as ak
 import pandas as pd
 
 
@@ -22,23 +21,38 @@ def ak_to_pandas(self, jet_collection: ak.Array) -> pd.DataFrame:
     return out_df
 
 
-def h5store(self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str) -> None:
+def h5store(
+    self, store: pd.HDFStore, df: pd.DataFrame, fname: str, gname: str, **kwargs: float
+) -> None:
     store.put(gname, df)
+    store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(self, dfs, df_names, fname="out.hdf5"):
+def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None):
     subdirs = []
     store = pd.HDFStore(fname)
     if self.output_location is not None:
         # pandas to hdf5
         for out, gname in zip(dfs, df_names):
-            store_fin = h5store(self, store, out, fname, gname)
+            if metadata is None:
+                if self.isMC:
+                    metadata = dict(
+                        gensumweight=self.gensumweight,
+                        era=self.era,
+                        mc=self.isMC,
+                        sample=self.sample,
+                    )
+                else:
+                    metadata = dict(era=self.era, mc=self.isMC, sample=self.sample)
+
+            store_fin = h5store(self, store, out, fname, gname, **metadata)
+
         store.close()
+
         dump_table(self, fname, self.output_location, subdirs)
     else:
         print("self.output_location is None")
         store.close()
-
 
 def format_dataframe(dataframe, reducePrecision=True):
     """
@@ -50,10 +64,9 @@ def format_dataframe(dataframe, reducePrecision=True):
             dataframe[key] = value.value
         # reduce the float precision
         if reducePrecision:
-            if "float" in str(df[col].dtype):
-                dataframe[col] = df[col].astype("float16")
+            if "float" in str(dataframe[key].dtype):
+                dataframe[key] = dataframe[key].astype("float16")
     return dataframe
-
 
 def dump_table(
     self, fname: str, location: str, subdirs: Optional[List[str]] = None
