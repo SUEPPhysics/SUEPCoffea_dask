@@ -24,9 +24,7 @@ from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
-from workflows.CMS_corrections.track_killing_utils import (
-    track_killing,
-)
+from workflows.CMS_corrections.track_killing_utils import track_killing
 from workflows.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
