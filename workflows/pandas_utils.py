@@ -2,8 +2,9 @@ import os
 import pathlib
 import shutil
 from typing import List, Optional
-import coffea
+
 import awkward as ak
+import coffea
 import pandas as pd
 
 
@@ -54,6 +55,7 @@ def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None):
         print("self.output_location is None")
         store.close()
 
+
 def format_dataframe(dataframe, reducePrecision=True):
     """
     Applies some formatting to efficiently store the data
@@ -67,6 +69,7 @@ def format_dataframe(dataframe, reducePrecision=True):
             if "float" in str(dataframe[key].dtype):
                 dataframe[key] = dataframe[key].astype("float16")
     return dataframe
+
 
 def dump_table(
     self, fname: str, location: str, subdirs: Optional[List[str]] = None

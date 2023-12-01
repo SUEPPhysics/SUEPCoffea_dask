@@ -7,9 +7,11 @@ from coffea import processor
 # SUEP Repo Specific
 from workflows import SUEP_coffea_WH, pandas_utils
 
+
 def form_ntuple(options, output):
     df = pandas_utils.form_dataframe(output["out"][options.dataset]["vars"])
     return df
+
 
 def form_metadata(options, output):
     metadata = dict(
@@ -25,8 +27,8 @@ def form_metadata(options, output):
         }
     )
 
-def main():
 
+def main():
     # Begin argparse
     parser = argparse.ArgumentParser("")
     parser.add_argument("--isMC", type=int, default=1, help="")
@@ -80,6 +82,7 @@ def main():
         df = form_ntuple(options, output)
         metadata = form_metadata(options, output)
         pandas_utils.save_dfs(instance, [df], ["vars"], "out.hdf5", metadata=metadata)
+
 
 if __name__ == "__main__":
     main()
