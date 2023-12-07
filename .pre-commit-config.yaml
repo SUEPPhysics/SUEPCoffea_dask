@@ -72,5 +72,4 @@ repos:
     hooks:
       - id: prettier
         types_or: [yaml, markdown, json]
-      - id: prettier
         entry: env PRETTIER_LEGACY_CLI=1 prettier
