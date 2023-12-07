@@ -72,4 +72,4 @@ repos:
     hooks:
       - id: prettier
         types_or: [yaml, markdown, json]
-        entry: env PRETTIER_LEGACY_CLI=1 prettier
+        entry: ["/bin/bash", "-c", "env PRETTIER_LEGACY_CLI=1 prettier"]
