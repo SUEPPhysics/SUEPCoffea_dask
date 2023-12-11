@@ -1,6 +1,9 @@
 import argparse
-import sys, os, re
+import os
+import re
+import sys
 from math import pi
+
 import awkward as ak
 import fastjet
 import matplotlib.patches as mpatches
@@ -18,9 +21,9 @@ vector.register_awkward()
 
 
 decaysLabels = {
-    'hadronic' : r"$A^' \rightarrow e^{+}e^{-}$ ($15\%$), $\mu^{+}\mu^{-}$ ($15\%$), $\pi^{+}\pi^{-}$ ($70\%$)",
-    'leptonic' : r"$A^' \rightarrow e^{+}e^{-}$ ($40\%$), $\mu^{+}\mu^{-}$ ($40\%$), $\pi^{+}\pi^{-}$ ($20\%$)",
-    'generic' : r"$A^' \rightarrow \pi^{+}\pi^{-}$ ($100\%$) "
+    "hadronic": r"$A^' \rightarrow e^{+}e^{-}$ ($15\%$), $\mu^{+}\mu^{-}$ ($15\%$), $\pi^{+}\pi^{-}$ ($70\%$)",
+    "leptonic": r"$A^' \rightarrow e^{+}e^{-}$ ($40\%$), $\mu^{+}\mu^{-}$ ($40\%$), $\pi^{+}\pi^{-}$ ($20\%$)",
+    "generic": r"$A^' \rightarrow \pi^{+}\pi^{-}$ ($100\%$) ",
 }
 
 
@@ -290,7 +293,7 @@ def plot(
             scalarParticle.phi,
             scalarParticle.eta,
             s=scale(scalarParticle, scalarParticle),
-            marker='x',
+            marker="x",
             color="xkcd:red",
         )
 
@@ -405,10 +408,20 @@ def plot(
         edgecolors="xkcd:green",
     )
     line9 = ax.scatter(
-        [-100], [-100], label="AK15 SUEP Candidate\n($p_T$ = " + str(round(SUEP_pt)) + " GeV)", facecolor='none', linestyle='--', edgecolors="xkcd:red"
+        [-100],
+        [-100],
+        label="AK15 SUEP Candidate\n($p_T$ = " + str(round(SUEP_pt)) + " GeV)",
+        facecolor="none",
+        linestyle="--",
+        edgecolors="xkcd:red",
     )
     line10 = ax.scatter(
-        [-100], [-100], label="AK15 ISR Candidate\n($p_T$ = " + str(round(ISR_pt)) + " GeV)", facecolor='none', linestyle='--', edgecolors="xkcd:blue"
+        [-100],
+        [-100],
+        label="AK15 ISR Candidate\n($p_T$ = " + str(round(ISR_pt)) + " GeV)",
+        facecolor="none",
+        linestyle="--",
+        edgecolors="xkcd:blue",
     )
     light_blue_patch = mpatches.Patch(color="xkcd:light blue", label="from scalar")
     magenta_patch = mpatches.Patch(color="xkcd:magenta", label="not from scalar")
@@ -433,7 +446,7 @@ def plot(
             handles.append(red_patch)
             handles.append(blue_patch)
 
-    ax.legend(handles=handles, loc='upper right', fontsize=10)
+    ax.legend(handles=handles, loc="upper right", fontsize=10)
 
     # build a rectangle in axes coords
     left, width = 0.0, 1.0
@@ -506,7 +519,7 @@ def main():
         action="store_true",
         help="Show ring of fire (only in boosted frame)",
     )
-    parser.add_argument("-p", "--pfcands", action='store_true', help="Show PFCands")
+    parser.add_argument("-p", "--pfcands", action="store_true", help="Show PFCands")
     parser.add_argument(
         "-c",
         "--candidates",
@@ -640,14 +653,20 @@ def main():
             os.makedirs(args.output)
         if params:
             fig.savefig(
-                args.output + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}.pdf".format(*params, i)
+                args.output
+                + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}.pdf".format(
+                    *params, i
+                )
             )
             fig.savefig(
-                args.output + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}.png".format(*params, i)
+                args.output
+                + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}.png".format(
+                    *params, i
+                )
             )
         else:
-            fig.savefig(args.output + "/Event{:d}.pdf".format(i))
-            fig.savefig(args.output + "/Event{:d}.png".format(i))
+            fig.savefig(args.output + f"/Event{i:d}.pdf")
+            fig.savefig(args.output + f"/Event{i:d}.png")
 
 
 if __name__ == "__main__":
