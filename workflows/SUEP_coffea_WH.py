@@ -295,6 +295,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ).to_list()
 
         if out_label == "":
+            output["vars"]["event" + out_label] = events.event.to_list()
+            output["vars"]["run" + out_label] = events.run
+            output["vars"]["luminosityBlock" + out_label] = events.luminosityBlock
             output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
             output["vars"]["ht_JEC" + out_label] = ak.sum(
                 jets_jec.pt, axis=-1
