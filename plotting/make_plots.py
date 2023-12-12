@@ -97,7 +97,6 @@ if options.save is not None and options.save != "None" and options != "none":
     outDir = options.save
 redirector = "root://submit50.mit.edu/"
 username = getpass.getuser()
-username = "pmlugato"
 if os.path.isdir("/data/submit/cms/store/user/" + username):
     # define these if --xrootd 0
     dataDirLocal = "/data/submit//cms/store/user/{}/SUEP/{}/{}/".format(

@@ -396,6 +396,13 @@ class SUEP_cluster(processor.ProcessorABC):
             jets_jec_JESDown = jets_jec
 
         # save per event variables to a dataframe
+        self.out_vars["event" + out_label] = events.event.to_list()
+        self.out_vars["run" + out_label] = events.run
+
+        if self.scouting == 1:
+            self.out_vars["lumi" + out_label] = events.lumSec
+        else:
+            self.out_vars["luminosityBlock" + out_label] = events.luminosityBlock
         self.out_vars["ntracks" + out_label] = ak.num(tracks).to_list()
         self.out_vars["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
