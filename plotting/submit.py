@@ -171,7 +171,6 @@ elif options.method == "multithread":
     results = []
 
 
-
 # Making sure that the proxy is good
 if options.xrootd:
     lifetime = check_proxy(time_min=10)

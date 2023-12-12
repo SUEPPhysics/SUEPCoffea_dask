@@ -439,27 +439,61 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["lepton_dz" + out_label] = lepton.dz[:, 0]
 
         # W transverse mass for different METs -- zero mass for lepton, MET in Mt calculation
-        output["vars"]["W_Mt_CaloMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.CaloMET.pt, lepton.phi[:, 0], events.CaloMET.phi)
-        output["vars"]["W_Mt_ChsMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.ChsMET.pt, lepton.phi[:, 0], events.ChsMET.phi)
-        output["vars"]["W_Mt_TkMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.TkMET.pt, lepton.phi[:, 0], events.TkMET.phi)        
-        output["vars"]["W_Mt_RawMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.RawMET.pt, lepton.phi[:, 0], events.RawMET.phi)
-        output["vars"]["W_Mt_PuppiMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.PuppiMET.pt, lepton.phi[:, 0], events.PuppiMET.phi)
-        output["vars"]["W_Mt_RawPuppiMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.RawPuppiMET.pt, lepton.phi[:, 0], events.RawPuppiMET.phi)
-        output["vars"]["W_Mt_MET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.MET.pt, lepton.phi[:, 0], events.MET.phi)
-        output["vars"]["W_Mt_MET_JEC" + out_label] = WH_utils.MT(lepton.pt[:, 0], met_c.pt, lepton.phi[:, 0], met_c.phi)
+        output["vars"]["W_Mt_CaloMET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], events.CaloMET.pt, lepton.phi[:, 0], events.CaloMET.phi
+        )
+        output["vars"]["W_Mt_ChsMET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], events.ChsMET.pt, lepton.phi[:, 0], events.ChsMET.phi
+        )
+        output["vars"]["W_Mt_TkMET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], events.TkMET.pt, lepton.phi[:, 0], events.TkMET.phi
+        )
+        output["vars"]["W_Mt_RawMET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], events.RawMET.pt, lepton.phi[:, 0], events.RawMET.phi
+        )
+        output["vars"]["W_Mt_PuppiMET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], events.PuppiMET.pt, lepton.phi[:, 0], events.PuppiMET.phi
+        )
+        output["vars"]["W_Mt_RawPuppiMET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0],
+            events.RawPuppiMET.pt,
+            lepton.phi[:, 0],
+            events.RawPuppiMET.phi,
+        )
+        output["vars"]["W_Mt_MET" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], events.MET.pt, lepton.phi[:, 0], events.MET.phi
+        )
+        output["vars"]["W_Mt_MET_JEC" + out_label] = WH_utils.MT(
+            lepton.pt[:, 0], met_c.pt, lepton.phi[:, 0], met_c.phi
+        )
 
-       # delta phi for lepton and MET
-        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.CaloMET.phi)
-        output["vars"]["deltaPhi_lepton_ChsMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.ChsMET.phi)
-        output["vars"]["deltaPhi_lepton_TkMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.TkMET.phi)
-        output["vars"]["deltaPhi_lepton_RawMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.RawMET.phi)
-        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.PuppiMET.phi)
-        output["vars"]["deltaPhi_lepton_RawPuppiMET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.RawPuppiMET.phi)
-        output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], events.MET.phi)
-        output["vars"]["deltaPhi_lepton_MET_JEC" + out_label] = WH_utils.delta_phi(lepton.phi[:,0], met_c.phi)
+        # delta phi for lepton and MET
+        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.CaloMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_ChsMET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.ChsMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_TkMET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.TkMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_RawMET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.RawMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.PuppiMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_RawPuppiMET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.RawPuppiMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], events.MET.phi
+        )
+        output["vars"]["deltaPhi_lepton_MET_JEC" + out_label] = WH_utils.delta_phi(
+            lepton.phi[:, 0], met_c.phi
+        )
 
         # use the above for delta phi for SUEP and W candidate...
-
 
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################

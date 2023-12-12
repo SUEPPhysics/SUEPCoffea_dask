@@ -15,13 +15,17 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "phi": events.Muon.phi,
             "mass": events.Muon.mass,
             "pdgID": events.Muon.pdgId,
-            "ID": (ak.values_astype(events.Muon.tightId, np.int32) + ak.values_astype(events.Muon.mediumId, np.int32) + ak.values_astype(events.Muon.looseId, np.int32)), # 1=loose, 2=med, 3=tight cutbased
-            "IDMVA": events.Muon.mvaId, # 1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight
-            "iso": events.Muon.pfRelIso04_all, # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
-            "isoMVA": events.Muon.mvaTTH, # TTH MVA lepton ID score (true leptons peak at 1)
+            "ID": (
+                ak.values_astype(events.Muon.tightId, np.int32)
+                + ak.values_astype(events.Muon.mediumId, np.int32)
+                + ak.values_astype(events.Muon.looseId, np.int32)
+            ),  # 1=loose, 2=med, 3=tight cutbased
+            "IDMVA": events.Muon.mvaId,  # 1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight
+            "iso": events.Muon.pfRelIso04_all,  # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
+            "isoMVA": events.Muon.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
             "miniIso": events.Muon.miniPFRelIso_all,
-            "multiIso": events.Muon.multiIsoId, # 1=MultiIsoLoose, 2=MultiIsoMedium
-            "puppiIso": events.Muon.puppiIsoId, # 1=Loose, 2=Medium, 3=Tight
+            "multiIso": events.Muon.multiIsoId,  # 1=MultiIsoLoose, 2=MultiIsoMedium
+            "puppiIso": events.Muon.puppiIsoId,  # 1=Loose, 2=Medium, 3=Tight
             "dxy": events.Muon.dxy,
             "dz": events.Muon.dz,
         },
@@ -35,10 +39,14 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "phi": events.Electron.phi,
             "mass": events.Electron.mass,
             "pdgID": events.Electron.pdgId,
-            "ID": events.Electron.cutBased, # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-            "IDMVA": (ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32) + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32) + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)), # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+            "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+            "IDMVA": (
+                ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
+                + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+            ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
             "iso": events.Electron.pfRelIso03_all,
-            "isoMVA": events.Electron.mvaTTH, # TTH MVA lepton ID score (true leptons peak at 1)
+            "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
             "miniIso": events.Electron.miniPFRelIso_all,
             "multiIso": -999,
             "puppiIso": -999,
@@ -127,21 +135,23 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
 
 
 def delta_phi(phi1s, phi2s):
-    
     diffs = []
     for phi1, phi2 in zip(phi1s, phi2s):
-        diff = (phi2 - phi1) % (2*np.pi)
-        diffs.append(min(diff, 2*np.pi - diff))
-    #print(diffs)
+        diff = (phi2 - phi1) % (2 * np.pi)
+        diffs.append(min(diff, 2 * np.pi - diff))
+    # print(diffs)
     return diffs
+
 
 # transverse mass for m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
 def MT(pT1, pT2, phi1, phi2):
-    
-    phi = phi1 - phi2 # cos even, don't care about sign
-    mt = 2 * np.abs(pT1) * np.abs(pT2) * (1 - np.cos(phi)) # from PDG review on kinematics, eq 38.61
-   
+    phi = phi1 - phi2  # cos even, don't care about sign
+    mt = (
+        2 * np.abs(pT1) * np.abs(pT2) * (1 - np.cos(phi))
+    )  # from PDG review on kinematics, eq 38.61
+
     return np.sqrt(mt)
+
 
 # transverse mass function from vector that takes lepton 4-vector and events.MET
 def MT_func(lepton_4v, MET):
@@ -156,15 +166,10 @@ def MT_func(lepton_4v, MET):
         },
         with_name="Momentum4D",
     )
- 
-    
 
-    W_4v = lepton_4v[:,0] + MET_4v
-
+    W_4v = lepton_4v[:, 0] + MET_4v
 
     return W_4v.transverse_mass
-    
-
 
 
 def HighestPTMethod(
@@ -214,9 +219,13 @@ def HighestPTMethod(
 
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-    output["vars"].loc(indices, "SUEP_nconst_HighestPT" + out_label, ak.num(SUEP_tracks_b))
     output["vars"].loc(
-        indices, "SUEP_pt_avg_b_HighestPT" + out_label, ak.mean(SUEP_tracks_b.pt, axis=-1)
+        indices, "SUEP_nconst_HighestPT" + out_label, ak.num(SUEP_tracks_b)
+    )
+    output["vars"].loc(
+        indices,
+        "SUEP_pt_avg_b_HighestPT" + out_label,
+        ak.mean(SUEP_tracks_b.pt, axis=-1),
     )
     output["vars"].loc(
         indices, "SUEP_S1_HighestPT" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
@@ -244,8 +253,12 @@ def HighestPTMethod(
     SUEP_genR_diff_HighestPT = (
         SUEP_genEta_diff_HighestPT**2 + SUEP_genPhi_diff_HighestPT**2
     ) ** 0.5
-    output["vars"]["SUEP_deltaEtaGen_HighestPT" + out_label] = SUEP_genEta_diff_HighestPT
-    output["vars"]["SUEP_deltaPhiGen_HighestPT" + out_label] = SUEP_genPhi_diff_HighestPT
+    output["vars"][
+        "SUEP_deltaEtaGen_HighestPT" + out_label
+    ] = SUEP_genEta_diff_HighestPT
+    output["vars"][
+        "SUEP_deltaPhiGen_HighestPT" + out_label
+    ] = SUEP_genPhi_diff_HighestPT
     output["vars"]["SUEP_deltaRGen_HighestPT" + out_label] = SUEP_genR_diff_HighestPT
     output["vars"].loc(
         indices,
@@ -259,12 +272,35 @@ def HighestPTMethod(
     )
 
     # delta phi for SUEP and MET
-    output["vars"]["deltaPhi_SUEP_CaloMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["CaloMET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_ChsMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["ChsMET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_TkMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["TkMET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_RawMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["RawMET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_PuppiMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["PuppiMET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_RawPuppiMET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["RawPuppiMET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_MET" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["MET_phi" + out_label])
-    output["vars"]["deltaPhi_SUEP_MET_JEC" + out_label] = delta_phi(output["vars"]["SUEP_phi_HighestPT" + out_label], output["vars"]["MET_JEC_phi" + out_label])
-
+    output["vars"]["deltaPhi_SUEP_CaloMET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["CaloMET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_ChsMET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["ChsMET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_TkMET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["TkMET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_RawMET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["RawMET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_PuppiMET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["PuppiMET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_RawPuppiMET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["RawPuppiMET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_MET" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["MET_phi" + out_label],
+    )
+    output["vars"]["deltaPhi_SUEP_MET_JEC" + out_label] = delta_phi(
+        output["vars"]["SUEP_phi_HighestPT" + out_label],
+        output["vars"]["MET_JEC_phi" + out_label],
+    )
