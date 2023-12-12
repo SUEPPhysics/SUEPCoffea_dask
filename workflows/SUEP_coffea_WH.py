@@ -428,14 +428,23 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["lepton_phi" + out_label] = lepton.phi[:, 0]
         output["vars"]["lepton_mass" + out_label] = lepton.mass[:, 0]
         output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:, 0]
+        output["vars"]["lepton_ID" + out_label] = lepton.ID[:, 0]
+        output["vars"]["lepton_IDMVA" + out_label] = lepton.IDMVA[:, 0]
+        output["vars"]["lepton_iso" + out_label] = lepton.iso[:, 0]
+        output["vars"]["lepton_isoMVA" + out_label] = lepton.isoMVA[:, 0]
+        output["vars"]["lepton_miniIso" + out_label] = lepton.miniIso[:, 0]
+        output["vars"]["lepton_multiIso" + out_label] = lepton.multiIso[:, 0]
+        output["vars"]["lepton_puppiIso" + out_label] = lepton.puppiIso[:, 0]
+        output["vars"]["lepton_dxy" + out_label] = lepton.dxy[:, 0]
+        output["vars"]["lepton_dz" + out_label] = lepton.dz[:, 0]
 
         # W transverse mass for different METs -- zero mass for lepton, MET in Mt calculation
         output["vars"]["W_Mt_CaloMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.CaloMET.pt, lepton.phi[:, 0], events.CaloMET.phi)
         output["vars"]["W_Mt_ChsMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.ChsMET.pt, lepton.phi[:, 0], events.ChsMET.phi)
         output["vars"]["W_Mt_TkMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.TkMET.pt, lepton.phi[:, 0], events.TkMET.phi)        
         output["vars"]["W_Mt_RawMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.RawMET.pt, lepton.phi[:, 0], events.RawMET.phi)
-        output["vars"]["W_Mt_PuppiMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.PuppiMET.pt, lepton.phi[:, 0], events.PuppiMET.ph)
-        output["vars"]["W_Mt_RawPuppiMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.RawPuppiMET.pt, lepton.phi[:, 0], events.RawPuppiMEThi)
+        output["vars"]["W_Mt_PuppiMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.PuppiMET.pt, lepton.phi[:, 0], events.PuppiMET.phi)
+        output["vars"]["W_Mt_RawPuppiMET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.RawPuppiMET.pt, lepton.phi[:, 0], events.RawPuppiMET.phi)
         output["vars"]["W_Mt_MET" + out_label] = WH_utils.MT(lepton.pt[:, 0], events.MET.pt, lepton.phi[:, 0], events.MET.phi)
         output["vars"]["W_Mt_MET_JEC" + out_label] = WH_utils.MT(lepton.pt[:, 0], met_c.pt, lepton.phi[:, 0], met_c.phi)
 
@@ -537,7 +546,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             print("No events pass clusterCut.")
             return output
 
-        WH_utils.TopPTMethod(
+        WH_utils.HighestPTMethod(
             self,
             indices,
             tracks,

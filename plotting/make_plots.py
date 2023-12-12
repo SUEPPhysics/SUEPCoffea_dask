@@ -122,8 +122,8 @@ N.B.: Include lower and upper bounds for all ABCD regions.
 """
 if options.channel == "WH":
     config = {
-        "TopPT": {
-            "input_method": "TopPT",
+        "HighestPT": {
+            "input_method": "HighestPT",
             "selections": [],
             #"Mt": {""}
         },
@@ -993,7 +993,7 @@ def create_output_file(label, abcd, options):
     )
 
     ###########################################################################################################################
-    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone", "TopPT"]]):
+    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone", "HighestPT"]]):
         # 2D histograms
         output.update(
             {
