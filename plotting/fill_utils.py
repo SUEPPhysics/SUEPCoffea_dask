@@ -66,6 +66,7 @@ def make_selection(df, variable, operator, value, apply=True):
     whether a list of booleans is returned matching the indices that
     passed and failed the selection.
     """
+    
     if operator in ["greater than", "gt", ">"]:
         if apply:
             return df.loc[(df[variable] > value)]
@@ -176,6 +177,9 @@ def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
 
     # 3. apply selections
     for sel in config["selections"]:
+        if sel[0] not in df.keys():
+            raise Exception("Trying to apply a cut on a variable that does not exist in the DataFrame")
+            continue
         df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
     return df
