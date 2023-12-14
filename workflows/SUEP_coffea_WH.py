@@ -298,16 +298,77 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         if out_label == "":
             output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
-            
+            '''output["vars"]["ht_JEC" + out_label] = ak.sum(
+                jets_jec.pt, axis=-1
+            ).to_list()
+            output["vars"]["ht_JEC" + out_label + "_JER_up"] = ak.sum(
+                jets_jec_JERUp.pt, axis=-1
+            ).to_list()
+            output["vars"]["ht_JEC" + out_label + "_JER_down"] = ak.sum(
+                jets_jec_JERDown.pt, axis=-1
+            ).to_list()
+            output["vars"]["ht_JEC" + out_label + "_JES_up"] = ak.sum(
+                jets_jec_JESUp.pt, axis=-1
+            ).to_list()
+            output["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
+                jets_jec_JESDown.pt, axis=-1
+            ).to_list()'''
 
+            output["vars"]["CaloMET_pt" + out_label] = events.CaloMET.pt
+            output["vars"]["CaloMET_phi" + out_label] = events.CaloMET.phi
+            output["vars"]["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
             output["vars"]["PuppiMET_pt" + out_label] = events.PuppiMET.pt
+            '''output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JER_down"
+            ] = PuppiMET_pt_JERDown
+            output["vars"]["PuppiMET_pt" + out_label + "_JES_up"] = PuppiMET_pt_JESUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JES_down"
+            ] = PuppiMET_pt_JESDown'''
             output["vars"]["PuppiMET_phi" + out_label] = events.PuppiMET.phi
+            '''output["vars"]["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
+            output["vars"][
+                "PuppiMET_phi" + out_label + "_JER_down"
+            ] = PuppiMET_phi_JERDown
+            output["vars"]["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
+            output["vars"][
+                "PuppiMET_phi" + out_label + "_JES_down"
+            ] = PuppiMET_phi_JESDown'''
             output["vars"]["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
-            
+            '''output["vars"]["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
+            output["vars"]["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
+            output["vars"]["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt'''
             output["vars"]["MET_pt" + out_label] = events.MET.pt
             output["vars"]["MET_phi" + out_label] = events.MET.phi
             output["vars"]["MET_sumEt" + out_label] = events.MET.sumEt
-            
+            '''output["vars"]["MET_JEC_pt" + out_label] = met_c.pt
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_up"] = MET_JEC_pt_JERUp
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
+            output["vars"]["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
+            output["vars"]["MET_JEC_pt" + out_label + "_JES_down"] = MET_JEC_pt_JESDown
+            output["vars"][
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_pt_UnclusteredEnergyUp
+            output["vars"][
+                "MET_JEC_pt" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_pt_UnclusteredEnergyDown
+            output["vars"]["MET_JEC_phi" + out_label] = met_c.phi
+            output["vars"]["MET_JEC_phi" + out_label + "_JER_up"] = MET_JEC_phi_JERUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_JER_down"
+            ] = MET_JEC_phi_JERDown
+            output["vars"]["MET_JEC_phi" + out_label + "_JES_up"] = MET_JEC_phi_JESUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_JES_down"
+            ] = MET_JEC_phi_JESDown
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_up"
+            ] = MET_JEC_phi_UnclusteredEnergyUp
+            output["vars"][
+                "MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"
+            ] = MET_JEC_phi_UnclusteredEnergyDown
+            output["vars"]["MET_JEC_sumEt" + out_label] = met_c.sumEt'''
 
             # store event weights for MC
             if self.isMC and self.scouting == 0:
@@ -359,16 +420,29 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["lepton_phi" + out_label] = lepton.phi[:, 0]
         output["vars"]["lepton_mass" + out_label] = lepton.mass[:, 0]
         output["vars"]["lepton_flavor" + out_label] = lepton.pdgID[:, 0]
+        output["vars"]["lepton_ID" + out_label] = lepton.ID[:, 0]
+        output["vars"]["lepton_IDMVA" + out_label] = lepton.IDMVA[:, 0]
+        output["vars"]["lepton_iso" + out_label] = lepton.iso[:, 0]
+        output["vars"]["lepton_isoMVA" + out_label] = lepton.isoMVA[:, 0]
+        output["vars"]["lepton_miniIso" + out_label] = lepton.miniIso[:, 0]
+        output["vars"]["lepton_multiIso" + out_label] = lepton.multiIso[:, 0]
+        output["vars"]["lepton_puppiIso" + out_label] = lepton.puppiIso[:, 0]
+        output["vars"]["lepton_dxy" + out_label] = lepton.dxy[:, 0]
+        output["vars"]["lepton_dz" + out_label] = lepton.dz[:, 0]
 
         lepton_pt = lepton.pt[:, 0]
         lepton_phi = lepton_phi[:, 0]
         # W transverse mass for different METs -- zero mass for lepton, MET in Mt calculation
+        output["vars"]["W_Mt_CaloMET" + out_label] = WH_utils.MT(lepton_pt, events.CaloMET.pt, lepton_phi, events.CaloMET.phi)
         output["vars"]["W_Mt_PuppiMET" + out_label] = WH_utils.MT(lepton_pt, events.PuppiMET.pt, lepton_phi, events.PuppiMET.phi)
         output["vars"]["W_Mt_MET" + out_label] = WH_utils.MT(lepton_pt, events.MET.pt, lepton_phi, events.MET.phi)
+        # output["vars"]["W_Mt_MET_JEC" + out_label] = WH_utils.MT(lepton_pt, met_c.pt, lepton_phi, met_c.phi)
 
         # delta phi for lepton and dif METs
+        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(lepton_phi, events.CaloMET.phi)
         output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(lepton_phi, events.PuppiMET.phi)
         output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(lepton_phi, events.MET.phi)
+        # output["vars"]["deltaPhi_lepton_MET_JEC" + out_label] = WH_utils.delta_phi(lepton_phi, met_c.phi)
 
 
     def analysis(self, events, output, do_syst=False, out_label=""):
@@ -456,7 +530,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             print("No events pass clusterCut.")
             return output
 
-        WH_utils.TopPTMethod(
+        WH_utils.HighestPTMethod(
             self,
             indices,
             tracks,

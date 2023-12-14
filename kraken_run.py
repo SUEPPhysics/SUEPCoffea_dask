@@ -123,8 +123,7 @@ def main():
     )
     parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
     parser.add_argument("--channel", type=str, default="ggF", help="ggF or WH")
-    parser.add_argument(
-        "-sc", "--scout", type=int, default=0, help="Scouting data.")
+    parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
     parser.add_argument(
         "-ML", "--ML", type=int, default=0, help="ML samples production."
     )
@@ -205,20 +204,26 @@ def main():
 
             # ---- getting the list of file for the dataset by xrdfs ls
 
-            if (options.era == "2018" or options.era == "2017") and options.private == 1 and options.channel == "ggF":
+            if (
+                (options.era == "2018" or options.era == "2017")
+                and options.private == 1
+                and options.channel == "ggF"
+            ):
                 userOwner = "bmaier/suep"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
             elif (
-                options.era == "2016" or options.era == "2016apv"
-            ) and options.private == 1 and options.channel == "ggF":
+                (options.era == "2016" or options.era == "2016apv")
+                and options.private == 1
+                and options.channel == "ggF"
+            ):
                 userOwner = "cfreer/suep_correct"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
-            elif (options.private == 1 and options.channel == 'WH'):
-                sample_path = '/jreicher/SUEP/WH_private_signals/merged/'
+            elif options.private == 1 and options.channel == "WH":
+                sample_path = "/jreicher/SUEP/WH_private_signals/merged/"
             elif not options.private and "/" in sample:
                 sample_path = sample
             else:
@@ -226,16 +231,22 @@ def main():
 
             Raw_list = []
             # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
-            if (options.channel == 'WH' and options.private == 1):
+            if options.channel == "WH" and options.private == 1:
                 # input txt file of signal samples includes the path (samples not in xrdfs so this is current work around)
                 # ^ e.g. /jreicher/SUEP/WH_private_signals/merged/WHleptonicpythia_generic_M125.0_MD2.00_T0.50_HT-1_UL18_NANOAOD
                 # (the above is one file per sample)
                 # shouldn't mess with anything, just a simple work around for joey's WH suep samples in /data/submit/
-                file = "root://submit50.mit.edu/" + sample_path + '/' + sample_name + '.root' + ' 0 0 1 1 1 1'
+                file = (
+                    "root://submit50.mit.edu/"
+                    + sample_path
+                    + "/"
+                    + sample_name
+                    + ".root"
+                    + " 0 0 1 1 1 1"
+                )
                 Raw_list.append(file)
 
             else:
-                
                 comm = subprocess.Popen(
                     ["xrdfs", "root://xrootd.cmsaf.mit.edu/", "ls", sample_path],
                     stdout=subprocess.PIPE,
@@ -243,7 +254,7 @@ def main():
                 print(f"xrdfs root://xrootd5.cmsaf.mit.edu/ ls {sample_path}")
 
                 raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
-                
+
                 if raw_input_list == [""]:
                     missing_samples.append(sample_name)
 
