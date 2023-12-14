@@ -122,16 +122,10 @@ N.B.: Include lower and upper bounds for all ABCD regions.
 """
 if options.channel == "WH":
     config = {
-<<<<<<< HEAD
-        "TopPT": {
-            "input_method": "TopPT",
-            "selections": [["W_Mt_MET", ">", 50], ["SUEP_pt_TopPT", ">", 60]],
-=======
         "HighestPT": {
             "input_method": "HighestPT",
             "selections": [],
             # "Mt": {""}
->>>>>>> 3260945bd894a2826483c003737f5d59c7a29fb7
         },
     }
 if options.channel == "ggF":
@@ -154,10 +148,6 @@ if options.channel == "ggF":
                 "yvar_regions": [0, 18, 35, 1000],
                 "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
                 "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-<<<<<<< HEAD
-=======
-                # "derived value": {"deltaPhi": lambda phiMET, phiSUEP: abs(phiMET - phiSUEP)}
->>>>>>> 3260945bd894a2826483c003737f5d59c7a29fb7
             },
         }
     else:
