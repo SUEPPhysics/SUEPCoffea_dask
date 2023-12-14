@@ -122,10 +122,10 @@ N.B.: Include lower and upper bounds for all ABCD regions.
 """
 if options.channel == "WH":
     config = {
-        "TopPT": {
-            "input_method": "TopPT",
+        "HighestPT": {
+            "input_method": "HighestPT",
             "selections": [],
-            #"Mt": {""}
+            # "Mt": {""}
         },
     }
 if options.channel == "ggF":
@@ -148,7 +148,7 @@ if options.channel == "ggF":
                 "yvar_regions": [0, 18, 35, 1000],
                 "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
                 "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-                #"derived value": {"deltaPhi": lambda phiMET, phiSUEP: abs(phiMET - phiSUEP)}
+                # "derived value": {"deltaPhi": lambda phiMET, phiSUEP: abs(phiMET - phiSUEP)}
             },
         }
     else:
@@ -838,7 +838,7 @@ def create_output_file(label, abcd, options):
                 name=f"MET_JEC_sumEt_{label}",
                 label="MET JEC sumEt",
             ).Weight(),
-            # W Mt calculated from dif METs     ################################################################################# 
+            # W Mt calculated from dif METs     #################################################################################
             f"W_Mt_CaloMET_{label}": Hist.new.Reg(
                 201,
                 0,
@@ -988,12 +988,11 @@ def create_output_file(label, abcd, options):
                 name=f"deltaPhi_lepton_MET_{label}",
                 label="deltaPhi_lepton_MET",
             ).Weight(),
-            
         }
     )
 
     ###########################################################################################################################
-    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone", "TopPT"]]):
+    if any([lbl in label for lbl in ["ISRRemoval", "Cluster", "Cone", "HighestPT"]]):
         # 2D histograms
         output.update(
             {
@@ -1141,8 +1140,7 @@ def calculate_systematic(
         df["event_weight"] = np.ones(df.shape[0])
 
     if options.isMC == 1:
-
-        if options.channel == 'ggF':
+        if options.channel == "ggF":
             if options.scouting != 1:
                 # 1) pileup weights
                 puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
@@ -1203,7 +1201,7 @@ def calculate_systematic(
 
         # REMOVE CODE DUPLICATION LATER...
 
-        elif options.channel == 'WH':
+        elif options.channel == "WH":
             # 1) pileup weights
             puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
                 options.era
@@ -1212,9 +1210,9 @@ def calculate_systematic(
                 df, syst, puweights, puweights_up, puweights_down
             )
             df["event_weight"] *= pu
-                    
-            # 2) TriggerSF weights for WH -- 
-        
+
+            # 2) TriggerSF weights for WH --
+
             # 3) PS weights
             if "PSWeight" in syst and syst in df.keys():
                 df["event_weight"] *= df[syst]
@@ -1225,8 +1223,6 @@ def calculate_systematic(
                     df["event_weight"] *= df[syst]
                 else:
                     df["event_weight"] *= df["prefire_nom"]
-
-        
 
         # 5) Higgs_pt weights
         if "mS125" in options.dataset:
