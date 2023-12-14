@@ -124,8 +124,7 @@ if options.channel == "WH":
     config = {
         "TopPT": {
             "input_method": "TopPT",
-            "selections": [],
-            #"Mt": {""}
+            "selections": [["W_Mt_MET", ">", 50], ["SUEP_pt_TopPT", ">", 60]],
         },
     }
 if options.channel == "ggF":
@@ -148,7 +147,6 @@ if options.channel == "ggF":
                 "yvar_regions": [0, 18, 35, 1000],
                 "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 50]],
                 "selections": [["ht_JEC", ">", 560], ["ntracks", ">", 0]],
-                #"derived value": {"deltaPhi": lambda phiMET, phiSUEP: abs(phiMET - phiSUEP)}
             },
         }
     else:
@@ -463,6 +461,12 @@ def create_output_file(label, abcd, options):
         {
             f"ht_{label}": Hist.new.Reg(
                 100, 0, 10000, name=f"ht_{label}", label="HT"
+            ).Weight(),
+            f"genht_{label}": Hist.new.Reg(
+                100, 0, 10000, name=f"genht_{label}", label="genHT"
+            ).Weight(),
+            f"LHE_HT_{label}": Hist.new.Reg(
+                100, 0, 10000, name=f"LHE_HT_{label}", label="LHE_HT"
             ).Weight(),
             f"ht_JEC_{label}": Hist.new.Reg(
                 100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
