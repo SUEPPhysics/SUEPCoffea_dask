@@ -1,6 +1,6 @@
 """
 A submitter for processing many samples parallelly, using either Slurm or multithread.
-Pass to this script the same options you would pass make_plots.py or merge_plots.py,
+Pass to this script the same options you would pass make_hists.py or merge_plots.py,
 specify whether you want to plot or merge (--code),
 and specify if you want multithread or Slurm (--method).
 
@@ -80,7 +80,7 @@ parser.add_argument(
     help="Which system to use (supported: 'multithread' or 'slurm')",
     required=True,
 )
-# These are the same as make_plots.py, and are passed straight through it
+# These are the same as make_hists.py, and are passed straight through it
 parser.add_argument("-o", "--output", type=str, help="output tag", required=False)
 parser.add_argument("-t", "--tag", type=str, help="production tag", required=True)
 parser.add_argument(
@@ -189,12 +189,12 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "suepRun merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+        cmd = "suepRun merge_hists.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
             tag=options.tag, sample=sample, isMC=options.isMC
         )
 
     elif options.code == "plot":
-        cmd = "suepRun make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
+        cmd = "suepRun make_hists.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,

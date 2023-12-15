@@ -123,10 +123,9 @@ Explained here is an example workflow. Each of these scripts should have more de
 
 **(Optional) Merge and Move NTuples**
 
-5. Merge the hdf5 files for faster plotting, see section above.
-6. Depending the way you have set it up, the output is on a remote filesystem, so move the hdf5 files (and/or the merged ones if you went through step 5), to a local filesystem for faster reading.
+5. Merge the hdf5 files for faster plotting, see `plotting/README`.
 
 **Plotting**
 
-7. Run `make_plots.py` (if needed, with `multithread.py`) over all the desired datasets to produce histograms
-8. Use plotting notebooks like `plot.ipynb` to display them.
+6. Run `make_hists.py` (if needed, with `submit.py`) over all the desired datasets to produce histograms
+7. Use plotting notebooks or scripts to display histograms. `plot.ipynb` is provided as an example for how to load different samples, and plot them. Make your own script or notebook for your analysis.
