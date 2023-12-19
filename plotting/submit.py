@@ -189,7 +189,7 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "suepRun merge_hists.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+        cmd = "suepRun merge_ntuples.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
             tag=options.tag, sample=sample, isMC=options.isMC
         )
 

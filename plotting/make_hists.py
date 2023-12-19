@@ -39,7 +39,7 @@ parser.add_argument(
     required=False,
 )
 parser.add_argument(
-    "-t", "--tag", type=str, default="IronMan", help="production tag", required=False
+    "-t", "--tag", type=str, default="IronMan", help="ntuples production tag", required=False
 )
 parser.add_argument(
     "-f", "--file", type=str, default="", help="Use specific input file"
@@ -66,7 +66,7 @@ parser.add_argument(
     "--isSignal", type=int, help="Is this signal sample or not", default=0
 )
 parser.add_argument(
-    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
+    "--channel", type=str, help="Analysis channel: ggF, WH", required=True, choices=["ggF", "WH"]
 )
 parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
 # some parameters you can toggle freely
@@ -1252,8 +1252,7 @@ if options.isMC:
     output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
 
 # Make ABCD expected histogram for signal region
-
-if options.doABCD and options.blind and options.predictSR:
+if options.doABCD and options.predictSR:
     logging.info("Predicting SR using ABCD method.")
 
     # Loop through every configuration
@@ -1277,19 +1276,37 @@ if options.doABCD and options.blind and options.predictSR:
             )
             continue
 
-        # Calculate SR from ABCD method
+        # Calculate expected SR from ABCD method
         # sum_var = 'x' corresponds to scaling F histogram
-        SR, SR_exp = plot_utils.ABCD_9regions_errorProp(
+        _, SR_exp = plot_utils.ABCD_9regions_errorProp(
             output[hist_name], xregions, yregions, sum_var="x"
         )
 
         output[f"I_{yvar}_{label_out}_exp"] = SR_exp
 
+# write histograms and metadata to a root file
 if options.dataset:
-    outFile = outDir + "/" + options.dataset + "_" + options.output
+    outFile = outDir + "/" + options.dataset + "_" + options.output + ".root"
 else:
     outFile = os.path.join(outDir, options.output)
-logging.info("Saving outputs to " + outFile + ".")
-with uproot.recreate(outFile + ".root") as froot:
+logging.info("Saving outputs to " + outFile)
+with uproot.recreate(outFile) as froot:
+    # write out metadata
+    metadata = {
+        'ntuple_tag': options.tag,
+        'analysis': options.channel,
+        'scouting': options.scouting,
+        'isMC': options.isMC,
+        'era': options.era,
+        'dataset': options.dataset,
+        'xsec': xsection,
+        'gensumweight': total_gensumweight
+    }
+
+    # Write the TList to the ROOT file
+    for k, m in metadata.items():
+        froot["metadata/{}".format(k)] = str(m)
+
+    # write out histograms
     for h, hist in output.items():
         froot[h] = hist

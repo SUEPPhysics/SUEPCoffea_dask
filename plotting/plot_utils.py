@@ -91,50 +91,50 @@ def lumiLabel(year, scouting=False):
         return round(lumidir[year] / 1000, 1)
 
 
-def findLumi(year, auto_lumi, infile_name, scouting):
+def findLumiAndEra(year, auto_lumi, infile_name, scouting):
     if scouting:
         lumidir = lumis_scouting
     else:
         lumidir = lumis
-    if auto_lumi:
+
+    if auto_lumi and not year:
+        # try to figure it out from sample name
         if "20UL16MiniAODv2" in infile_name:
             lumi = lumidir["2016"]
+            era = "2016"
         elif "20UL17MiniAODv2" in infile_name:
             lumi = lumidir["2017"]
+            era = "2017"
         elif "20UL16MiniAODAPVv2" in infile_name:
             lumi = lumidir["2016_apv"]
+            era = "2016_apv"
         elif "20UL18" in infile_name:
             lumi = lumidir["2018"]
+            era = "2018"
         elif any([s in infile_name for s in ["JetHT+Run", "ScoutingPFHT+Run"]]):
             lumi = 1
         else:
             raise Exception(
                 "I cannot find luminosity matched to file name: " + infile_name
-            )
-    if year and not auto_lumi:
+        )
+    elif year and not auto_lumi:
         lumi = lumidir[str(year)]
-    if year and auto_lumi:
-        raise Exception("Apply lumis automatically or based on year")
-    return lumi
-    
-def findYear(sample_name):
-    if any([tag in sample_name for tag in ["20UL16MiniAODv2", "Run2016"]]):
-        return "2016"
-    elif any([tag in sample_name for tag in ["20UL17MiniAODv2", "Run2017"]]):
-        return "2017"
-    elif any([tag in sample_name for tag in ["20UL16MiniAODAPVv2"]]):
-        return "2016_apv"
-    elif any([tag in sample_name for tag in ["20UL18", "Run2018"]]):
-        return "2018"
+        era = str(year)
     else:
-        raise Exception("I cannot find year matched to file name: " + sample_name)
+        raise Exception("Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed.")
+    
+    return lumi, era
+    
 
-def getHistLists(plotDir, tag, filename):
+def getHistLists(plotDir, tag, filename, filters=None):
     hists = []
     with open(filename) as file:
         for line in file:
             sample_name = line.strip().split("/")[-1]
             result_path = f"{plotDir}{sample_name}_{tag}.root"
+            if filters:
+                if not all([filt in sample_name for filt in filters]):
+                    continue
             hists.append(result_path)
     return hists
 
@@ -224,9 +224,7 @@ def getSampleNameAndBin(sample_name):
 
     elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
-        bin = sample_name.split(".root")[0]
-        bin = bin.split("+")[1].split("-")[0]
-        bin = "data_" + bin[3:]
+        bin = None
 
     elif "SUEP" in sample_name:
         sample = formatSUEPNaming(sample_name)
@@ -239,29 +237,51 @@ def getSampleNameAndBin(sample_name):
     return sample, bin
 
 
-def fillSample(infile_name, sample, plots, norm):
+def fillSample(this_plots, sample, plots, norm=1):
+
+    plotsToAdd = this_plots.copy()
+    if norm != 1: plotsToAdd = fill_utils.apply_normalization(plotsToAdd, norm)
 
     if sample not in list(plots.keys()):
-        plots[sample] = openHistFile(infile_name)
-        for plot in list(plots[sample].keys()):
-            plots[sample][plot] = plots[sample][plot] * norm
+        plots[sample] = plotsToAdd
     else:
-        plotsToAdd = openHistFile(infile_name)
         try:
             for plot in list(plotsToAdd.keys()):
-                plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * norm
+                plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot]
         except KeyError:
-            print("WARNING: " + infile_name + " has a different set of plots")
+            print("WARNING: " + sample + " has a different set of plots")
             
     return plots
 
 
-# load file(s)
+def getLumi(era: str, scouting: bool) -> float:
+    if scouting:
+        lumidir = lumis_scouting
+    else:
+        lumidir = lumis
+    return lumidir[era]
+
+
 def loader(
     infile_names,
-    year=None, auto_lumi=True, scouting=False,
-    exclude_low_bins=False, by_bin=False, by_year=True, xsec_SUEP=True
+    year=None, auto_lumi=True, scouting=False, # once everyone starts making histograms with metadata, these three can be dropped
+    by_bin=False, by_year=True, xsec_SUEP=True
 ):
+    """
+    Load histograms from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
+
+    Parameters:
+    - infile_names (list): List of input file names.
+    - year (int, optional): Year of the data. Default is None.
+    - auto_lumi (bool, optional): Flag to automatically determine the luminosity based on the year and sample name. Default is True.
+    - scouting (bool, optional): Flag to indicate whether the data is from scouting, used for the lumi. Default is False.
+    - by_bin (bool, optional): Flag to group histograms by bin. Default is False.
+    - by_year (bool, optional): Flag to group histograms by year. Default is True.
+    - xsec_SUEP (bool, optional): Flag to apply the cross-section normalization factor for SUEP samples. Default is True.
+
+    Returns:
+    - plots (dict): Dictionary containing the loaded histograms grouped by sample, bin, and year.
+    """
     plots = {}
     for infile_name in infile_names:
         if not os.path.isfile(infile_name):
@@ -270,54 +290,50 @@ def loader(
         elif ".root" not in infile_name:
             continue
 
+        file_plots, file_metadata = openHistFile(infile_name)
+        norm = 1
+
         # sets the lumi based on year
-        lumi = findLumi(year, auto_lumi, infile_name, scouting)
-        norm = lumi
+        if file_metadata and not year:
+            if 'isMC' in file_metadata.keys() and file_metadata['isMC']:
+                lumi = getLumi(file_metadata['era'], bool(float(file_metadata['scouting'])))
+            era = file_metadata['era']
+        else:
+            lumi, era = findLumiAndEra(year, auto_lumi, infile_name, scouting) # once everyone starts making histograms with metadata, this can be dropped
+        norm *= lumi
 
         # get the normalization factor for SUEP samples
         if xsec_SUEP:
             sample_name = infile_name.split("/")[-1].split("13TeV")[0]+'13TeV-pythia8'
             if 'SUEP' in sample_name: # xsec is already apply in make_hists.py for non SUEP samples
                 xsec = fill_utils.getXSection(sample_name, SUEP=True)
-                norm = lumi * xsec
-
-        # exclude low bins
-        if exclude_low_bins:
-            if "50to100" in infile_name:
-                continue
-            if "100to200" in infile_name:
-                continue
+                norm *= xsec
 
         # get the sample name and the bin name
         # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
         sample, bin = getSampleNameAndBin(infile_name)
 
-        # read in the histograms, applying normalization on the way
-        # plots[sample (and bin)] sample is filled here
-        for s in (sample, bin):
-            if s is None or (not by_bin):
-                continue
-            plots = fillSample(infile_name, s, plots, norm)
-
-        # if requested, also load in each year separately
-        # into plots[sample_YEAR (and bin_YEAR)]
+        samplesToAdd = [sample]
+        if by_bin and (bin is not None):
+            samplesToAdd.append(bin)
         if by_year:
-            if year is None: auto_year = findYear(infile_name)
-            for s in (sample, bin):
-                if s is None or (not by_bin):
-                    continue
-                s = "_".join([s, auto_year])
-                plots = fillSample(infile_name, s, plots, norm)
+            samplesToAdd.append("_".join([sample, era]))
+            if by_bin and (bin is not None):
+                samplesToAdd.append("_".join([bin, era]))
+
+        for s in samplesToAdd:
+            plots = fillSample(file_plots, s, plots, norm)
 
     return plots
 
 
 def openHistFile(infile_name):
     if ".root" in infile_name:
-        infile = openroot(infile_name)
+        plots, metadata = openroot(infile_name)
     elif ".pkl" in infile_name:
-        infile = openpickle(infile_name)
-    return infile
+        plots = openpickle(infile_name)
+        metadata = None # not supported yet for pickle files
+    return plots, metadata
 
 
 def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
@@ -333,6 +349,7 @@ def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
                 plots["MC" + year_tag][key] = plots[samples[i] + year_tag][key].copy()
             else:
                 plots["MC" + year_tag][key] += plots[samples[i] + year_tag][key].copy()
+    return plots
 
 
 def check_proxy(time_min=100):
@@ -417,12 +434,15 @@ def openpickle(infile_name):
 
 def openroot(infile_name):
     _plots = {}
+    _metadata = {}
     _infile = uproot.open(infile_name)
     for k in _infile.keys():
-        if ";" in k:
-            k = k.split(";")[0]
-        _plots[k] = _infile[k].to_hist()
-    return _plots
+        if 'metadata' == k.split(";")[0]:
+            for kk in _infile[k].keys():
+                _metadata[kk.split(";")[0]] = _infile[k][kk].title()
+        elif 'metadata' not in k:
+            _plots[k.split(";")[0]] = _infile[k].to_hist()
+    return _plots, _metadata
 
 
 def plot1d(h, ax, label, color="default", lw=1):
@@ -804,6 +824,20 @@ def plot_all_regions(
     return fig, ax
 
 
+def plot_sys_variations(plots_sample, plot_label, sys, rebin=1j):
+    """
+    Plot variatoin for a systemtaic
+    """
+    h = plots_sample["_".join([plot_label])][::rebin]
+    h_up = plots_sample["_".join([plot_label, sys, 'up'])][::rebin]
+    h_down = plots_sample["_".join([plot_label, sys, 'down'])][::rebin]
+
+    fig, axs = plot_ratio([h, h_up, h_down], [sys + ' nominal', sys + ' up', sys + ' down'])
+    axs[0].legend()
+    axs[1].set_ylim(0.9,1.1)
+    return fig, axs
+
+
 def slice_hist2d(hist, regions_list, slice_var="y"):
     """
     Inputs:
@@ -827,8 +861,7 @@ def plot_sliced_hist2d(
     hist, regions_list, stack=False, density=False, slice_var="y", labels=None
 ):
     """
-    Takes a 2d histogram, slices it in different regions, and plots the
-    regions stacked.
+    Takes a 2d histogram, slices it in different regions, and plots the regions.
     Inputs:
         hist: 2d Hist histogram.
         regions_list: list of regions using Hist slicing. e.g. [[10j,20j],[20j,30j],...]
