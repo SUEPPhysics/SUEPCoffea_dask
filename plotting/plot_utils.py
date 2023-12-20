@@ -268,7 +268,7 @@ def getLumi(era: str, scouting: bool) -> float:
 def loader(
     infile_names,
     year=None,
-    auto_lumi=True, # once everyone starts making histograms with metadata, these can be dropped
+    auto_lumi=True,  # once everyone starts making histograms with metadata, these can be dropped
     scouting=False,  # once everyone starts making histograms with metadata, these can be dropped
     by_bin=False,
     by_year=True,

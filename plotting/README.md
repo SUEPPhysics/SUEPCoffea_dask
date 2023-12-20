@@ -181,7 +181,7 @@ The systematics can be found in `CMS_corrections/*.py`, and are applied in `make
 
 7. **Trigger scale factor**: weight applied to event weight based on era only, defined in `triggerSF.py`.
 
-8. **Jet energy corrections**: applied by cutting on different variations of the `ht` variations. 
+8. **Jet energy corrections**: applied by cutting on different variations of the `ht` variations.
 
 9. [Optional] **weights**: These are weights that are defined based on each ABDC region (with the variables x_var, y_var) to force a third variable (z_var) to match for MC and data. These are produced in `plot.ipynb` and are saved as `.npy` files which are read in the script using `--weights=<file.npy>`.
 
@@ -191,7 +191,7 @@ The outputs of make_hists.py are .root files containing Hist histograms.
 You can open these in your own scripts and notebooks to view them, but a notebook, `plot.ipynb`, is provided with many useful functionalities as an example.
 It is encouraged that each analysis has its own plotting scripts, but common functions should be put in `plot_utils.py` as much as possible.
 
-By specifying which root files you want, the notebook will automatically load all the histograms, merging samples, into one nested dictionary (`plots`), with dimensions (sample x plots). 
+By specifying which root files you want, the notebook will automatically load all the histograms, merging samples, into one nested dictionary (`plots`), with dimensions (sample x plots).
 This 'magic' is done through `plot_utils.py/loader()`.
 The key feature of this is that it will combine histograms based on the samples, e.g. it will combine each `QCD_HT123To456` bin into one `QCD_HT` (as well as load it separately, if requested).
 This is mapping of which samples should be merged into which name is defined by `plot_utils.py/getSampleNameAndBin()`.

@@ -2,7 +2,6 @@ from hist import Hist
 
 
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
-
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:
         return output
@@ -70,7 +69,6 @@ def init_hists_default(output: dict, label: str, regions_list: list = [""]) -> N
     """
 
     for r in regions_list:
-
         # these histograms will be made for each systematic, and each ABCD region
         output.update(
             {
@@ -173,11 +171,12 @@ def init_hists_default(output: dict, label: str, regions_list: list = [""]) -> N
                 }
             )
 
-
         # these histograms will be made for only nominal, and no ABCD regions
         if (
-            r == "" and not label.lower().endswith("up") and not label.lower().endswith("down")
-        ): 
+            r == ""
+            and not label.lower().endswith("up")
+            and not label.lower().endswith("down")
+        ):
             output.update(
                 {
                     f"{r}SUEP_genMass_{label}": Hist.new.Reg(
