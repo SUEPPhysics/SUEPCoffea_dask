@@ -49,7 +49,7 @@ def call_process(cmd, work_dir):
     """This runs in a separate thread."""
     print("----[%] :", cmd)
     p = subprocess.Popen(
-        ['bash', '-c', ' '.join(shlex.split(cmd))],
+        ["bash", "-c", " ".join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
@@ -175,6 +175,10 @@ for i, sample in enumerate(samples):
     singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
     cmd = singularity_prefix + cmd
 
+    # execute the command with singularity
+    singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
+    cmd = singularity_prefix + cmd
+
     # Method to execute the code with
     if options.method == "multithread":
         results.append(pool.apply_async(call_process, (cmd, work_dir)))
@@ -208,6 +212,6 @@ if options.method == "multithread":
             print(str(err))
             print(" ----------------- ")
             print()
-        
+
     # clean up
     os.system(f"rm -rf {work_dir}")
