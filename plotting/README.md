@@ -60,7 +60,7 @@ config = {
 ```
 
 This will:
-- Grab all ntuple variables from the input method `CL` and fill histograms in the output mehtod `Cluster`.
+- Grab all ntuple variables from the input method `CL` and fill histograms in the output method `Cluster`.
 - Blind the SR for data.
 - Apply the `selections` to the DataFrame before filling the histograms.
 - Make each histogram for each ABCD region, and make an ABCD prediction for the SR.
