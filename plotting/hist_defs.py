@@ -2,6 +2,7 @@ from hist import Hist
 
 
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
+
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:
         return output
@@ -59,99 +60,18 @@ def get_ABCD_regions(config: dict) -> list:
     return [regions[i] + "_" for i in range(n_regions)]
 
 
-def init_hists_default(output, label, regions_list=[""]):
-    output.update(
-        {
-            f"ht_{label}": Hist.new.Reg(
-                100, 0, 10000, name=f"ht_{label}", label="HT"
-            ).Weight(),
-            f"ht_JEC_{label}": Hist.new.Reg(
-                100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
-            ).Weight(),
-            f"ht_JEC_JER_up_{label}": Hist.new.Reg(
-                100,
-                0,
-                10000,
-                name=f"ht_JEC_JER_up_{label}",
-                label="HT JEC up",
-            ).Weight(),
-            f"ht_JEC_JER_down_{label}": Hist.new.Reg(
-                100,
-                0,
-                10000,
-                name=f"ht_JEC_JER_down_{label}",
-                label="HT JEC JER down",
-            ).Weight(),
-            f"ht_JEC_JES_up_{label}": Hist.new.Reg(
-                100,
-                0,
-                10000,
-                name=f"ht_JEC_JES_up_{label}",
-                label="HT JEC JES up",
-            ).Weight(),
-            f"ht_JEC_JES_down_{label}": Hist.new.Reg(
-                100,
-                0,
-                10000,
-                name=f"ht_JEC_JES_down_{label}",
-                label="HT JEC JES down",
-            ).Weight(),
-            f"ntracks_{label}": Hist.new.Reg(
-                101,
-                0,
-                500,
-                name=f"ntracks_{label}",
-                label="# Tracks in Event",
-            ).Weight(),
-            f"ngood_fastjets_{label}": Hist.new.Reg(
-                9,
-                0,
-                10,
-                name=f"ngood_fastjets_{label}",
-                label="# FastJets in Event",
-            ).Weight(),
-            f"PV_npvs_{label}": Hist.new.Reg(
-                199,
-                0,
-                200,
-                name=f"PV_npvs_{label}",
-                label="# PVs in Event ",
-            ).Weight(),
-            f"Pileup_nTrueInt_{label}": Hist.new.Reg(
-                199,
-                0,
-                200,
-                name=f"Pileup_nTrueInt_{label}",
-                label="# True Interactions in Event ",
-            ).Weight(),
-            f"ngood_ak4jets_{label}": Hist.new.Reg(
-                19,
-                0,
-                20,
-                name=f"ngood_ak4jets_{label}",
-                label="# ak4jets in Event",
-            ).Weight(),
-        }
-    )
+def init_hists_default(output: dict, label: str, regions_list: list = [""]) -> None:
+    """
+    Initialize histograms for all the variables we want to plot.
+    Parameters:
+        output (dict): dictionary of histograms
+        label (str): label for the histograms. This is usually some label name + systematic name
+        regions_list (list): list of regions to make histograms for. This is usually just [""], but can be ABCD regions ["A", "B", ...]
+    """
 
-    # 2D histograms
-    output.update(
-        {
-            f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
-            )
-            .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
-            .Weight(),
-            f"2D_SUEP_S1_vs_ntracks_{label}": Hist.new.Reg(
-                100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
-            )
-            .Reg(100, 0, 500, name=f"ntracks_{label}", label="# Tracks")
-            .Weight(),
-        }
-    )
-
-    # variables from the dataframe for all the events, and those in A, B, C regions
     for r in regions_list:
+
+        # these histograms will be made for each systematic, and each ABCD region
         output.update(
             {
                 f"{r}SUEP_nconst_{label}": Hist.new.Reg(
@@ -166,9 +86,98 @@ def init_hists_default(output, label, regions_list=[""]):
                 ).Weight(),
             }
         )
+
+        # these histograms will be made for each systematic, and no ABCD region
+        if r == "":
+            output.update(
+                {
+                    f"ht_{label}": Hist.new.Reg(
+                        100, 0, 10000, name=f"ht_{label}", label="HT"
+                    ).Weight(),
+                    f"ht_JEC_{label}": Hist.new.Reg(
+                        100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
+                    ).Weight(),
+                    f"ht_JEC_JER_up_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JER_up_{label}",
+                        label="HT JEC up",
+                    ).Weight(),
+                    f"ht_JEC_JER_down_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JER_down_{label}",
+                        label="HT JEC JER down",
+                    ).Weight(),
+                    f"ht_JEC_JES_up_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JES_up_{label}",
+                        label="HT JEC JES up",
+                    ).Weight(),
+                    f"ht_JEC_JES_down_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JES_down_{label}",
+                        label="HT JEC JES down",
+                    ).Weight(),
+                    f"ntracks_{label}": Hist.new.Reg(
+                        101,
+                        0,
+                        500,
+                        name=f"ntracks_{label}",
+                        label="# Tracks in Event",
+                    ).Weight(),
+                    f"ngood_fastjets_{label}": Hist.new.Reg(
+                        9,
+                        0,
+                        10,
+                        name=f"ngood_fastjets_{label}",
+                        label="# FastJets in Event",
+                    ).Weight(),
+                    f"PV_npvs_{label}": Hist.new.Reg(
+                        199,
+                        0,
+                        200,
+                        name=f"PV_npvs_{label}",
+                        label="# PVs in Event ",
+                    ).Weight(),
+                    f"Pileup_nTrueInt_{label}": Hist.new.Reg(
+                        199,
+                        0,
+                        200,
+                        name=f"Pileup_nTrueInt_{label}",
+                        label="# True Interactions in Event ",
+                    ).Weight(),
+                    f"ngood_ak4jets_{label}": Hist.new.Reg(
+                        19,
+                        0,
+                        20,
+                        name=f"ngood_ak4jets_{label}",
+                        label="# ak4jets in Event",
+                    ).Weight(),
+                    f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                        100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+                    )
+                    .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
+                    .Weight(),
+                    f"2D_SUEP_S1_vs_ntracks_{label}": Hist.new.Reg(
+                        100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+                    )
+                    .Reg(100, 0, 500, name=f"ntracks_{label}", label="# Tracks")
+                    .Weight(),
+                }
+            )
+
+
+        # these histograms will be made for only nominal, and no ABCD regions
         if (
-            r == "" and "up" not in label and "down" not in label
-        ):  # don't care for systematics for these
+            r == "" and not label.lower().endswith("up") and not label.lower().endswith("down")
+        ): 
             output.update(
                 {
                     f"{r}SUEP_genMass_{label}": Hist.new.Reg(

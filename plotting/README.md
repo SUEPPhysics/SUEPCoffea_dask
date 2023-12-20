@@ -2,56 +2,96 @@
 
 ### (Optional) Merge hdf5 files
 
-Once you have produced the ntuples, your next step it to head to `plotting/` and make plots. However, since there are many hdf5 files for each dataset, reading in a large amount of files can be slow; we can thus merge these hdf5 files together into larger ones to reduce the amount of files to read in. This can be done using `merge_ntuples.py`, which is ran on one dataset, and `submit.py`, a wrapper for `merge_ntuples.py` to run it over many datasets. The syntax for this is
+Once you have produced the ntuples, your next step it to head to `plotting/` and make plots. However, since there are many hdf5 files for each sample, reading in a large amount of files can be slow; we can thus merge these hdf5 files together into larger ones to reduce the amount of files to read in. This can be done using `merge_ntuples.py`, which is ran on one sample, and `submit.py`, a wrapper for `merge_ntuples.py` to run it over many samples over slurm or multithread. The syntax for this is,
 
 ```
-python merge_ntuples.py --dataset=<dataset> --tag=<tag> --isMC=<isMC>
+python merge_ntuples.py --sample=<sample> --tag=<tag> --isMC=<isMC>
 ```
 
 N.B.: this is only set up to grab files from remote using XRootD, for now.
-And the wrapper,
+
+And the wrapper can be ran with,
 
 ```
 python submit.py --tag=<tag> --code=merge  --inputList=<filelist>
 ```
 
-### Producing the Plots
+### Producing the histograms: overview
 
-The plotting is to be done over the hdf5 ntuples produced by `workflows/SUEP_coffea.py`. This is achieved using `make_hists.py`, using the options as follows,
-
-```
-python make_hists.py --dataset <dataset> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doInf <bool> --doSyst <bool>
-```
-
-The expected structure of your data is: `/path/<tag>/<dataset>/`. The xrootd option tells the script whether you need xrootd to access the files, or whether they are stored locally. You might need to change the dataDir in the script for it to point to the correct spot.
-
-To automatically run make_hists.py over all the \<dataset\>s, use multithreading:
+The histogram making is to be done over the hdf5 ntuples produced by `workflows/SUEP_coffea.py`.
+This is achieved using `make_hists.py`, for example,
 
 ```
-python multithread.py --tag=<tag> --xrootd=0 --code=plot --inputList=<filelist>
+python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
 ```
 
-This will parallelize the plotting for each dataset, producing one pkl file for each dataset.
+To automatically run make_hists.py over all the samples, use `submit.py`, which supports parallelizing using multithread or slurm:
 
-### Plotting
+```
+python submit.py --code plot --inputList <list> --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
+```
 
-The outputs of make_hists.py are .pkl files containing boost histograms. You can open these in your own scripts and notebooks to view them,
-but a notebook, `plot.ipynb`, is provided with many useful functionalities. By specifying which pkl files you want to import using a tag,
-the notebook will automatically load all the pkl files into one nested dictionary (`plots`), with dimensions (sample x plots),
-where sample is either one of the \<dataset\>s, as well as all the combined QCD bins. Functions to plot in 1d and 2d, ratios of histograms,
-plots by QCD bin, 1d slices of 2d hists, and other useful plotting functions are defined within.
+This will parallelize the script, producing one .root file of histograms for each sample.
 
-## The Plotter: make_hists.py and helper scripts
+## Producing the histograms: how to configure it
 
-The following scripts are used to produce the histograms from the pandas DataFrames, apply normalizations, cross sections, and systematics.
+### Over what to run it
+Either provide:
+1. one filepath with -f
+2. ntuple --tag and --sample for something in dataDirLocal.format(tag, sample) (or dataDirXRootD with --xrootd 1). This is the structure expected from the ntuple makers.
+3. a directory of files: dataDirLocal (or dataDirXRootD with --xrootd 1)
 
-1. `make_hists.py`: the main script to initialize and produce the histograms, define ABCD regions, apply selections, and more.
+### Selections, blinding, ABCD method
+All of these are controlled by the `config` dictionary:
+
+```
+config = {
+    'Cluster' : {
+        'input_method' : 'CL',
+        'xvar' :'SUEP_S1_CL',
+        'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
+        'yvar' : 'SUEP_nconst_CL',
+        'yvar_regions' : [30, 50, 70, 1000],
+        'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 70]],
+        'selections' : [['ht_JEC', '>', 1200], ['ntracks','>', 0]]
+    },
+    ...
+}
+```
+
+This will:
+- Grab all ntuple variables from the input method `CL` and fill histograms in the output mehtod `Cluster`.
+- Blind the SR for data.
+- Apply the `selections` to the DataFrame before filling the histograms.
+- Make each histogram for each ABCD region, and make an ABCD prediction for the SR.
+
+### Defining histograms
+
+This is done in `hist_defs.py`.
+The script will call `initialize_histograms()`, in this you can define your own function which is to be called for a particular method or channel (e.g. `Cluster` above) to add the histograms you want.
+**All 1D and 2D histograms correctly named will be automatically filled by the script.**
+
+"Correctly named" means:  `2D_variable1_vs_variable2_<label>`, `variable1_<label>`, or `<region>_variable1_<label>`, where `variable1,2` are in the ntuple, `<region>` is a numeric region if you're doing ABCD, and `<label>` are the output labels (above, `Cluster`) which, if you are running systematics, will be modified to include, e.g. `Cluster_JEC_up`. See `initialize_histograms()` for some examples.
+
+### Systematics
+
+For now these are hardcoded in the script for each analysis in `plot_systematic()`.
+Systematics are either weights, or different variables that will be used to make selections.
+Each variable will be plotted in a different histogram for each systematic, the output method name will be modified to include the systematic name for those histograms.
+
+
+## Producing the histograms: technical details
+
+The following scripts are used:
+
+1. `make_hists.py`: the main script to fill the histograms, define ABCD regions, apply selections, run systematics, and more.
 2. `CMS_corrections/*.py`: all the systematics, called from the main script
 3. `fill_utils.py`: a set of general helper functions for the main script
+4. `hist_defs.py`: defining histograms
 
 ### make_hists.py
 
-The DataFrame generated by `../workflows/SUEP_coffea.py` has the form:
+The DataFrame generated by the ntuple makers has the form:
 
 | event variables (ht, ...) | CL vars (SUEP_S1_CL, ...) | GNN vars (SUEP_S1_GNN, ...) | Other methods |
 | ------------------------- | ------------------------- | --------------------------- | ------------- |
@@ -60,16 +100,16 @@ The DataFrame generated by `../workflows/SUEP_coffea.py` has the form:
 | 0.8                       | Nan                       | 0.12                        | ...           |
 | ...                       | ...                       | ...                         | ...           |
 
-where we have different methods for our SUEP selection (CL, GNN, etc.), as well as event variables.
+where we have different input methods for our SUEP selection (CL, GNN, etc.), as well as event variables.
 (The event variables are always filled, while the variables for each method are filled only if the event passes the method's selections, hence the `NaN`s).
 
-The idea of this script is to map each of these methods to a set of histograms and fill them. Thus, for each input method, we define:
+The idea of this script is to map each of these methods to one or more set of histograms and fill them. Thus, for any input method, we can define:
 
-1. An output tag (e.g. input method: CL --> output tag Cluster)
-2. **xvar/yvar**: x/y variables for ABCD method
-3. **xvar_ragions/yvar_regions**: regions for ABCD method. N.B.: Include lower and upper bounds for all ABCD regions (e.g. `[0.0, 0.5, 1.0]`).
-4. **SR**: signal region definition (e.g. `[['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]]`)
-5. **selections**: a set of selections (e.g. `[['ht', '>', 1200], ['ntracks','>', 0]]`)
+1. Output tag: histograms will be named using this, and the systematics will extend each output tag (e.g. input method: CL --> output tag Cluster, with systematics Cluster_sys_up and Cluster_sys_down).
+2. `SR`: signal region definition (e.g. `[['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]]`), used to blind if needed.
+3. `selections`: a set of selections (e.g. `[['ht', '>', 1200], ['ntracks','>', 0]]`), arbitrary.
+4. [Optional] `xvar/yvar`: x/y variables for ABCD method
+5. [Optional] `xvar_ragions/yvar_regions`: regions for ABCD method. N.B.: Include lower and upper bounds for all ABCD regions (e.g. `[0.0, 0.5, 1.0]`).
 
 Each own input methods have their own selections, ABCD regions, and signal region. Multiple output tags can be defined for the same input method: i.e. different selections, ABCD methods, and SRs can be defined. Thus, each input method has a dictionary defined for it which is in turn stores in the `config` dictionary, with the key being the output label, e.g.
 
@@ -88,13 +128,17 @@ config = {
 }
 ```
 
-This script will plot, for each 'label_out':
+This script will fill histograms, for each output method:
 
-1. All event variables, e.g. ht_label_out
-2. All DataFrame columns from 'input_method', e.g. SUEP_S1_CL column will be plotted to histogram SUEP_S1_Cluster
-3. 2D variables are automatically plotted
+1. All event variables, e.g. ht will be put in ht_Cluster
+2. All DataFrame columns from 'input_method', e.g. SUEP_S1_CL column will be plotted to histogram SUEP_S1_Cluster, as well as combinations of them in 2D histograms.
+3. For each of the above, for each systematic, the up and down variation of the histograms
+4. For each of the above, if doinf ABCD, each histogram when in one particular ABCD region
 
-N.B.: Histograms are filled only if they are initialized in the output dictionary.
+**However, histograms are filled only if they are initialized in the output dictionary!!**
+
+Thus, if for some reason you don't want to see a particular histogram for all ABCD regions, or all systematics, you can just define the nominal variation, and not the others, e.g. `ht_Cluster` and not `{region}ht_Cluster_{label}`, see `hist_defs.py`.
+
 
 The main script relies from many functions in the helper script, `fill_utils.py`. A couple of the more important ones are explained below:
 
@@ -110,16 +154,16 @@ The main script relies from many functions in the helper script, `fill_utils.py`
        1a. Event wide variables
        1b. Input method variables
     2. Plot 2D variables.
-    3. Plot variables from the different ABCD regions as defined in the abcd dict.
+    3. Plot variables from the different ABCD regions as defined in the config dict.
        3a. Event wide variables
        3b. Input method variables
 
 #### Weights, Cross sections, and Systematics
 
-The cross section and reweighting is done in `make_hists.py` directly, with some helper functions in `fill_utils.py`.
-The systematics can be found in `CMS_corrections/*.py`, and are applied in `make_hists.py` on MC.
+The cross section and reweighting by the gen weight is done in `make_hists.py` directly, with some helper functions in `fill_utils.py`.
+The systematics can be found in `CMS_corrections/*.py`, and are applied in `make_hists.py` on MC and signal samples.
 
-1. **xsection**: These are defined in `../data/xsections_{}.json` for each HT or pT bin/dataset, based on the era. These work with `gensumweight`, which is obtained from each hdf5 file's metadata, to scale that entire dataset by `xsection/total_weight`, where `total_weight` here is the sum of all the files `gensumweights`.
+1. **xsection**: These are defined in `../data/xsections_{}.json` for each HT or pT bin/sample, based on the era. These work with `gensumweight`, which is obtained from each hdf5 file's metadata, to scale that entire sample by `xsection/total_weight`, where `total_weight` here is the sum of all the files `gensumweights`. Cross sections are not applied for SUEP signal samples because of how we set up the limit code.
 
 2. **pileup**: The weights are applied to MC based on the era only, they are applied based on the variable `Pileup_nTrueInt` directly to the events, and are defined in `pileup_weight.py`.
 
@@ -137,4 +181,18 @@ The systematics can be found in `CMS_corrections/*.py`, and are applied in `make
 
 7. **Trigger scale factor**: weight applied to event weight based on era only, defined in `triggerSF.py`.
 
-8. **ABCD weights**: These are weights that are defined based on each ABDC region (with the variables x_var, y_var) to force a third variable (z_var) to match for MC and data. These are produced in `plot.ipynb` and are saved as `.npy` files which are read in the script using `--weights=<file.npy>`.
+8. **Jet energy corrections**: applied by cutting on different variations of the `ht` variations. 
+
+9. [Optional] **weights**: These are weights that are defined based on each ABDC region (with the variables x_var, y_var) to force a third variable (z_var) to match for MC and data. These are produced in `plot.ipynb` and are saved as `.npy` files which are read in the script using `--weights=<file.npy>`.
+
+### Plotting the histograms
+
+The outputs of make_hists.py are .root files containing Hist histograms.
+You can open these in your own scripts and notebooks to view them, but a notebook, `plot.ipynb`, is provided with many useful functionalities as an example.
+It is encouraged that each analysis has its own plotting scripts, but common functions should be put in `plot_utils.py` as much as possible.
+
+By specifying which root files you want, the notebook will automatically load all the histograms, merging samples, into one nested dictionary (`plots`), with dimensions (sample x plots). 
+This 'magic' is done through `plot_utils.py/loader()`.
+The key feature of this is that it will combine histograms based on the samples, e.g. it will combine each `QCD_HT123To456` bin into one `QCD_HT` (as well as load it separately, if requested).
+This is mapping of which samples should be merged into which name is defined by `plot_utils.py/getSampleNameAndBin()`.
+Functions to plot in 1d and 2d, ratios of histograms, plots by bins or years, 1d slices of 2d hists, ABCD methods, and other useful plotting functions are defined within.
