@@ -1,7 +1,7 @@
 from hist import Hist
 
+
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
-    
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:
         return output
@@ -60,92 +60,95 @@ def get_ABCD_regions(config: dict) -> list:
 
 
 def init_hists_default(output, label, regions_list=[""]):
-
-    output.update({
-        f"ht_{label}": Hist.new.Reg(
-            100, 0, 10000, name=f"ht_{label}", label="HT"
-        ).Weight(),
-        f"ht_JEC_{label}": Hist.new.Reg(
-            100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
-        ).Weight(),
-        f"ht_JEC_JER_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            10000,
-            name=f"ht_JEC_JER_up_{label}",
-            label="HT JEC up",
-        ).Weight(),
-        f"ht_JEC_JER_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            10000,
-            name=f"ht_JEC_JER_down_{label}",
-            label="HT JEC JER down",
-        ).Weight(),
-        f"ht_JEC_JES_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            10000,
-            name=f"ht_JEC_JES_up_{label}",
-            label="HT JEC JES up",
-        ).Weight(),
-        f"ht_JEC_JES_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            10000,
-            name=f"ht_JEC_JES_down_{label}",
-            label="HT JEC JES down",
-        ).Weight(),
-        f"ntracks_{label}": Hist.new.Reg(
-            101,
-            0,
-            500,
-            name=f"ntracks_{label}",
-            label="# Tracks in Event",
-        ).Weight(),
-        f"ngood_fastjets_{label}": Hist.new.Reg(
-            9,
-            0,
-            10,
-            name=f"ngood_fastjets_{label}",
-            label="# FastJets in Event",
-        ).Weight(),
-        f"PV_npvs_{label}": Hist.new.Reg(
-            199,
-            0,
-            200,
-            name=f"PV_npvs_{label}",
-            label="# PVs in Event ",
-        ).Weight(),
-        f"Pileup_nTrueInt_{label}": Hist.new.Reg(
-            199,
-            0,
-            200,
-            name=f"Pileup_nTrueInt_{label}",
-            label="# True Interactions in Event ",
-        ).Weight(),
-        f"ngood_ak4jets_{label}": Hist.new.Reg(
-            19,
-            0,
-            20,
-            name=f"ngood_ak4jets_{label}",
-            label="# ak4jets in Event",
-        ).Weight()
-    })
+    output.update(
+        {
+            f"ht_{label}": Hist.new.Reg(
+                100, 0, 10000, name=f"ht_{label}", label="HT"
+            ).Weight(),
+            f"ht_JEC_{label}": Hist.new.Reg(
+                100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
+            ).Weight(),
+            f"ht_JEC_JER_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                10000,
+                name=f"ht_JEC_JER_up_{label}",
+                label="HT JEC up",
+            ).Weight(),
+            f"ht_JEC_JER_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                10000,
+                name=f"ht_JEC_JER_down_{label}",
+                label="HT JEC JER down",
+            ).Weight(),
+            f"ht_JEC_JES_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                10000,
+                name=f"ht_JEC_JES_up_{label}",
+                label="HT JEC JES up",
+            ).Weight(),
+            f"ht_JEC_JES_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                10000,
+                name=f"ht_JEC_JES_down_{label}",
+                label="HT JEC JES down",
+            ).Weight(),
+            f"ntracks_{label}": Hist.new.Reg(
+                101,
+                0,
+                500,
+                name=f"ntracks_{label}",
+                label="# Tracks in Event",
+            ).Weight(),
+            f"ngood_fastjets_{label}": Hist.new.Reg(
+                9,
+                0,
+                10,
+                name=f"ngood_fastjets_{label}",
+                label="# FastJets in Event",
+            ).Weight(),
+            f"PV_npvs_{label}": Hist.new.Reg(
+                199,
+                0,
+                200,
+                name=f"PV_npvs_{label}",
+                label="# PVs in Event ",
+            ).Weight(),
+            f"Pileup_nTrueInt_{label}": Hist.new.Reg(
+                199,
+                0,
+                200,
+                name=f"Pileup_nTrueInt_{label}",
+                label="# True Interactions in Event ",
+            ).Weight(),
+            f"ngood_ak4jets_{label}": Hist.new.Reg(
+                19,
+                0,
+                20,
+                name=f"ngood_ak4jets_{label}",
+                label="# ak4jets in Event",
+            ).Weight(),
+        }
+    )
 
     # 2D histograms
-    output.update({
-        f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
-            100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
-        )
-        .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
-        .Weight(),
-        f"2D_SUEP_S1_vs_ntracks_{label}": Hist.new.Reg(
-            100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
-        )
-        .Reg(100, 0, 500, name=f"ntracks_{label}", label="# Tracks")
-        .Weight()
-    })
+    output.update(
+        {
+            f"2D_SUEP_S1_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+            )
+            .Reg(501, 0, 500, name=f"nconst_{label}", label="# Constituents")
+            .Weight(),
+            f"2D_SUEP_S1_vs_ntracks_{label}": Hist.new.Reg(
+                100, 0, 1.0, name=f"SUEP_S1_{label}", label="$Sph_1$"
+            )
+            .Reg(100, 0, 500, name=f"ntracks_{label}", label="# Tracks")
+            .Weight(),
+        }
+    )
 
     # variables from the dataframe for all the events, and those in A, B, C regions
     for r in regions_list:
@@ -226,6 +229,7 @@ def init_hists_default(output, label, regions_list=[""]):
                     ).Weight(),
                 }
             )
+
 
 def init_hists_clusterInverted(output, label, regions_list=[""]):
     output.update(
@@ -428,314 +432,317 @@ def init_hists_GNNInverted(output, label, config, regions_list=[""]):
                 }
             )
 
+
 def init_hists_highestPT(output, label, regions_list=[""]):
-    output.update({
-        f"CaloMET_pt_{label}": Hist.new.Reg(
+    output.update(
+        {
+            f"CaloMET_pt_{label}": Hist.new.Reg(
                 100,
                 0,
                 1000,
                 name=f"CaloMET_pt_{label}",
                 label="CaloMET pT",
             ).Weight(),
-        f"CaloMET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"CaloMET_phi_{label}",
-            label="CaloMET phi",
-        ).Weight(),
-        f"CaloMET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"CaloMET_sumEt_{label}",
-            label="CaloMET sumEt",
-        ).Weight(),
-        f"ChsMET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"ChsMET_pt_{label}",
-            label="ChsMET pT",
-        ).Weight(),
-        f"ChsMET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"ChsMET_phi_{label}",
-            label="ChsMET phi",
-        ).Weight(),
-        f"ChsMET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"ChsMET_sumEt_{label}",
-            label="ChsMET sumEt",
-        ).Weight(),
-        f"TkMET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"TkMET_pt_{label}",
-            label="TkMET pt",
-        ).Weight(),
-        f"TkMET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"TkMET_phi_{label}",
-            label="TkMET phi",
-        ).Weight(),
-        f"TkMET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"TkMET_sumEt_{label}",
-            label="TkMET sumEt",
-        ).Weight(),
-        f"RawMET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"RawMET_pt_{label}",
-            label="RawMET pt",
-        ).Weight(),
-        f"RawMET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"RawMET_phi_{label}",
-            label="RawMET phi",
-        ).Weight(),
-        f"RawMET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"RawMET_sumEt_{label}",
-            label="RawMET sumEt",
-        ).Weight(),
-        f"PuppiMET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"PuppiMET_pt_{label}",
-            label="PuppiMET pt",
-        ).Weight(),
-        f"PuppiMET_pt_JER_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"PuppiMET_pt_JER_up_{label}",
-            label="PuppiMET pt",
-        ).Weight(),
-        f"PuppiMET_pt_JER_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"PuppiMET_pt_JER_down_{label}",
-            label="PuppiMET pt",
-        ).Weight(),
-        f"PuppiMET_pt_JES_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"PuppiMET_pt_JES_up{label}",
-            label="PuppiMET pt",
-        ).Weight(),
-        f"PuppiMET_pt_JES_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"PuppiMET_pt_JES_down{label}",
-            label="PuppiMET pt",
-        ).Weight(),
-        f"PuppiMET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"PuppiMET_phi_{label}",
-            label="PuppiMET phi",
-        ).Weight(),
-        f"PuppiMET_phi_JER_up_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"PuppiMET_phi_JER_up_{label}",
-            label="PuppiMET phi",
-        ).Weight(),
-        f"PuppiMET_phi_JER_down_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"PuppiMET_phi_JER_down_{label}",
-            label="PuppiMET phi",
-        ).Weight(),
-        f"PuppiMET_phi_JES_up_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"PuppiMET_phi_JES_up_{label}",
-            label="PuppiMET phi",
-        ).Weight(),
-        f"PuppiMET_phi_JES_down_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"PuppiMET_phi_JES_down_{label}",
-            label="PuppiMET phi",
-        ).Weight(),
-        f"PuppiMET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"PuppiMET_sumEt_{label}",
-            label="PuppiMET sumEt",
-        ).Weight(),
-        f"RawPuppiMET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"RawPuppiMET_pt_{label}",
-            label="RawPuppiMET pt",
-        ).Weight(),
-        f"RawPuppiMET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"RawPuppiMET_phi_{label}",
-            label="RawPuppiMET phi",
-        ).Weight(),
-        f"RawPuppiMET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"RawPuppiMET_sumEt_{label}",
-            label="RawPuppiMET sumEt",
-        ).Weight(),
-        f"MET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_pt_{label}",
-            label="MET pt",
-        ).Weight(),
-        f"MET_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_phi_{label}",
-            label="MET phi",
-        ).Weight(),
-        f"MET_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"MET_sumEt_{label}",
-            label="MET sumEt",
-        ).Weight(),
-        f"MET_JEC_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_{label}",
-            label="MET JEC pt",
-        ).Weight(),
-        f"MET_JEC_pt_JER_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_JER_up_{label}",
-            label="MET JEC pt",
-        ).Weight(),
-        f"MET_JEC_pt_JER_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_JER_down_{label}",
-            label="MET JEC pt",
-        ).Weight(),
-        f"MET_JEC_pt_JES_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_JES_up_{label}",
-            label="MET JEC pt",
-        ).Weight(),
-        f"MET_JEC_pt_JES_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_JES_down_{label}",
-            label="MET JEC pt",
-        ).Weight(),
-        f"MET_JEC_pt_UnclusteredEnergy_up_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_UnclusteredEnergy_up_{label}",
-            label="MET JEC pt",
-        ).Weight(),
-        f"MET_JEC_pt_UnclusteredEnergy_down_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"MET_JEC_pt_UnclusteredEnergy_down_{label}",
-            label="MET JCE pt",
-        ).Weight(),
-        f"MET_JEC_phi_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_phi_JER_up_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_JER_up_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_phi_JER_down_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_JER_down_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_phi_JES_up_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_JES_up_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_phi_JES_down_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_JES_down_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_phi_UnclusteredEnergy_up_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_UnclusteredEnergy_up_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_phi_UnclusteredEnergy_down_{label}": Hist.new.Reg(
-            100,
-            -4,
-            4,
-            name=f"MET_JEC_phi_UnclusteredEnergy_down_{label}",
-            label="MET JEC phi",
-        ).Weight(),
-        f"MET_JEC_sumEt_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"MET_JEC_sumEt_{label}",
-            label="MET JEC sumEt",
-        ).Weight()
-    })
+            f"CaloMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"CaloMET_phi_{label}",
+                label="CaloMET phi",
+            ).Weight(),
+            f"CaloMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"CaloMET_sumEt_{label}",
+                label="CaloMET sumEt",
+            ).Weight(),
+            f"ChsMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"ChsMET_pt_{label}",
+                label="ChsMET pT",
+            ).Weight(),
+            f"ChsMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"ChsMET_phi_{label}",
+                label="ChsMET phi",
+            ).Weight(),
+            f"ChsMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"ChsMET_sumEt_{label}",
+                label="ChsMET sumEt",
+            ).Weight(),
+            f"TkMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"TkMET_pt_{label}",
+                label="TkMET pt",
+            ).Weight(),
+            f"TkMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"TkMET_phi_{label}",
+                label="TkMET phi",
+            ).Weight(),
+            f"TkMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"TkMET_sumEt_{label}",
+                label="TkMET sumEt",
+            ).Weight(),
+            f"RawMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"RawMET_pt_{label}",
+                label="RawMET pt",
+            ).Weight(),
+            f"RawMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"RawMET_phi_{label}",
+                label="RawMET phi",
+            ).Weight(),
+            f"RawMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"RawMET_sumEt_{label}",
+                label="RawMET sumEt",
+            ).Weight(),
+            f"PuppiMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JER_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JER_up_{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JER_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JER_down_{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JES_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JES_up{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_pt_JES_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_JES_down{label}",
+                label="PuppiMET pt",
+            ).Weight(),
+            f"PuppiMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JER_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JER_up_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JER_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JER_down_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JES_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JES_up_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_phi_JES_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_JES_down_{label}",
+                label="PuppiMET phi",
+            ).Weight(),
+            f"PuppiMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"PuppiMET_sumEt_{label}",
+                label="PuppiMET sumEt",
+            ).Weight(),
+            f"RawPuppiMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"RawPuppiMET_pt_{label}",
+                label="RawPuppiMET pt",
+            ).Weight(),
+            f"RawPuppiMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"RawPuppiMET_phi_{label}",
+                label="RawPuppiMET phi",
+            ).Weight(),
+            f"RawPuppiMET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"RawPuppiMET_sumEt_{label}",
+                label="RawPuppiMET sumEt",
+            ).Weight(),
+            f"MET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_pt_{label}",
+                label="MET pt",
+            ).Weight(),
+            f"MET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_phi_{label}",
+                label="MET phi",
+            ).Weight(),
+            f"MET_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"MET_sumEt_{label}",
+                label="MET sumEt",
+            ).Weight(),
+            f"MET_JEC_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JER_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JER_up_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JER_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JER_down_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JES_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JES_up_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_JES_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_JES_down_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_UnclusteredEnergy_up_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_UnclusteredEnergy_up_{label}",
+                label="MET JEC pt",
+            ).Weight(),
+            f"MET_JEC_pt_UnclusteredEnergy_down_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"MET_JEC_pt_UnclusteredEnergy_down_{label}",
+                label="MET JCE pt",
+            ).Weight(),
+            f"MET_JEC_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JER_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JER_up_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JER_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JER_down_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JES_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JES_up_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_JES_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_JES_down_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_UnclusteredEnergy_up_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_UnclusteredEnergy_up_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_phi_UnclusteredEnergy_down_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"MET_JEC_phi_UnclusteredEnergy_down_{label}",
+                label="MET JEC phi",
+            ).Weight(),
+            f"MET_JEC_sumEt_{label}": Hist.new.Reg(
+                100,
+                0,
+                5000,
+                name=f"MET_JEC_sumEt_{label}",
+                label="MET JEC sumEt",
+            ).Weight(),
+        }
+    )

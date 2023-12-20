@@ -5,7 +5,9 @@ import pickle
 import shutil
 import subprocess
 from collections import defaultdict
+
 import boost_histogram as bh
+import fill_utils
 import hist
 import hist.intervals
 import matplotlib.colors as colors
@@ -14,8 +16,6 @@ import mplhep as hep
 import numpy as np
 import uproot
 from sympy import diff, sqrt, symbols
-
-import fill_utils
 
 default_colors = {
     "125": "cyan",
@@ -117,15 +117,17 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
         else:
             raise Exception(
                 "I cannot find luminosity matched to file name: " + infile_name
-        )
+            )
     elif year and not auto_lumi:
         lumi = lumidir[str(year)]
         era = str(year)
     else:
-        raise Exception("Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed.")
-    
+        raise Exception(
+            "Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed."
+        )
+
     return lumi, era
-    
+
 
 def getHistLists(plotDir, tag, filename, filters=None):
     hists = []
@@ -180,8 +182,8 @@ def getSampleNameAndBin(sample_name):
         sample = "QCD_Pt"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif 'QCD_HT' in sample_name:
-        sample = 'QCD_HT'
+    elif "QCD_HT" in sample_name:
+        sample = "QCD_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif any(
@@ -239,9 +241,9 @@ def getSampleNameAndBin(sample_name):
 
 
 def fillSample(this_plots, sample, plots, norm=1):
-
     plotsToAdd = this_plots.copy()
-    if norm != 1: plotsToAdd = fill_utils.apply_normalization(plotsToAdd, norm)
+    if norm != 1:
+        plotsToAdd = fill_utils.apply_normalization(plotsToAdd, norm)
 
     if sample not in list(plots.keys()):
         plots[sample] = plotsToAdd
@@ -251,7 +253,7 @@ def fillSample(this_plots, sample, plots, norm=1):
                 plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot]
         except KeyError:
             print("WARNING: " + sample + " has a different set of plots")
-            
+
     return plots
 
 
@@ -265,9 +267,13 @@ def getLumi(era: str, scouting: bool) -> float:
 
 def loader(
     infile_names,
-    year=None, auto_lumi=True, scouting=False, # once everyone starts making histograms with metadata, these three can be dropped
-    by_bin=False, by_year=True, xsec_SUEP=True,
-    verbose=False
+    year=None,
+    auto_lumi=True,
+    scouting=False,  # once everyone starts making histograms with metadata, these three can be dropped
+    by_bin=False,
+    by_year=True,
+    xsec_SUEP=True,
+    verbose=False,
 ):
     """
     Load histograms from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
@@ -299,20 +305,26 @@ def loader(
         norm = 1
 
         # sets the lumi based on year
-        if file_metadata and (year is None) and ('isMC' in file_metadata.keys()):
-            if file_metadata['isMC']:
-                lumi = getLumi(file_metadata['era'], bool(float(file_metadata['scouting'])))
+        if file_metadata and (year is None) and ("isMC" in file_metadata.keys()):
+            if file_metadata["isMC"]:
+                lumi = getLumi(
+                    file_metadata["era"], bool(float(file_metadata["scouting"]))
+                )
             else:
                 lumi = 1
-            era = file_metadata['era']
+            era = file_metadata["era"]
         else:
-            lumi, era = findLumiAndEra(year, auto_lumi, infile_name, scouting) # once everyone starts making histograms with metadata, this can be dropped
+            lumi, era = findLumiAndEra(
+                year, auto_lumi, infile_name, scouting
+            )  # once everyone starts making histograms with metadata, this can be dropped
         norm *= lumi
 
         # get the normalization factor for SUEP samples
         if xsec_SUEP:
-            sample_name = infile_name.split("/")[-1].split("13TeV")[0]+'13TeV-pythia8'
-            if 'SUEP' in sample_name: # xsec is already apply in make_hists.py for non SUEP samples
+            sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
+            if (
+                "SUEP" in sample_name
+            ):  # xsec is already apply in make_hists.py for non SUEP samples
                 xsec = fill_utils.getXSection(sample_name, year=era)
                 norm *= xsec
 
@@ -339,7 +351,7 @@ def openHistFile(infile_name):
         plots, metadata = openroot(infile_name)
     elif ".pkl" in infile_name:
         plots = openpickle(infile_name)
-        metadata = None # not supported yet for pickle files
+        metadata = None  # not supported yet for pickle files
     return plots, metadata
 
 
@@ -358,7 +370,9 @@ def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
                 try:
                     plots["MC" + year_tag][key] += plots[sample + year_tag][key].copy()
                 except KeyError:
-                    print(f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping.")
+                    print(
+                        f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping."
+                    )
     return plots
 
 
@@ -447,10 +461,10 @@ def openroot(infile_name):
     _metadata = {}
     _infile = uproot.open(infile_name)
     for k in _infile.keys():
-        if 'metadata' == k.split(";")[0]:
+        if "metadata" == k.split(";")[0]:
             for kk in _infile[k].keys():
                 _metadata[kk.split(";")[0]] = _infile[k][kk].title()
-        elif 'metadata' not in k:
+        elif "metadata" not in k:
             _plots[k.split(";")[0]] = _infile[k].to_hist()
     return _plots, _metadata
 
@@ -839,12 +853,14 @@ def plot_sys_variations(plots_sample, plot_label, sys, rebin=1j):
     Plot variatoin for a systemtaic
     """
     h = plots_sample["_".join([plot_label])][::rebin]
-    h_up = plots_sample["_".join([plot_label, sys, 'up'])][::rebin]
-    h_down = plots_sample["_".join([plot_label, sys, 'down'])][::rebin]
+    h_up = plots_sample["_".join([plot_label, sys, "up"])][::rebin]
+    h_down = plots_sample["_".join([plot_label, sys, "down"])][::rebin]
 
-    fig, axs = plot_ratio([h, h_up, h_down], [sys + ' nominal', sys + ' up', sys + ' down'])
+    fig, axs = plot_ratio(
+        [h, h_up, h_down], [sys + " nominal", sys + " up", sys + " down"]
+    )
     axs[0].legend()
-    axs[1].set_ylim(0.9,1.1)
+    axs[1].set_ylim(0.9, 1.1)
     return fig, axs
 
 

@@ -14,13 +14,12 @@ import getpass
 import logging
 import os
 import subprocess
-import numpy as np
-import uproot
-from tqdm import tqdm
 
-import hist_defs
 import fill_utils
+import hist_defs
+import numpy as np
 import plot_utils
+import uproot
 from CMS_corrections import (
     GNN_syst,
     higgs_reweight,
@@ -28,6 +27,7 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
+from tqdm import tqdm
 
 
 ### Parser #######################################################################################################
@@ -45,12 +45,17 @@ def makeParser(parser=None):
         "-sample",
         "--sample",
         type=str,
-        default='sample',
+        default="sample",
         help="sample name.",
         required=False,
     )
     parser.add_argument(
-        "-t", "--tag", type=str, default="IronMan", help="ntuples production tag", required=False
+        "-t",
+        "--tag",
+        type=str,
+        default="IronMan",
+        help="ntuples production tag",
+        required=False,
     )
     parser.add_argument(
         "-f", "--file", type=str, default="", help="Use specific input file"
@@ -64,13 +69,13 @@ def makeParser(parser=None):
     parser.add_argument(
         "--dataDirLocal",
         type=str,
-        default="/data/submit//cms/store/user/"+getpass.getuser()+"/SUEP/{}/{}/",
+        default="/data/submit//cms/store/user/" + getpass.getuser() + "/SUEP/{}/{}/",
         help="Local data directory",
     )
     parser.add_argument(
         "--dataDirXRootD",
         type=str,
-        default=f"/cms/store/user/"+getpass.getuser()+"/SUEP/{}/{}/",
+        default=f"/cms/store/user/" + getpass.getuser() + "/SUEP/{}/{}/",
         help="XRootD data directory",
     )
     ## optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
@@ -79,10 +84,16 @@ def makeParser(parser=None):
     parser.add_argument("-e", "--era", type=str, help="era", required=True)
     parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
     parser.add_argument(
-        "--channel", type=str, help="Analysis channel: ggF, WH", required=True, choices=["ggF", "WH"]
+        "--channel",
+        type=str,
+        help="Analysis channel: ggF, WH",
+        required=True,
+        choices=["ggF", "WH"],
     )
     # some analysis parameters you can toggle freely
-    parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
+    parser.add_argument(
+        "--scouting", type=int, default=0, help="Is this scouting or no"
+    )
     parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
     parser.add_argument(
         "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
@@ -130,16 +141,11 @@ def makeParser(parser=None):
     )
     return parser
 
+
 ### Main plotting function  ######################################################################################
 
-def plot_systematic(
-    df,
-    metadata,
-    config,
-    syst,
-    options,
-    output
-):
+
+def plot_systematic(df, metadata, config, syst, options, output):
     # we might modify this for systematics, so make a copy
     config = config.copy()
 
@@ -150,9 +156,7 @@ def plot_systematic(
         df["event_weight"] = np.ones(df.shape[0])
 
     if options.isMC == 1:
-
         if options.channel == "ggF":
-
             # 1) pileup weights
             puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
                 options.era
@@ -230,7 +234,7 @@ def plot_systematic(
                 config = fill_utils.get_jet_correction_config(config, syst)
 
         elif options.channel == "WH":
-            pass # FILL IN
+            pass  # FILL IN
 
     # 6) scaling weights
     # N.B.: these aren't part of the systematics, just an optional scaling
@@ -247,7 +251,6 @@ def plot_systematic(
         )
 
     for label_out, config_out in config.items():
-
         # rename if we have applied a systematic
         if len(syst) > 0:
             label_out = label_out + "_" + syst
@@ -272,7 +275,6 @@ def plot_systematic(
 
 
 def main():
- 
     parser = makeParser()
     options = parser.parse_args()
 
@@ -391,7 +393,11 @@ def main():
     if options.file:
         files = [options.file]
     elif options.xrootd:
-        dataDir = options.dataDirXRootD.format(options.tag, options.sample) if options.dataDirXRootD.count("{}") == 2 else options.dataDirXRootD
+        dataDir = (
+            options.dataDirXRootD.format(options.tag, options.sample)
+            if options.dataDirXRootD.count("{}") == 2
+            else options.dataDirXRootD
+        )
         if options.merged:
             dataDir += "/merged/"
         result = subprocess.check_output(["xrdfs", options.redirector, "ls", dataDir])
@@ -399,14 +405,17 @@ def main():
         files = result.split("\n")
         files = [f for f in files if len(f) > 0]
     else:
-        dataDir = options.dataDirLocal.format(options.tag, options.sample) if options.dataDirLocal.count("{}") == 2 else options.dataDir
+        dataDir = (
+            options.dataDirLocal.format(options.tag, options.sample)
+            if options.dataDirLocal.count("{}") == 2
+            else options.dataDir
+        )
         if options.merged:
             dataDir += "merged/"
         files = [dataDir + f for f in os.listdir(dataDir)]
     if options.maxFiles:
-        files = files[:options.maxFiles]
+        files = files[: options.maxFiles]
     ntotal = len(files)
-
 
     ### Plotting loop ################################################################################################
 
@@ -415,13 +424,15 @@ def main():
     sample = None
     for ifile in tqdm(files):
         # get the file
-        df, metadata = fill_utils.open_ntuple(ifile, redirector=options.redirector, xrootd=options.xrootd)
-        logging.debug("Opened file {}".format(ifile)) 
+        df, metadata = fill_utils.open_ntuple(
+            ifile, redirector=options.redirector, xrootd=options.xrootd
+        )
+        logging.debug(f"Opened file {ifile}")
 
         # check if file is corrupted
         if type(df) == int:
             nfailed += 1
-            logging.debug("File {} is corrupted, skipping.".format(ifile))
+            logging.debug(f"File {ifile} is corrupted, skipping.")
             continue
 
         # update the gensumweight
@@ -454,7 +465,7 @@ def main():
                 "PSWeight_FSR_down",
                 "prefire_up",
                 "prefire_down",
-                "track_down",           
+                "track_down",
                 "JER_up",
                 "JER_down",
                 "JES_up",
@@ -472,18 +483,18 @@ def main():
         plot_systematic(df, metadata, config, "", options, output)
 
         for syst in sys_loop:
-            logging.debug("Running systematic {}".format(syst))
+            logging.debug(f"Running systematic {syst}")
             plot_systematic(df, metadata, config, syst, options, output)
 
         # remove file at the end of loop
         if options.xrootd:
             fill_utils.close_ntuple(ifile)
 
-    if nfailed > 0: logging.warning("Number of files that failed to be read: " + str(nfailed))
+    if nfailed > 0:
+        logging.warning("Number of files that failed to be read: " + str(nfailed))
 
     # not needed anymore
     output.pop("labels")
-
 
     ### Post-processing stuff ########################################################################################
 
@@ -506,13 +517,11 @@ def main():
             )
 
     # apply xsec and gensumweight (but no xsec to SUEP signal samples)
-    if options.isMC :
+    if options.isMC:
         logging.info("Applying normalization.")
         xsection = 1
-        if 'SUEP' not in sample:
-            xsection = fill_utils.getXSection(
-                sample, options.era
-            )
+        if "SUEP" not in sample:
+            xsection = fill_utils.getXSection(sample, options.era)
             logging.debug(f"Applying cross section {xsection}.")
         logging.debug(f"Applying total_gensumweight {total_gensumweight}.")
         output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
@@ -553,30 +562,31 @@ def main():
                 continue
 
     ### Write output #################################################################################################
-            
+
     # write histograms and metadata to a root file
     outFile = options.saveDir + "/" + sample + "_" + options.output + ".root"
     logging.info("Saving outputs to " + outFile)
     with uproot.recreate(outFile) as froot:
         # write out metadata
         metadata = {
-            'ntuple_tag': options.tag,
-            'analysis': options.channel,
-            'scouting': options.scouting,
-            'isMC': options.isMC,
-            'era': options.era,
-            'sample': sample,
-            'xsec': xsection,
-            'gensumweight': total_gensumweight,
-            'nfiles': ntotal,
-            'nfailed': nfailed
+            "ntuple_tag": options.tag,
+            "analysis": options.channel,
+            "scouting": options.scouting,
+            "isMC": options.isMC,
+            "era": options.era,
+            "sample": sample,
+            "xsec": xsection,
+            "gensumweight": total_gensumweight,
+            "nfiles": ntotal,
+            "nfailed": nfailed,
         }
         for k, m in metadata.items():
-            froot["metadata/{}".format(k)] = str(m)
+            froot[f"metadata/{k}"] = str(m)
 
         # write out histograms
         for h, hist in output.items():
             froot[h] = hist
+
 
 if __name__ == "__main__":
     main()
