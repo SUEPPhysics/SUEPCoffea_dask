@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description="Famous Submitter")
 parser.add_argument(
-    "-dataset", "--dataset", type=str, default="QCD", help="dataset name", required=True
+    "-sample", "--sample", type=str, default="QCD", help="sample name", required=True
 )
 parser.add_argument(
     "-t", "--tag", type=str, default="IronMan", help="production tag", required=False
@@ -22,12 +22,12 @@ options = parser.parse_args()
 # script parameters
 username = getpass.getuser()
 tag = options.tag
-dataset = options.dataset
+sample = options.sample
 redirector = "root://submit50.mit.edu/"
 localDataDir = "/data/submit/cms/store/user/{}/SUEP/{}/{}/".format(
-    username, tag, dataset
+    username, tag, sample
 )
-dataDir = f"/store/user/{username}/SUEP/{tag}/{dataset}/"
+dataDir = f"/store/user/{username}/SUEP/{tag}/{sample}/"
 localOutDir = localDataDir + "/merged/"
 outDir = dataDir + "/merged/"
 
@@ -97,19 +97,19 @@ df_tot = 0
 metadata_tot = 0
 i_out = 0
 for ifile, file in enumerate(tqdm(files)):
-    if os.path.exists(dataset + ".hdf5"):
-        subprocess.run(["rm", dataset + ".hdf5"])
+    if os.path.exists(sample + ".hdf5"):
+        subprocess.run(["rm", sample + ".hdf5"])
     xrd_file = redirector + file
 
     # If this script is running for a while, some xrdcp start to hang for too long,
     # so we re-attempt it a couple times before quitting
     result = time_limited_move(
-        xrd_file, dataset + ".hdf5", time_limit=120, max_attempts=3
+        xrd_file, sample + ".hdf5", time_limit=120, max_attempts=3
     )
     if result == 0:
         sys.exit("Result of xrootd transfer was 0: " + xrd_file)
 
-    df, metadata = fill_utils.h5load(dataset + ".hdf5", "vars")
+    df, metadata = fill_utils.h5load(sample + ".hdf5", "vars")
 
     # corrupted
     if type(df) == int:
@@ -124,11 +124,11 @@ for ifile, file in enumerate(tqdm(files)):
 
     # don't need to add empty ones
     if "empty" in list(df.keys()):
-        subprocess.run(["rm", dataset + ".hdf5"])
+        subprocess.run(["rm", sample + ".hdf5"])
         continue
 
     if df.shape[0] == 0:
-        subprocess.run(["rm", dataset + ".hdf5"])
+        subprocess.run(["rm", sample + ".hdf5"])
         continue
 
     ### MERGE DF VARS
@@ -137,11 +137,11 @@ for ifile, file in enumerate(tqdm(files)):
     else:
         df_tot = pd.concat((df_tot, df))
 
-    subprocess.run(["rm", dataset + ".hdf5"])
+    subprocess.run(["rm", sample + ".hdf5"])
 
     # save every N events
     if df_tot.shape[0] > 5000000:
-        output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
+        output_file = sample + "_merged_" + str(i_out) + ".hdf5"
         save_dfs(df_tot, output_file)
         print(f"xrdcp {output_file} {redirector + outDir}")
 
@@ -158,7 +158,7 @@ for ifile, file in enumerate(tqdm(files)):
         metadata_tot = 0
 
 # save last file as well
-output_file = dataset + "_merged_" + str(i_out) + ".hdf5"
+output_file = sample + "_merged_" + str(i_out) + ".hdf5"
 save_dfs(df_tot, output_file)
 print(f"xrdcp {output_file} {redirector + outDir}")
 # Allow a couple resubmissions in case of xrootd failures

@@ -113,6 +113,7 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
             era = "2018"
         elif any([s in infile_name for s in ["JetHT+Run", "ScoutingPFHT+Run"]]):
             lumi = 1
+            era = infile_name.split("Run")[1][0:4]
         else:
             raise Exception(
                 "I cannot find luminosity matched to file name: " + infile_name
@@ -265,7 +266,8 @@ def getLumi(era: str, scouting: bool) -> float:
 def loader(
     infile_names,
     year=None, auto_lumi=True, scouting=False, # once everyone starts making histograms with metadata, these three can be dropped
-    by_bin=False, by_year=True, xsec_SUEP=True
+    by_bin=False, by_year=True, xsec_SUEP=True,
+    verbose=False
 ):
     """
     Load histograms from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
@@ -284,6 +286,9 @@ def loader(
     """
     plots = {}
     for infile_name in infile_names:
+        if verbose:
+            print("Loading", infile_name)
+
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
             continue
@@ -294,9 +299,11 @@ def loader(
         norm = 1
 
         # sets the lumi based on year
-        if file_metadata and not year:
-            if 'isMC' in file_metadata.keys() and file_metadata['isMC']:
+        if file_metadata and (year is None) and ('isMC' in file_metadata.keys()):
+            if file_metadata['isMC']:
                 lumi = getLumi(file_metadata['era'], bool(float(file_metadata['scouting'])))
+            else:
+                lumi = 1
             era = file_metadata['era']
         else:
             lumi, era = findLumiAndEra(year, auto_lumi, infile_name, scouting) # once everyone starts making histograms with metadata, this can be dropped
@@ -306,7 +313,7 @@ def loader(
         if xsec_SUEP:
             sample_name = infile_name.split("/")[-1].split("13TeV")[0]+'13TeV-pythia8'
             if 'SUEP' in sample_name: # xsec is already apply in make_hists.py for non SUEP samples
-                xsec = fill_utils.getXSection(sample_name, SUEP=True)
+                xsec = fill_utils.getXSection(sample_name, year=era)
                 norm *= xsec
 
         # get the sample name and the bin name
@@ -346,9 +353,12 @@ def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
     for key in plots[samples[0] + "" + year_tag].keys():
         for i, sample in enumerate(samples):
             if i == 0:
-                plots["MC" + year_tag][key] = plots[samples[i] + year_tag][key].copy()
+                plots["MC" + year_tag][key] = plots[sample + year_tag][key].copy()
             else:
-                plots["MC" + year_tag][key] += plots[samples[i] + year_tag][key].copy()
+                try:
+                    plots["MC" + year_tag][key] += plots[sample + year_tag][key].copy()
+                except KeyError:
+                    print(f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping.")
     return plots
 
 
@@ -1028,6 +1038,9 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
     variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance
     """
 
+    if sum_var == "y":
+        raise Exception("sum_var='y' not implemented yet")
+
     A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(
         abcd, xregions, yregions, sum_var=sum_var, return_all=True
     )
@@ -1054,7 +1067,7 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
                 * e**-4
             )
         elif sum_var == "y":
-            exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
+            pass
 
         # defines lists of variables (sympy symbols) and accumulators (hist.sum())
         variables = [a, b, c, d, e, f_bin, f_other, g, h]

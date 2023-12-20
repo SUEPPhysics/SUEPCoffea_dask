@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import sys
@@ -25,30 +26,46 @@ def h5load(ifile, label):
         return 0, 0
 
 
-def getXSection(dataset, year=None, SUEP=False, path="../data/"):
-    xsection = 1
-    if not SUEP:
-        with open(f"{path}/xsections_{year}.json") as file:
-            MC_xsecs = json.load(file)
-            try:
-                xsection *= MC_xsecs[dataset]["xsec"]
-                xsection *= MC_xsecs[dataset]["kr"]
-                xsection *= MC_xsecs[dataset]["br"]
-            except KeyError:
-                print(
-                    "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
-                )
-                return 1
+def open_ntuple(ifile, redirector="root://submit50.mit.edu/", xrootd=False):
+    """
+    Open a ntuple, either locally or on xrootd.
+    """
+    if not xrootd and "root://" not in ifile:
+        return h5load(ifile, "vars")
     else:
-        with open(f"{path}/xsections_SUEP.json") as file:
-            MC_xsecs = json.load(file)
-            try:
-                xsection *= MC_xsecs[dataset]
-            except KeyError:
-                print(
-                    "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
-                )
-                return 1
+        if "root://" in ifile:
+            xrd_file = ifile
+        else:
+            xrd_file = redirector + ifile
+        just_file = ifile.split("/")[-1].split(".")[0]
+        os.system(f"xrdcp -s {xrd_file} {just_file}.hdf5")
+        return h5load(just_file + ".hdf5", "vars")
+
+
+def close_ntuple(ifile):
+    """
+    Delete the ntuple after it has been copied over via xrootd (see open_ntuple).
+    """
+    just_file = ifile.split("/")[-1].split(".")[0]
+    os.system(f"rm {just_file}.hdf5")
+
+
+def getXSection(dataset: str, year=None, path="../data/"):
+    xsection = 1
+
+    xsec_file = f"{path}/xsections_{year}.json"
+    with open(xsec_file) as file:
+        MC_xsecs = json.load(file)
+        try:
+            xsection *= MC_xsecs[dataset]["xsec"]
+            xsection *= MC_xsecs[dataset]["kr"]
+            xsection *= MC_xsecs[dataset]["br"]
+        except KeyError:
+            print(
+                f"WARNING: I did not find the xsection for {dataset} in {xsec_file}. Check the dataset name and the relevant yaml file."
+            )
+            return 1
+
     return xsection
 
 
@@ -214,14 +231,14 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
     #####################################################################################
 
     # 1. fill the distributions as they are saved in the dataframes
-    # 1a. Plot event wide variables
+    # 1a. fill event wide variables
     event_plot_labels = [
         key for key in df.keys() if key + "_" + label_out in list(output.keys())
     ]
     for plot in event_plot_labels:
         output[plot + "_" + label_out].fill(df[plot], weight=df["event_weight"])
 
-    # 1b. Plot method variables
+    # 1b. fill method variables
     method_plot_labels = [
         key
         for key in df.keys()
@@ -283,7 +300,7 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
                 # by default, we only plot the ABCD variables in each region, to reduce the size of the output
                 # the option do_abcd created a histogram of each variable for each region
 
-                # 3a. Plot event wide variables
+                # 3a. fill event wide variables
                 for plot in event_plot_labels:
                     if r + plot + "_" + label_out not in list(output.keys()):
                         continue
@@ -291,7 +308,7 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
                         df_r[plot], weight=df_r["event_weight"]
                     )
 
-                # 3b. Plot method variables
+                # 3b. fill method variables
                 for plot in method_plot_labels:
                     if r + plot.replace(input_method, label_out) not in list(
                         output.keys()
@@ -312,11 +329,10 @@ def apply_normalization(plots, norm):
         logging.warning("Norm is 0")
     return plots
 
-
 def get_track_killing_config(config):
     new_config = {}
     for label_out, _config_out in config.items():
-        label_out_new = label_out + "_track_down"
+        label_out_new = label_out
         new_config[label_out_new] = deepcopy(config[label_out])
         new_config[label_out_new]["input_method"] += "_track_down"
         new_config[label_out_new]["xvar"] += "_track_down"
@@ -336,17 +352,16 @@ def get_track_killing_config(config):
     return new_config
 
 
-def get_jet_corrections_config(config, jet_corrections):
+def get_jet_correction_config(config, jet_correction):
     new_config = {}
-    for correction in jet_corrections:
-        for label_out, _config_out in config.items():
-            label_out_new = label_out + "_" + correction
-            new_config[label_out_new] = deepcopy(config[label_out])
-            for iSel in range(len(new_config[label_out_new]["selections"])):
-                if "ht" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
-                elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
+    for label_out, _config_out in config.items():
+        label_out_new = label_out
+        new_config[label_out_new] = deepcopy(config[label_out])
+        for iSel in range(len(new_config[label_out_new]["selections"])):
+            if "ht" == new_config[label_out_new]["selections"][iSel][0]:
+                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
+            elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
+                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
     return new_config
 
 

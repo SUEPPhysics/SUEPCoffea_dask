@@ -1,6 +1,6 @@
 """
 A submitter for processing many samples parallelly, using either Slurm or multithread.
-Pass to this script the same options you would pass make_hists.py or merge_plots.py,
+Pass to this script the same options you would pass make_hists.py or merge_ntuples.py,
 specify whether you want to plot or merge (--code),
 and specify if you want multithread or Slurm (--method).
 
@@ -22,8 +22,9 @@ import os
 import shlex
 import subprocess
 from multiprocessing.pool import Pool, ThreadPool
-
 import numpy as np
+
+import make_hists
 from plot_utils import check_proxy
 
 # SLURM script template
@@ -37,10 +38,8 @@ slurm_script_template = """#!/bin/bash
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
-conda activate SUEP # Change to your own environment setup
 cd {work_dir}
 cd ..
-source setup.sh
 cd plotting/
 {cmd}
 """
@@ -50,11 +49,10 @@ def call_process(cmd, work_dir):
     """This runs in a separate thread."""
     print("----[%] :", cmd)
     p = subprocess.Popen(
-        shlex.split(cmd),
+        ['bash', '-c', ' '.join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
-        shell=True,
     )
     out, err = p.communicate()
     return (out, err)
@@ -69,7 +67,8 @@ parser.add_argument(
     "-c",
     "--code",
     type=str,
-    help="Which code to multithread (supported: 'plot' or 'merge')",
+    help="Which code to run in parallel.",
+    choices=["plot", "merge"],
     required=True,
 )
 parser.add_argument(
@@ -77,64 +76,16 @@ parser.add_argument(
     "--method",
     type=str,
     default="multithread",
-    help="Which system to use (supported: 'multithread' or 'slurm')",
-    required=True,
-)
-# These are the same as make_hists.py, and are passed straight through it
-parser.add_argument("-o", "--output", type=str, help="output tag", required=False)
-parser.add_argument("-t", "--tag", type=str, help="production tag", required=True)
-parser.add_argument(
-    "-i",
-    "--input",
-    type=str,
-    required=True,
-    help="Use specific input file (.txt) of samples.",
+    choices=['multithread','slurm'],
+    help="Which system to use to run the script.",
 )
 parser.add_argument(
-    "-s",
-    "--save",
-    type=str,
-    help="Use specific output directory. Overrides MIT-specific paths.",
-    required=False,
-    default=None,
+    "--cores", type=int, help="Maximum number of cores to run multithread on.", default=50
 )
-parser.add_argument(
-    "--xrootd",
-    type=int,
-    default=0,
-    help="Local data or xrdcp from hadoop (default=False)",
-)
-# optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
-parser.add_argument("--merged", type=int, default=0, help="Use merged files")
-# some info about the files, highly encouraged to specify every time
-parser.add_argument("-e", "--era", type=str, help="era", required=False)
-parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
-parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
-# some parameters you can toggle freely
-parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
-parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
-parser.add_argument(
-    "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
-)
-parser.add_argument(
-    "--predictSR", type=int, default=0, help="Predict SR using ABCD method."
-)
-parser.add_argument(
-    "--blind", type=int, default=1, help="Blind the data (default=True)"
-)
-parser.add_argument(
-    "--weights",
-    default="None",
-    help="Pass the filename of the weights, e.g. --weights weights.npy",
-)
-parser.add_argument(
-    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
-)
+# parser from make_hists.py, works also for merge_ntuples.py
+parser = make_hists.makeParser(parser)
+
 options = parser.parse_args()
-
-
-if options.method not in ["slurm", "multithread"]:
-    raise Exception("This option for method is not supported.")
 
 # Set up where you're gonna work
 if options.method == "slurm":
@@ -162,7 +113,9 @@ elif options.method == "multithread":
     os.system(f"cp -R ../* {work_dir}/.")
     print("Working in", work_dir)
     work_dir += "/plotting/"
-    pool = Pool(min([multiprocessing.cpu_count(), 5]), maxtasksperchild=1000)
+    pool = Pool(
+        min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
+    )
     results = []
 
 # Read samples from input file
@@ -178,7 +131,7 @@ if options.xrootd:
 for i, sample in enumerate(samples):
     if "/" in sample:
         sample = sample.split("/")[-1]
-    if (
+    if options.code == "plot" and (
         os.path.isfile(
             f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.root"
         )
@@ -189,12 +142,12 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = "suepRun merge_ntuples.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
+        cmd = "python merge_ntuples.py --tag={tag} --sample={sample} --isMC={isMC}".format(
             tag=options.tag, sample=sample, isMC=options.isMC
         )
 
     elif options.code == "plot":
-        cmd = "suepRun make_hists.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
+        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel} --maxFiles={maxFiles}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -211,8 +164,16 @@ for i, sample in enumerate(samples):
             predictSR=options.predictSR,
             save=options.save,
             channel=options.channel,
+            maxFiles=options.maxFiles,
+            dataDirLocal=options.dataDirLocal,
+            dataDirXRootD=options.dataDirXRootD,
+            redirector=options.redirector,
             id=os.getuid(),
         )
+        
+    # execute the command with singularity
+    singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
+    cmd = singularity_prefix + cmd
 
     # Method to execute the code with
     if options.method == "multithread":
@@ -243,9 +204,10 @@ if options.method == "multithread":
     pool.join()
     for result in results:
         out, err = result.get()
-        if "No such file or directory" in str(err):
+        if "error" in str(err).lower():
             print(str(err))
             print(" ----------------- ")
             print()
+        
     # clean up
     os.system(f"rm -rf {work_dir}")
