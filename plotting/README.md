@@ -1,6 +1,6 @@
 ## Plotting for SUEP Analysis
 
-### (Optional) Merge hdf5 files
+## (Optional) Merge hdf5 files
 
 Once you have produced the ntuples, your next step it to head to `plotting/` and make plots. However, since there are many hdf5 files for each sample, reading in a large amount of files can be slow; we can thus merge these hdf5 files together into larger ones to reduce the amount of files to read in. This can be done using `merge_ntuples.py`, which is ran on one sample, and `submit.py`, a wrapper for `merge_ntuples.py` to run it over many samples over slurm or multithread. The syntax for this is,
 
@@ -16,7 +16,7 @@ And the wrapper can be ran with,
 python submit.py --tag=<tag> --code=merge  --inputList=<filelist>
 ```
 
-### Producing the histograms: overview
+## Producing the histograms: overview
 
 The histogram making is to be done over the hdf5 ntuples produced by `workflows/SUEP_coffea.py`.
 This is achieved using `make_hists.py`, for example,
@@ -142,13 +142,13 @@ Thus, if for some reason you don't want to see a particular histogram for all AB
 
 The main script relies from many functions in the helper script, `fill_utils.py`. A couple of the more important ones are explained below:
 
-#### fill_utils.py: prepareDataFrame()
+### fill_utils.py: prepareDataFrame()
 
     1. Grab only events that don't have NaN for the input method variables.
     2. Blind for data! Use SR to define signal regions and cut it out of df.
     3. Apply selections as defined in the 'selections' in the dict.
 
-#### fill_utils.py: auto_fill()
+### fill_utils.py: auto_fill()
 
     1. Plot variables from the DataFrame.
        1a. Event wide variables
@@ -158,7 +158,7 @@ The main script relies from many functions in the helper script, `fill_utils.py`
        3a. Event wide variables
        3b. Input method variables
 
-#### Weights, Cross sections, and Systematics
+### Weights, Cross sections, and Systematics
 
 The cross section and reweighting by the gen weight is done in `make_hists.py` directly, with some helper functions in `fill_utils.py`.
 The systematics can be found in `CMS_corrections/*.py`, and are applied in `make_hists.py` on MC and signal samples.
@@ -181,11 +181,11 @@ The systematics can be found in `CMS_corrections/*.py`, and are applied in `make
 
 7. **Trigger scale factor**: weight applied to event weight based on era only, defined in `triggerSF.py`.
 
-8. **Jet energy corrections**: applied by cutting on different variations of the `ht` variations.
+8. **Jet energy corrections**: applied by cutting on different variations of the `ht` variations, and using the variables that have `<input_method>_track_down`.
 
 9. [Optional] **weights**: These are weights that are defined based on each ABDC region (with the variables x_var, y_var) to force a third variable (z_var) to match for MC and data. These are produced in `plot.ipynb` and are saved as `.npy` files which are read in the script using `--weights=<file.npy>`.
 
-### Plotting the histograms
+## Plotting the histograms
 
 The outputs of make_hists.py are .root files containing Hist histograms.
 You can open these in your own scripts and notebooks to view them, but a notebook, `plot.ipynb`, is provided with many useful functionalities as an example.
