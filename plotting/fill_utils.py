@@ -1,6 +1,6 @@
-import os
 import json
 import logging
+import os
 import sys
 from collections import defaultdict
 from copy import deepcopy
@@ -328,6 +328,7 @@ def apply_normalization(plots, norm):
     else:
         logging.warning("Norm is 0")
     return plots
+
 
 def get_track_killing_config(config):
     new_config = {}

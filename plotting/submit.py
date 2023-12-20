@@ -22,9 +22,9 @@ import os
 import shlex
 import subprocess
 from multiprocessing.pool import Pool, ThreadPool
-import numpy as np
 
 import make_hists
+import numpy as np
 from plot_utils import check_proxy
 
 # SLURM script template
@@ -49,7 +49,7 @@ def call_process(cmd, work_dir):
     """This runs in a separate thread."""
     print("----[%] :", cmd)
     p = subprocess.Popen(
-        ['bash', '-c', ' '.join(shlex.split(cmd))],
+        ["bash", "-c", " ".join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
@@ -76,11 +76,14 @@ parser.add_argument(
     "--method",
     type=str,
     default="multithread",
-    choices=['multithread','slurm'],
+    choices=["multithread", "slurm"],
     help="Which system to use to run the script.",
 )
 parser.add_argument(
-    "--cores", type=int, help="Maximum number of cores to run multithread on.", default=50
+    "--cores",
+    type=int,
+    help="Maximum number of cores to run multithread on.",
+    default=50,
 )
 # parser from make_hists.py, works also for merge_ntuples.py
 parser = make_hists.makeParser(parser)
@@ -170,7 +173,11 @@ for i, sample in enumerate(samples):
             redirector=options.redirector,
             id=os.getuid(),
         )
-        
+
+    # execute the command with singularity
+    singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
+    cmd = singularity_prefix + cmd
+
     # execute the command with singularity
     singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
     cmd = singularity_prefix + cmd
@@ -208,6 +215,6 @@ if options.method == "multithread":
             print(str(err))
             print(" ----------------- ")
             print()
-        
+
     # clean up
     os.system(f"rm -rf {work_dir}")
