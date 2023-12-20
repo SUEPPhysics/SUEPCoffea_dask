@@ -99,7 +99,7 @@ def makeParser(parser=None):
         default="None",
         help="Pass the filename of the weights, e.g. --weights weights.npy",
     )
-    # other agruments
+    # other arguments
     parser.add_argument(
         "--saveDir",
         type=str,

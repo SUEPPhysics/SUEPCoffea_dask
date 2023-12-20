@@ -836,7 +836,7 @@ def plot_all_regions(
 
 def plot_sys_variations(plots_sample, plot_label, sys, rebin=1j):
     """
-    Plot variatoin for a systemtaic
+    Plot variations for a systemtaic
     """
     h = plots_sample["_".join([plot_label])][::rebin]
     h_up = plots_sample["_".join([plot_label, sys, 'up'])][::rebin]
