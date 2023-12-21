@@ -1,0 +1,15 @@
+name: suep
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.10.8
+  - coffea==0.7.20
+  - xrootd==5.4.2
+  - pandas==1.4.1
+  - pytables==3.7.0
+  - uproot
+  - mplhep
+  - pyyaml
+  - hist
+  - sympy
