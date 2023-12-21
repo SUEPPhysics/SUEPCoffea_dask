@@ -53,7 +53,7 @@ If there are files in other folders that are necessary (the folder with your NTu
 export SINGULARITY_BIND="/mnt"
 ```
 
-or by adding `--bind /path1,/path2/,...` to the `singularity shell` command. 
+or by adding `--bind /path1,/path2/,...` to the `singularity shell` command.
 
 ### Python environment
 
