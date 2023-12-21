@@ -9,8 +9,11 @@ import numpy as np
 import pandas as pd
 
 
-# load hdf5 with pandas
-def h5load(ifile, label):
+def h5load(ifile: str, label: str):
+    """
+    Load a pandas DataFrame from a HDF5 file, including metadata.
+    Nota bene: metadata is unstable, we have found that using pandas==1.4.1 and pytables==3.7.0 works.
+    """
     try:
         with pd.HDFStore(ifile, "r") as store:
             try:
@@ -19,14 +22,14 @@ def h5load(ifile, label):
                 return data, metadata
 
             except KeyError:
-                print("No key", label, ifile)
+                logging.warning("No key", label, ifile)
                 return 0, 0
     except BaseException:
-        print("Some error occurred", ifile)
+        logging.warning("Some error occurred", ifile)
         return 0, 0
 
 
-def open_ntuple(ifile, redirector="root://submit50.mit.edu/", xrootd=False):
+def open_ntuple(ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False):
     """
     Open a ntuple, either locally or on xrootd.
     """
@@ -42,7 +45,7 @@ def open_ntuple(ifile, redirector="root://submit50.mit.edu/", xrootd=False):
         return h5load(just_file + ".hdf5", "vars")
 
 
-def close_ntuple(ifile):
+def close_ntuple(ifile: str) -> None:
     """
     Delete the ntuple after it has been copied over via xrootd (see open_ntuple).
     """
@@ -50,7 +53,7 @@ def close_ntuple(ifile):
     os.system(f"rm {just_file}.hdf5")
 
 
-def getXSection(dataset: str, year=None, path="../data/"):
+def getXSection(dataset: str, year=None, path="../data/") -> float:
     xsection = 1
 
     xsec_file = f"{path}/xsections_{year}.json"
@@ -61,7 +64,7 @@ def getXSection(dataset: str, year=None, path="../data/"):
             xsection *= MC_xsecs[dataset]["kr"]
             xsection *= MC_xsecs[dataset]["br"]
         except KeyError:
-            print(
+            logging.warning(
                 f"WARNING: I did not find the xsection for {dataset} in {xsec_file}. Check the dataset name and the relevant yaml file."
             )
             return 1
@@ -69,7 +72,7 @@ def getXSection(dataset: str, year=None, path="../data/"):
     return xsection
 
 
-def make_selection(df, variable, operator, value, apply=True):
+def make_selection(df: pd.DataFrame, variable: str, operator: str, value, apply: bool = True) -> pd.DataFrame:
     """
     Apply a selection on DataFrame df based on on the df column'variable'
     using the 'operator' and 'value' passed as arguments to the function.
@@ -109,7 +112,7 @@ def make_selection(df, variable, operator, value, apply=True):
         else:
             return df[variable] == value
     else:
-        sys.exit("Couldn't find operator requested " + operator)
+        raise Exception("Couldn't find operator requested " + operator)
 
 
 def apply_scaling_weights(
@@ -165,7 +168,7 @@ def apply_scaling_weights(
     return df
 
 
-def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
+def prepare_DataFrame(df: pd.DataFrame, config: dict, label_out: str, blind: bool = True, isMC: bool = False) -> pd.DataFrame:
     """
     Applies blinding, selections, and makes new variables. See README.md for more details.
 
@@ -194,6 +197,9 @@ def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
     # 3. apply selections
     if "selections" in config.keys():
         for sel in config["selections"]:
+            if type(sel) is str:
+                sel = sel.split(" ")
+            if type(sel[2]) is str and sel[2].isdigit(): sel[2] = float(sel[2]) # convert to float if it's a number
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
     # 4. make new variables
@@ -239,7 +245,7 @@ def fill_2d_distributions(df, output, label_out, input_method):
         output[key].fill(df[var1], df[var2], weight=df["event_weight"])
 
 
-def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
+def auto_fill(df: pd.DataFrame, output: dict, config: dict, label_out: str, isMC: bool = False, do_abcd: bool = False) -> None:
     input_method = config["input_method"]
 
     #####################################################################################
@@ -338,16 +344,16 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
                 iRegion += 1
 
 
-def apply_normalization(plots, norm):
+def apply_normalization(plots: dict, norm: float) -> dict:
     if norm > 0.0:
         for plot in list(plots.keys()):
             plots[plot] = plots[plot] * norm
     else:
-        logging.warning("Norm is 0")
+        logging.warning("Norm is 0, not applying normalization.")
     return plots
 
 
-def get_track_killing_config(config):
+def get_track_killing_config(config: dict) -> dict:
     new_config = {}
     for label_out, _config_out in config.items():
         label_out_new = label_out
@@ -370,7 +376,7 @@ def get_track_killing_config(config):
     return new_config
 
 
-def get_jet_correction_config(config, jet_correction):
+def get_jet_correction_config(config: dict, jet_correction: str) -> dict:
     new_config = {}
     for label_out, _config_out in config.items():
         label_out_new = label_out
@@ -390,11 +396,18 @@ def read_in_weights(fweights):
     return scaling_weights
 
 
-def blind_DataFrame(df, label_out, SR):
+def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
+    """
+    Blind a DataFrame df by removing events that pass the signal region SR definition.
+    Expects a SR defined as a list of lists,
+    e.g. SR = [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+    """
     if len(SR) != 2:
         sys.exit(
             label_out
-            + ": Make sure you have correctly defined your signal region. Exiting."
+            + """: Make sure you have correctly defined your signal region.
+            For now we only support a two-variable SR, because of the way 
+            this function was written. Exiting."""
         )
     df = df.loc[
         ~(

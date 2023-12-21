@@ -23,7 +23,7 @@ import shlex
 import subprocess
 from multiprocessing.pool import Pool, ThreadPool
 
-import make_hists
+from make_hists import makeParser as makeHistsParser
 import numpy as np
 from plot_utils import check_proxy
 
@@ -61,7 +61,11 @@ def call_process(cmd, work_dir):
 parser = argparse.ArgumentParser(description="Famous Submitter")
 # Specific to this script
 parser.add_argument(
-    "-f", "--force", action="store_true", help="overwrite", required=False
+    "-i",
+    "--input",
+    type=str,
+    help="File containing list of samples to process.",
+    required=True
 )
 parser.add_argument(
     "-c",
@@ -72,21 +76,26 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
+    "-f", "--force", action="store_true", help="overwrite", required=False
+)
+parser.add_argument(
     "-m",
     "--method",
     type=str,
     default="multithread",
     choices=["multithread", "slurm"],
     help="Which system to use to run the script.",
+    required=False,
 )
 parser.add_argument(
     "--cores",
     type=int,
     help="Maximum number of cores to run multithread on.",
     default=50,
+    required=False,
 )
 # parser from make_hists.py, works also for merge_ntuples.py
-parser = make_hists.makeParser(parser)
+parser = makeHistsParser(parser)
 
 options = parser.parse_args()
 
@@ -150,7 +159,7 @@ for i, sample in enumerate(samples):
         )
 
     elif options.code == "plot":
-        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel} --maxFiles={maxFiles}".format(
+        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --saveDir={saveDir} --channel={channel} --maxFiles={maxFiles}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -165,7 +174,7 @@ for i, sample in enumerate(samples):
             doSyst=options.doSyst,
             blind=options.blind,
             predictSR=options.predictSR,
-            save=options.save,
+            saveDir=options.saveDir,
             channel=options.channel,
             maxFiles=options.maxFiles,
             dataDirLocal=options.dataDirLocal,
@@ -173,10 +182,6 @@ for i, sample in enumerate(samples):
             redirector=options.redirector,
             id=os.getuid(),
         )
-
-    # execute the command with singularity
-    singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
-    cmd = singularity_prefix + cmd
 
     # execute the command with singularity
     singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "

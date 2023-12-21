@@ -14,10 +14,11 @@ import getpass
 import logging
 import os
 import subprocess
+import numpy as np
+from tqdm import tqdm
 
 import fill_utils
 import hist_defs
-import numpy as np
 import plot_utils
 import uproot
 from CMS_corrections import (
@@ -27,7 +28,6 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
-from tqdm import tqdm
 
 
 ### Parser #######################################################################################################
@@ -58,7 +58,7 @@ def makeParser(parser=None):
         required=False,
     )
     parser.add_argument(
-        "-f", "--file", type=str, default="", help="Use specific input file"
+        "--file", type=str, default="", help="Use specific input file"
     )
     parser.add_argument(
         "--xrootd",
@@ -79,7 +79,7 @@ def makeParser(parser=None):
         help="XRootD data directory",
     )
     ## optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
-    parser.add_argument("--merged", type=int, default=1, help="Use merged files")
+    parser.add_argument("--merged", type=int, default=0, help="Use merged files")
     # some required info about the files
     parser.add_argument("-e", "--era", type=str, help="era", required=True)
     parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
@@ -128,7 +128,7 @@ def makeParser(parser=None):
     parser.add_argument(
         "--maxFiles",
         type=int,
-        default=None,
+        default=-1,
         help="Maximum number of files to process (default=None, all files)",
         required=False,
     )
@@ -155,6 +155,7 @@ def plot_systematic(df, metadata, config, syst, options, output):
     else:
         df["event_weight"] = np.ones(df.shape[0])
 
+    # apply systematics and weights
     if options.isMC == 1:
         if options.channel == "ggF":
             # 1) pileup weights
@@ -241,8 +242,8 @@ def plot_systematic(df, metadata, config, syst, options, output):
             # and in here we should just apply them as much as possible in the same way
             # with flags for the differences
 
-    # 6) scaling weights
-    # N.B.: these aren't part of the systematics, just an optional scaling
+    # scaling weights
+    # N.B.: these are just an optional, arbitrary scaling of weights you're passing in
     if options.weights is not None and options.weights != "None":
         scaling_weights = fill_utils.read_in_weights(options.weights)
         df = fill_utils.apply_scaling_weights(
@@ -256,15 +257,15 @@ def plot_systematic(df, metadata, config, syst, options, output):
         )
 
     for label_out, config_out in config.items():
-        # rename if we have applied a systematic
+        # rename output method if we have applied a systematic
         if len(syst) > 0:
             label_out = label_out + "_" + syst
 
-        # initialize new hists, if needed
+        # initialize new hists for this output tag, if we haven't already
         hist_defs.initialize_histograms(output, label_out, options, config_out)
 
-        # prepare the DataFrame for plotting: blind, selections
-        df_plot = fill_utils.prepareDataFrame(
+        # prepare the DataFrame for plotting: blind, selections, new variables
+        df_plot = fill_utils.prepare_DataFrame(
             df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
         )
 
@@ -425,8 +426,9 @@ def main():
         if options.merged:
             dataDir += "merged/"
         files = [dataDir + f for f in os.listdir(dataDir)]
-    if options.maxFiles:
+    if options.maxFiles > 0:
         files = files[: options.maxFiles]
+    files = [f for f in files if ".hdf5" in f]
     ntotal = len(files)
 
     ### Plotting loop ################################################################################################
@@ -478,8 +480,6 @@ def main():
                     "PSWeight_ISR_down",
                     "PSWeight_FSR_up",
                     "PSWeight_FSR_down",
-                    "prefire_up",
-                    "prefire_down",
                     "track_down",
                     "JER_up",
                     "JER_down",
@@ -490,6 +490,11 @@ def main():
                     sys_loop += [
                         "higgs_weights_up",
                         "higgs_weights_down",
+                    ]
+                if options.scouting == 0:
+                    sys_loop += [
+                        "prefire_up",
+                        "prefire_down",
                     ]
             elif options.channel == "WH":
                 sys_loop = [

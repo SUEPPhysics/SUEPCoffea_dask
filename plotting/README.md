@@ -135,7 +135,7 @@ The idea of this script is to map each of these methods to one or more set of hi
 
 1. Output tag: histograms will be named using this, and the systematics will extend each output tag (e.g. input method: CL --> output tag Cluster, with systematics Cluster_sys_up and Cluster_sys_down).
 2. `SR`: signal region definition (e.g. `[['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]]`), used to blind if needed.
-3. [Optional] `selections`: a set of selections (e.g. `[['ht', '>', 1200], ['ntracks','>', 0]]`), arbitrary.
+3. [Optional] `selections`: a set of selections, syntax: either a list of `['variable', 'operator', value]` or a single string `"variable operator value"`. e.g. `[['ht', '>', 1200], ['ntracks > 0']]`.
 4. [Optional] `xvar/yvar`: x/y variables for ABCD method
 5. [Optional] `xvar_ragions/yvar_regions`: regions for ABCD method. N.B.: Include lower and upper bounds for all ABCD regions (e.g. `[0.0, 0.5, 1.0]`).
 6. [Optional] `new_variables`: new variables to be defined as functions of existing variables in the DataFrame, syntax: `[['new_variable_name', callable, [callable inputs]]]`.
