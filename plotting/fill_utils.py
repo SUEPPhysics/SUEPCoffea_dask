@@ -167,7 +167,7 @@ def apply_scaling_weights(
 
 def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
     """
-    Applies blinding and selections. See README.md for more details.
+    Applies blinding, selections, and makes new variables. See README.md for more details.
 
     INPUTS:
         df: input file DataFrame.
@@ -192,9 +192,24 @@ def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
             df = blind_DataFrame(df, label_out, config["SR2"])
 
     # 3. apply selections
-    for sel in config["selections"]:
-        df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+    if "selections" in config.keys():
+        for sel in config["selections"]:
+            df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
+    # 4. make new variables
+    if "new_variables" in config.keys():
+        for var in config["new_variables"]:
+            df = make_new_variable(df, var[0], var[1], *var[2])
+
+    return df
+
+
+def make_new_variable(df: pd.DataFrame, name: str, function: callable, *columns: list) -> pd.DataFrame:
+    """
+    Make a new column in the DataFrame df by applying the function to the columns
+    passed as *columns. The new column will be named 'name'.
+    """
+    df[name] = function(*[df[col] for col in columns])
     return df
 
 

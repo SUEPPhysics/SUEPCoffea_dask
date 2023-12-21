@@ -235,6 +235,13 @@ def init_hists_default(output: dict, label: str, regions_list: list = [""]) -> N
                         name=f"{r}SUEP_delta_mass_genMass_{label}",
                         label="SUEP Mass - genSUEP Mass [GeV]",
                     ).Weight(),
+                    f"{r}SUEP_ISR_deltaPhi_{label}": Hist.new.Reg(
+                        400,
+                        -6,
+                        6,
+                        name=f"{r}SUEP_ISR_deltaPhi_{label}",
+                        label="SUEP phi - ISR phi [GeV]",
+                    ).Weight(),
                 }
             )
 

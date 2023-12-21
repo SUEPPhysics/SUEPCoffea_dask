@@ -80,6 +80,34 @@ Systematics are either weights, or different variables that will be used to make
 Each variable will be plotted in a different histogram for each systematic, the output method name will be modified to include the systematic name for those histograms.
 
 
+### Making new variables
+
+The `config` dictionary can take the argument `new_variables`, which will be read by `fill_utils.py/make_new_variable()` to combine the DataFrame columns to make new variables with arbitrary functions.
+
+The syntax is as follows:
+
+```
+config = {
+    ...
+    `new_variables`: [
+        ['new_variable_name', callable, [callable inputs]]
+    ]
+    ...
+}
+```
+
+For example,
+
+```
+    "new_variables": [
+        ["SUEP_ISR_deltaPhi_CL", lambda x,y : abs(x-y), ["SUEP_phi_CL", "ISR_phi_CL"]],
+        ["SUEP_ISR_deltaEta_CL", lambda x,y : abs(x-y), ["SUEP_eta_CL", "ISR_eta_CL"]]
+    ]
+```
+
+One could define some function in to generate a whole set of these, if putting them all in the configuration dictionary becomes cumbersome.
+
+
 ## Producing the histograms: technical details
 
 The following scripts are used:
@@ -107,9 +135,10 @@ The idea of this script is to map each of these methods to one or more set of hi
 
 1. Output tag: histograms will be named using this, and the systematics will extend each output tag (e.g. input method: CL --> output tag Cluster, with systematics Cluster_sys_up and Cluster_sys_down).
 2. `SR`: signal region definition (e.g. `[['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]]`), used to blind if needed.
-3. `selections`: a set of selections (e.g. `[['ht', '>', 1200], ['ntracks','>', 0]]`), arbitrary.
+3. [Optional] `selections`: a set of selections (e.g. `[['ht', '>', 1200], ['ntracks','>', 0]]`), arbitrary.
 4. [Optional] `xvar/yvar`: x/y variables for ABCD method
 5. [Optional] `xvar_ragions/yvar_regions`: regions for ABCD method. N.B.: Include lower and upper bounds for all ABCD regions (e.g. `[0.0, 0.5, 1.0]`).
+6. [Optional] `new_variables`: new variables to be defined as functions of existing variables in the DataFrame, syntax: `[['new_variable_name', callable, [callable inputs]]]`.
 
 Each own input methods have their own selections, ABCD regions, and signal region. Multiple output tags can be defined for the same input method: i.e. different selections, ABCD methods, and SRs can be defined. Thus, each input method has a dictionary defined for it which is in turn stores in the `config` dictionary, with the key being the output label, e.g.
 
@@ -133,12 +162,11 @@ This script will fill histograms, for each output method:
 1. All event variables, e.g. ht will be put in ht_Cluster
 2. All DataFrame columns from 'input_method', e.g. SUEP_S1_CL column will be plotted to histogram SUEP_S1_Cluster, as well as combinations of them in 2D histograms.
 3. For each of the above, for each systematic, the up and down variation of the histograms
-4. For each of the above, if doinf ABCD, each histogram when in one particular ABCD region
+4. For each of the above, if doing ABCD, each histogram when in one particular ABCD region
 
 **However, histograms are filled only if they are initialized in the output dictionary!!**
 
 Thus, if for some reason you don't want to see a particular histogram for all ABCD regions, or all systematics, you can just define the nominal variation, and not the others, e.g. `ht_Cluster` and not `{region}ht_Cluster_{label}`, see `hist_defs.py`.
-
 
 The main script relies from many functions in the helper script, `fill_utils.py`. A couple of the more important ones are explained below:
 
@@ -146,7 +174,8 @@ The main script relies from many functions in the helper script, `fill_utils.py`
 
     1. Grab only events that don't have NaN for the input method variables.
     2. Blind for data! Use SR to define signal regions and cut it out of df.
-    3. Apply selections as defined in the 'selections' in the dict.
+    3. Apply selections as defined in the 'selections' in the config dict.
+    4. Define new variables as defined in 'new_variables' in the config dict.
 
 ### fill_utils.py: auto_fill()
 
