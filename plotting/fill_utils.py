@@ -204,7 +204,9 @@ def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
     return df
 
 
-def make_new_variable(df: pd.DataFrame, name: str, function: callable, *columns: list) -> pd.DataFrame:
+def make_new_variable(
+    df: pd.DataFrame, name: str, function: callable, *columns: list
+) -> pd.DataFrame:
     """
     Make a new column in the DataFrame df by applying the function to the columns
     passed as *columns. The new column will be named 'name'.
