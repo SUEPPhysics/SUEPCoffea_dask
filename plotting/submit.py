@@ -23,8 +23,8 @@ import shlex
 import subprocess
 from multiprocessing.pool import Pool, ThreadPool
 
-from make_hists import makeParser as makeHistsParser
 import numpy as np
+from make_hists import makeParser as makeHistsParser
 from plot_utils import check_proxy
 
 # SLURM script template
@@ -65,7 +65,7 @@ parser.add_argument(
     "--input",
     type=str,
     help="File containing list of samples to process.",
-    required=True
+    required=True,
 )
 parser.add_argument(
     "-c",

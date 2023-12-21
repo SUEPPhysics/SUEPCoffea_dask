@@ -29,7 +29,9 @@ def h5load(ifile: str, label: str):
         return 0, 0
 
 
-def open_ntuple(ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False):
+def open_ntuple(
+    ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False
+):
     """
     Open a ntuple, either locally or on xrootd.
     """
@@ -72,7 +74,9 @@ def getXSection(dataset: str, year=None, path="../data/") -> float:
     return xsection
 
 
-def make_selection(df: pd.DataFrame, variable: str, operator: str, value, apply: bool = True) -> pd.DataFrame:
+def make_selection(
+    df: pd.DataFrame, variable: str, operator: str, value, apply: bool = True
+) -> pd.DataFrame:
     """
     Apply a selection on DataFrame df based on on the df column'variable'
     using the 'operator' and 'value' passed as arguments to the function.
@@ -168,7 +172,13 @@ def apply_scaling_weights(
     return df
 
 
-def prepare_DataFrame(df: pd.DataFrame, config: dict, label_out: str, blind: bool = True, isMC: bool = False) -> pd.DataFrame:
+def prepare_DataFrame(
+    df: pd.DataFrame,
+    config: dict,
+    label_out: str,
+    blind: bool = True,
+    isMC: bool = False,
+) -> pd.DataFrame:
     """
     Applies blinding, selections, and makes new variables. See README.md for more details.
 
@@ -199,7 +209,8 @@ def prepare_DataFrame(df: pd.DataFrame, config: dict, label_out: str, blind: boo
         for sel in config["selections"]:
             if type(sel) is str:
                 sel = sel.split(" ")
-            if type(sel[2]) is str and sel[2].isdigit(): sel[2] = float(sel[2]) # convert to float if it's a number
+            if type(sel[2]) is str and sel[2].isdigit():
+                sel[2] = float(sel[2])  # convert to float if it's a number
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
     # 4. make new variables
@@ -245,7 +256,14 @@ def fill_2d_distributions(df, output, label_out, input_method):
         output[key].fill(df[var1], df[var2], weight=df["event_weight"])
 
 
-def auto_fill(df: pd.DataFrame, output: dict, config: dict, label_out: str, isMC: bool = False, do_abcd: bool = False) -> None:
+def auto_fill(
+    df: pd.DataFrame,
+    output: dict,
+    config: dict,
+    label_out: str,
+    isMC: bool = False,
+    do_abcd: bool = False,
+) -> None:
     input_method = config["input_method"]
 
     #####################################################################################
@@ -406,7 +424,7 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
         sys.exit(
             label_out
             + """: Make sure you have correctly defined your signal region.
-            For now we only support a two-variable SR, because of the way 
+            For now we only support a two-variable SR, because of the way
             this function was written. Exiting."""
         )
     df = df.loc[

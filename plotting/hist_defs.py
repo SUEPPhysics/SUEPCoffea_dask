@@ -1,5 +1,6 @@
 from hist import Hist
 
+
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
     # don't recreate histograms if called multiple times with the same output label
     if label in output["labels"]:

@@ -14,11 +14,10 @@ import getpass
 import logging
 import os
 import subprocess
-import numpy as np
-from tqdm import tqdm
 
 import fill_utils
 import hist_defs
+import numpy as np
 import plot_utils
 import uproot
 from CMS_corrections import (
@@ -28,6 +27,7 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
+from tqdm import tqdm
 
 
 ### Parser #######################################################################################################
@@ -57,9 +57,7 @@ def makeParser(parser=None):
         help="ntuples production tag",
         required=False,
     )
-    parser.add_argument(
-        "--file", type=str, default="", help="Use specific input file"
-    )
+    parser.add_argument("--file", type=str, default="", help="Use specific input file")
     parser.add_argument(
         "--xrootd",
         type=int,
