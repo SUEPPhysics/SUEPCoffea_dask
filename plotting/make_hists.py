@@ -234,7 +234,12 @@ def plot_systematic(df, metadata, config, syst, options, output):
                 config = fill_utils.get_jet_correction_config(config, syst)
 
         elif options.channel == "WH":
-            pass  # FILL IN
+            pass  
+            # FILL IN
+            # should we keep these separate or try to, as much as possible, use the same code for systematics for both channels?
+            # which systematics are applied and which aren't should be defined outside IMO, as is now
+            # and in here we should just apply them as much as possible in the same way
+            # with flags for the differences
 
     # 6) scaling weights
     # N.B.: these aren't part of the systematics, just an optional scaling
@@ -460,31 +465,53 @@ def main():
         if df.shape[0] == 0:
             continue
 
+        # define which systematics to loop over
+        sys_loop = []
         if options.isMC and options.doSyst:
-            sys_loop = [
-                "puweights_up",
-                "puweights_down",
-                "trigSF_up",
-                "trigSF_down",
-                "PSWeight_ISR_up",
-                "PSWeight_ISR_down",
-                "PSWeight_FSR_up",
-                "PSWeight_FSR_down",
-                "prefire_up",
-                "prefire_down",
-                "track_down",
-                "JER_up",
-                "JER_down",
-                "JES_up",
-                "JES_down",
-            ]
-            if "mS125" in metadata["sample"]:
-                sys_loop += [
-                    "higgs_weights_up",
-                    "higgs_weights_down",
+            if options.channel == "ggF":
+                sys_loop = [
+                    "puweights_up",
+                    "puweights_down",
+                    "trigSF_up",
+                    "trigSF_down",
+                    "PSWeight_ISR_up",
+                    "PSWeight_ISR_down",
+                    "PSWeight_FSR_up",
+                    "PSWeight_FSR_down",
+                    "prefire_up",
+                    "prefire_down",
+                    "track_down",
+                    "JER_up",
+                    "JER_down",
+                    "JES_up",
+                    "JES_down",
                 ]
-        else:
-            sys_loop = []
+                if "mS125" in metadata["sample"]:
+                    sys_loop += [
+                        "higgs_weights_up",
+                        "higgs_weights_down",
+                    ]
+            elif options.channel == "WH":
+                sys_loop = [
+                    "puweights_up",
+                    "puweights_down",
+                    "PSWeight_ISR_up",
+                    "PSWeight_ISR_down",
+                    "PSWeight_FSR_up",
+                    "PSWeight_FSR_down",
+                    "prefire_up",
+                    "prefire_down",
+                    "track_down",
+                    "JER_up",
+                    "JER_down",
+                    "JES_up",
+                    "JES_down",
+                ]
+                if "mS125" in metadata["sample"]:
+                    sys_loop += [
+                        "higgs_weights_up",
+                        "higgs_weights_down",
+                    ]
 
         logging.debug("Running nominal histograms.")
         plot_systematic(df, metadata, config, "", options, output)
