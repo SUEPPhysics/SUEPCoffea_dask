@@ -234,7 +234,7 @@ def plot_systematic(df, metadata, config, syst, options, output):
                 config = fill_utils.get_jet_correction_config(config, syst)
 
         elif options.channel == "WH":
-            pass  
+            pass
             # FILL IN
             # should we keep these separate or try to, as much as possible, use the same code for systematics for both channels?
             # which systematics are applied and which aren't should be defined outside IMO, as is now
