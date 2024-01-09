@@ -400,6 +400,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     output["vars"]["PSWeight_FSR_down" + out_label] = psweights[3]
                 else:
                     output["vars"]["PSWeight" + out_label] = psweights
+                prefireweights = GetPrefireWeights(self, events)  # Prefire weights
+                output["vars"]["prefire_nom"] = prefireweights[0]
+                output["vars"]["prefire_up"] = prefireweights[1]
+                output["vars"]["prefire_down"] = prefireweights[2]
 
             output["vars"]["PV_npvs" + out_label] = events.PV.npvs
             output["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
