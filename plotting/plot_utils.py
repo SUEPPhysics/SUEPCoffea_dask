@@ -7,6 +7,7 @@ import subprocess
 from collections import defaultdict
 
 import boost_histogram as bh
+import fill_utils
 import hist
 import hist.intervals
 import matplotlib.colors as colors
@@ -90,43 +91,53 @@ def lumiLabel(year, scouting=False):
         return round(lumidir[year] / 1000, 1)
 
 
-def findLumi(year, auto_lumi, infile_name, scouting):
+def findLumiAndEra(year, auto_lumi, infile_name, scouting):
     if scouting:
         lumidir = lumis_scouting
     else:
         lumidir = lumis
-    if auto_lumi:
+
+    if auto_lumi and not year:
+        # try to figure it out from sample name
         if "20UL16MiniAODv2" in infile_name:
             lumi = lumidir["2016"]
+            era = "2016"
         elif "20UL17MiniAODv2" in infile_name:
             lumi = lumidir["2017"]
+            era = "2017"
         elif "20UL16MiniAODAPVv2" in infile_name:
             lumi = lumidir["2016_apv"]
+            era = "2016_apv"
         elif "20UL18" in infile_name:
             lumi = lumidir["2018"]
-        elif "SUEP-m" in infile_name:
-            lumi = lumidir["2018"]
-        elif "JetHT+Run" in infile_name and not scouting:
+            era = "2018"
+        elif any([s in infile_name for s in ["JetHT+Run", "ScoutingPFHT+Run"]]):
             lumi = 1
-        elif "ScoutingPFHT+Run" in infile_name and scouting:
-            lumi = 1
+            era = infile_name.split("Run")[1][0:4]
         else:
             raise Exception(
                 "I cannot find luminosity matched to file name: " + infile_name
             )
-    if year and not auto_lumi:
+    elif year and not auto_lumi:
         lumi = lumidir[str(year)]
-    if year and auto_lumi:
-        raise Exception("Apply lumis automatically or based on year")
-    return lumi
+        era = str(year)
+    else:
+        raise Exception(
+            "Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed."
+        )
+
+    return lumi, era
 
 
-def getHistLists(plotDir, tag, filename):
+def getHistLists(plotDir, tag, filename, filters=None):
     hists = []
     with open(filename) as file:
         for line in file:
             sample_name = line.strip().split("/")[-1]
             result_path = f"{plotDir}{sample_name}_{tag}.root"
+            if filters:
+                if not all([filt in sample_name for filt in filters]):
+                    continue
             hists.append(result_path)
     return hists
 
@@ -155,29 +166,29 @@ def formatSUEPNaming(file):
     return name
 
 
-def fillSample(infile_name, plots, lumi):
-    if "QCD_Pt" in infile_name:
+def getSampleNameAndBin(sample_name):
+    """
+    From input sample, return a cleaned up sample name (var: bin),
+    as well as the bigger sample it might belong to (var: sample) (e.g. data, QCD, TTBkg, STBkg).
+    The loader() will use merge the samples with the same name,
+    and if by_bin=True, will also load the bins indepndently.
+    """
+
+    # if needed, remove the preceding path
+    if "/" in sample_name:
+        sample_name = sample_name.split("/")[-1]
+
+    if "QCD_Pt" in sample_name:
         sample = "QCD_Pt"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-        # include this block to import the QCD bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "QCD_HT" in infile_name:
+    elif "QCD_HT" in sample_name:
         sample = "QCD_HT"
-
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("QCD_HT")[1].split("_Tune")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif any(
         [
-            s in infile_name
+            s in sample_name
             for s in [
                 "TTJets",
                 "ttZJets",
@@ -192,200 +203,177 @@ def fillSample(infile_name, plots, lumi):
         ]
     ):
         sample = "TTBkg"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif any([s in infile_name for s in ["ST_t", "ST_tW"]]):
+    elif any([s in sample_name for s in ["ST_t", "ST_tW"]]):
         sample = "STBkg"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "WJetsToLNu_HT" in infile_name:
+    elif "WJetsToLNu_HT" in sample_name:
         sample = "WJetsToLNu_HT"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "WJetsToLNu_Pt" in infile_name:
+    elif "WJetsToLNu_Pt" in sample_name:
         sample = "WJetsToLNu_Pt"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "DYJetsToLL_LHEFilterPtZ-" in infile_name:
+    elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
         sample = "DYJetsToLL_LHEFilterPtZ"
+        bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
 
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_MatchEWPDG20")[0]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "WJetsToLNu_HT" in infile_name:
+    elif "WJetsToLNu_HT" in sample_name:
         sample = "WJetsToLNu_HT"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "WJetsToLNu_Pt" in infile_name:
-        sample = "WJetsToLNu_Pt"
-
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_Tune")[0]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "DYJetsToLL_LHEFilterPtZ-" in infile_name:
-        sample = "DYJetsToLL_LHEFilterPtZ"
-
-        # include this block to import the HT bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("_MatchEWPDG20")[0]
-        if ".root" in infile_name:
-            plots[temp_sample] = openroot(infile_name)
-        elif ".pkl" in infile_name:
-            plots[temp_sample] = openpickle(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
-
-    elif "JetHT+Run" in infile_name or "ScoutingPFHT" in infile_name:
+    elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
+        bin = None
 
-        # include this block to import the eras bins individually
-        temp_sample = infile_name.split("/")[-1].split(".root")[0]
-        temp_sample = temp_sample.split("+")[1].split("-")[0]
-        temp_sample = "data_" + temp_sample[3:]
-        plots[temp_sample] = openHistFile(infile_name)
-        for plot in list(plots[temp_sample].keys()):
-            plots[temp_sample][plot] = plots[temp_sample][plot] * lumi
+    elif "SUEP" in sample_name:
+        sample = formatSUEPNaming(sample_name)
+        bin = None
 
-    elif "SUEP" in infile_name:
-        if "+" in infile_name:  # historical naming convention
-            sample = infile_name.split("/")[-1].split("+")[0]
-        elif "GluGluToSUEP" in infile_name:  # private samples naming convention
-            sample = formatSUEPNaming(infile_name.split("/")[-1])
-        elif (
-            "generic" in infile_name and "MS" in infile_name
-        ):  # hack for Carlos naming convention
-            sample = infile_name.split("/")[-1].split("_")[1]
-        else:
-            sample = infile_name.split("/")[-1]
     else:
-        sample = infile_name
-    return sample, plots
+        sample = sample_name.split(".root")[0]
+        bin = None
+
+    return sample, bin
 
 
-# load file(s)
+def fillSample(this_plots, sample, plots, norm=1):
+    plotsToAdd = this_plots.copy()
+    if norm != 1:
+        plotsToAdd = fill_utils.apply_normalization(plotsToAdd, norm)
+
+    if sample not in list(plots.keys()):
+        plots[sample] = plotsToAdd
+    else:
+        try:
+            for plot in list(plotsToAdd.keys()):
+                plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot]
+        except KeyError:
+            print("WARNING: " + sample + " has a different set of plots")
+
+    return plots
+
+
+def getLumi(era: str, scouting: bool) -> float:
+    if scouting:
+        lumidir = lumis_scouting
+    else:
+        lumidir = lumis
+    return lumidir[era]
+
+
 def loader(
-    infile_names, year=None, auto_lumi=False, exclude_low_bins=False, scouting=False
+    infile_names,
+    year=None,
+    auto_lumi=True,  # once everyone starts making histograms with metadata, these can be dropped
+    scouting=False,  # once everyone starts making histograms with metadata, these can be dropped
+    by_bin=False,
+    by_year=True,
+    xsec_SUEP=True,
+    verbose=False,
 ):
+    """
+    Load histograms from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
+
+    Parameters:
+    - infile_names (list): List of input file names.
+    - year (int, optional): Year of the data. Default is None.
+    - auto_lumi (bool, optional): Flag to automatically determine the luminosity based on the year and sample name. Default is True.
+    - scouting (bool, optional): Flag to indicate whether the data is from scouting, used for the lumi. Default is False.
+    - by_bin (bool, optional): Flag to group histograms by bin. Default is False.
+    - by_year (bool, optional): Flag to group histograms by year. Default is True.
+    - xsec_SUEP (bool, optional): Flag to apply the cross-section normalization factor for SUEP samples. Default is True.
+
+    Returns:
+    - plots (dict): Dictionary containing the loaded histograms grouped by sample, bin, and year.
+    """
     plots = {}
     for infile_name in infile_names:
+        if verbose:
+            print("Loading", infile_name)
+
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
             continue
-        elif ".root" not in infile_name and ".pkl" not in infile_name:
+        elif ".root" not in infile_name:
             continue
 
+        file_plots, file_metadata = openHistFile(infile_name)
+        norm = 1
+
         # sets the lumi based on year
-        lumi = findLumi(year, auto_lumi, infile_name, scouting)
-
-        # exclude low bins
-        if exclude_low_bins:
-            if "50to100" in infile_name:
-                continue
-            if "100to200" in infile_name:
-                continue
-            # if '200to300' in infile_name: continue
-            # if '300to500' in infile_name: continue
-            # if '500to700' in infile_name: continue
-            # if '700to1000' in infile_name: continue
-
-            # if '15to30' in infile_name: continue
-            # if '30to50' in infile_name: continue
-            # if '50to80' in infile_name: continue
-            # if '80to120' in infile_name: continue
-            # if '120to170' in infile_name: continue
-            # if '170to300' in infile_name: continue
-
-        # plots[sample] sample is filled here
-        sample, plots = fillSample(infile_name, plots, lumi)
-
-        if sample not in list(plots.keys()):
-            plots[sample] = openHistFile(infile_name)
-            for plot in list(plots[sample].keys()):
-                plots[sample][plot] = plots[sample][plot] * lumi
+        if file_metadata and (year is None) and ("isMC" in file_metadata.keys()):
+            if file_metadata["isMC"]:
+                lumi = getLumi(
+                    file_metadata["era"], bool(float(file_metadata["scouting"]))
+                )
+            else:
+                lumi = 1
+            era = file_metadata["era"]
         else:
-            plotsToAdd = openHistFile(infile_name)
-            try:
-                for plot in list(plotsToAdd.keys()):
-                    plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot] * lumi
-            except KeyError:
-                print("WARNING: " + infile_name + " has a different set of plots")
-                continue
+            lumi, era = findLumiAndEra(
+                year, auto_lumi, infile_name, scouting
+            )  # once everyone starts making histograms with metadata, this can be dropped
+        norm *= lumi
+
+        # get the normalization factor for SUEP samples
+        if xsec_SUEP:
+            sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
+            if (
+                "SUEP" in sample_name
+            ):  # xsec is already apply in make_hists.py for non SUEP samples
+                xsec = fill_utils.getXSection(sample_name, year=era)
+                norm *= xsec
+
+        # get the sample name and the bin name
+        # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
+        sample, bin = getSampleNameAndBin(infile_name)
+
+        samplesToAdd = [sample]
+        if by_bin and (bin is not None):
+            samplesToAdd.append(bin)
+        if by_year:
+            samplesToAdd.append("_".join([sample, era]))
+            if by_bin and (bin is not None):
+                samplesToAdd.append("_".join([bin, era]))
+
+        for s in samplesToAdd:
+            plots = fillSample(file_plots, s, plots, norm)
 
     return plots
 
 
 def openHistFile(infile_name):
     if ".root" in infile_name:
-        infile = openroot(infile_name)
+        plots, metadata = openroot(infile_name)
     elif ".pkl" in infile_name:
-        infile = openpickle(infile_name)
-    return infile
+        plots = openpickle(infile_name)
+        metadata = None  # not supported yet for pickle files
+    return plots, metadata
 
 
-def combineMCSamples(plots, year, samples=["QCD_HT", "TTJets"]):
+def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
     assert len(samples) > 0
-    year = str(year)
-    plots["MC_" + year] = {}
-    for key in plots[samples[0] + "_" + year].keys():
+    if year:
+        year_tag = str(year)
+    else:
+        year_tag = ""
+    plots["MC" + year_tag] = {}
+    for key in plots[samples[0] + "" + year_tag].keys():
         for i, sample in enumerate(samples):
             if i == 0:
-                plots["MC_" + year][key] = plots[samples[i] + "_" + year][key].copy()
+                plots["MC" + year_tag][key] = plots[sample + year_tag][key].copy()
             else:
-                plots["MC_" + year][key] += plots[samples[i] + "_" + year][key].copy()
-
-
-def combineYears(plots, sample, eras=["2018", "2017", "2016"]):
-    plots[f"{sample}_all"] = {}
-    for i, year in enumerate(eras):
-        for key in plots[f"{sample}_{year}"].keys():
-            if i == 0:
-                plots[f"{sample}_all"][key] = plots[f"{sample}_{year}"][key].copy()
-            else:
-                plots[f"{sample}_all"][key] += plots[f"{sample}_{year}"][key].copy()
+                try:
+                    plots["MC" + year_tag][key] += plots[sample + year_tag][key].copy()
+                except KeyError:
+                    print(
+                        f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping."
+                    )
+    return plots
 
 
 def check_proxy(time_min=100):
@@ -470,12 +458,15 @@ def openpickle(infile_name):
 
 def openroot(infile_name):
     _plots = {}
+    _metadata = {}
     _infile = uproot.open(infile_name)
     for k in _infile.keys():
-        if ";" in k:
-            k = k.split(";")[0]
-        _plots[k] = _infile[k].to_hist()
-    return _plots
+        if "metadata" == k.split(";")[0]:
+            for kk in _infile[k].keys():
+                _metadata[kk.split(";")[0]] = _infile[k][kk].title()
+        elif "metadata" not in k:
+            _plots[k.split(";")[0]] = _infile[k].to_hist()
+    return _plots, _metadata
 
 
 def plot1d(h, ax, label, color="default", lw=1):
@@ -857,6 +848,22 @@ def plot_all_regions(
     return fig, ax
 
 
+def plot_sys_variations(plots_sample, plot_label, sys, rebin=1j):
+    """
+    Plot variations for a systemtaic
+    """
+    h = plots_sample["_".join([plot_label])][::rebin]
+    h_up = plots_sample["_".join([plot_label, sys, "up"])][::rebin]
+    h_down = plots_sample["_".join([plot_label, sys, "down"])][::rebin]
+
+    fig, axs = plot_ratio(
+        [h, h_up, h_down], [sys + " nominal", sys + " up", sys + " down"]
+    )
+    axs[0].legend()
+    axs[1].set_ylim(0.9, 1.1)
+    return fig, axs
+
+
 def slice_hist2d(hist, regions_list, slice_var="y"):
     """
     Inputs:
@@ -880,8 +887,7 @@ def plot_sliced_hist2d(
     hist, regions_list, stack=False, density=False, slice_var="y", labels=None
 ):
     """
-    Takes a 2d histogram, slices it in different regions, and plots the
-    regions stacked.
+    Takes a 2d histogram, slices it in different regions, and plots the regions.
     Inputs:
         hist: 2d Hist histogram.
         regions_list: list of regions using Hist slicing. e.g. [[10j,20j],[20j,30j],...]
@@ -1048,6 +1054,9 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
     variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance
     """
 
+    if sum_var == "y":
+        raise Exception("sum_var='y' not implemented yet")
+
     A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(
         abcd, xregions, yregions, sum_var=sum_var, return_all=True
     )
@@ -1074,7 +1083,7 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
                 * e**-4
             )
         elif sum_var == "y":
-            exp = h * d**2 * b**2 * f**2 * g**-1 * c**-1 * a**-1 * e**-4
+            pass
 
         # defines lists of variables (sympy symbols) and accumulators (hist.sum())
         variables = [a, b, c, d, e, f_bin, f_other, g, h]
