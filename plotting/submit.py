@@ -1,6 +1,6 @@
 """
 A submitter for processing many samples parallelly, using either Slurm or multithread.
-Pass to this script the same options you would pass make_plots.py or merge_plots.py,
+Pass to this script the same options you would pass make_hists.py or merge_ntuples.py,
 specify whether you want to plot or merge (--code),
 and specify if you want multithread or Slurm (--method).
 
@@ -24,6 +24,7 @@ import subprocess
 from multiprocessing.pool import Pool, ThreadPool
 
 import numpy as np
+from make_hists import makeParser as makeHistsParser
 from plot_utils import check_proxy
 
 # SLURM script template
@@ -37,7 +38,6 @@ slurm_script_template = """#!/bin/bash
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
-conda activate SUEP # Change to your own environment setup
 cd {work_dir}
 cd ..
 cd plotting/
@@ -53,7 +53,6 @@ def call_process(cmd, work_dir):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=work_dir,
-        shell=True,
     )
     out, err = p.communicate()
     return (out, err)
@@ -62,14 +61,22 @@ def call_process(cmd, work_dir):
 parser = argparse.ArgumentParser(description="Famous Submitter")
 # Specific to this script
 parser.add_argument(
-    "-f", "--force", action="store_true", help="overwrite", required=False
+    "-i",
+    "--input",
+    type=str,
+    help="File containing list of samples to process.",
+    required=True,
 )
 parser.add_argument(
     "-c",
     "--code",
     type=str,
-    help="Which code to multithread (supported: 'plot' or 'merge')",
+    help="Which code to run in parallel.",
+    choices=["plot", "merge"],
     required=True,
+)
+parser.add_argument(
+    "-f", "--force", action="store_true", help="overwrite", required=False
 )
 parser.add_argument(
     "-m",
@@ -78,65 +85,19 @@ parser.add_argument(
     default="multithread",
     choices=["multithread", "slurm"],
     help="Which system to use to run the script.",
-)
-# These are the same as make_plots.py, and are passed straight through it
-parser.add_argument("-o", "--output", type=str, help="output tag", required=False)
-parser.add_argument("-t", "--tag", type=str, help="production tag", required=True)
-parser.add_argument(
-    "-i",
-    "--input",
-    type=str,
-    required=True,
-    help="Use specific input file (.txt) of samples.",
-)
-parser.add_argument(
-    "-s",
-    "--save",
-    type=str,
-    help="Use specific output directory. Overrides MIT-specific paths.",
     required=False,
-    default=None,
-)
-parser.add_argument(
-    "--xrootd",
-    type=int,
-    default=0,
-    help="Local data or xrdcp from hadoop (default=False)",
-)
-# optional: call it with --merged = 1 to append a /merged/ to the paths in options 2 and 3
-parser.add_argument("--merged", type=int, default=0, help="Use merged files")
-# some info about the files, highly encouraged to specify every time
-parser.add_argument("-e", "--era", type=str, help="era", required=False)
-parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
-parser.add_argument("--scouting", type=int, default=0, help="Is this scouting or no")
-# some parameters you can toggle freely
-parser.add_argument("--doInf", type=int, default=0, help="make GNN plots")
-parser.add_argument("--doSyst", type=int, default=0, help="make systematic plots")
-parser.add_argument(
-    "--doABCD", type=int, default=0, help="make plots for each ABCD+ region"
-)
-parser.add_argument(
-    "--predictSR", type=int, default=0, help="Predict SR using ABCD method."
-)
-parser.add_argument(
-    "--blind", type=int, default=1, help="Blind the data (default=True)"
-)
-parser.add_argument(
-    "--weights",
-    default="None",
-    help="Pass the filename of the weights, e.g. --weights weights.npy",
-)
-parser.add_argument(
-    "--channel", type=str, help="Analysis channel: ggF, WH", required=True
 )
 parser.add_argument(
     "--cores",
     type=int,
     help="Maximum number of cores to run multithread on.",
     default=50,
+    required=False,
 )
-options = parser.parse_args()
+# parser from make_hists.py, works also for merge_ntuples.py
+parser = makeHistsParser(parser)
 
+options = parser.parse_args()
 
 # Set up where you're gonna work
 if options.method == "slurm":
@@ -164,11 +125,9 @@ elif options.method == "multithread":
     os.system(f"cp -R ../* {work_dir}/.")
     print("Working in", work_dir)
     work_dir += "/plotting/"
-
     pool = Pool(
         min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
     )
-
     results = []
 
 # Read samples from input file
@@ -184,7 +143,7 @@ if options.xrootd:
 for i, sample in enumerate(samples):
     if "/" in sample:
         sample = sample.split("/")[-1]
-    if (
+    if options.code == "plot" and (
         os.path.isfile(
             f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.root"
         )
@@ -195,14 +154,12 @@ for i, sample in enumerate(samples):
 
     # Code to execute
     if options.code == "merge":
-        cmd = (
-            "python merge_plots.py --tag={tag} --dataset={sample} --isMC={isMC}".format(
-                tag=options.tag, sample=sample, isMC=options.isMC
-            )
+        cmd = "python merge_ntuples.py --tag={tag} --sample={sample} --isMC={isMC}".format(
+            tag=options.tag, sample=sample, isMC=options.isMC
         )
 
     elif options.code == "plot":
-        cmd = "python make_plots.py --dataset={sample} --tag={tag} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --save={save} --channel={channel}".format(
+        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --saveDir={saveDir} --channel={channel} --maxFiles={maxFiles}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -217,8 +174,12 @@ for i, sample in enumerate(samples):
             doSyst=options.doSyst,
             blind=options.blind,
             predictSR=options.predictSR,
-            save=options.save,
+            saveDir=options.saveDir,
             channel=options.channel,
+            maxFiles=options.maxFiles,
+            dataDirLocal=options.dataDirLocal,
+            dataDirXRootD=options.dataDirXRootD,
+            redirector=options.redirector,
             id=os.getuid(),
         )
 
