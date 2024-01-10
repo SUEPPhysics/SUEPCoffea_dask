@@ -5,9 +5,10 @@ import os
 from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
+from workflows import SUEP_coffea
+
 # SUEP Repo Specific
 from workflows.utils import merger
-from workflows import SUEP_coffea
 
 # Begin argparse
 parser = argparse.ArgumentParser("")

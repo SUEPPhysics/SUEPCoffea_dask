@@ -1,11 +1,12 @@
 import logging
 import math
 import os
-import sys
 import pickle
 import shutil
 import subprocess
+import sys
 from collections import defaultdict
+
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -16,7 +17,7 @@ import numpy as np
 import uproot
 from sympy import diff, sqrt, symbols
 
-sys.path.append('..')
+sys.path.append("..")
 import histmaker.fill_utils
 
 default_colors = {
