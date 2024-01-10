@@ -464,7 +464,10 @@ class SUEP_cluster(processor.ProcessorABC):
                     self.out_vars["PSWeight_FSR_down" + out_label] = psweights[3]
                 else:
                     self.out_vars["PSWeight" + out_label] = psweights
-                GetPrefireWeights(self, events)  # Prefire weights
+                prefireweights = GetPrefireWeights(self, events)  # Prefire weights
+                self.out_vars["prefire_nom"] = prefireweights[0]
+                self.out_vars["prefire_up"] = prefireweights[1]
+                self.out_vars["prefire_down"] = prefireweights[2]
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
