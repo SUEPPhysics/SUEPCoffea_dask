@@ -13,16 +13,16 @@ import argparse
 import getpass
 import logging
 import os
-import sys
 import subprocess
+import sys
+
 import numpy as np
 import uproot
 from tqdm import tqdm
 
-sys.path.append('..')
+sys.path.append("..")
 import fill_utils
 import hist_defs
-import plotting.plot_utils
 from CMS_corrections import (
     GNN_syst,
     higgs_reweight,
@@ -30,6 +30,8 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
+
+import plotting.plot_utils
 
 
 ### Parser #######################################################################################################
