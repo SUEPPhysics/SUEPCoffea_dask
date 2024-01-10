@@ -1,17 +1,13 @@
 import argparse
 import os
 
-import import
-import SUEP_coffea
+# Import coffea specific features
+from coffea import processor
+from coffea.processor import Runner, futures_executor, run_uproot_job
 
 # SUEP Repo Specific
-from coffea import processor
-
-# Import coffea specific features
-from coffea.processor import futures_executor, run_uproot_job
-
-import workflows
 from workflows.utils import merger, root_rewrite
+from workflows import SUEP_coffea
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
