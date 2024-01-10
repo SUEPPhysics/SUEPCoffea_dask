@@ -72,4 +72,4 @@ This environment should be enough for all the important parts of the workflow: t
 The workflow is as follows:
 1. `workflows/`: Produce NTuples from NanoAOD files using the NTuple maker for your analysis. This is done using coffea producers treating events as awkward arrays, and clustering using FastJet. The NTuples are stored in hdf5 files in tabular format in pandas dataframes. This is usually ran through HTCondor or Dask. See the README in `workflows/` for more information for how to run this for each analysis.
 2. `histmaker/`: Make histograms from the NTuples using the histmaker. The histograms are stored in root files hist histograms. You can run this locally or through Slurm. See the README in `histmaker/` for more information for how to run this.
-3. `plotting.`: Plot the histograms using the plotting notebooks. See the README in `plotting/` for more information.
+3. `plotting/`: Plot the histograms using the plotting notebooks. See the README in `plotting/` for more information.

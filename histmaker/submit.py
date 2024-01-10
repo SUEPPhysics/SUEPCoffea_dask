@@ -19,13 +19,15 @@ import argparse
 import getpass
 import multiprocessing
 import os
+import sys
 import shlex
 import subprocess
 from multiprocessing.pool import Pool, ThreadPool
-
 import numpy as np
+
+sys.path.append('..')
 from make_hists import makeParser as makeHistsParser
-from plot_utils import check_proxy
+from plotting.plot_utils import check_proxy
 
 # SLURM script template
 slurm_script_template = """#!/bin/bash
