@@ -5,7 +5,8 @@ import os
 from coffea import processor
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea_WH, pandas_utils
+from workflows import SUEP_coffea_WH
+from workflows.utils import pandas_utils
 
 
 def form_ntuple(options, output):

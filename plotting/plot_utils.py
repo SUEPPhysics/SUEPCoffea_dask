@@ -4,10 +4,10 @@ import os
 import pickle
 import shutil
 import subprocess
+import sys
 from collections import defaultdict
 
 import boost_histogram as bh
-import fill_utils
 import hist
 import hist.intervals
 import matplotlib.colors as colors
@@ -16,6 +16,9 @@ import mplhep as hep
 import numpy as np
 import uproot
 from sympy import diff, sqrt, symbols
+
+sys.path.append("..")
+import histmaker.fill_utils
 
 default_colors = {
     "125": "cyan",

@@ -31,13 +31,13 @@ Define here the runs you want to test. Parameters:
 runs = {
     "ggF-Offline": {
         "singularity": "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest",
-        "script": "condor_SUEP_WS.py",
+        "script": "condor_SUEP_ggF.py",
         "options": [
-            "--isMC 1 --era 2018 --doSyst 1",
-            "--isMC 0 --era 2018 --doSyst 1",
+            "--isMC 1 --era 2016 --doSyst 1",
+            "--isMC 0 --era 2018 --doSyst 0",
         ],
         "root_files": [
-            "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A02/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM//FFAB73E1-5B63-0B43-867E-B35DB3C75E60.root",
+            "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A02/QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM//FAFF5EE2-F08F-0D4F-A43A-8990712DF75B.root",
             "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A02/JetHT+Run2018C-UL2018_MiniAODv2-v1+MINIAOD//FFE35F7A-1786-BE4F-8AF4-66DEA58012F3.root",
         ],
         "out_file": "out.hdf5",
@@ -46,7 +46,7 @@ runs = {
         "script": "condor_Scouting.py",
         "options": [
             "--isMC 1 --era 2018 --doSyst 1",
-            "--isMC 0 --era 2018 --doSyst 1",
+            "--isMC 0 --era 2018 --doSyst 0",
         ],
         "root_files": [
             "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosc/E07/QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18RECO-106X_upgrade2018_realistic_v11_L1v1-v2+AODSIM//FFEBDF0B-33D5-F84A-B899-0F8EF89FA734.root",
@@ -58,8 +58,8 @@ runs = {
         "singularity": "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest",
         "script": "condor_SUEP_WH.py",
         "options": [
-            "--isMC 1 --era 2018 --doSyst 1",
-            "--isMC 0 --era 2018 --doSyst 1",
+            "--isMC 1 --era 2018 --doSyst 1 --maxChunks 2",
+            "--isMC 0 --era 2018 --doSyst 0",
         ],
         "root_files": [
             "root://xrootd.cmsaf.mit.edu//store/user/paus/nanosu/A02/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM//FFAB73E1-5B63-0B43-867E-B35DB3C75E60.root",
