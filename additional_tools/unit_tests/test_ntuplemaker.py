@@ -31,7 +31,7 @@ Define here the runs you want to test. Parameters:
 runs = {
     "ggF-Offline": {
         "singularity": "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest",
-        "script": "condor_SUEP_WS.py",
+        "script": "condor_SUEP_ggF.py",
         "options": [
             "--isMC 1 --era 2016 --doSyst 1",
             "--isMC 0 --era 2018 --doSyst 1",

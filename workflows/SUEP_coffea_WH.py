@@ -13,7 +13,7 @@ import vector
 from coffea import processor
 
 # IO utils
-import workflows.pandas_utils as pandas_utils
+from workflows.utils import pandas_utils
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
@@ -28,7 +28,7 @@ from workflows.CMS_corrections.track_killing_utils import (
     scout_track_killing,
     track_killing,
 )
-from workflows.pandas_accumulator import pandas_accumulator
+from workflows.utils.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
