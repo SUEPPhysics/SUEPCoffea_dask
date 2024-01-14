@@ -83,7 +83,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "btag": Jets.btagDeepFlavB,
                 "jetId": Jets.jetId,
                 "hadronFlavour": Jets.hadronFlavour,
-                "qgl": Jets.qgl
+                "qgl": Jets.qgl,
             },
             with_name="Momentum4D",
         )
@@ -91,7 +91,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.6)
         else:
             # jet pt cut, eta cut, and minimum separation from lepton
-            jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4) & (Jets_awk.deltaR(lepton[:,0]) >= 0.4)
+            jet_awk_Cut = (
+                (Jets_awk.pt > 30)
+                & (abs(Jets_awk.eta) < 2.4)
+                & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
+            )
         Jets_correct = Jets_awk[jet_awk_Cut]
 
         return Jets_correct
@@ -300,48 +304,79 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
-        
-        
-        
+
         # saving number of bjets for different definitions (higher or lower requirements on b-likeliness) - see btag_utils.py
         output["vars"]["nBLoose"] = ak.sum(
-            (ak4jets.btag >= btagcuts("Loose", int(self.era))), axis=1)[:]
+            (ak4jets.btag >= btagcuts("Loose", int(self.era))), axis=1
+        )[:]
         output["vars"]["nBMedium"] = ak.sum(
-            (ak4jets.btag >= btagcuts("Medium", int(self.era))), axis=1)[:]
+            (ak4jets.btag >= btagcuts("Medium", int(self.era))), axis=1
+        )[:]
         output["vars"]["nBTight"] = ak.sum(
-            (ak4jets.btag >= btagcuts("Tight", int(self.era))), axis=1)[:]
-        
+            (ak4jets.btag >= btagcuts("Tight", int(self.era))), axis=1
+        )[:]
+
         # saving kinematic variables for three leading pT jets
         highpt_jet = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
         jets_pTsorted = ak4jets[highpt_jet]
-        output["vars"]["jet1_pT" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.pt, 1, axis=1, clip=True), 0.0)[:, 0]
-        output["vars"]["jet1_phi" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.phi, 1, axis=1, clip=True), -999)[:, 0]
-        output["vars"]["jet1_eta" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.eta, 1, axis=1, clip=True), -999)[:, 0]
-        output["vars"]["jet1_qgl" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.qgl, 1, axis=1, clip=True), -1.0)[:, 0]
-        output["vars"]["jet2_pT" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.pt, 2, axis=1, clip=True), 0.0)[:, 1]
-        output["vars"]["jet2_phi" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.pt, 2, axis=1, clip=True), -999)[:, 1]
-        output["vars"]["jet2_eta" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.pt, 2, axis=1, clip=True), -999)[:, 1]
-        output["vars"]["jet2_qgl" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.qgl, 2, axis=1, clip=True), -1.0)[:, 1]
-        output["vars"]["jet3_pT" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.pt, 3, axis=1, clip=True), 0.0)[:, 2]
-        output["vars"]["jet3_phi" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.phi, 3, axis=1, clip=True), -999)[:, 2]
-        output["vars"]["jet3_eta" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.eta, 3, axis=1, clip=True), -999)[:, 2]
-        output["vars"]["jet3_qgl" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.qgl, 3, axis=1, clip=True), -1.0)[:, 2]
+        output["vars"]["jet1_pT" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.pt, 1, axis=1, clip=True), 0.0
+        )[:, 0]
+        output["vars"]["jet1_phi" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.phi, 1, axis=1, clip=True), -999
+        )[:, 0]
+        output["vars"]["jet1_eta" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.eta, 1, axis=1, clip=True), -999
+        )[:, 0]
+        output["vars"]["jet1_qgl" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.qgl, 1, axis=1, clip=True), -1.0
+        )[:, 0]
+        output["vars"]["jet2_pT" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.pt, 2, axis=1, clip=True), 0.0
+        )[:, 1]
+        output["vars"]["jet2_phi" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.pt, 2, axis=1, clip=True), -999
+        )[:, 1]
+        output["vars"]["jet2_eta" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.pt, 2, axis=1, clip=True), -999
+        )[:, 1]
+        output["vars"]["jet2_qgl" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.qgl, 2, axis=1, clip=True), -1.0
+        )[:, 1]
+        output["vars"]["jet3_pT" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.pt, 3, axis=1, clip=True), 0.0
+        )[:, 2]
+        output["vars"]["jet3_phi" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.phi, 3, axis=1, clip=True), -999
+        )[:, 2]
+        output["vars"]["jet3_eta" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.eta, 3, axis=1, clip=True), -999
+        )[:, 2]
+        output["vars"]["jet3_qgl" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.qgl, 3, axis=1, clip=True), -1.0
+        )[:, 2]
 
         highbtag_jet = ak.argsort(ak4jets.btag, axis=1, ascending=False, stable=True)
         jets_btag_sorted = ak4jets[highbtag_jet]
-        output["vars"]["bjet_pt" + out_label] = ak.fill_none(ak.pad_none(jets_btag_sorted.pt, 1, axis=1, clip=True), 0.0)[:, 0]
-        output["vars"]["bjet_phi" + out_label] = ak.fill_none(ak.pad_none(jets_btag_sorted.phi, 1, axis=1, clip=True), -1)[:, 0]
-        output["vars"]["bjet_eta" + out_label] = ak.fill_none(ak.pad_none(jets_btag_sorted.eta, 1, axis=1, clip=True), -1)[:, 0]
-        output["vars"]["bjet_qgl" + out_label] = ak.fill_none(ak.pad_none(jets_pTsorted.qgl, 1, axis=1, clip=True), -1.0)[:, 0]
-
-
+        output["vars"]["bjet_pt" + out_label] = ak.fill_none(
+            ak.pad_none(jets_btag_sorted.pt, 1, axis=1, clip=True), 0.0
+        )[:, 0]
+        output["vars"]["bjet_phi" + out_label] = ak.fill_none(
+            ak.pad_none(jets_btag_sorted.phi, 1, axis=1, clip=True), -1
+        )[:, 0]
+        output["vars"]["bjet_eta" + out_label] = ak.fill_none(
+            ak.pad_none(jets_btag_sorted.eta, 1, axis=1, clip=True), -1
+        )[:, 0]
+        output["vars"]["bjet_qgl" + out_label] = ak.fill_none(
+            ak.pad_none(jets_pTsorted.qgl, 1, axis=1, clip=True), -1.0
+        )[:, 0]
 
         if out_label == "":
             output["vars"]["event" + out_label] = events.event.to_list()
             output["vars"]["run" + out_label] = events.run
             output["vars"]["luminosityBlock" + out_label] = events.luminosityBlock
             output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
-            '''output["vars"]["ht_JEC" + out_label] = ak.sum(
+            """output["vars"]["ht_JEC" + out_label] = ak.sum(
                 jets_jec.pt, axis=-1
             ).to_list()
             output["vars"]["ht_JEC" + out_label + "_JER_up"] = ak.sum(
@@ -355,37 +390,37 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ).to_list()
             output["vars"]["ht_JEC" + out_label + "_JES_down"] = ak.sum(
                 jets_jec_JESDown.pt, axis=-1
-            ).to_list()'''
+            ).to_list()"""
 
             output["vars"]["CaloMET_pt" + out_label] = events.CaloMET.pt
             output["vars"]["CaloMET_phi" + out_label] = events.CaloMET.phi
             output["vars"]["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
             output["vars"]["PuppiMET_pt" + out_label] = events.PuppiMET.pt
-            '''output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
+            """output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
             output["vars"][
                 "PuppiMET_pt" + out_label + "_JER_down"
             ] = PuppiMET_pt_JERDown
             output["vars"]["PuppiMET_pt" + out_label + "_JES_up"] = PuppiMET_pt_JESUp
             output["vars"][
                 "PuppiMET_pt" + out_label + "_JES_down"
-            ] = PuppiMET_pt_JESDown'''
+            ] = PuppiMET_pt_JESDown"""
             output["vars"]["PuppiMET_phi" + out_label] = events.PuppiMET.phi
-            '''output["vars"]["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
+            """output["vars"]["PuppiMET_phi" + out_label + "_JER_up"] = PuppiMET_phi_JERUp
             output["vars"][
                 "PuppiMET_phi" + out_label + "_JER_down"
             ] = PuppiMET_phi_JERDown
             output["vars"]["PuppiMET_phi" + out_label + "_JES_up"] = PuppiMET_phi_JESUp
             output["vars"][
                 "PuppiMET_phi" + out_label + "_JES_down"
-            ] = PuppiMET_phi_JESDown'''
+            ] = PuppiMET_phi_JESDown"""
             output["vars"]["PuppiMET_sumEt" + out_label] = events.PuppiMET.sumEt
-            '''output["vars"]["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
+            """output["vars"]["RawPuppiMET_pt" + out_label] = events.RawPuppiMET.pt
             output["vars"]["RawPuppiMET_phi" + out_label] = events.RawPuppiMET.phi
-            output["vars"]["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt'''
+            output["vars"]["RawPuppiMET_sumEt" + out_label] = events.RawPuppiMET.sumEt"""
             output["vars"]["MET_pt" + out_label] = events.MET.pt
             output["vars"]["MET_phi" + out_label] = events.MET.phi
             output["vars"]["MET_sumEt" + out_label] = events.MET.sumEt
-            '''output["vars"]["MET_JEC_pt" + out_label] = met_c.pt
+            """output["vars"]["MET_JEC_pt" + out_label] = met_c.pt
             output["vars"]["MET_JEC_pt" + out_label + "_JER_up"] = MET_JEC_pt_JERUp
             output["vars"]["MET_JEC_pt" + out_label + "_JER_down"] = MET_JEC_pt_JERDown
             output["vars"]["MET_JEC_pt" + out_label + "_JES_up"] = MET_JEC_pt_JESUp
@@ -411,7 +446,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"][
                 "MET_JEC_phi" + out_label + "_UnclusteredEnergy_down"
             ] = MET_JEC_phi_UnclusteredEnergyDown
-            output["vars"]["MET_JEC_sumEt" + out_label] = met_c.sumEt'''
+            output["vars"]["MET_JEC_sumEt" + out_label] = met_c.sumEt"""
 
             # store event weights for MC
             if self.isMC and self.scouting == 0:
@@ -427,16 +462,17 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output["vars"]["Pileup_nTrueInt" + out_label] = events.Pileup.nTrueInt
                 psweights = GetPSWeights(self, events)  # Parton Shower weights
                 if len(psweights) == 4:
-                    output['vars']["PSWeight_ISR_up" + out_label] = psweights[0]
-                    output['vars']["PSWeight_ISR_down" + out_label] = psweights[1]
-                    output['vars']["PSWeight_FSR_up" + out_label] = psweights[2]
-                    output['vars']["PSWeight_FSR_down" + out_label] = psweights[3]
+                    output["vars"]["PSWeight_ISR_up" + out_label] = psweights[0]
+                    output["vars"]["PSWeight_ISR_down" + out_label] = psweights[1]
+                    output["vars"]["PSWeight_FSR_up" + out_label] = psweights[2]
+                    output["vars"]["PSWeight_FSR_down" + out_label] = psweights[3]
                 else:
-                    output['vars']["PSWeight" + out_label] = psweights
+                    output["vars"]["PSWeight" + out_label] = psweights
 
                 bTagWeights = doBTagWeights(
-                    events, ak4jets, int(self.era), "L", do_syst=self.do_syst)  # Does not change selection
-                output["vars"]["bTagWeight"] = bTagWeights["central"][:] # BTag weights
+                    events, ak4jets, int(self.era), "L", do_syst=self.do_syst
+                )  # Does not change selection
+                output["vars"]["bTagWeight"] = bTagWeights["central"][:]  # BTag weights
 
                 prefireweights = GetPrefireWeights(self, events)  # Prefire weights
                 output["vars"]["prefire_nom"] = prefireweights[0]
@@ -492,9 +528,23 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         lepton_pt = lepton.pt[:, 0]
         lepton_phi = lepton.phi[:, 0]
 
-        W_mT_from_CaloMET, W_pT_from_CaloMET, W_phi_from_CaloMET = WH_utils.W_kinematics(lepton_pt, lepton_phi, events.CaloMET.pt, events.CaloMET.phi)
-        W_mT_from_PuppiMET, W_pT_from_PuppiMET, W_phi_from_PuppiMET = WH_utils.W_kinematics(lepton_pt, lepton_phi, events.PuppiMET.pt, events.PuppiMET.phi)
-        W_mT_from_MET, W_pT_from_MET, W_phi_from_MET = WH_utils.W_kinematics(lepton_pt, lepton_phi, events.MET.pt, events.MET.phi)
+        (
+            W_mT_from_CaloMET,
+            W_pT_from_CaloMET,
+            W_phi_from_CaloMET,
+        ) = WH_utils.W_kinematics(
+            lepton_pt, lepton_phi, events.CaloMET.pt, events.CaloMET.phi
+        )
+        (
+            W_mT_from_PuppiMET,
+            W_pT_from_PuppiMET,
+            W_phi_from_PuppiMET,
+        ) = WH_utils.W_kinematics(
+            lepton_pt, lepton_phi, events.PuppiMET.pt, events.PuppiMET.phi
+        )
+        W_mT_from_MET, W_pT_from_MET, W_phi_from_MET = WH_utils.W_kinematics(
+            lepton_pt, lepton_phi, events.MET.pt, events.MET.phi
+        )
 
         # W transverse mass for different METs -- zero mass for lepton, MET in Mt calculation
         output["vars"]["W_mT_from_CaloMET" + out_label] = W_mT_from_CaloMET
@@ -512,16 +562,27 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # delta phi for lepton and dif METs
 
         # using hand written function
-        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(lepton_phi, events.CaloMET.phi)
-        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(lepton_phi, events.PuppiMET.phi)
-        output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(lepton_phi, events.MET.phi)
+        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(
+            lepton_phi, events.CaloMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(
+            lepton_phi, events.PuppiMET.phi
+        )
+        output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(
+            lepton_phi, events.MET.phi
+        )
         # output["vars"]["deltaPhi_lepton_MET_JEC" + out_label] = WH_utils.delta_phi(lepton_phi, met_c.phi)
 
         # using vector function
-        output["vars"]["deltaPhi_lepton_CaloMET_func"] = WH_utils.MET_delta_phi(lepton, events.CaloMET)
-        output["vars"]["deltaPhi_lepton_PuppiMET_func"] = WH_utils.MET_delta_phi(lepton, events.PuppiMET)
-        output["vars"]["deltaPhi_lepton_MET_func"] = WH_utils.MET_delta_phi(lepton, events.MET)
-
+        output["vars"]["deltaPhi_lepton_CaloMET_func"] = WH_utils.MET_delta_phi(
+            lepton, events.CaloMET
+        )
+        output["vars"]["deltaPhi_lepton_PuppiMET_func"] = WH_utils.MET_delta_phi(
+            lepton, events.PuppiMET
+        )
+        output["vars"]["deltaPhi_lepton_MET_func"] = WH_utils.MET_delta_phi(
+            lepton, events.MET
+        )
 
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################

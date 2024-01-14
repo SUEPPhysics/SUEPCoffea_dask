@@ -90,7 +90,7 @@ def make_selection(
     whether a list of booleans is returned matching the indices that
     passed and failed the selection.
     """
-    
+
     if operator in ["greater than", "gt", ">"]:
         if apply:
             return df.loc[(df[variable] > value)]
@@ -211,7 +211,9 @@ def prepare_DataFrame(
             if type(sel) is str:
                 sel = sel.split(" ")
             if sel[0] not in df.keys():
-                raise Exception("Trying to apply a cut on a variable that does not exist in the DataFrame")
+                raise Exception(
+                    "Trying to apply a cut on a variable that does not exist in the DataFrame"
+                )
             if type(sel[2]) is str and sel[2].isdigit():
                 sel[2] = float(sel[2])  # convert to float if it's a number
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
