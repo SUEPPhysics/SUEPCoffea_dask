@@ -12,9 +12,6 @@ import pandas as pd
 import vector
 from coffea import processor
 
-# IO utils
-import workflows.pandas_utils as pandas_utils
-
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
 import workflows.WH_utils as WH_utils
@@ -30,7 +27,10 @@ from workflows.CMS_corrections.track_killing_utils import (
     scout_track_killing,
     track_killing,
 )
-from workflows.pandas_accumulator import pandas_accumulator
+
+# IO utils
+from workflows.utils import pandas_utils
+from workflows.utils.pandas_accumulator import pandas_accumulator
 
 # Set vector behavior
 vector.register_awkward()
@@ -337,6 +337,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
 
         if out_label == "":
+            output["vars"]["event" + out_label] = events.event.to_list()
+            output["vars"]["run" + out_label] = events.run
+            output["vars"]["luminosityBlock" + out_label] = events.luminosityBlock
             output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
             '''output["vars"]["ht_JEC" + out_label] = ak.sum(
                 jets_jec.pt, axis=-1
@@ -430,10 +433,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     output['vars']["PSWeight_FSR_down" + out_label] = psweights[3]
                 else:
                     output['vars']["PSWeight" + out_label] = psweights
-                GetPrefireWeights(self, events)  # Prefire weights
+
                 bTagWeights = doBTagWeights(
                     events, ak4jets, int(self.era), "L", do_syst=self.do_syst)  # Does not change selection
                 output["vars"]["bTagWeight"] = bTagWeights["central"][:] # BTag weights
+
+                prefireweights = GetPrefireWeights(self, events)  # Prefire weights
+                output["vars"]["prefire_nom"] = prefireweights[0]
+                output["vars"]["prefire_up"] = prefireweights[1]
+                output["vars"]["prefire_down"] = prefireweights[2]
+
             output["vars"]["PV_npvs" + out_label] = events.PV.npvs
             output["vars"]["PV_npvsGood" + out_label] = events.PV.npvsGood
 

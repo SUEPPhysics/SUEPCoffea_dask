@@ -303,10 +303,9 @@ def parslExecutor(args, processor_instance, sample_dict, env_extra, condor_extra
 def daskExecutor(args, processor_instance, sample_dict, env_extra, condor_extra):
     import shutil
 
+    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
     from dask_jobqueue import HTCondorCluster, SLURMCluster
     from distributed.diagnostics.plugin import UploadDirectory
-
-    from dask.distributed import Client, Worker, WorkerPlugin, performance_report
 
     if "lpc" in args.executor:
         env_extra = [
@@ -452,7 +451,7 @@ def nativeExecutors(args, processor_instance, sample_dict):
 
 
 def getWeights(args, sample_dict):
-    from workflows.GenSumWeightExtract import GenSumWeightExtractor
+    from workflows.utils.GenSumWeightExtract import GenSumWeightExtractor
 
     genSumW_instance = GenSumWeightExtractor()
     genSumW = processor.run_uproot_job(

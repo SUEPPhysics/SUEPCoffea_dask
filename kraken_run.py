@@ -160,7 +160,7 @@ def main():
             outfile = "out"
             file_ext = "hdf5"
         else:
-            condor_file = "condor_SUEP_WS.py"
+            condor_file = "condor_SUEP_ggF.py"
             outfile = "out"
             file_ext = "hdf5"
     elif options.channel == "WH":

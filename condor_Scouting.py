@@ -1,13 +1,14 @@
 import argparse
 import os
 
-# SUEP Repo Specific
-from coffea import processor
-
 # Import coffea specific features
-from coffea.processor import futures_executor, run_uproot_job
+from coffea import processor
+from coffea.processor import Runner, futures_executor, run_uproot_job
 
-from workflows import SUEP_coffea, merger, root_rewrite
+from workflows import SUEP_coffea
+
+# SUEP Repo Specific
+from workflows.utils import merger, root_rewrite
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -60,6 +61,6 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
+    merger.merge(options, pattern="ntuple_*.hdf5", outFile="out.hdf5")
 
 os.system("rm rewrite.root")

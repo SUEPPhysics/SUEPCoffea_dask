@@ -1,4 +1,5 @@
 import argparse
+import os
 import re
 import sys
 from math import pi
@@ -20,13 +21,9 @@ vector.register_awkward()
 
 
 decaysLabels = {
-    "hadronic": r"$A^' \rightarrow e^{+}e^{-},\mu^{+}\mu^{-},\pi^{+}\pi^{-}$"
-    "\n"
-    "with BR=15,15,70%",
-    "leptonic": r"$A^' \rightarrow e^{+}e^{-},\mu^{+}\mu^{-},\pi^{+}\pi^{-}$"
-    "\n"
-    "with BR=40,40,20%",
-    "generic": r"$A^' \rightarrow \pi^{+}\pi^{-}$" "\n" "with BR=100%",
+    "hadronic": r"$A^' \rightarrow e^{+}e^{-}$ ($15\%$), $\mu^{+}\mu^{-}$ ($15\%$), $\pi^{+}\pi^{-}$ ($70\%$)",
+    "leptonic": r"$A^' \rightarrow e^{+}e^{-}$ ($40\%$), $\mu^{+}\mu^{-}$ ($40\%$), $\pi^{+}\pi^{-}$ ($20\%$)",
+    "generic": r"$A^' \rightarrow \pi^{+}\pi^{-}$ ($100\%$) ",
 }
 
 
@@ -75,6 +72,7 @@ def scale(particles, scalar, method=2):
         e_normed = 500000.0 * np.square(energies / e_max)
     elif method == 2:
         e_normed = 1000.0 * np.tanh(energies / e_max)
+        return e_normed
     else:
         e_normed = 2500.0 * energies / e_max
         return e_normed
@@ -109,27 +107,6 @@ def plot(
 
     # and make AK15 jets
     jetsAK15, jetsAK15_tracks = FastJetReclustering(tracks, 1.5, 150)
-    # jetsAK15_pt = np.zeros(len(jetsAK15_list))
-    # jetsAK15_eta = np.zeros(len(jetsAK15_list))
-    # jetsAK15_phi = np.zeros(len(jetsAK15_list))
-    # jetsAK15_m = np.zeros(len(jetsAK15_list))
-    # i = 0
-    # for jet in jetsAK15_list:
-    #     jetsAK15_pt[i] = jet.pt
-    #     jetsAK15_eta[i] = jet.eta
-    #     jetsAK15_phi[i] = jet.phi
-    #     jetsAK15_m[i] = jet.mass
-    #     i += 1
-    # jetsAK15 = ak.zip(
-    #     {
-    #         "pt": jetsAK15_pt,
-    #         "eta": jetsAK15_eta,
-    #         "phi": jetsAK15_phi,
-    #         "mass": jetsAK15_m,
-    #     },
-    #     with_name="Momentum4D",
-    # )
-
     jetsAK15 = jetsAK15[jetsAK15.pt > 100]
     jetsAK15_tracks = jetsAK15_tracks[jetsAK15.pt > 100]
 
@@ -291,13 +268,6 @@ def plot(
 
     if not boost:
         # Add jet info to the plot
-        ax.scatter(
-            jetsAK15.phi,
-            jetsAK15.eta,
-            s=scale(jetsAK15, scalarParticle),
-            facecolors="none",
-            edgecolors="xkcd:green",
-        )
         for jet in jetsAK15:
             phis, etas = get_dr_ring(1.5, jet.phi, jet.eta)
             phis = phis[1:]
@@ -323,8 +293,8 @@ def plot(
             scalarParticle.phi,
             scalarParticle.eta,
             s=scale(scalarParticle, scalarParticle),
-            facecolors="none",
-            edgecolors="xkcd:red",
+            marker="x",
+            color="xkcd:red",
         )
 
     if showCandidates:
@@ -338,32 +308,27 @@ def plot(
             ak.Array([jetsAK15_tracks], with_name="Momentum4D"),
         )
         SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks = topTwoJets
+        SUEP_pt = SUEP_cand.pt[0]
+        ISR_pt = ISR_cand.pt[0]
 
         if boost:
             ax.scatter(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
-                s=scale(tracks, scalarParticle),
+                s=scale(SUEP_cluster_tracks, scalarParticle),
                 c="xkcd:red",
                 marker="o",
             )
             ax.scatter(
                 ISR_cluster_tracks.phi,
                 ISR_cluster_tracks.eta,
-                s=scale(tracks, scalarParticle),
+                s=scale(ISR_cluster_tracks, scalarParticle),
                 c="xkcd:blue",
                 marker="o",
             )
 
         else:
             # Add SUEP candidate
-            ax.scatter(
-                SUEP_cand.phi,
-                SUEP_cand.eta,
-                s=scale(SUEP_cand, scalarParticle),
-                color="xkcd:red",
-                marker="x",
-            )
             phis, etas = get_dr_ring(1.5, SUEP_cand.phi, SUEP_cand.eta)
             phis = phis[1:]
             etas = etas[1:]
@@ -382,13 +347,6 @@ def plot(
             ax.plot(phis[phis < pi], etas[phis < pi], color="xkcd:red", linestyle="--")
 
             # Add ISR candidate
-            ax.scatter(
-                ISR_cand.phi,
-                ISR_cand.eta,
-                s=scale(ISR_cand, scalarParticle),
-                color="xkcd:blue",
-                marker="x",
-            )
             phis, etas = get_dr_ring(1.5, ISR_cand.phi, ISR_cand.eta)
             phis = phis[1:]
             etas = etas[1:]
@@ -435,9 +393,8 @@ def plot(
         [-100],
         [-100],
         label="Scalar mediator",
-        marker="o",
-        facecolors="none",
-        edgecolors="xkcd:red",
+        marker="x",
+        color="xkcd:red",
     )
     line7 = ax.plot(
         [-100], [-100], label='"Ring of fire"', linestyle="dotted", c="xkcd:red"
@@ -451,24 +408,35 @@ def plot(
         edgecolors="xkcd:green",
     )
     line9 = ax.scatter(
-        [-100], [-100], label="AK15 SUEP Candidate", marker="x", color="xkcd:red"
+        [-100],
+        [-100],
+        label="AK15 SUEP Candidate\n($p_T$ = " + str(round(SUEP_pt)) + " GeV)",
+        facecolor="none",
+        linestyle="--",
+        edgecolors="xkcd:red",
     )
     line10 = ax.scatter(
-        [-100], [-100], label="AK15 ISR Candidate", marker="x", color="xkcd:blue"
+        [-100],
+        [-100],
+        label="AK15 ISR Candidate\n($p_T$ = " + str(round(ISR_pt)) + " GeV)",
+        facecolor="none",
+        linestyle="--",
+        edgecolors="xkcd:blue",
     )
     light_blue_patch = mpatches.Patch(color="xkcd:light blue", label="from scalar")
     magenta_patch = mpatches.Patch(color="xkcd:magenta", label="not from scalar")
-    gray_patch = mpatches.Patch(color="xkcd:gray", label="PF Cands")
-    red_patch = mpatches.Patch(color="xkcd:red", label="ISR Candidate PF Cands")
-    blue_patch = mpatches.Patch(color="xkcd:blue", label="SUEP Candidate PF Cands")
+    gray_patch = mpatches.Patch(color="xkcd:gray", label="Tracks")
+    red_patch = mpatches.Patch(color="xkcd:red", label="SUEP Candidate tracks")
+    blue_patch = mpatches.Patch(color="xkcd:blue", label="ISR Candidate tracks")
     if showGen:
         handles = [line1, line2, line3, line4, line5, light_blue_patch, magenta_patch]
     else:
         handles = [gray_patch]
     if not boost:  # add AK15, scalar mediator
         handles.append(line6)
+    if len(jetsAK15) > 2 and not boost:
         handles.append(line8)
-    if showRingOfFire:
+    if showRingOfFire and boost:
         handles.append(line7)
     if showCandidates:
         if not boost:
@@ -508,7 +476,7 @@ def plot(
         mS, mPhi, temp, decay = params
         _ = ax.text(
             -3,
-            2.3,
+            3.9,
             r"$m_S = {}$ GeV"
             "\n"
             "$T$ = {} GeV"
@@ -518,7 +486,7 @@ def plot(
             "{}".format(mS, temp, mPhi, decaysLabels[decay]),
             fontsize=10,
             horizontalalignment="left",
-            verticalalignment="bottom",
+            verticalalignment="top",
             # transform=ax.transAxes,
         )
 
@@ -551,7 +519,7 @@ def main():
         action="store_true",
         help="Show ring of fire (only in boosted frame)",
     )
-    parser.add_argument("-p", "--pfcands", default=1, type=int, help="Show PFCands")
+    parser.add_argument("-p", "--pfcands", action="store_true", help="Show PFCands")
     parser.add_argument(
         "-c",
         "--candidates",
@@ -621,8 +589,8 @@ def main():
         if args.boost:
             fig = plt.figure(figsize=(12, 7))
             ax1, ax2 = fig.subplots(1, 2)
-            hep.cms.label(llabel="Preliminary", data=False, ax=ax1)
-            hep.cms.label(llabel="Preliminary", data=False, ax=ax2)
+            hep.cms.label(llabel="Simulation Preliminary", data=False, ax=ax1)
+            hep.cms.label(llabel="Simulation Preliminary", data=False, ax=ax2)
             plot(
                 i,
                 this_tracks,
@@ -681,16 +649,24 @@ def main():
             )
 
         # signal case
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
         if params:
             fig.savefig(
-                args.output + "/mS-%d_mPhi-%d_T-%d_decay-%s_Event%d.pdf" % (*params, i)
+                args.output
+                + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}.pdf".format(
+                    *params, i
+                )
             )
             fig.savefig(
-                args.output + "/mS-%d_mPhi-%d_T-%d_decay-%s_Event%d.png" % (*params, i)
+                args.output
+                + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}.png".format(
+                    *params, i
+                )
             )
         else:
-            fig.savefig(args.output + "/Event%d.pdf" % i)
-            fig.savefig(args.output + "/Event%d.png" % i)
+            fig.savefig(args.output + f"/Event{i:d}.pdf")
+            fig.savefig(args.output + f"/Event{i:d}.png")
 
 
 if __name__ == "__main__":

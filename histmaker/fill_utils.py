@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import sys
 from collections import defaultdict
 from copy import deepcopy
@@ -8,8 +9,11 @@ import numpy as np
 import pandas as pd
 
 
-# load hdf5 with pandas
-def h5load(ifile, label):
+def h5load(ifile: str, label: str):
+    """
+    Load a pandas DataFrame from a HDF5 file, including metadata.
+    Nota bene: metadata is unstable, we have found that using pandas==1.4.1 and pytables==3.7.0 works.
+    """
     try:
         with pd.HDFStore(ifile, "r") as store:
             try:
@@ -18,41 +22,61 @@ def h5load(ifile, label):
                 return data, metadata
 
             except KeyError:
-                print("No key", label, ifile)
+                logging.warning("No key", label, ifile)
                 return 0, 0
     except BaseException:
-        print("Some error occurred", ifile)
+        logging.warning("Some error occurred", ifile)
         return 0, 0
 
 
-def getXSection(dataset, year, SUEP=False, path="../data/"):
-    xsection = 1
-    if not SUEP:
-        with open(f"{path}/xsections_{year}.json") as file:
-            MC_xsecs = json.load(file)
-            try:
-                xsection *= MC_xsecs[dataset]["xsec"]
-                xsection *= MC_xsecs[dataset]["kr"]
-                xsection *= MC_xsecs[dataset]["br"]
-            except KeyError:
-                print(
-                    "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
-                )
-                return 1
+def open_ntuple(
+    ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False
+):
+    """
+    Open a ntuple, either locally or on xrootd.
+    """
+    if not xrootd and "root://" not in ifile:
+        return h5load(ifile, "vars")
     else:
-        with open(f"{path}/xsections_{year}_SUEP.json") as file:
-            MC_xsecs = json.load(file)
-            try:
-                xsection *= MC_xsecs[dataset]
-            except KeyError:
-                print(
-                    "WARNING: I did not find the xsection for that MC sample. Check the dataset name and the relevant yaml file"
-                )
-                return 1
+        if "root://" in ifile:
+            xrd_file = ifile
+        else:
+            xrd_file = redirector + ifile
+        just_file = ifile.split("/")[-1].split(".")[0]
+        os.system(f"xrdcp -s {xrd_file} {just_file}.hdf5")
+        return h5load(just_file + ".hdf5", "vars")
+
+
+def close_ntuple(ifile: str) -> None:
+    """
+    Delete the ntuple after it has been copied over via xrootd (see open_ntuple).
+    """
+    just_file = ifile.split("/")[-1].split(".")[0]
+    os.system(f"rm {just_file}.hdf5")
+
+
+def getXSection(dataset: str, year=None, path="../data/") -> float:
+    xsection = 1
+
+    xsec_file = f"{path}/xsections_{year}.json"
+    with open(xsec_file) as file:
+        MC_xsecs = json.load(file)
+        try:
+            xsection *= MC_xsecs[dataset]["xsec"]
+            xsection *= MC_xsecs[dataset]["kr"]
+            xsection *= MC_xsecs[dataset]["br"]
+        except KeyError:
+            logging.warning(
+                f"WARNING: I did not find the xsection for {dataset} in {xsec_file}. Check the dataset name and the relevant yaml file."
+            )
+            return 1
+
     return xsection
 
 
-def make_selection(df, variable, operator, value, apply=True):
+def make_selection(
+    df: pd.DataFrame, variable: str, operator: str, value, apply: bool = True
+) -> pd.DataFrame:
     """
     Apply a selection on DataFrame df based on on the df column'variable'
     using the 'operator' and 'value' passed as arguments to the function.
@@ -93,7 +117,7 @@ def make_selection(df, variable, operator, value, apply=True):
         else:
             return df[variable] == value
     else:
-        sys.exit("Couldn't find operator requested " + operator)
+        raise Exception("Couldn't find operator requested " + operator)
 
 
 def apply_scaling_weights(
@@ -149,9 +173,15 @@ def apply_scaling_weights(
     return df
 
 
-def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
+def prepare_DataFrame(
+    df: pd.DataFrame,
+    config: dict,
+    label_out: str,
+    blind: bool = True,
+    isMC: bool = False,
+) -> pd.DataFrame:
     """
-    Applies blinding and selections. See README.md for more details.
+    Applies blinding, selections, and makes new variables. See README.md for more details.
 
     INPUTS:
         df: input file DataFrame.
@@ -176,12 +206,32 @@ def prepareDataFrame(df, config, label_out, blind=True, isMC=False):
             df = blind_DataFrame(df, label_out, config["SR2"])
 
     # 3. apply selections
-    for sel in config["selections"]:
-        if sel[0] not in df.keys():
-            raise Exception("Trying to apply a cut on a variable that does not exist in the DataFrame")
-            continue
-        df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+    if "selections" in config.keys():
+        for sel in config["selections"]:
+            if type(sel) is str:
+                sel = sel.split(" ")
+            if sel[0] not in df.keys():
+                raise Exception("Trying to apply a cut on a variable that does not exist in the DataFrame")
+            if type(sel[2]) is str and sel[2].isdigit():
+                sel[2] = float(sel[2])  # convert to float if it's a number
+            df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
+    # 4. make new variables
+    if "new_variables" in config.keys():
+        for var in config["new_variables"]:
+            df = make_new_variable(df, var[0], var[1], *var[2])
+
+    return df
+
+
+def make_new_variable(
+    df: pd.DataFrame, name: str, function: callable, *columns: list
+) -> pd.DataFrame:
+    """
+    Make a new column in the DataFrame df by applying the function to the columns
+    passed as *columns. The new column will be named 'name'.
+    """
+    df[name] = function(*[df[col] for col in columns])
     return df
 
 
@@ -209,7 +259,14 @@ def fill_2d_distributions(df, output, label_out, input_method):
         output[key].fill(df[var1], df[var2], weight=df["event_weight"])
 
 
-def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
+def auto_fill(
+    df: pd.DataFrame,
+    output: dict,
+    config: dict,
+    label_out: str,
+    isMC: bool = False,
+    do_abcd: bool = False,
+) -> None:
     input_method = config["input_method"]
 
     #####################################################################################
@@ -218,14 +275,14 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
     #####################################################################################
 
     # 1. fill the distributions as they are saved in the dataframes
-    # 1a. Plot event wide variables
+    # 1a. fill event wide variables
     event_plot_labels = [
         key for key in df.keys() if key + "_" + label_out in list(output.keys())
     ]
     for plot in event_plot_labels:
         output[plot + "_" + label_out].fill(df[plot], weight=df["event_weight"])
 
-    # 1b. Plot method variables
+    # 1b. fill method variables
     method_plot_labels = [
         key
         for key in df.keys()
@@ -287,7 +344,7 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
                 # by default, we only plot the ABCD variables in each region, to reduce the size of the output
                 # the option do_abcd created a histogram of each variable for each region
 
-                # 3a. Plot event wide variables
+                # 3a. fill event wide variables
                 for plot in event_plot_labels:
                     if r + plot + "_" + label_out not in list(output.keys()):
                         continue
@@ -295,7 +352,7 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
                         df_r[plot], weight=df_r["event_weight"]
                     )
 
-                # 3b. Plot method variables
+                # 3b. fill method variables
                 for plot in method_plot_labels:
                     if r + plot.replace(input_method, label_out) not in list(
                         output.keys()
@@ -308,19 +365,19 @@ def auto_fill(df, output, config, label_out, isMC=False, do_abcd=False):
                 iRegion += 1
 
 
-def apply_normalization(plots, norm):
+def apply_normalization(plots: dict, norm: float) -> dict:
     if norm > 0.0:
         for plot in list(plots.keys()):
             plots[plot] = plots[plot] * norm
     else:
-        logging.warning("Norm is 0")
+        logging.warning("Norm is 0, not applying normalization.")
     return plots
 
 
-def get_track_killing_config(config):
+def get_track_killing_config(config: dict) -> dict:
     new_config = {}
     for label_out, _config_out in config.items():
-        label_out_new = label_out + "_track_down"
+        label_out_new = label_out
         new_config[label_out_new] = deepcopy(config[label_out])
         new_config[label_out_new]["input_method"] += "_track_down"
         new_config[label_out_new]["xvar"] += "_track_down"
@@ -340,17 +397,16 @@ def get_track_killing_config(config):
     return new_config
 
 
-def get_jet_corrections_config(config, jet_corrections):
+def get_jet_correction_config(config: dict, jet_correction: str) -> dict:
     new_config = {}
-    for correction in jet_corrections:
-        for label_out, _config_out in config.items():
-            label_out_new = label_out + "_" + correction
-            new_config[label_out_new] = deepcopy(config[label_out])
-            for iSel in range(len(new_config[label_out_new]["selections"])):
-                if "ht" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
-                elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
-                    new_config[label_out_new]["selections"][iSel][0] += "_" + correction
+    for label_out, _config_out in config.items():
+        label_out_new = label_out
+        new_config[label_out_new] = deepcopy(config[label_out])
+        for iSel in range(len(new_config[label_out_new]["selections"])):
+            if "ht" == new_config[label_out_new]["selections"][iSel][0]:
+                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
+            elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
+                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
     return new_config
 
 
@@ -361,11 +417,18 @@ def read_in_weights(fweights):
     return scaling_weights
 
 
-def blind_DataFrame(df, label_out, SR):
+def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
+    """
+    Blind a DataFrame df by removing events that pass the signal region SR definition.
+    Expects a SR defined as a list of lists,
+    e.g. SR = [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+    """
     if len(SR) != 2:
         sys.exit(
             label_out
-            + ": Make sure you have correctly defined your signal region. Exiting."
+            + """: Make sure you have correctly defined your signal region.
+            For now we only support a two-variable SR, because of the way
+            this function was written. Exiting."""
         )
     df = df.loc[
         ~(

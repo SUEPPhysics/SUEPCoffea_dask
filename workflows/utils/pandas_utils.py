@@ -4,6 +4,7 @@ import shutil
 from typing import List, Optional
 
 import awkward as ak
+import coffea
 import pandas as pd
 
 
@@ -53,6 +54,21 @@ def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None):
     else:
         print("self.output_location is None")
         store.close()
+
+
+def format_dataframe(dataframe: pd.DataFrame, reducePrecision: bool = False):
+    """
+    Applies some formatting to efficiently store the data
+    """
+    for key, value in dataframe.items():
+        # hdf5 doesn't store well coffea accumulators, and we don't need them anymore, so convert them to their values
+        if type(value) == coffea.processor.accumulator.value_accumulator:
+            dataframe[key] = value.value
+        # reduce the float precision
+        if reducePrecision:
+            if "float" in str(dataframe[key].dtype):
+                dataframe[key] = dataframe[key].astype("float16")
+    return dataframe
 
 
 def dump_table(
@@ -105,7 +121,6 @@ def dump_table(
         if not os.path.samefile(local_file, destination):
             shutil.copy2(local_file, destination)
         else:
-            # if the file already exists at the destination and is identical to what we are trying to copy, no need to copy it again
             return
         assert os.path.isfile(destination)
     # delete the local file after copying it

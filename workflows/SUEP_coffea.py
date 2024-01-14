@@ -4,6 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
+
 from typing import Optional
 
 import awkward as ak
@@ -11,9 +12,6 @@ import numpy as np
 import pandas as pd
 import vector
 from coffea import processor
-
-# IO utils
-import workflows.pandas_utils as pandas_utils
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
@@ -29,6 +27,9 @@ from workflows.CMS_corrections.track_killing_utils import (
     scout_track_killing,
     track_killing,
 )
+
+# IO utils
+from workflows.utils import pandas_utils
 
 # Set vector behavior
 vector.register_awkward()
@@ -396,6 +397,13 @@ class SUEP_cluster(processor.ProcessorABC):
             jets_jec_JESDown = jets_jec
 
         # save per event variables to a dataframe
+        self.out_vars["event" + out_label] = events.event.to_list()
+        self.out_vars["run" + out_label] = events.run
+
+        if self.scouting == 1:
+            self.out_vars["lumi" + out_label] = events.lumSec
+        else:
+            self.out_vars["luminosityBlock" + out_label] = events.luminosityBlock
         self.out_vars["ntracks" + out_label] = ak.num(tracks).to_list()
         self.out_vars["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
@@ -421,6 +429,7 @@ class SUEP_cluster(processor.ProcessorABC):
             self.out_vars["n_sel_leps"] = ak.to_numpy(ak.num(electrons)) + ak.to_numpy(
                 ak.num(muons)
             )
+            self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
 
             # store event weights for MC
             if self.isMC and self.scouting == 0:
@@ -434,22 +443,32 @@ class SUEP_cluster(processor.ProcessorABC):
                 self.out_vars["HLT_PFHT900" + out_label] = events.HLT.PFHT900
             elif self.scouting == 0:
                 self.out_vars["HLT_PFHT1050" + out_label] = events.HLT.PFHT1050
-            self.out_vars["ngood_ak4jets" + out_label] = ak.num(ak4jets).to_list()
+
             if self.scouting == 1:
                 if self.isMC:
                     self.out_vars["Pileup_nTrueInt" + out_label] = events.PU.num
-                    GetPSWeights(self, events)  # Parton Shower weights
-                    GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = ak.num(events.Vertex.x)
             else:
                 if self.isMC:
                     self.out_vars[
                         "Pileup_nTrueInt" + out_label
                     ] = events.Pileup.nTrueInt
-                    GetPSWeights(self, events)  # Parton Shower weights
-                    GetPrefireWeights(self, events)  # Prefire weights
                 self.out_vars["PV_npvs" + out_label] = events.PV.npvs
                 self.out_vars["PV_npvsGood" + out_label] = events.PV.npvsGood
+
+            if self.isMC:
+                psweights = GetPSWeights(self, events)  # Parton Shower weights
+                if len(psweights) == 4:
+                    self.out_vars["PSWeight_ISR_up" + out_label] = psweights[0]
+                    self.out_vars["PSWeight_ISR_down" + out_label] = psweights[1]
+                    self.out_vars["PSWeight_FSR_up" + out_label] = psweights[2]
+                    self.out_vars["PSWeight_FSR_down" + out_label] = psweights[3]
+                else:
+                    self.out_vars["PSWeight" + out_label] = psweights
+                prefireweights = GetPrefireWeights(self, events)  # Prefire weights
+                self.out_vars["prefire_nom"] = prefireweights[0]
+                self.out_vars["prefire_up"] = prefireweights[1]
+                self.out_vars["prefire_down"] = prefireweights[2]
 
         # get gen SUEP kinematics
         SUEP_genMass = len(events) * [0]
@@ -658,7 +677,6 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # run the analysis
         self.analysis(events)
-        print(self.out_vars)
 
         # output result to dask dataframe accumulator
         if self.accum:
@@ -679,7 +697,8 @@ class SUEP_cluster(processor.ProcessorABC):
                     self,
                     [self.out_vars],
                     ["vars"],
-                    events.behavior["__events_factory__"]._partition_key.replace(
+                    "ntuple_"
+                    + events.behavior["__events_factory__"]._partition_key.replace(
                         "/", "_"
                     )
                     + ".hdf5",

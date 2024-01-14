@@ -5,8 +5,10 @@ import os
 from coffea import processor
 from coffea.processor import Runner, futures_executor, run_uproot_job
 
+from workflows import SUEP_coffea
+
 # SUEP Repo Specific
-from workflows import SUEP_coffea, merger
+from workflows.utils import merger
 
 # Begin argparse
 parser = argparse.ArgumentParser("")
@@ -44,7 +46,7 @@ for instance in modules_era:
         executor=processor.FuturesExecutor(compression=None, workers=1),
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
-        chunksize=100000000,
+        chunksize=1000000,
     )
 
     runner.automatic_retries(
@@ -56,4 +58,4 @@ for instance in modules_era:
         processor_instance=instance,
     )
 
-    merger.merge(options, pattern="condor_*.hdf5", outFile="out.hdf5")
+    merger.merge(options, pattern="ntuple_*.hdf5", outFile="out.hdf5")
