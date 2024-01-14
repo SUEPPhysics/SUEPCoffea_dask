@@ -1,7 +1,7 @@
 import awkward as ak
 import numpy as np
 import vector
-from vector._methods import LorentzMomentum
+from vector._methods import LorentzMomentum, Planar
 
 from workflows.SUEP_utils import sphericity
 
@@ -114,10 +114,10 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     selElectrons = electrons[cutElectrons]
 
     cutHasOneMuon = (ak.num(selMuons, axis=1) == 1) & (
-        ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25
+        ak.max(selMuons.pt, axis=1, mask_identity=False) >= 30
     )
     cutHasOneElec = (ak.num(selElectrons, axis=1) == 1) & (
-        ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25
+        ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 35
     )
     cutOneLep = (
         ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)
@@ -138,19 +138,56 @@ def delta_phi(phi1s, phi2s):
     diffs = []
     for phi1, phi2 in zip(phi1s, phi2s):
         diff = (phi2 - phi1) % (2 * np.pi)
-        diffs.append(min(diff, 2 * np.pi - diff))
-    # print(diffs)
+        true_diff = min(diff, 2 * np.pi - diff)
+        diffs.append(true_diff)
     return diffs
 
+def delta_phi2(phi1s, phi2s):
+    diff = (phi2s - phi1s) % (2 * np.pi)
+    return np.min(np.array([diff, 2 * np.pi - diff]), axis=0)
 
-# transverse mass for m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
-def MT(pT1, pT2, phi1, phi2):
-    phi = phi1 - phi2  # cos even, don't care about sign
-    mt = (
-        2 * np.abs(pT1) * np.abs(pT2) * (1 - np.cos(phi))
-    )  # from PDG review on kinematics, eq 38.61
+def MET_delta_phi(x, MET):
+    # define 4-vectors for MET (x already 4-vector)
+    MET_4v = ak.zip(
+        {
+            "pt": MET.pt,
+            "eta": 0,
+            "phi": MET.phi,
+            "mass": 0,
+        },
+        with_name="Momentum4D",
+    )
 
-    return np.sqrt(mt)
+    signed_dphi = MET_4v.deltaphi(x)
+    abs_dphi = np.abs(signed_dphi)
+    return abs_dphi
+
+
+def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
+
+    # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
+    phi = lepton_phi - MET_phi  # cos even, don't care about sign
+    W_mt_2 = (
+        2 * np.abs(lepton_pt) * np.abs(MET_pt) * (1 - np.cos(phi)) # from PDG review on kinematics, eq 38.61
+    )
+    W_mt = np.sqrt(W_mt_2)
+
+    # pT calculation
+    lepton_ptx = lepton_pt*np.cos(lepton_phi)
+    lepton_pty = lepton_pt*np.sin(lepton_phi)
+    MET_ptx = MET_pt * np.cos(MET_phi)
+    MET_pty = MET_pt * np.sin(MET_phi)
+
+    W_ptx = lepton_ptx + MET_ptx
+    W_pty = lepton_pty + MET_pty
+
+    W_pt = np.sqrt(W_ptx**2 + W_pty**2)
+
+    W_phi = np.arctan2(W_pty, W_ptx)
+
+    return W_mt, W_pt, W_phi
+
+
 
 
 # transverse mass function from vector that takes lepton 4-vector and events.MET
@@ -276,31 +313,11 @@ def HighestPTMethod(
         output["vars"]["SUEP_phi_HighestPT" + out_label],
         output["vars"]["CaloMET_phi" + out_label],
     )
-    output["vars"]["deltaPhi_SUEP_ChsMET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["ChsMET_phi" + out_label],
-    )
-    output["vars"]["deltaPhi_SUEP_TkMET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["TkMET_phi" + out_label],
-    )
-    output["vars"]["deltaPhi_SUEP_RawMET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["RawMET_phi" + out_label],
-    )
     output["vars"]["deltaPhi_SUEP_PuppiMET" + out_label] = delta_phi(
         output["vars"]["SUEP_phi_HighestPT" + out_label],
         output["vars"]["PuppiMET_phi" + out_label],
     )
-    output["vars"]["deltaPhi_SUEP_RawPuppiMET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["RawPuppiMET_phi" + out_label],
-    )
     output["vars"]["deltaPhi_SUEP_MET" + out_label] = delta_phi(
         output["vars"]["SUEP_phi_HighestPT" + out_label],
         output["vars"]["MET_phi" + out_label],
-    )
-    output["vars"]["deltaPhi_SUEP_MET_JEC" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["MET_JEC_phi" + out_label],
     )

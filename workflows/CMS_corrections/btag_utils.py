@@ -1,7 +1,7 @@
 import awkward as ak
 import correctionlib
 import numpy as np
-import pickle5 as pickle
+import pickle
 
 
 def doBTagWeights(events, jetsPre, era, wp="L", do_syst=False):
