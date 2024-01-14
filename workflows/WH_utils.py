@@ -142,9 +142,11 @@ def delta_phi(phi1s, phi2s):
         diffs.append(true_diff)
     return diffs
 
+
 def delta_phi2(phi1s, phi2s):
     diff = (phi2s - phi1s) % (2 * np.pi)
     return np.min(np.array([diff, 2 * np.pi - diff]), axis=0)
+
 
 def MET_delta_phi(x, MET):
     # define 4-vectors for MET (x already 4-vector)
@@ -164,17 +166,19 @@ def MET_delta_phi(x, MET):
 
 
 def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
-
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
     phi = lepton_phi - MET_phi  # cos even, don't care about sign
     W_mt_2 = (
-        2 * np.abs(lepton_pt) * np.abs(MET_pt) * (1 - np.cos(phi)) # from PDG review on kinematics, eq 38.61
+        2
+        * np.abs(lepton_pt)
+        * np.abs(MET_pt)
+        * (1 - np.cos(phi))  # from PDG review on kinematics, eq 38.61
     )
     W_mt = np.sqrt(W_mt_2)
 
     # pT calculation
-    lepton_ptx = lepton_pt*np.cos(lepton_phi)
-    lepton_pty = lepton_pt*np.sin(lepton_phi)
+    lepton_ptx = lepton_pt * np.cos(lepton_phi)
+    lepton_pty = lepton_pt * np.sin(lepton_phi)
     MET_ptx = MET_pt * np.cos(MET_phi)
     MET_pty = MET_pt * np.sin(MET_phi)
 
@@ -186,8 +190,6 @@ def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
     W_phi = np.arctan2(W_pty, W_ptx)
 
     return W_mt, W_pt, W_phi
-
-
 
 
 # transverse mass function from vector that takes lepton 4-vector and events.MET
