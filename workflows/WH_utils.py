@@ -187,28 +187,10 @@ def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
 
     W_pt = np.sqrt(W_ptx**2 + W_pty**2)
 
+    # phi calculation
     W_phi = np.arctan2(W_pty, W_ptx)
 
     return W_mt, W_pt, W_phi
-
-
-# transverse mass function from vector that takes lepton 4-vector and events.MET
-def MT_func(lepton_4v, MET):
-    vector.register_awkward()
-
-    MET_4v = ak.zip(
-        {
-            "pt": MET.pt,
-            "eta": 0,
-            "phi": MET.phi,
-            "mass": 0,
-        },
-        with_name="Momentum4D",
-    )
-
-    W_4v = lepton_4v[:, 0] + MET_4v
-
-    return W_4v.transverse_mass
 
 
 def HighestPTMethod(
