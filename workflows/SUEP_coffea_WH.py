@@ -395,6 +395,18 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["CaloMET_pt" + out_label] = events.CaloMET.pt
             output["vars"]["CaloMET_phi" + out_label] = events.CaloMET.phi
             output["vars"]["CaloMET_sumEt" + out_label] = events.CaloMET.sumEt
+            
+            # Will not be used for nominal analysis but keep around for studies
+            '''output["vars"]["ChsMET_pt" + out_label] = events.ChsMET.pt
+            output["vars"]["ChsMET_phi" + out_label] = events.ChsMET.phi
+            output["vars"]["ChsMET_sumEt" + out_label] = events.ChsMET.sumEt
+            output["vars"]["TkMET_pt" + out_label] = events.TkMET.pt
+            output["vars"]["TkMET_phi" + out_label] = events.TkMET.phi
+            output["vars"]["TkMET_sumEt" + out_label] = events.TkMET.sumEt
+            output["vars"]["RawMET_pt" + out_label] = events.RawMET.pt
+            output["vars"]["RawMET_phi" + out_label] = events.RawMET.phi
+            output["vars"]["RawMET_sumEt" + out_label] = events.RawMET.sumEt'''
+            
             output["vars"]["PuppiMET_pt" + out_label] = events.PuppiMET.pt
             """output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = PuppiMET_pt_JERUp
             output["vars"][
