@@ -573,28 +573,17 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # delta phi for lepton and dif METs
 
-        # using hand written function
-        output["vars"]["deltaPhi_lepton_CaloMET" + out_label] = WH_utils.delta_phi(
-            lepton_phi, events.CaloMET.phi
-        )
-        output["vars"]["deltaPhi_lepton_PuppiMET" + out_label] = WH_utils.delta_phi(
-            lepton_phi, events.PuppiMET.phi
-        )
-        output["vars"]["deltaPhi_lepton_MET" + out_label] = WH_utils.delta_phi(
-            lepton_phi, events.MET.phi
-        )
-        # output["vars"]["deltaPhi_lepton_MET_JEC" + out_label] = WH_utils.delta_phi(lepton_phi, met_c.phi)
-
         # using vector function
-        output["vars"]["deltaPhi_lepton_CaloMET_func"] = WH_utils.MET_delta_phi(
+        output["vars"]["deltaPhi_lepton_CaloMET_func" + out_label] = WH_utils.MET_delta_phi(
             lepton, events.CaloMET
         )
-        output["vars"]["deltaPhi_lepton_PuppiMET_func"] = WH_utils.MET_delta_phi(
+        output["vars"]["deltaPhi_lepton_PuppiMET_func" + out_label] = WH_utils.MET_delta_phi(
             lepton, events.PuppiMET
         )
-        output["vars"]["deltaPhi_lepton_MET_func"] = WH_utils.MET_delta_phi(
+        output["vars"]["deltaPhi_lepton_MET_func" + out_label] = WH_utils.MET_delta_phi(
             lepton, events.MET
         )
+        # output["vars"]["deltaPhi_lepton_MET_JEC_func" + out_label] = WH_utils.delta_phi(lepton_phi, met_c.phi)
 
     def analysis(self, events, output, do_syst=False, out_label=""):
         #####################################################################################
@@ -683,6 +672,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         WH_utils.HighestPTMethod(
             self,
+            events,
             indices,
             tracks,
             ak_inclusive_jets,

@@ -134,20 +134,6 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     return events, selLeptons  # , [coll[cutHasTwoLeps] for coll in extraColls]
 
 
-def delta_phi(phi1s, phi2s):
-    diffs = []
-    for phi1, phi2 in zip(phi1s, phi2s):
-        diff = (phi2 - phi1) % (2 * np.pi)
-        true_diff = min(diff, 2 * np.pi - diff)
-        diffs.append(true_diff)
-    return diffs
-
-
-def delta_phi2(phi1s, phi2s):
-    diff = (phi2s - phi1s) % (2 * np.pi)
-    return np.min(np.array([diff, 2 * np.pi - diff]), axis=0)
-
-
 def MET_delta_phi(x, MET):
     # define 4-vectors for MET (x already 4-vector)
     MET_4v = ak.zip(
@@ -195,6 +181,7 @@ def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
 
 def HighestPTMethod(
     self,
+    events,
     indices,
     tracks,
     jets,
@@ -293,15 +280,12 @@ def HighestPTMethod(
     )
 
     # delta phi for SUEP and MET
-    output["vars"]["deltaPhi_SUEP_CaloMET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["CaloMET_phi" + out_label],
+    output["vars"].loc(indices, "deltaPhi_SUEP_CaloMET" + out_label,
+        MET_delta_phi(SUEP_cand, events[indices].CaloMET),
     )
-    output["vars"]["deltaPhi_SUEP_PuppiMET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["PuppiMET_phi" + out_label],
+    output["vars"].loc(indices, "deltaPhi_SUEP_PuppiMET" + out_label,
+        MET_delta_phi(SUEP_cand, events[indices].PuppiMET),
     )
-    output["vars"]["deltaPhi_SUEP_MET" + out_label] = delta_phi(
-        output["vars"]["SUEP_phi_HighestPT" + out_label],
-        output["vars"]["MET_phi" + out_label],
+    output["vars"].loc(indices, "deltaPhi_SUEP_MET" + out_label,
+        MET_delta_phi(SUEP_cand, events[indices].MET),
     )
