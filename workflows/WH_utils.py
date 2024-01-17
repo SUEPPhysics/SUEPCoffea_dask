@@ -1,4 +1,7 @@
 import awkward as ak
+import numpy as np
+import vector
+from vector._methods import LorentzMomentum, Planar
 
 from workflows.SUEP_utils import sphericity
 
@@ -12,6 +15,19 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "phi": events.Muon.phi,
             "mass": events.Muon.mass,
             "pdgID": events.Muon.pdgId,
+            "ID": (
+                ak.values_astype(events.Muon.tightId, np.int32)
+                + ak.values_astype(events.Muon.mediumId, np.int32)
+                + ak.values_astype(events.Muon.looseId, np.int32)
+            ),  # 1=loose, 2=med, 3=tight cutbased
+            "IDMVA": events.Muon.mvaId,  # 1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight
+            "iso": events.Muon.pfRelIso04_all,  # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
+            "isoMVA": events.Muon.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+            "miniIso": events.Muon.miniPFRelIso_all,
+            "multiIso": events.Muon.multiIsoId,  # 1=MultiIsoLoose, 2=MultiIsoMedium
+            "puppiIso": events.Muon.puppiIsoId,  # 1=Loose, 2=Medium, 3=Tight
+            "dxy": events.Muon.dxy,
+            "dz": events.Muon.dz,
         },
         with_name="Momentum4D",
     )
@@ -23,6 +39,19 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "phi": events.Electron.phi,
             "mass": events.Electron.mass,
             "pdgID": events.Electron.pdgId,
+            "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+            "IDMVA": (
+                ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
+                + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+            ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+            "iso": events.Electron.pfRelIso03_all,
+            "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+            "miniIso": events.Electron.miniPFRelIso_all,
+            "multiIso": -999,
+            "puppiIso": -999,
+            "dxy": events.Electron.dxy,
+            "dz": events.Electron.dz,
         },
         with_name="Momentum4D",
     )
@@ -85,10 +114,10 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     selElectrons = electrons[cutElectrons]
 
     cutHasOneMuon = (ak.num(selMuons, axis=1) == 1) & (
-        ak.max(selMuons.pt, axis=1, mask_identity=False) >= 25
+        ak.max(selMuons.pt, axis=1, mask_identity=False) >= 30
     )
     cutHasOneElec = (ak.num(selElectrons, axis=1) == 1) & (
-        ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 25
+        ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 35
     )
     cutOneLep = (
         ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)
@@ -105,8 +134,54 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     return events, selLeptons  # , [coll[cutHasTwoLeps] for coll in extraColls]
 
 
-def TopPTMethod(
+def MET_delta_phi(x, MET):
+    # define 4-vectors for MET (x already 4-vector)
+    MET_4v = ak.zip(
+        {
+            "pt": MET.pt,
+            "eta": 0,
+            "phi": MET.phi,
+            "mass": 0,
+        },
+        with_name="Momentum4D",
+    )
+
+    signed_dphi = MET_4v.deltaphi(x)
+    abs_dphi = np.abs(signed_dphi)
+    return abs_dphi
+
+
+def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
+    # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
+    phi = lepton_phi - MET_phi  # cos even, don't care about sign
+    W_mt_2 = (
+        2
+        * np.abs(lepton_pt)
+        * np.abs(MET_pt)
+        * (1 - np.cos(phi))  # from PDG review on kinematics, eq 38.61
+    )
+    W_mt = np.sqrt(W_mt_2)
+
+    # pT calculation
+    lepton_ptx = lepton_pt * np.cos(lepton_phi)
+    lepton_pty = lepton_pt * np.sin(lepton_phi)
+    MET_ptx = MET_pt * np.cos(MET_phi)
+    MET_pty = MET_pt * np.sin(MET_phi)
+
+    W_ptx = lepton_ptx + MET_ptx
+    W_pty = lepton_pty + MET_pty
+
+    W_pt = np.sqrt(W_ptx**2 + W_pty**2)
+
+    # phi calculation
+    W_phi = np.arctan2(W_pty, W_ptx)
+
+    return W_mt, W_pt, W_phi
+
+
+def HighestPTMethod(
     self,
+    events,
     indices,
     tracks,
     jets,
@@ -115,8 +190,8 @@ def TopPTMethod(
     out_label=None,
 ):
     #####################################################################################
-    # ---- Top pT Jet (PT)
-    # SUEP defines as the top pT jet
+    # ---- Highest pT Jet (PT)
+    # SUEP defined as the highest pT jet
     #####################################################################################'
 
     # choose highest pT jet
@@ -152,46 +227,71 @@ def TopPTMethod(
 
     # SUEP jet variables
     eigs = sphericity(SUEP_tracks_b, 1.0)  # Set r=1.0 for IRC safe
-    output["vars"].loc(indices, "SUEP_nconst_TopPT" + out_label, ak.num(SUEP_tracks_b))
     output["vars"].loc(
-        indices, "SUEP_pt_avg_b_TopPT" + out_label, ak.mean(SUEP_tracks_b.pt, axis=-1)
+        indices, "SUEP_nconst_HighestPT" + out_label, ak.num(SUEP_tracks_b)
     )
     output["vars"].loc(
-        indices, "SUEP_S1_TopPT" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
+        indices,
+        "SUEP_pt_avg_b_HighestPT" + out_label,
+        ak.mean(SUEP_tracks_b.pt, axis=-1),
+    )
+    output["vars"].loc(
+        indices, "SUEP_S1_HighestPT" + out_label, 1.5 * (eigs[:, 1] + eigs[:, 0])
     )
 
     # unboost for these
     SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
     output["vars"].loc(
-        indices, "SUEP_pt_avg_TopPT" + out_label, ak.mean(SUEP_tracks.pt, axis=-1)
+        indices, "SUEP_pt_avg_HighestPT" + out_label, ak.mean(SUEP_tracks.pt, axis=-1)
     )
-    output["vars"].loc(indices, "SUEP_pt_TopPT" + out_label, SUEP_cand.pt)
-    output["vars"].loc(indices, "SUEP_eta_TopPT" + out_label, SUEP_cand.eta)
-    output["vars"].loc(indices, "SUEP_phi_TopPT" + out_label, SUEP_cand.phi)
-    output["vars"].loc(indices, "SUEP_mass_TopPT" + out_label, SUEP_cand.mass)
+    output["vars"].loc(indices, "SUEP_pt_HighestPT" + out_label, SUEP_cand.pt)
+    output["vars"].loc(indices, "SUEP_eta_HighestPT" + out_label, SUEP_cand.eta)
+    output["vars"].loc(indices, "SUEP_phi_HighestPT" + out_label, SUEP_cand.phi)
+    output["vars"].loc(indices, "SUEP_mass_HighestPT" + out_label, SUEP_cand.mass)
 
     # Calculate gen SUEP and candidate SUEP differences
-    SUEP_genEta_diff_TopPT = (
-        output["vars"]["SUEP_eta_TopPT" + out_label]
+    SUEP_genEta_diff_HighestPT = (
+        output["vars"]["SUEP_eta_HighestPT" + out_label]
         - output["vars"]["SUEP_genEta" + out_label]
     )
-    SUEP_genPhi_diff_TopPT = (
-        output["vars"]["SUEP_phi_TopPT" + out_label]
+    SUEP_genPhi_diff_HighestPT = (
+        output["vars"]["SUEP_phi_HighestPT" + out_label]
         - output["vars"]["SUEP_genPhi" + out_label]
     )
-    SUEP_genR_diff_TopPT = (
-        SUEP_genEta_diff_TopPT**2 + SUEP_genPhi_diff_TopPT**2
+    SUEP_genR_diff_HighestPT = (
+        SUEP_genEta_diff_HighestPT**2 + SUEP_genPhi_diff_HighestPT**2
     ) ** 0.5
-    output["vars"]["SUEP_deltaEtaGen_TopPT" + out_label] = SUEP_genEta_diff_TopPT
-    output["vars"]["SUEP_deltaPhiGen_TopPT" + out_label] = SUEP_genPhi_diff_TopPT
-    output["vars"]["SUEP_deltaRGen_TopPT" + out_label] = SUEP_genR_diff_TopPT
+    output["vars"][
+        "SUEP_deltaEtaGen_HighestPT" + out_label
+    ] = SUEP_genEta_diff_HighestPT
+    output["vars"][
+        "SUEP_deltaPhiGen_HighestPT" + out_label
+    ] = SUEP_genPhi_diff_HighestPT
+    output["vars"]["SUEP_deltaRGen_HighestPT" + out_label] = SUEP_genR_diff_HighestPT
     output["vars"].loc(
         indices,
-        "SUEP_deltaMassGen_TopPT" + out_label,
+        "SUEP_deltaMassGen_HighestPT" + out_label,
         (SUEP_cand.mass - output["vars"]["SUEP_genMass" + out_label][indices]),
     )
     output["vars"].loc(
         indices,
-        "SUEP_deltaPtGen_TopPT" + out_label,
+        "SUEP_deltaPtGen_HighestPT" + out_label,
         (SUEP_cand.pt - output["vars"]["SUEP_genPt" + out_label][indices]),
+    )
+
+    # delta phi for SUEP and MET
+    output["vars"].loc(
+        indices,
+        "deltaPhi_SUEP_CaloMET" + out_label,
+        MET_delta_phi(SUEP_cand, events[indices].CaloMET),
+    )
+    output["vars"].loc(
+        indices,
+        "deltaPhi_SUEP_PuppiMET" + out_label,
+        MET_delta_phi(SUEP_cand, events[indices].PuppiMET),
+    )
+    output["vars"].loc(
+        indices,
+        "deltaPhi_SUEP_MET" + out_label,
+        MET_delta_phi(SUEP_cand, events[indices].MET),
     )

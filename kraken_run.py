@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 
 from plotting.plot_utils import check_proxy
 
@@ -103,15 +104,8 @@ def main():
     parser.add_argument(
         "-doSyst", "--doSyst", type=int, default=1, help="Apply systematics."
     )
-    parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
     parser.add_argument(
         "-p", "--private", type=int, default=0, help="Private SUEP samples."
-    )
-    parser.add_argument(
-        "-ML", "--ML", type=int, default=0, help="ML samples production."
-    )
-    parser.add_argument(
-        "-WH", "--WH", type=int, default=0, help="WH ntuples production."
     )
     parser.add_argument(
         "-cutflow", "--cutflow", type=int, default=0, help="Cutflow analyzer."
@@ -128,6 +122,11 @@ def main():
         "-m", "--maxFiles", type=int, default=-1, help="maximum number of files"
     )
     parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
+    parser.add_argument("--channel", type=str, default="ggF", help="ggF or WH")
+    parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
+    parser.add_argument(
+        "-ML", "--ML", type=int, default=0, help="ML samples production."
+    )
 
     options = parser.parse_args()
 
@@ -151,20 +150,21 @@ def main():
 
     # define which file you want to run, the output file name and extension that it produces
     # these will be transferred back to outdir/outdir_condor
-    if options.scout == 1:
-        condor_file = "condor_Scouting.py"
-        outfile = "out"
-        file_ext = "hdf5"
-    elif options.ML == 1:
-        condor_file = "condor_ML.py"
-        outfile = "out"
-        file_ext = "hdf5"
-    elif options.WH == 1:
+    if options.channel == "ggF":
+        if options.scout == 1:
+            condor_file = "condor_Scouting.py"
+            outfile = "out"
+            file_ext = "hdf5"
+        elif options.ML == 1:
+            condor_file = "condor_ML.py"
+            outfile = "out"
+            file_ext = "hdf5"
+        else:
+            condor_file = "condor_SUEP_ggF.py"
+            outfile = "out"
+            file_ext = "hdf5"
+    elif options.channel == "WH":
         condor_file = "condor_SUEP_WH.py"
-        outfile = "out"
-        file_ext = "hdf5"
-    else:
-        condor_file = "condor_SUEP_ggF.py"
         outfile = "out"
         file_ext = "hdf5"
 
@@ -204,43 +204,69 @@ def main():
 
             # ---- getting the list of file for the dataset by xrdfs ls
 
-            if (options.era == "2018" or options.era == "2017") and options.private:
+            if (
+                (options.era == "2018" or options.era == "2017")
+                and options.private == 1
+                and options.channel == "ggF"
+            ):
                 userOwner = "bmaier/suep"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
             elif (
-                options.era == "2016" or options.era == "2016apv"
-            ) and options.private:
+                (options.era == "2016" or options.era == "2016apv")
+                and options.private == 1
+                and options.channel == "ggF"
+            ):
                 userOwner = "cfreer/suep_correct"
                 sample_path = "/store/user/{}/official_private/{}/{}".format(
                     userOwner, options.era, sample_name
                 )
+            elif options.private == 1 and options.channel == "WH":
+                sample_path = "/jreicher/SUEP/WH_private_signals/merged/"
             elif not options.private and "/" in sample:
                 sample_path = sample
             else:
                 sys.exit("Double check this.")
 
-            # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
-            comm = subprocess.Popen(
-                ["xrdfs", "root://xrootd5.cmsaf.mit.edu/", "ls", sample_path],
-                stdout=subprocess.PIPE,
-            )
-            raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
-
-            if raw_input_list == [""]:
-                missing_samples.append(sample_name)
-
-            # limit to max number of files, if specified
-            if options.maxFiles > 0:
-                raw_input_list = raw_input_list[: options.maxFiles]
-
             Raw_list = []
-            for f in raw_input_list:
-                if len(f) == 0:
-                    continue
-                new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
-                Raw_list.append(new_f)
+            # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
+            if options.channel == "WH" and options.private == 1:
+                # input txt file of signal samples includes the path (samples not in xrdfs so this is current work around)
+                # ^ e.g. /jreicher/SUEP/WH_private_signals/merged/WHleptonicpythia_generic_M125.0_MD2.00_T0.50_HT-1_UL18_NANOAOD
+                # (the above is one file per sample)
+                # shouldn't mess with anything, just a simple work around for joey's WH suep samples in /data/submit/
+                file = (
+                    "root://submit50.mit.edu/"
+                    + sample_path
+                    + "/"
+                    + sample_name
+                    + ".root"
+                    + " 0 0 1 1 1 1"
+                )
+                Raw_list.append(file)
+
+            else:
+                comm = subprocess.Popen(
+                    ["xrdfs", "root://xrootd.cmsaf.mit.edu/", "ls", sample_path],
+                    stdout=subprocess.PIPE,
+                )
+                print(f"xrdfs root://xrootd5.cmsaf.mit.edu/ ls {sample_path}")
+
+                raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
+
+                if raw_input_list == [""]:
+                    missing_samples.append(sample_name)
+
+                # limit to max number of files, if specified
+                if options.maxFiles > 0:
+                    raw_input_list = raw_input_list[: options.maxFiles]
+
+                for f in raw_input_list:
+                    if len(f) == 0:
+                        continue
+                    new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
+                    Raw_list.append(new_f)
 
             # write list of files to inputfiles.dat
             nfiles = 0
@@ -251,7 +277,6 @@ def main():
                     infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
                 infiles.close()
-
             fin_outdir = outdir.format(tag=options.tag, sample=sample_name)
             fin_outdir_condor = outdir_condor.format(
                 tag=options.tag, sample=sample_name

@@ -5,7 +5,7 @@ specify whether you want to plot or merge (--code),
 and specify if you want multithread or Slurm (--method).
 
 e.g.
-python submit.py -i ../filelist/list.txt --isMC 1 --era 2016 -t July2023_2016 -o July2023_2016 --doABCD 1 --code plot --method multithread
+python submit.py -i ../filelist/list.txt --isMC 1 --era 2016 -t July2023_2016 -o July2023_2016 --doABCD 1 --code plot --method multithread --channel WH
 
 If you're not running on submit, you might need to modify the slurm script template
 and some of the work and log paths.
@@ -44,7 +44,7 @@ source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
 cd {work_dir}
 cd ..
-cd plotting/
+cd histmaker/
 {cmd}
 """
 
@@ -112,7 +112,7 @@ if options.method == "slurm":
     os.system(f"mkdir {work_dir}")
     os.system(f"cp -R ../* {work_dir}/.")
     print("Working in", work_dir)
-    work_dir += "/plotting/"
+    work_dir += "/histmaker/"
     log_dir = "/work/submit/{}/SUEP/logs/slurm_{}_{}/".format(
         os.environ["USER"],
         options.code,
@@ -128,7 +128,7 @@ elif options.method == "multithread":
     os.system(f"mkdir {work_dir}")
     os.system(f"cp -R ../* {work_dir}/.")
     print("Working in", work_dir)
-    work_dir += "/plotting/"
+    work_dir += "/histmaker/"
     pool = Pool(
         min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
     )

@@ -7,7 +7,7 @@ It can apply selections, blind, apply corrections and systematics, do ABCD metho
 The output histograms will be saved in a .root file.
 
 e.g.
-python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool>
+python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
 """
 import argparse
 import getpass
