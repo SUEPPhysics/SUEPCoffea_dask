@@ -574,12 +574,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # delta phi for lepton and dif METs
 
         # using vector function
-        output["vars"]["deltaPhi_lepton_CaloMET_func" + out_label] = WH_utils.MET_delta_phi(
-            lepton, events.CaloMET
-        )
-        output["vars"]["deltaPhi_lepton_PuppiMET_func" + out_label] = WH_utils.MET_delta_phi(
-            lepton, events.PuppiMET
-        )
+        output["vars"][
+            "deltaPhi_lepton_CaloMET_func" + out_label
+        ] = WH_utils.MET_delta_phi(lepton, events.CaloMET)
+        output["vars"][
+            "deltaPhi_lepton_PuppiMET_func" + out_label
+        ] = WH_utils.MET_delta_phi(lepton, events.PuppiMET)
         output["vars"]["deltaPhi_lepton_MET_func" + out_label] = WH_utils.MET_delta_phi(
             lepton, events.MET
         )

@@ -280,12 +280,18 @@ def HighestPTMethod(
     )
 
     # delta phi for SUEP and MET
-    output["vars"].loc(indices, "deltaPhi_SUEP_CaloMET" + out_label,
+    output["vars"].loc(
+        indices,
+        "deltaPhi_SUEP_CaloMET" + out_label,
         MET_delta_phi(SUEP_cand, events[indices].CaloMET),
     )
-    output["vars"].loc(indices, "deltaPhi_SUEP_PuppiMET" + out_label,
+    output["vars"].loc(
+        indices,
+        "deltaPhi_SUEP_PuppiMET" + out_label,
         MET_delta_phi(SUEP_cand, events[indices].PuppiMET),
     )
-    output["vars"].loc(indices, "deltaPhi_SUEP_MET" + out_label,
+    output["vars"].loc(
+        indices,
+        "deltaPhi_SUEP_MET" + out_label,
         MET_delta_phi(SUEP_cand, events[indices].MET),
     )
