@@ -603,9 +603,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = self.selectByFilters(events)
         output["cutflow_qualityFilters" + out_label] += len(events)
 
-        # TODO: MET
-        output["cutflow_MET" + out_label] += len(events)
-
         events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
         output["cutflow_oneLepton" + out_label] += len(events)
 
@@ -695,7 +692,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_all_triggers": processor.value_accumulator(float, 0),
                 "cutflow_oneLepton": processor.value_accumulator(float, 0),
                 "cutflow_qualityFilters": processor.value_accumulator(float, 0),
-                "cutflow_MET": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
             }
         )

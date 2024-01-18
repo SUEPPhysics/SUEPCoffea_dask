@@ -76,7 +76,7 @@ def format_metadata(metadata):
     Applies some formatting to efficiently store the metadata
     """
     for key in metadata.keys():
-        if "cutflow" in key:
+        if "cutflow" in key and type(metadata[key]) == coffea.processor.accumulator.value_accumulator:
             metadata[key] = metadata[key].value
     return metadata
 
