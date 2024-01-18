@@ -1,10 +1,11 @@
 import json
 import logging
 import os
+import subprocess
 import sys
 from collections import defaultdict
 from copy import deepcopy
-import subprocess
+
 import numpy as np
 import pandas as pd
 
@@ -55,7 +56,7 @@ def close_ntuple(ifile: str) -> None:
     os.system(f"rm {just_file}.hdf5")
 
 
-def get_git_info(path='.'):
+def get_git_info(path="."):
     """
     Get the current commit and git diff.
     """
@@ -64,8 +65,10 @@ def get_git_info(path='.'):
     os.chdir(path)
 
     # Get the current commit and diff
-    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
-    diff = subprocess.check_output(['git', 'diff']).strip().decode('utf-8')
+    commit = (
+        subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+    )
+    diff = subprocess.check_output(["git", "diff"]).strip().decode("utf-8")
 
     logging.debug(f"Current Commit: {commit}")
     logging.debug(f"Git Diff:\n{diff}")
