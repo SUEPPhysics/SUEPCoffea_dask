@@ -199,7 +199,7 @@ def getSampleNameAndBin(sample_name):
             ]
         ]
     ):
-        sample = "TTBkg"
+        sample = "tt"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif any(
@@ -215,11 +215,11 @@ def getSampleNameAndBin(sample_name):
             ]
         ]
     ):
-        sample = "TTXBkg"
+        sample = "ttX"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif any([s in sample_name for s in ["ST_t", "ST_tW"]]):
-        sample = "STBkg"
+        sample = "ST"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif "WJetsToLNu_HT" in sample_name:
