@@ -239,7 +239,9 @@ def prepare_DataFrame(
             if type(sel[2]) is str and sel[2].isdigit():
                 sel[2] = float(sel[2])  # convert to float if it's a number
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
-            cutflow[sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out] = df.shape[0]
+            cutflow[
+                sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out
+            ] = df.shape[0]
 
     # 4. make new variables
     if "new_variables" in config.keys():
