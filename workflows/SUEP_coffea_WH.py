@@ -544,16 +544,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             W_mT_from_CaloMET,
             W_pT_from_CaloMET,
             W_phi_from_CaloMET,
-        ) = WH_utils.W_kinematics(
-            lepton, events.CaloMET
-        )
+        ) = WH_utils.W_kinematics(lepton, events.CaloMET)
         (
             W_mT_from_PuppiMET,
             W_pT_from_PuppiMET,
             W_phi_from_PuppiMET,
-        ) = WH_utils.W_kinematics(
-            lepton, events.PuppiMET
-        )
+        ) = WH_utils.W_kinematics(lepton, events.PuppiMET)
         W_mT_from_MET, W_pT_from_MET, W_phi_from_MET = WH_utils.W_kinematics(
             lepton, events.MET
         )

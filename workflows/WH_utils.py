@@ -150,10 +150,10 @@ def MET_delta_phi(x, MET):
     abs_dphi = np.abs(signed_dphi)
     return abs_dphi
 
-def W_kinematics(lepton, MET):
 
+def W_kinematics(lepton, MET):
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
-    phi = MET_delta_phi(lepton, MET) # cos even, don't care about sign
+    phi = MET_delta_phi(lepton, MET)  # cos even, don't care about sign
     W_mt_2 = (
         2
         * np.abs(lepton.pt)
@@ -171,7 +171,8 @@ def W_kinematics(lepton, MET):
     # phi calculation
     W_phi = np.arctan2(W_pty, W_ptx)
 
-    return W_mt[:,0], W_pt[:,0], W_phi[:,0]
+    return W_mt[:, 0], W_pt[:, 0], W_phi[:, 0]
+
 
 def HighestPTMethod(
     self,
