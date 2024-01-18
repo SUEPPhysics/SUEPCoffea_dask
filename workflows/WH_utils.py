@@ -153,7 +153,7 @@ def MET_delta_phi(x, MET):
 
 def W_kinematics(lepton, MET):
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
-    phi = MET_delta_phi(lepton, MET)  # cos even, don't care about sign
+    phi = MET_delta_phi(lepton, MET)
     W_mt_2 = (
         2
         * np.abs(lepton.pt)
