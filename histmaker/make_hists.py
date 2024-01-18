@@ -3,8 +3,8 @@ Automatic histogram maker from the ntuples.
 This script can make histograms for either a particular file, or a whole directory/sample of files (files here are intended as the ntuple hdf5 files).
 It will fill all histograms that are part of the output dictionary (initialized in hist_defs.py), if it finds a matching variable in the ntuple dataframe.
 (If doing an ABCD method, it will also fill each variable for each region.)
-It can apply selections, blind, apply corrections and systematics, do ABCD method, and more.
-The output histograms will be saved in a .root file.
+It can apply selections, blind, apply corrections and systematics, do ABCD method, make cutflows, and more.
+The output histograms, cutflows, and metadata will be saved in a .root file.
 
 e.g.
 python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
@@ -147,7 +147,7 @@ def makeParser(parser=None):
 ### Main plotting function  ######################################################################################
 
 
-def plot_systematic(df, metadata, config, syst, options, output):
+def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
     # we might modify this for systematics, so make a copy
     config = config.copy()
 
@@ -268,7 +268,7 @@ def plot_systematic(df, metadata, config, syst, options, output):
 
         # prepare the DataFrame for plotting: blind, selections, new variables
         df_plot = fill_utils.prepare_DataFrame(
-            df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind
+            df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind, cutflow=cutflow
         )
 
         # auto fill all histograms
@@ -403,6 +403,7 @@ def main():
     ntotal = 0
     total_gensumweight = 0
     output = {"labels": []}
+    cutflow = {}
 
     # get list of files
     if options.file:
@@ -451,22 +452,36 @@ def main():
             logging.debug(f"File {ifile} is corrupted, skipping.")
             continue
 
+        # check sample consistency
+        if "sample" in metadata.keys():
+            if sample is None:
+                sample = metadata["sample"]
+            else:
+                assert (
+                    sample == metadata["sample"]
+                ), "This script should only run on one sample at a time."
+
         # update the gensumweight
         if options.isMC and metadata != 0:
+            logging.debug("Updating gensumweight.")
             total_gensumweight += metadata["gensumweight"]
 
-        # check sample consistency
-        if sample is None:
-            sample = metadata["sample"]
-        else:
-            assert (
-                sample == metadata["sample"]
-            ), "This script should only run on one sample at a time."
+        # update the cutflows
+        if metadata != 0 and any(["cutflow" in k for k in metadata.keys()]):
+            logging.debug("Updating cutflows.")
+            for k, v in metadata.items():
+                if "cutflow" in k:
+                    if k not in cutflow.keys():
+                        cutflow[k] = v
+                    else:
+                        cutflow[k] += v
 
-        # check if file is empty
+        # check if any events passed the selections
         if "empty" in list(df.keys()):
+            logging.debug("No events passed the selections, skipping.")
             continue
         if df.shape[0] == 0:
+            logging.debug("No events in file, skipping.")
             continue
 
         # define which systematics to loop over
@@ -521,23 +536,24 @@ def main():
                     ]
 
         logging.debug("Running nominal histograms.")
-        plot_systematic(df, metadata, config, "", options, output)
+        plot_systematic(df, metadata, config, "", options, output, cutflow)
 
         for syst in sys_loop:
             logging.debug(f"Running systematic {syst}")
-            plot_systematic(df, metadata, config, syst, options, output)
+            plot_systematic(df, metadata, config, syst, options, output, cutflow)
 
         # remove file at the end of loop
         if options.xrootd:
+            logging.debug(f"Removing file {ifile}")
             fill_utils.close_ntuple(ifile)
 
     if nfailed > 0:
         logging.warning("Number of files that failed to be read: " + str(nfailed))
 
+    ### Post-processing stuff ########################################################################################
+
     # not needed anymore
     output.pop("labels")
-
-    ### Post-processing stuff ########################################################################################
 
     logging.info("Applying symmetric systematics and normalization.")
 
@@ -602,25 +618,34 @@ def main():
                 logging.warning(f"ZeroDivisionError for {label_out}, skipping.")
                 continue
 
+    # form metadata
+    metadata = {
+        "ntuple_tag": options.tag,
+        "analysis": options.channel,
+        "scouting": options.scouting,
+        "isMC": options.isMC,
+        "era": options.era,
+        "sample": sample,
+        "xsec": xsection,
+        "gensumweight": total_gensumweight,
+        "nfiles": ntotal,
+        "nfailed": nfailed,
+    }
+    if cutflow is not {}:
+        for k, v in cutflow.items():
+            metadata[k] = v
+    commit, diff = fill_utils.get_git_info()
+    metadata["git_commit"] = commit
+    metadata["git_diff"] = diff
+
     ### Write output #################################################################################################
 
     # write histograms and metadata to a root file
     outFile = options.saveDir + "/" + sample + "_" + options.output + ".root"
     logging.info("Saving outputs to " + outFile)
     with uproot.recreate(outFile) as froot:
+
         # write out metadata
-        metadata = {
-            "ntuple_tag": options.tag,
-            "analysis": options.channel,
-            "scouting": options.scouting,
-            "isMC": options.isMC,
-            "era": options.era,
-            "sample": sample,
-            "xsec": xsection,
-            "gensumweight": total_gensumweight,
-            "nfiles": ntotal,
-            "nfailed": nfailed,
-        }
         for k, m in metadata.items():
             froot[f"metadata/{k}"] = str(m)
 

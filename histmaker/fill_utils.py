@@ -4,7 +4,7 @@ import os
 import sys
 from collections import defaultdict
 from copy import deepcopy
-
+import subprocess
 import numpy as np
 import pandas as pd
 
@@ -53,6 +53,24 @@ def close_ntuple(ifile: str) -> None:
     """
     just_file = ifile.split("/")[-1].split(".")[0]
     os.system(f"rm {just_file}.hdf5")
+
+
+def get_git_info(path='.'):
+    """
+    Get the current commit and git diff.
+    """
+
+    # Change directory to the git repo
+    os.chdir(path)
+
+    # Get the current commit and diff
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+    diff = subprocess.check_output(['git', 'diff']).strip().decode('utf-8')
+
+    logging.debug(f"Current Commit: {commit}")
+    logging.debug(f"Git Diff:\n{diff}")
+
+    return commit, diff
 
 
 def getXSection(dataset: str, year=None, path="../data/") -> float:
@@ -179,6 +197,7 @@ def prepare_DataFrame(
     label_out: str,
     blind: bool = True,
     isMC: bool = False,
+    cutflow: dict = {},
 ) -> pd.DataFrame:
     """
     Applies blinding, selections, and makes new variables. See README.md for more details.
@@ -217,6 +236,7 @@ def prepare_DataFrame(
             if type(sel[2]) is str and sel[2].isdigit():
                 sel[2] = float(sel[2])  # convert to float if it's a number
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+            cutflow[sel[0] + "_" + label_out] = df.shape[0]
 
     # 4. make new variables
     if "new_variables" in config.keys():
