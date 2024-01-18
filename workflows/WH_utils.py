@@ -151,32 +151,27 @@ def MET_delta_phi(x, MET):
     return abs_dphi
 
 
-def W_kinematics(lepton_pt, lepton_phi, MET_pt, MET_phi):
+def W_kinematics(lepton, MET):
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
-    phi = lepton_phi - MET_phi  # cos even, don't care about sign
+    phi = MET_delta_phi(lepton, MET)
     W_mt_2 = (
         2
-        * np.abs(lepton_pt)
-        * np.abs(MET_pt)
+        * np.abs(lepton.pt)
+        * np.abs(MET.pt)
         * (1 - np.cos(phi))  # from PDG review on kinematics, eq 38.61
     )
     W_mt = np.sqrt(W_mt_2)
 
     # pT calculation
-    lepton_ptx = lepton_pt * np.cos(lepton_phi)
-    lepton_pty = lepton_pt * np.sin(lepton_phi)
-    MET_ptx = MET_pt * np.cos(MET_phi)
-    MET_pty = MET_pt * np.sin(MET_phi)
-
-    W_ptx = lepton_ptx + MET_ptx
-    W_pty = lepton_pty + MET_pty
+    W_ptx = lepton.px + MET.px
+    W_pty = lepton.py + MET.py
 
     W_pt = np.sqrt(W_ptx**2 + W_pty**2)
 
     # phi calculation
     W_phi = np.arctan2(W_pty, W_ptx)
 
-    return W_mt, W_pt, W_phi
+    return W_mt[:, 0], W_pt[:, 0], W_phi[:, 0]
 
 
 def HighestPTMethod(
