@@ -194,18 +194,28 @@ def getSampleNameAndBin(sample_name):
             s in sample_name
             for s in [
                 "TTJets",
-                "ttZJets",
-                "ttHTobb",
-                "ttHToNonbb",
                 "TTTo2L2Nu",
-                "TTToSemiLeptonic",
-                "TTWJetsToLNu",
-                "TTZToQQ",
-                "TTZToLLNuNu",
+                "TTToSemiLeptonic"
             ]
         ]
     ):
         sample = "TTBkg"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                "ttHTobb",
+                "ttHToNonbb",
+                "TTWJetsToLNu",
+                "TTZToQQ",
+                "TTWJetsToQQ",
+                "TTZToLLNuNu",
+            ]
+        ]
+    ):
+        sample = "TTXBkg"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif any([s in sample_name for s in ["ST_t", "ST_tW"]]):
