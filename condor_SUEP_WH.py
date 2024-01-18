@@ -1,9 +1,10 @@
 import argparse
 import os
-from histmaker.fill_utils import get_git_info
 
 # Import coffea specific features
 from coffea import processor
+
+from histmaker.fill_utils import get_git_info
 
 # SUEP Repo Specific
 from workflows import SUEP_coffea_WH
@@ -31,7 +32,7 @@ def form_metadata(options, output):
         }
     )
     metadata = pandas_utils.format_metadata(metadata)
-    
+
     commit, diff = get_git_info()
     metadata["git_commit"] = commit
     metadata["git_diff"] = diff
@@ -55,8 +56,6 @@ def main():
 
     out_dir = os.getcwd()
     modules_era = []
-
-
 
     modules_era.append(
         SUEP_coffea_WH.SUEP_cluster_WH(
