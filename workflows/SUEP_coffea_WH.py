@@ -114,8 +114,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
 
         # this is just for cutflow
-        output["triggerSingleMuon" + out_label] += len(events[triggerSingleMuon])
-        output["triggerEGamma" + out_label] += len(events[triggerEGamma])
+        output["cutflow_triggerSingleMuon" + out_label] += len(
+            events[triggerSingleMuon]
+        )
+        output["cutflow_triggerEGamma" + out_label] += len(events[triggerEGamma])
 
         events = events[triggerEGamma | triggerSingleMuon]
 
@@ -587,25 +589,22 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Apply triggers, quality filters, MET, and one lepton selections.
         #####################################################################################
 
-        output["total" + out_label] += len(events)
+        output["cutflow_total" + out_label] += len(events)
 
         # golden jsons for offline data
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
 
-        output["goldenJSON" + out_label] += len(events)
+        output["cutflow_goldenJSON" + out_label] += len(events)
 
         events = self.triggerSelection(events, output, out_label)
-        output["all_triggers" + out_label] += len(events)
+        output["cutflow_all_triggers" + out_label] += len(events)
 
         events = self.selectByFilters(events)
-        output["qualityFilters" + out_label] += len(events)
-
-        # TODO: MET
-        output["MET" + out_label] += len(events)
+        output["cutflow_qualityFilters" + out_label] += len(events)
 
         events, selLeptons = WH_utils.selectByLeptons(self, events, lepveto=True)
-        output["oneLepton" + out_label] += len(events)
+        output["cutflow_oneLepton" + out_label] += len(events)
 
         # output empty dataframe if no events pass basic event selection
         if len(events) == 0:
@@ -685,15 +684,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output = processor.dict_accumulator(
             {
                 "gensumweight": processor.value_accumulator(float, 0),
-                "total": processor.value_accumulator(float, 0),
-                "goldenJSON": processor.value_accumulator(float, 0),
-                "triggerSingleMuon": processor.value_accumulator(float, 0),
-                "triggerDoubleMuon": processor.value_accumulator(float, 0),
-                "triggerEGamma": processor.value_accumulator(float, 0),
-                "all_triggers": processor.value_accumulator(float, 0),
-                "oneLepton": processor.value_accumulator(float, 0),
-                "qualityFilters": processor.value_accumulator(float, 0),
-                "MET": processor.value_accumulator(float, 0),
+                "cutflow_total": processor.value_accumulator(float, 0),
+                "cutflow_goldenJSON": processor.value_accumulator(float, 0),
+                "cutflow_triggerSingleMuon": processor.value_accumulator(float, 0),
+                "cutflow_triggerDoubleMuon": processor.value_accumulator(float, 0),
+                "cutflow_triggerEGamma": processor.value_accumulator(float, 0),
+                "cutflow_all_triggers": processor.value_accumulator(float, 0),
+                "cutflow_oneLepton": processor.value_accumulator(float, 0),
+                "cutflow_qualityFilters": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
             }
         )

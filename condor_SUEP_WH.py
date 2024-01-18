@@ -4,6 +4,8 @@ import os
 # Import coffea specific features
 from coffea import processor
 
+from histmaker.fill_utils import get_git_info
+
 # SUEP Repo Specific
 from workflows import SUEP_coffea_WH
 from workflows.utils import pandas_utils
@@ -29,6 +31,13 @@ def form_metadata(options, output):
             if key != "vars"
         }
     )
+    metadata = pandas_utils.format_metadata(metadata)
+
+    commit, diff = get_git_info()
+    metadata["git_commit"] = commit
+    metadata["git_diff"] = diff
+
+    return metadata
 
 
 def main():
