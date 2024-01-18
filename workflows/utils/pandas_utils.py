@@ -70,6 +70,7 @@ def format_dataframe(dataframe: pd.DataFrame, reducePrecision: bool = False):
                 dataframe[key] = dataframe[key].astype("float16")
     return dataframe
 
+
 def format_metadata(metadata):
     """
     Applies some formatting to efficiently store the metadata

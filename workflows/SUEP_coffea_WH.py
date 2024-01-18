@@ -114,7 +114,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
 
         # this is just for cutflow
-        output["cutflow_triggerSingleMuon" + out_label] += len(events[triggerSingleMuon])
+        output["cutflow_triggerSingleMuon" + out_label] += len(
+            events[triggerSingleMuon]
+        )
         output["cutflow_triggerEGamma" + out_label] += len(events[triggerEGamma])
 
         events = events[triggerEGamma | triggerSingleMuon]
