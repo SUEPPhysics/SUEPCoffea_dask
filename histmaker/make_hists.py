@@ -268,7 +268,12 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
 
         # prepare the DataFrame for plotting: blind, selections, new variables
         df_plot = fill_utils.prepare_DataFrame(
-            df.copy(), config_out, label_out, isMC=options.isMC, blind=options.blind, cutflow=cutflow
+            df.copy(),
+            config_out,
+            label_out,
+            isMC=options.isMC,
+            blind=options.blind,
+            cutflow=cutflow,
         )
 
         # auto fill all histograms
@@ -644,7 +649,6 @@ def main():
     outFile = options.saveDir + "/" + sample + "_" + options.output + ".root"
     logging.info("Saving outputs to " + outFile)
     with uproot.recreate(outFile) as froot:
-
         # write out metadata
         for k, m in metadata.items():
             froot[f"metadata/{k}"] = str(m)
