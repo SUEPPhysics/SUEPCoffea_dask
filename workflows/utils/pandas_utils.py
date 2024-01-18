@@ -70,6 +70,15 @@ def format_dataframe(dataframe: pd.DataFrame, reducePrecision: bool = False):
                 dataframe[key] = dataframe[key].astype("float16")
     return dataframe
 
+def format_metadata(metadata):
+    """
+    Applies some formatting to efficiently store the metadata
+    """
+    for key in metadata.keys():
+        if "cutflow" in key:
+            metadata[key] = metadata[key].value
+    return metadata
+
 
 def dump_table(
     self, fname: str, location: str, subdirs: Optional[List[str]] = None

@@ -29,6 +29,8 @@ def form_metadata(options, output):
             if key != "vars"
         }
     )
+    metadata = pandas_utils.format_metadata(metadata)
+    return metadata
 
 
 def main():
