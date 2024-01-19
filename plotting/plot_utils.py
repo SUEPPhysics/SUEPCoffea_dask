@@ -218,7 +218,7 @@ def getSampleNameAndBin(sample_name):
         sample = "ttX"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif any([s in sample_name for s in ["ST_t", "ST_tW"]]):
+    elif any([s in sample_name for s in ["ST_t", "ST_tW", "ST_s"]]):
         sample = "ST"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 

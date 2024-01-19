@@ -29,6 +29,7 @@ def form_metadata(options, output):
             if key != "vars"
         }
     )
+    return metadata
 
 
 def main():
