@@ -4,12 +4,12 @@ This script gets objects from a ROOT file and displays the ones that you tell it
 Event selection is NOT done here, you should pass exactly the (event, run, lumi block) that you want to plot.
 
 e.g.
-python additional_tools/eventDisplay.py 
+python additional_tools/eventDisplay.py
         --file events.txt
-        --input ../WHleptonicpythia_leptonic_M125.0_MD8.00_T8.00_HT-1_UL17_NANOAOD.root 
+        --input ../WHleptonicpythia_leptonic_M125.0_MD8.00_T8.00_HT-1_UL17_NANOAOD.root
         --output ~/public_html/SUEP/event_displays/
-        --leptons --MET --pfcands --WHCandidate 
-        --channel WH 
+        --leptons --MET --pfcands --WHCandidate
+        --channel WH
 
 Author: Luca Lavezzo, based on an older version by Karri di Petrillo
 Date: January 2024
@@ -19,7 +19,9 @@ import argparse
 import os
 import re
 import sys
+from functools import reduce
 from math import pi
+
 import awkward as ak
 import fastjet
 import matplotlib.patches as mpatches
@@ -28,7 +30,6 @@ import mplhep as hep
 import numpy as np
 import uproot
 import vector
-from functools import reduce
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
@@ -53,6 +54,7 @@ def get_dr_ring(dr, phi_c=0, eta_c=0, n_points=600):
     dphi = phi_c + np.concatenate((dphi, -dphi[::-1]))
     return dphi, deta
 
+
 def get_branch_mask(tree, eventsToPlot):
     cuts = []
     _events = tree["event"].array()
@@ -60,17 +62,18 @@ def get_branch_mask(tree, eventsToPlot):
     _lumiBlock = tree["luminosityBlock"].array()
     for i in range(len(eventsToPlot)):
         cut_i = (
-            (eventsToPlot[i,0] == _events)
-            & (eventsToPlot[i,1] == _run)
-            & (eventsToPlot[i,2] == _lumiBlock)
+            (eventsToPlot[i, 0] == _events)
+            & (eventsToPlot[i, 1] == _run)
+            & (eventsToPlot[i, 2] == _lumiBlock)
         )
         cuts.append(cut_i)
     combined_cut = reduce(lambda x, y: x | y, cuts)
     return combined_cut
 
+
 def get_branch(tree, branchname):
     array = tree[branchname].array()
-    if branch_mask is not None: 
+    if branch_mask is not None:
         array = array[branch_mask]
     return array
 
@@ -106,7 +109,7 @@ def getTracks(tree, channel, lepton=None):
         with_name="Momentum4D",
     )
     # Apply track selection
-    if channel == 'ggF':
+    if channel == "ggF":
         trackSelection = (
             (get_branch(tree, "PFCands_fromPV") > 1)
             & (tracks.pt >= 0.75)
@@ -114,15 +117,15 @@ def getTracks(tree, channel, lepton=None):
             & (abs(get_branch(tree, "PFCands_dz")) < 10)
             & (get_branch(tree, "PFCands_dzErr") < 0.05)
         )
-    elif channel == 'WH':
+    elif channel == "WH":
         trackSelection = (
             (get_branch(tree, "PFCands_fromPV") > 1)
             & (tracks.pt >= 1.0)
             & (abs(tracks.eta) <= 2.5)
             & (abs(get_branch(tree, "PFCands_dz")) < 10)
             & (get_branch(tree, "PFCands_dzErr") < 0.05)
-            & (get_branch(tree, 'PFCands_puppiWeight') > 0.1)
-            & (tracks.deltaR(lepton[:,0]) >= 0.4)
+            & (get_branch(tree, "PFCands_puppiWeight") > 0.1)
+            & (tracks.deltaR(lepton[:, 0]) >= 0.4)
         )
     tracks = tracks[trackSelection]
     return tracks
@@ -183,7 +186,10 @@ def getLeptons(tree):
             abs(get_branch(tree, "Electron_dz"))
             < 0.10 + 0.10 * (abs(get_branch(tree, "Electron_eta")) > 1.479)
         )
-        & ((abs(get_branch(tree, "Electron_eta")) < 1.444) | (abs(get_branch(tree, "Electron_eta")) > 1.566))
+        & (
+            (abs(get_branch(tree, "Electron_eta")) < 1.444)
+            | (abs(get_branch(tree, "Electron_eta")) > 1.566)
+        )
         & (abs(get_branch(tree, "Electron_eta")) < 2.5)
     )
     selMuons = muons[cutMuons]
@@ -206,7 +212,6 @@ def getMET(tree):
 
 
 def classifyGenParticles(genParticles):
-
     genParticles_ParentId = genParticles.genPartIdxMother
     genParticles_PdgId = genParticles.pdgId
     genParticles_Status = genParticles.status
@@ -268,11 +273,11 @@ def classifyGenParticles(genParticles):
         isrParticles_gamma,
         isrParticles_pi,
         isrParticles_hadron,
-        scalarParticle
+        scalarParticle,
     )
 
 
-def drawJetCone(ax, jet_eta, jet_phi, R=1.5, color='red'):
+def drawJetCone(ax, jet_eta, jet_phi, R=1.5, color="red"):
     phis, etas = get_dr_ring(R, jet_phi, jet_eta)
     phis = phis[1:]
     etas = etas[1:]
@@ -331,9 +336,20 @@ def plot(
     showLeptons=True,
     showMET=True,
 ):
-    
-    fromScalarParticles_e, fromScalarParticles_mu, fromScalarParticles_gamma, fromScalarParticles_pi, fromScalarParticles_hadron, isrParticles_e, isrParticles_mu, isrParticles_gamma, isrParticles_pi, isrParticles_hadron, scalarParticle = classifyGenParticles(genParticles)
-    
+    (
+        fromScalarParticles_e,
+        fromScalarParticles_mu,
+        fromScalarParticles_gamma,
+        fromScalarParticles_pi,
+        fromScalarParticles_hadron,
+        isrParticles_e,
+        isrParticles_mu,
+        isrParticles_gamma,
+        isrParticles_pi,
+        isrParticles_hadron,
+        scalarParticle,
+    ) = classifyGenParticles(genParticles)
+
     # Boost everything to scalar's rest frame
     if boost:
         boost_SUEP = ak.zip(
@@ -375,7 +391,7 @@ def plot(
     ax.tick_params(axis="both", which="major", labelsize=12)
 
     # Add scatters to figure
-    if showGen: # gen particles
+    if showGen:  # gen particles
         ax.scatter(
             fromScalarParticles_e.phi,
             fromScalarParticles_e.eta,
@@ -458,12 +474,14 @@ def plot(
 
     if showMET:
         phi_center = MET.phi
-        width = MET.pt/scalarParticle[0].energy
-        rectangle = plt.Rectangle((phi_center-width/2, -4), 
-                                  width=width, 
-                                  height=8, 
-                                  alpha=0.5, 
-                                  color='darkorange')
+        width = MET.pt / scalarParticle[0].energy
+        rectangle = plt.Rectangle(
+            (phi_center - width / 2, -4),
+            width=width,
+            height=8,
+            alpha=0.5,
+            color="darkorange",
+        )
         ax.add_patch(rectangle)
 
     if showLeptons:
@@ -478,7 +496,7 @@ def plot(
     if not boost:
         # Add jet info to the plot
         for jet in jetsAK15:
-            ax = drawJetCone(ax, jet.eta, jet.phi, R=1.5, color='xkcd:green')
+            ax = drawJetCone(ax, jet.eta, jet.phi, R=1.5, color="xkcd:green")
 
         # Add the scalar mediator to the plot
         ax.scatter(
@@ -495,7 +513,7 @@ def plot(
         SUEP_cand = jets_pTsorted[0]
         SUEP_pt = SUEP_cand.pt
 
-        if boost: # highlight tracks from SUEP candidate
+        if boost:  # highlight tracks from SUEP candidate
             ax.scatter(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
@@ -504,8 +522,8 @@ def plot(
                 marker="o",
             )
 
-        else: # draw SUEP and ISR ak15 candidates
-            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color='xkcd:red')
+        else:  # draw SUEP and ISR ak15 candidates
+            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
 
     if showOfflineCandidates:
         _, _, topTwoJets = SUEP_utils.getTopTwoJets(
@@ -521,7 +539,7 @@ def plot(
         SUEP_pt = SUEP_cand.pt[0]
         ISR_pt = ISR_cand.pt[0]
 
-        if boost: # highlight tracks from SUEP and ISR candidates
+        if boost:  # highlight tracks from SUEP and ISR candidates
             ax.scatter(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
@@ -537,9 +555,9 @@ def plot(
                 marker="o",
             )
 
-        else: # draw SUEP and ISR ak15 candidates
-            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color='xkcd:red')
-            ax = drawJetCone(ax, ISR_cand.eta, ISR_cand.phi, color='xkcd:blue')
+        else:  # draw SUEP and ISR ak15 candidates
+            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
+            ax = drawJetCone(ax, ISR_cand.eta, ISR_cand.phi, color="xkcd:blue")
 
     if showRingOfFire:
         # draw two straight dashed lines, adjacent to the edges of the ring, that wrap around in phi
@@ -607,9 +625,14 @@ def plot(
     gray_patch = mpatches.Patch(color="xkcd:gray", label="Tracks")
     red_patch = mpatches.Patch(color="xkcd:red", label="SUEP Candidate tracks")
     blue_patch = mpatches.Patch(color="xkcd:blue", label="ISR Candidate tracks")
-    bloodorange_patch = mpatches.Patch(color="darkorange", label="MET\n($p_T$ = " + str(round(MET.pt)) + " GeV)")
+    bloodorange_patch = mpatches.Patch(
+        color="darkorange", label="MET\n($p_T$ = " + str(round(MET.pt)) + " GeV)"
+    )
     if showLeptons and len(leptons) == 1:
-        darkcyan_patch = mpatches.Patch(color="darkcyan", label="Lepton\n($p_T$ = " + str(round(leptons[0].pt)) + " GeV)")
+        darkcyan_patch = mpatches.Patch(
+            color="darkcyan",
+            label="Lepton\n($p_T$ = " + str(round(leptons[0].pt)) + " GeV)",
+        )
     elif showLeptons and len(leptons) > 1:
         darkcyan_patch = mpatches.Patch(color="darkcyan", label="Lepton")
     if showGen:
@@ -731,11 +754,18 @@ def main():
         "-c",
         "--channel",
         type=str,
-        choices=['ggF', 'WH'],
+        choices=["ggF", "WH"],
         required=True,
         help="Channel to plot, used only for object selection.",
     )
-    parser.add_argument("-f", "--file", type=str, required=False, default=None, help="File of event numbers, run number, luminosity blocks to plot.")
+    parser.add_argument(
+        "-f",
+        "--file",
+        type=str,
+        required=False,
+        default=None,
+        help="File of event numbers, run number, luminosity blocks to plot.",
+    )
     args = parser.parse_args()
 
     # get input file
@@ -746,7 +776,7 @@ def main():
     # make a mask to only select the evnets we want to plot
     global branch_mask
     if args.file:
-        eventsToPlot = np.loadtxt(args.file, delimiter=',', dtype=int)
+        eventsToPlot = np.loadtxt(args.file, delimiter=",", dtype=int)
         branch_mask = get_branch_mask(tree, eventsToPlot)
     else:
         branch_mask = None
@@ -763,15 +793,16 @@ def main():
     tracks = getTracks(tree, args.channel, leptons)
     MET = getMET(tree)
     # and make AK15 jets
-    if args.channel == 'ggF':
+    if args.channel == "ggF":
         jetsAK15_pTmin = 200
-    elif args.channel == 'WH':
+    elif args.channel == "WH":
         jetsAK15_pTmin = 60
-    jetsAK15, jetsAK15_tracks = SUEP_utils.FastJetReclustering(tracks, 1.5, jetsAK15_pTmin)
+    jetsAK15, jetsAK15_tracks = SUEP_utils.FastJetReclustering(
+        tracks, 1.5, jetsAK15_pTmin
+    )
 
     # call the plotting function for each event
     for i in range(0, len(tracks)):
-
         if args.max and i > args.max:
             break
 
@@ -808,7 +839,7 @@ def main():
                 showGen=args.gen,
                 showPFCands=args.pfcands,
                 showLeptons=args.leptons,
-                showMET=args.MET
+                showMET=args.MET,
             )
             plot(
                 i,
@@ -827,7 +858,7 @@ def main():
                 showGen=args.gen,
                 showPFCands=args.pfcands,
                 showLeptons=args.leptons,
-                showMET=args.MET
+                showMET=args.MET,
             )
 
         # show boosted only
@@ -852,7 +883,7 @@ def main():
                 showGen=args.gen,
                 showPFCands=args.pfcands,
                 showLeptons=args.leptons,
-                showMET=args.MET
+                showMET=args.MET,
             )
 
         # show unboosted only
@@ -877,7 +908,7 @@ def main():
                 showGen=args.gen,
                 showPFCands=args.pfcands,
                 showLeptons=args.leptons,
-                showMET=args.MET
+                showMET=args.MET,
             )
 
         if not os.path.exists(args.output):
@@ -898,8 +929,14 @@ def main():
                 )
             )
         else:
-            fig.savefig(args.output + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.pdf")
-            fig.savefig(args.output + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png")
+            fig.savefig(
+                args.output
+                + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.pdf"
+            )
+            fig.savefig(
+                args.output
+                + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png"
+            )
 
 
 if __name__ == "__main__":
