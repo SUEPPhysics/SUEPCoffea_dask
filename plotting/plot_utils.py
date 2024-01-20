@@ -256,9 +256,9 @@ def getSampleNameAndBin(sample_name):
 def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dict:
     """
     Fill the plots dictionary with the histograms from the current sample.
-    plots is expected to have dimesions of {sample: {plot: hist}}.
+    plots is expected to have dimensions of {sample: {plot: hist}}.
     this_hists is the dictionary of histograms from the current sample, and
-    is expected to have dimesions of {plot: hist}.
+    is expected to have dimensions of {plot: hist}.
     """
     plotsToAdd = this_hists.copy()
     if norm != 1:
@@ -279,9 +279,9 @@ def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dic
 def fillCutflows(this_metadata: dict, sample: str, cutflows: dict, norm:int = 1) -> dict:
     """
     Fill the cutflows dictionary with the cutflows from the current sample.
-    cutflows is expected to have dimesions of {sample: {selection: value}}.
+    cutflows is expected to have dimensions of {sample: {selection: value}}.
     this_metadata is the dictionary of metadata from the current sample, and
-    is expected to have dimesions of {selection: value}.
+    is expected to have dimensions of {selection: value}.
     """
     metaToAdd = {}
     for key in this_metadata.keys():
