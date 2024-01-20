@@ -189,16 +189,7 @@ def getSampleNameAndBin(sample_name):
         sample = "QCD_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif any(
-        [
-            s in sample_name
-            for s in [
-                "TTJets",
-                "TTTo2L2Nu",
-                "TTToSemiLeptonic"
-            ]
-        ]
-    ):
+    elif any([s in sample_name for s in ["TTJets", "TTTo2L2Nu", "TTToSemiLeptonic"]]):
         sample = "tt"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
@@ -276,7 +267,9 @@ def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dic
     return plots
 
 
-def fillCutflows(this_metadata: dict, sample: str, cutflows: dict, norm:int = 1) -> dict:
+def fillCutflows(
+    this_metadata: dict, sample: str, cutflows: dict, norm: int = 1
+) -> dict:
     """
     Fill the cutflows dictionary with the cutflows from the current sample.
     cutflows is expected to have dimensions of {sample: {selection: value}}.
@@ -320,7 +313,7 @@ def loader(
     by_year=True,
     xsec_SUEP=True,
     load_cutflows=False,
-    verbose=False
+    verbose=False,
 ):
     """
     Load histograms (or cutflows) from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
@@ -387,7 +380,6 @@ def loader(
             samplesToAdd.append("_".join([sample, era]))
             if by_bin and (bin is not None):
                 samplesToAdd.append("_".join([bin, era]))
-
 
         for s in samplesToAdd:
             if load_cutflows:
