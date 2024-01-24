@@ -704,19 +704,19 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if self.isMC and self.do_syst:
             output.update(
                 {
-                    "total_track_down": processor.value_accumulator(float, 0),
-                    "goldenJSON_track_down": processor.value_accumulator(float, 0),
-                    "triggerSingleMuon_track_down": processor.value_accumulator(
+                    "cutflow_total_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_goldenJSON_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_triggerSingleMuon_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "triggerDoubleMuon_track_down": processor.value_accumulator(
+                    "cutflow_triggerDoubleMuon_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "triggerEGamma_track_down": processor.value_accumulator(float, 0),
-                    "all_triggers_track_down": processor.value_accumulator(float, 0),
-                    "oneLepton_track_down": processor.value_accumulator(float, 0),
-                    "qualityFilters_track_down": processor.value_accumulator(float, 0),
-                    "MET_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_triggerEGamma_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_all_triggers_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_oneLepton_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_qualityFilters_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_MET_track_down": processor.value_accumulator(float, 0),
                 }
             )
             output = self.analysis(

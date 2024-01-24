@@ -5,10 +5,10 @@ import os
 import shutil
 import subprocess
 import sys
+import datetime
 
 from plotting.plot_utils import check_proxy
-
-logging.basicConfig(level=logging.DEBUG)
+from histmaker.fill_utils import get_git_info
 
 script_TEMPLATE = """#!/bin/bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh
@@ -127,8 +127,14 @@ def main():
     parser.add_argument(
         "-ML", "--ML", type=int, default=0, help="ML samples production."
     )
-
+    parser.add_argument("--verbose", action="store_true", help="verbose output")
     options = parser.parse_args()
+
+    # set up logging
+    if options.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     # script parameters
     username = getpass.getuser()
@@ -331,6 +337,15 @@ def main():
                 )
                 condorfile.write(condor)
                 condorfile.close()
+
+            # write the git info to a file in the output directory where the ntuples will be stored
+            commit, diff = get_git_info()
+            current_datetime = datetime.datetime.now()
+            formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+            with open(os.path.join(fin_outdir, f"gitinfo_{formatted_datetime}.txt"), "w") as gitinfo:
+                gitinfo.write("Commit: \n" + commit + "\n")
+                gitinfo.write("Diff: \n" + diff + "\n")
+                gitinfo.close()
 
             # don't submit if it's a dryrun
             if options.dryrun:
