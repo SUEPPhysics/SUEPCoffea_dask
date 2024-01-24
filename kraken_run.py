@@ -1,14 +1,14 @@
 import argparse
+import datetime
 import getpass
 import logging
 import os
 import shutil
 import subprocess
 import sys
-import datetime
 
-from plotting.plot_utils import check_proxy
 from histmaker.fill_utils import get_git_info
+from plotting.plot_utils import check_proxy
 
 script_TEMPLATE = """#!/bin/bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh
@@ -342,7 +342,9 @@ def main():
             commit, diff = get_git_info()
             current_datetime = datetime.datetime.now()
             formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-            with open(os.path.join(fin_outdir, f"gitinfo_{formatted_datetime}.txt"), "w") as gitinfo:
+            with open(
+                os.path.join(fin_outdir, f"gitinfo_{formatted_datetime}.txt"), "w"
+            ) as gitinfo:
                 gitinfo.write("Commit: \n" + commit + "\n")
                 gitinfo.write("Diff: \n" + diff + "\n")
                 gitinfo.close()

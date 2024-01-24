@@ -705,17 +705,27 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output.update(
                 {
                     "cutflow_total_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_goldenJSON_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_goldenJSON_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
                     "cutflow_triggerSingleMuon_track_down": processor.value_accumulator(
                         float, 0
                     ),
                     "cutflow_triggerDoubleMuon_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "cutflow_triggerEGamma_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_all_triggers_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_oneLepton_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_qualityFilters_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_triggerEGamma_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "cutflow_all_triggers_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "cutflow_oneLepton_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "cutflow_qualityFilters_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
                     "cutflow_MET_track_down": processor.value_accumulator(float, 0),
                 }
             )

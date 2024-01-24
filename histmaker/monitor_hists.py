@@ -7,14 +7,16 @@ Date: January 2024
 
 import argparse
 import os
+
 import uproot
 from tqdm import tqdm
+
 
 def check_samples(filelist, tag, path, countCheck=False):
     missing_samples = []
     completed_samples = 0
 
-    with open(filelist, 'r') as f:
+    with open(filelist) as f:
         samples = f.read().splitlines()
 
     for sample in tqdm(samples):
@@ -41,13 +43,23 @@ def check_samples(filelist, tag, path, countCheck=False):
         print(f"Missing samples:")
         for sample in missing_samples:
             print(sample)
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Path to the .txt filelist of samples")
     parser.add_argument("--tag", help="Tag to append to the sample names")
-    parser.add_argument("--path", help="Path to the output directory", default="/data/submit/{user}/SUEP/outputs/".format(user=os.environ["USER"]))
-    parser.add_argument("-c", "--countCheck", action='store_true', help="Check that the samples have non-zero counts by counting the number of events in an hitogram. Check the hardcoded histogram that's being used to compute this.") 
+    parser.add_argument(
+        "--path",
+        help="Path to the output directory",
+        default="/data/submit/{user}/SUEP/outputs/".format(user=os.environ["USER"]),
+    )
+    parser.add_argument(
+        "-c",
+        "--countCheck",
+        action="store_true",
+        help="Check that the samples have non-zero counts by counting the number of events in an hitogram. Check the hardcoded histogram that's being used to compute this.",
+    )
     args = parser.parse_args()
 
     check_samples(args.input, args.tag, args.path, countCheck=args.countCheck)
