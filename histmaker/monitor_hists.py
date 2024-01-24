@@ -49,8 +49,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Path to the .txt filelist of samples")
     parser.add_argument("--tag", help="Tag to append to the sample names")
-    parser.add_argument("--path", help="Path to the output directory", default="/data/submit/{user}/SUEP/outputs/".format(user=os.environ["USER"]))
-    parser.add_argument("-c", "--countCheck", action='store_true', help="Check that the samples have non-zero counts by counting the number of events in an histogram. Check the hardcoded histogram that's being used to compute this.") 
+    parser.add_argument(
+        "--path",
+        help="Path to the output directory",
+        default="/data/submit/{user}/SUEP/outputs/".format(user=os.environ["USER"]),
+    )
+    parser.add_argument(
+        "-c",
+        "--countCheck",
+        action="store_true",
+        help="Check that the samples have non-zero counts by counting the number of events in an histogram. Check the hardcoded histogram that's being used to compute this.",
+    )
     args = parser.parse_args()
 
     check_samples(args.input, args.tag, args.path, countCheck=args.countCheck)
