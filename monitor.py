@@ -22,7 +22,14 @@ def isFileGood(fname, label="ch"):
 
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
-    parser.add_argument("-i", "--input", type=str, default="input", help="Input filelist.", required=True)
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        default="input",
+        help="Input filelist.",
+        required=True,
+    )
     parser.add_argument("-t", "--tag", type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
     parser.add_argument(
@@ -40,7 +47,9 @@ def main():
     username = os.environ["USER"]
     proxy_copy = os.path.join(home_base, proxy_base)
 
-    out_dir = "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
+    out_dir = (
+        "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
+    )
     out_dir_xrd = "/" + username + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
     jobs_base_dir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
@@ -81,8 +90,8 @@ def main():
 
     with open(options.input) as stream:
         totals, completeds = 0, 0
-        missing_samples = [] # samples with no inputfiles.dat or output dir
-        empty_samples = [] # samples with  no completed jobs
+        missing_samples = []  # samples with no inputfiles.dat or output dir
+        empty_samples = []  # samples with  no completed jobs
         for sample in stream.read().split("\n"):
             if len(sample) <= 1:
                 continue

@@ -7,14 +7,16 @@ Date: January 2024
 
 import argparse
 import os
+
 import uproot
 from tqdm import tqdm
+
 
 def check_samples(filelist, tag, path, countCheck=False):
     missing_samples = []
     completed_samples = 0
 
-    with open(filelist, 'r') as f:
+    with open(filelist) as f:
         samples = f.read().splitlines()
 
     for sample in tqdm(samples):
@@ -41,7 +43,8 @@ def check_samples(filelist, tag, path, countCheck=False):
         print(f"Missing samples:")
         for sample in missing_samples:
             print(sample)
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Path to the .txt filelist of samples")
