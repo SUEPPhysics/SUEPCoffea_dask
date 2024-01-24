@@ -96,6 +96,12 @@ def get_main_parser():
             "SUEP_fastjet_testing",
             "SUEP_ttbar_sources",
             "SUEP_data",
+            "SUEP_SR",
+            "SUEP_CRprompt",
+            "SUEP_CRcb",
+            "SUEP_CRlight",
+            "SUEP_nbjet_comparison",
+            "SUEP_DYstudy",
         ],
         help="Which processor to run",
         required=True,
@@ -202,6 +208,11 @@ def get_main_parser():
         help="Max number of chunks to run in total",
     )
     parser.add_argument(
+        "--mild_scaleout",
+        action="store_true",
+        help="Parameters for mild scaleout. Use when the scheduler is empty.",
+    )
+    parser.add_argument(
         "--memory", type=str, default="2GB", help="Change worker memory"
     )
     parser.add_argument(
@@ -222,6 +233,7 @@ def get_main_parser():
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
+    parser.add_argument("--check_hlt", action="store_true", help="Check HLT paths")
     return parser
 
 
@@ -322,12 +334,17 @@ def daskExecutor(args, env_extra):
             log_directory="/uscmst1b_scratch/lpc1/3DayLifetime/chpapage/",
             scheduler_options={"dashboard_address": ":44890"},
         )
+        adapt_parameters = {"wait_count": 10}
+        if args.mild_scaleout:
+            adapt_parameters = dict(
+                interval="1m",
+                target_duration="30s",
+                wait_count=10,
+            )
         cluster.adapt(
             minimum=args.scaleout,
             maximum=args.max_scaleout,
-            interval="1m",
-            target_duration="30s",
-            wait_count=10,
+            **adapt_parameters,
         )
         client = Client(cluster)
 
@@ -459,6 +476,24 @@ def getWeights(sample_dict):
         processor_instance=genSumW_instance,
     )
     return genSumW
+
+
+def checkHLTpaths(sample_dict):
+    from workflows.CheckHLTpaths import CheckHLTpaths
+
+    hlt_instance = CheckHLTpaths()
+    hlt_executor = processor.FuturesExecutor(workers=args.workers)
+    hlt_run = processor.Runner(
+        executor=hlt_executor,
+        schema=nanoevents.NanoAODSchema,
+        align_clusters=True,
+    )
+    hlt = hlt_run(
+        fileset=sample_dict,
+        treename="Events",
+        processor_instance=hlt_instance,
+    )
+    return hlt
 
 
 def exportCert(args):
@@ -616,6 +651,144 @@ def setupSUEP_data(args, sample_dict):
     return instance
 
 
+def setupSUEP_SR(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_SR import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
+def setupSUEP_CRprompt(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_CRprompt import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
+def setupSUEP_CRcb(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_CRcb import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
+def setupSUEP_CRlight(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_CRlight import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
+def setupSUEP_nbjet_comparison(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_nbjet_comparison import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
+def setupSUEP_DYstudy(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_DYstudy import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -712,6 +885,12 @@ if __name__ == "__main__":
     if args.validate:
         validation(args, sample_dict)
 
+    # Check HLT paths
+    if args.check_hlt:
+        hlt = checkHLTpaths(sample_dict)
+        print(hlt)
+        sys.exit(0)
+
     # Load workflow
     if args.workflow == "SUEP":
         processor_instance = setupSUEP(args, sample_dict)
@@ -723,6 +902,18 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_ttbar_sources(args, sample_dict)
     elif args.workflow == "SUEP_data":
         processor_instance = setupSUEP_data(args, sample_dict)
+    elif args.workflow == "SUEP_SR":
+        processor_instance = setupSUEP_SR(args, sample_dict)
+    elif args.workflow == "SUEP_CRprompt":
+        processor_instance = setupSUEP_CRprompt(args, sample_dict)
+    elif args.workflow == "SUEP_CRcb":
+        processor_instance = setupSUEP_CRcb(args, sample_dict)
+    elif args.workflow == "SUEP_CRlight":
+        processor_instance = setupSUEP_CRlight(args, sample_dict)
+    elif args.workflow == "SUEP_nbjet_comparison":
+        processor_instance = setupSUEP_nbjet_comparison(args, sample_dict)
+    elif args.workflow == "SUEP_DYstudy":
+        processor_instance = setupSUEP_DYstudy(args, sample_dict)
     else:
         raise NotImplementedError
 

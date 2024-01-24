@@ -7,6 +7,7 @@ import vector
 from numba import njit
 
 vector.register_awkward()
+ak.numba.register()
 
 
 def ClusterMethod(
@@ -755,3 +756,21 @@ def discritize_pdg_codes(pdf_codes, extended=False):
     )
     discritized_codes = ak.where(1000 <= pdf_codes, 1000, discritized_codes)
     return discritized_codes
+
+
+@njit
+def loop_over_arr(arr1, arr2, builder):
+    """
+    Loop over two arrays and append the elements of arr1 that are not in arr2 to the builder.
+    Used to filter the dimuon pairs after some selection (e.g., mass cut).
+    arr1: array with indices
+    arr2: array with all the indices of the pairs failing the selection
+    """
+    for i in range(len(arr1)):
+        arr1_i = arr1[i]
+        builder.begin_list()
+        for j in range(len(arr1_i)):
+            if arr1[i][j] not in arr2[i]:
+                builder.integer(arr1[i][j])
+        builder.end_list()
+    return builder

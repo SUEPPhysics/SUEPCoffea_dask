@@ -1,14 +1,15 @@
+import argparse
 import glob
-from rich.pretty import pprint
 import pickle
+from rich.pretty import pprint
 import plot_utils
 import fill_utils
 
 
-def normalizer(mode, samples):
+def normalizer(mode, samples, tag="test"):
     print(f"Processing: {mode}")
     # input .pkl files
-    file_dir = f"./temp_output_{mode}/"
+    file_dir = f"./{tag}_output_{mode}/"
     offline_files = []
     for sample in samples:
         search_string = ""
@@ -36,18 +37,32 @@ def normalizer(mode, samples):
         pprint(name + "_normalized.pkl")
 
 
+# Argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("--tag", type=str, help="tag for the input & output files")
+args = parser.parse_args()
+
+
 # Define a set of strings that should be present in the names of each dataset
 samples = [
     ["QCD_Pt_", "20UL18", "MINIAODSIM"],
+    ["QCD_Pt_", "20UL18", "NANOAODSIM"],
+    ["QCD_HT", "20UL18", "NANOAODSIM"],
     [
         "DY",
         "JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
         "MINIAODSIM",
     ],
+    ["WZTo", "MINIAODSIM"],
+    ["QCD_Pt", "MuEnrichedPt5"],
+    ["WJetsToLNu_HT", "NANOAODSIM"],
+    ["WWTo", "NANOAODSIM"],
+    ["WZTo", "NANOAODSIM"],
+    ["ST_t-channel", "NANOAODSIM"],
 ]
 
 modes = ["histograms", "cutflow"]
 
 if __name__ == "__main__":
     for mode in modes:
-        normalizer(mode, samples)
+        normalizer(mode, samples, tag=args.tag)
