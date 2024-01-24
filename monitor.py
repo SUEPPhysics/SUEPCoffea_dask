@@ -22,7 +22,14 @@ def isFileGood(fname, label="ch"):
 
 def main():
     parser = argparse.ArgumentParser(description="Famous Submitter")
-    parser.add_argument("-i", "--input", type=str, default="input", required=True)
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        default="input",
+        help="Input filelist.",
+        required=True,
+    )
     parser.add_argument("-t", "--tag", type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
     parser.add_argument(
@@ -32,15 +39,17 @@ def main():
         default=0,
         help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.",
     )
+    parser.add_argument("-redirector", type=str, default="root://submit50.mit.edu/")
     options = parser.parse_args()
 
-    redirector = "root://t3serv017.mit.edu/"
     proxy_base = f"x509up_u{os.getuid()}"
     home_base = os.environ["HOME"]
     username = os.environ["USER"]
     proxy_copy = os.path.join(home_base, proxy_base)
 
-    out_dir = "/data/submit/" + username + "/SUEP/" + options.tag + "/{}/"
+    out_dir = (
+        "/data/submit/cms/store/user/" + username + "/SUEP/" + options.tag + "/{}/"
+    )
     out_dir_xrd = "/" + username + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
     jobs_base_dir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
@@ -81,7 +90,8 @@ def main():
 
     with open(options.input) as stream:
         totals, completeds = 0, 0
-        missing_samples = []
+        missing_samples = []  # samples with no inputfiles.dat or output dir
+        empty_samples = []  # samples with  no completed jobs
         for sample in stream.read().split("\n"):
             if len(sample) <= 1:
                 continue
@@ -136,6 +146,9 @@ def main():
             if njobs == 0:
                 missing_samples.append(sample)
                 continue
+
+            if nfile == 0:
+                empty_samples.append(sample)
 
             # Print out the results
             logging.info(
@@ -220,7 +233,7 @@ def main():
                     subprocess.run(
                         [
                             "xrdcp",
-                            redirector + "/" + out_dir_xrd + file,
+                            options.redirector + "/" + out_dir_xrd + file,
                             move_dir.format(sample_name) + "/",
                         ]
                     )
@@ -244,6 +257,12 @@ def main():
             logging.info("")
             logging.info("The following samples were missing:")
             for s in missing_samples:
+                logging.info(s)
+
+        if len(empty_samples) > 0:
+            logging.info("")
+            logging.info("The following samples had no completed jobs:")
+            for s in empty_samples:
                 logging.info(s)
 
 

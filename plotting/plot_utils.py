@@ -18,7 +18,7 @@ import uproot
 from sympy import diff, sqrt, symbols
 
 sys.path.append("..")
-import histmaker.fill_utils
+from histmaker import fill_utils
 
 default_colors = {
     "125": "cyan",
@@ -189,27 +189,28 @@ def getSampleNameAndBin(sample_name):
         sample = "QCD_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
+    elif any([s in sample_name for s in ["TTJets", "TTTo2L2Nu", "TTToSemiLeptonic"]]):
+        sample = "tt"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
     elif any(
         [
             s in sample_name
             for s in [
-                "TTJets",
-                "ttZJets",
                 "ttHTobb",
                 "ttHToNonbb",
-                "TTTo2L2Nu",
-                "TTToSemiLeptonic",
                 "TTWJetsToLNu",
                 "TTZToQQ",
+                "TTWJetsToQQ",
                 "TTZToLLNuNu",
             ]
         ]
     ):
-        sample = "TTBkg"
+        sample = "ttX"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif any([s in sample_name for s in ["ST_t", "ST_tW"]]):
-        sample = "STBkg"
+    elif any([s in sample_name for s in ["ST_t", "ST_tW", "ST_s"]]):
+        sample = "ST"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif "WJetsToLNu_HT" in sample_name:
@@ -243,8 +244,14 @@ def getSampleNameAndBin(sample_name):
     return sample, bin
 
 
-def fillSample(this_plots, sample, plots, norm=1):
-    plotsToAdd = this_plots.copy()
+def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dict:
+    """
+    Fill the plots dictionary with the histograms from the current sample.
+    plots is expected to have dimensions of {sample: {plot: hist}}.
+    this_hists is the dictionary of histograms from the current sample, and
+    is expected to have dimensions of {plot: hist}.
+    """
+    plotsToAdd = this_hists.copy()
     if norm != 1:
         plotsToAdd = fill_utils.apply_normalization(plotsToAdd, norm)
 
@@ -258,6 +265,35 @@ def fillSample(this_plots, sample, plots, norm=1):
             print("WARNING: " + sample + " has a different set of plots")
 
     return plots
+
+
+def fillCutflows(
+    this_metadata: dict, sample: str, cutflows: dict, norm: int = 1
+) -> dict:
+    """
+    Fill the cutflows dictionary with the cutflows from the current sample.
+    cutflows is expected to have dimensions of {sample: {selection: value}}.
+    this_metadata is the dictionary of metadata from the current sample, and
+    is expected to have dimensions of {selection: value}.
+    """
+    metaToAdd = {}
+    for key in this_metadata.keys():
+        if "cutflow" in key:
+            metaToAdd[key] = float(this_metadata[key])
+
+    if norm != 1:
+        metaToAdd = fill_utils.apply_normalization(metaToAdd, norm)
+
+    if sample not in list(cutflows.keys()):
+        cutflows[sample] = metaToAdd
+    else:
+        try:
+            for key in list(metaToAdd.keys()):
+                cutflows[sample][key] += metaToAdd[key]
+        except KeyError:
+            print("WARNING: " + sample + " has a different set of cutflows.")
+
+    return cutflows
 
 
 def getLumi(era: str, scouting: bool) -> float:
@@ -276,10 +312,11 @@ def loader(
     by_bin=False,
     by_year=True,
     xsec_SUEP=True,
+    load_cutflows=False,
     verbose=False,
 ):
     """
-    Load histograms from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
+    Load histograms (or cutflows) from input files and perform various operations such as normalization, and grouping by sample, sample bin, and sample year.
 
     Parameters:
     - infile_names (list): List of input file names.
@@ -289,11 +326,12 @@ def loader(
     - by_bin (bool, optional): Flag to group histograms by bin. Default is False.
     - by_year (bool, optional): Flag to group histograms by year. Default is True.
     - xsec_SUEP (bool, optional): Flag to apply the cross-section normalization factor for SUEP samples. Default is True.
+    - cutflows (bool, optional): Flag to load cutflows instead of histograms. Default is False.
 
     Returns:
-    - plots (dict): Dictionary containing the loaded histograms grouped by sample, bin, and year.
+    - output (dict): Dictionary containing the loaded histograms (or cutflows) grouped by sample, bin, and year.
     """
-    plots = {}
+    output = {}
     for infile_name in infile_names:
         if verbose:
             print("Loading", infile_name)
@@ -304,7 +342,7 @@ def loader(
         elif ".root" not in infile_name:
             continue
 
-        file_plots, file_metadata = openHistFile(infile_name)
+        file_hists, file_metadata = openHistFile(infile_name)
         norm = 1
 
         # sets the lumi based on year
@@ -344,18 +382,21 @@ def loader(
                 samplesToAdd.append("_".join([bin, era]))
 
         for s in samplesToAdd:
-            plots = fillSample(file_plots, s, plots, norm)
+            if load_cutflows:
+                output = fillCutflows(file_metadata, s, output, norm)
+            else:
+                output = fillSample(file_hists, s, output, norm)
 
-    return plots
+    return output
 
 
 def openHistFile(infile_name):
     if ".root" in infile_name:
-        plots, metadata = openroot(infile_name)
+        hists, metadata = openroot(infile_name)
     elif ".pkl" in infile_name:
-        plots = openpickle(infile_name)
+        hists = openpickle(infile_name)
         metadata = None  # not supported yet for pickle files
-    return plots, metadata
+    return hists, metadata
 
 
 def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):

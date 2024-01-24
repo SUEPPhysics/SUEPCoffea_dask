@@ -82,3 +82,4 @@
 /store/user/paus/nanosu/A02/ZZTo4L_TuneCP5_13TeV_powheg_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM
 /store/user/paus/nanosu/A02/ttHToNonbb_M125_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM
 /store/user/paus/nanosu/A02/ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM
+/store/user/paus/nanosu/A02/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM
