@@ -1,7 +1,7 @@
 import argparse
 import glob
 from rich.pretty import pprint
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional
 from hist import Hist
 import uproot
 import ROOT
@@ -9,7 +9,9 @@ import plot_utils
 import fill_utils
 
 
-def combine_histograms(h_list: List[ROOT.TH1D]) -> ROOT.TH1D:
+def combine_histograms(
+    h_list: List[ROOT.TH1D], blind: Optional[bool] = True
+) -> ROOT.TH1D:
     n_bins_tot = sum([h.GetNbinsX() for h in h_list])
     entries_tot = sum([h.GetEntries() for h in h_list])
     h_total = ROOT.TH1D("h_total", "h_total", n_bins_tot, 0, n_bins_tot)
@@ -18,6 +20,9 @@ def combine_histograms(h_list: List[ROOT.TH1D]) -> ROOT.TH1D:
         for j_bin in range(h.GetNbinsX()):
             h_total.SetBinContent(offset + j_bin + 1, h.GetBinContent(j_bin + 1))
             h_total.SetBinError(offset + j_bin + 1, h.GetBinError(j_bin + 1))
+            if h_total.GetBinContent(offset + j_bin + 1) <= 0:
+                h_total.SetBinContent(offset + j_bin + 1, 1e-8)
+                h_total.SetBinError(offset + j_bin + 1, 1e-8)
         offset += h.GetNbinsX()
     h_total.SetEntries(entries_tot)
     return h_total
@@ -178,6 +183,7 @@ def loader(lumi: float, tag: str, verbosity: int) -> Dict[str, Dict[str, Hist]]:
 def dump_plots(plots: Dict[str, Dict[str, Hist]], tag: str, verbosity: int) -> None:
     print(f"Converting and saving histograms for {tag}")
     processes = [
+        "SUEP-m125-darkPhoHad_2018",
         "DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD_histograms_2018",
         "VVV_2018",
         "ttZJets_2018",
@@ -191,20 +197,20 @@ def dump_plots(plots: Dict[str, Dict[str, Hist]], tag: str, verbosity: int) -> N
     ]
     histograms = {
         "nMuon": [
-            "muon_pt_vs_genPartFlav_vs_nMuon",
-            (slice(None, None, sum), slice(None, None, sum), slice(None)),
+            "nMuon",
+            slice(None),
         ],
         "muon_pt": [
-            "muon_pt_vs_genPartFlav_vs_nMuon",
-            (slice(None), slice(None, None, sum), slice(None, None, sum)),
+            "muon_pt",
+            slice(None),
         ],
         "muon_eta": [
-            "muon_eta_vs_genPartFlav_vs_nMuon",
-            (slice(None), slice(None, None, sum), slice(None, None, sum)),
+            "muon_eta",
+            slice(None),
         ],
         "muon_phi": [
-            "muon_phi_vs_genPartFlav_vs_nMuon",
-            (slice(None), slice(None, None, sum), slice(None, None, sum)),
+            "muon_phi",
+            slice(None),
         ],
     }
     with uproot.recreate(f"temp.root") as file:
@@ -222,14 +228,26 @@ def dump_plots(plots: Dict[str, Dict[str, Hist]], tag: str, verbosity: int) -> N
             name = "data_obs" if "DoubleMuon" in p else p[:-5]
             h_new[name] = []
             for h in histograms.keys():
-                h_new[name].append(file[f"{name}/{h}"].to_pyroot())
+                h_new[name].append(file[f"{name}/{h}"].to_pyroot().Clone())
     with uproot.recreate(f"{tag}.root") as file:
+        h_sum = None
         for p in processes:
             if p not in plots.keys():
                 continue
+            if "SR" in tag and "DoubleMuon" in p:
+                continue
             name = "data_obs" if "DoubleMuon" in p else p[:-5]
             h_combined = combine_histograms(h_new[name])
-            file[f"{tag}/{name}"] = uproot.from_pyroot(h_combined)
+            if "SUEP" not in p:
+                if h_sum is None:
+                    h_sum = h_combined.Clone()
+                else:
+                    h_sum.Add(h_combined)
+            file[f"{tag}/{name}"] = uproot.from_pyroot(h_combined.Clone())
+            del h_combined
+        if "SR" in tag:
+            file[f"{tag}/data_obs"] = uproot.from_pyroot(h_sum.Clone())
+        del h_sum
 
 
 # Argument parser

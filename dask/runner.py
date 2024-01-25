@@ -102,6 +102,7 @@ def get_main_parser():
             "SUEP_CRlight",
             "SUEP_nbjet_comparison",
             "SUEP_DYstudy",
+            "SUEP_combine",
         ],
         help="Which processor to run",
         required=True,
@@ -231,6 +232,9 @@ def get_main_parser():
         "--trigger", type=str, default="PFHT", help="Specify HLT trigger path"
     )
     parser.add_argument("--skimmed", action="store_true", help="Use skimmed files")
+    parser.add_argument(
+        "--region", type=str, default="", help="Specify the region to run on"
+    )
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     parser.add_argument("--check_hlt", action="store_true", help="Check HLT paths")
@@ -789,6 +793,30 @@ def setupSUEP_DYstudy(args, sample_dict):
     return instance
 
 
+def setupSUEP_combine(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_combine import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst="",
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        region=args.region,
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -914,6 +942,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_nbjet_comparison(args, sample_dict)
     elif args.workflow == "SUEP_DYstudy":
         processor_instance = setupSUEP_DYstudy(args, sample_dict)
+    elif args.workflow == "SUEP_combine":
+        processor_instance = setupSUEP_combine(args, sample_dict)
     else:
         raise NotImplementedError
 
