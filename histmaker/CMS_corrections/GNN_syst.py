@@ -57,10 +57,10 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
                 continue
 
             if model in plot and "2D" not in plot:
-                GNN_syst_plots[
-                    plot + "_GNNsyst_down"
-                ] = plot_utils.apply_binwise_scaling(
-                    plots[plot].copy(), bins, [1 - s for s in scales]
+                GNN_syst_plots[plot + "_GNNsyst_down"] = (
+                    plot_utils.apply_binwise_scaling(
+                        plots[plot].copy(), bins, [1 - s for s in scales]
+                    )
                 )
                 GNN_syst_plots[plot + "_GNNsyst_up"] = plot_utils.apply_binwise_scaling(
                     plots[plot].copy(), bins, [1 + s for s in scales]
@@ -72,10 +72,10 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
                     dim = "x"
                 elif model in var2:
                     dim = "y"
-                GNN_syst_plots[
-                    plot + "_GNNsyst_down"
-                ] = plot_utils.apply_binwise_scaling(
-                    plots[plot].copy(), bins, [1 - s for s in scales], dim=dim
+                GNN_syst_plots[plot + "_GNNsyst_down"] = (
+                    plot_utils.apply_binwise_scaling(
+                        plots[plot].copy(), bins, [1 - s for s in scales], dim=dim
+                    )
                 )
                 GNN_syst_plots[plot + "_GNNsyst_up"] = plot_utils.apply_binwise_scaling(
                     plots[plot].copy(), bins, [1 + s for s in scales], dim=dim

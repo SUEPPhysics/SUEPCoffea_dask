@@ -1183,16 +1183,7 @@ def ABCD_9regions_yield(abcd, xregions, yregions):
     SR = SR.sum().value
     tot = A + B + C + D + E + F + G + H + SR
 
-    SR_exp = (
-        (F**2)
-        * (H**2)
-        * (D**2)
-        * (B**2)
-        * (G**-1)
-        * (C**-1)
-        * (A**-1)
-        * (E**-4)
-    )
+    SR_exp = (F**2) * (H**2) * (D**2) * (B**2) * (G**-1) * (C**-1) * (A**-1) * (E**-4)
     sigma_SR_exp = (
         np.sqrt(
             4 * (F**-1)
