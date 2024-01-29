@@ -9,6 +9,7 @@ The output histograms, cutflows, and metadata will be saved in a .root file.
 e.g.
 python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
 """
+
 import argparse
 import getpass
 import logging

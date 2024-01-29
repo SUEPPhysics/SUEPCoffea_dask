@@ -6,7 +6,6 @@ Author: Luca Lavezzo
 Date: August 2023
 """
 
-
 import json
 import os
 import re

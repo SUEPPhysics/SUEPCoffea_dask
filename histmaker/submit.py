@@ -14,7 +14,6 @@ Authors: Luca Lavezzo and Chad Freer.
 Date: July 2023
 """
 
-
 import argparse
 import getpass
 import multiprocessing

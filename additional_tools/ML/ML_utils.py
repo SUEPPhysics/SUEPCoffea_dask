@@ -101,9 +101,9 @@ def DGNNMethod(
 
             # run GNN inference on the SUEP tracks
             results = run_inference_GNN(self, suep, SUEP_tracks, SUEP_cand)
-            self.out_vars.loc[
-                indices, "SUEP_" + model_name + "_GNN" + out_label
-            ] = results
+            self.out_vars.loc[indices, "SUEP_" + model_name + "_GNN" + out_label] = (
+                results
+            )
 
             # calculate other obserables to store
             boost_SUEP = ak.zip(
@@ -127,9 +127,9 @@ def DGNNMethod(
             if do_inverted:
                 # run GNN inference on the SUEP tracks
                 results = run_inference_GNN(self, suep, ISR_tracks, ISR_cand)
-                self.out_vars.loc[
-                    indices, "ISR_" + model_name + "_GNN" + out_label
-                ] = results
+                self.out_vars.loc[indices, "ISR_" + model_name + "_GNN" + out_label] = (
+                    results
+                )
 
                 # calculate other obserables to store
                 boost_ISR = ak.zip(
@@ -220,7 +220,7 @@ class SUEPNet(nn.Module):
             nn.ELU(),
             nn.Linear(8, 4),
             nn.ELU(),
-            nn.Linear(4, out_dim)
+            nn.Linear(4, out_dim),
             # nn.Sigmoid()
         )
 

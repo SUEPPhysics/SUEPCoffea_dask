@@ -4,6 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
+
 from typing import Optional
 
 import awkward as ak

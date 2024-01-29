@@ -4,6 +4,7 @@ Coffea producer for SUEP WH analysis. Uses fastjet package to recluster large je
 https://github.com/scikit-hep/fastjet
 Pietro Lugato, Chad Freer, Luca Lavezzo 2023
 """
+
 from typing import Optional
 
 import awkward as ak
@@ -572,12 +573,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # delta phi for lepton and dif METs
 
         # using vector function
-        output["vars"][
-            "deltaPhi_lepton_CaloMET_func" + out_label
-        ] = WH_utils.MET_delta_phi(lepton, events.CaloMET)
-        output["vars"][
-            "deltaPhi_lepton_PuppiMET_func" + out_label
-        ] = WH_utils.MET_delta_phi(lepton, events.PuppiMET)
+        output["vars"]["deltaPhi_lepton_CaloMET_func" + out_label] = (
+            WH_utils.MET_delta_phi(lepton, events.CaloMET)
+        )
+        output["vars"]["deltaPhi_lepton_PuppiMET_func" + out_label] = (
+            WH_utils.MET_delta_phi(lepton, events.PuppiMET)
+        )
         output["vars"]["deltaPhi_lepton_MET_func" + out_label] = WH_utils.MET_delta_phi(
             lepton, events.MET
         )
