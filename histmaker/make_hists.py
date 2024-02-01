@@ -590,7 +590,7 @@ def main():
     if options.isMC:
         logging.info("Applying normalization.")
         xsection = 1
-        if ("SUEP" not in sample) or ("WHlepton" not in sample):
+        if "SUEP" not in sample:
             xsection = fill_utils.getXSection(sample, options.era)
             logging.debug(f"Applying cross section {xsection}.")
         logging.debug(f"Applying total_gensumweight {total_gensumweight}.")
