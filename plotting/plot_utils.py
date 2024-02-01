@@ -281,8 +281,6 @@ def fillCutflows(
     for key in this_metadata.keys():
         if "cutflow" in key:
             metaToAdd[key] = float(this_metadata[key])
-        if "HighestPT" in key:
-            metaToAdd["cutflow_" + key] = float(this_metadata[key])
 
     if norm != 1:
         metaToAdd = fill_utils.apply_normalization(metaToAdd, norm)
