@@ -121,7 +121,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     )
     cutOneLep = (
         ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)
-    ) < 2  # is this removing events with BOTH muons and electrons?
+    ) < 2 
     cutHasOneLep = ((cutHasOneMuon) | (cutHasOneElec)) & cutOneLep
 
     ### Cut the events, also return the selected leptons for operation down the line

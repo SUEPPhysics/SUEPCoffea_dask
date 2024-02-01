@@ -227,7 +227,13 @@ def prepare_DataFrame(
         if "SR2" in config.keys():
             df = blind_DataFrame(df, label_out, config["SR2"])
 
-    # 3. apply selections
+
+    # 3. make new variables
+    if "new_variables" in config.keys():
+        for var in config["new_variables"]:
+            df = make_new_variable(df, var[0], var[1], *var[2])
+
+    # 4. apply selections
     if "selections" in config.keys():
         for sel in config["selections"]:
             if type(sel) is str:
@@ -242,11 +248,6 @@ def prepare_DataFrame(
             cutflow[
                 "cutflow_" + sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out
             ] = df.shape[0]
-
-    # 4. make new variables
-    if "new_variables" in config.keys():
-        for var in config["new_variables"]:
-            df = make_new_variable(df, var[0], var[1], *var[2])
 
     return df
 

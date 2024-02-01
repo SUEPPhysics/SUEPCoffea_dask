@@ -160,16 +160,28 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
 
     # apply systematics and weights
     if options.isMC == 1:
-        if options.channel == "ggF":
-            # 1) pileup weights
-            puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
-                options.era
-            )
-            pu = pileup_weight.get_pileup_weights(
-                df, syst, puweights, puweights_up, puweights_down
-            )
-            df["event_weight"] *= pu
+        
+        # 1) pileup weights
+        puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
+            options.era
+        )
+        pu = pileup_weight.get_pileup_weights(
+            df, syst, puweights, puweights_up, puweights_down
+        )
+        df["event_weight"] *= pu
 
+        # 2) PS weights
+        if "PSWeight" in syst and syst in df.keys():
+            df["event_weight"] *= df[syst]
+
+        # 3) prefire weights
+        if options.era == "2016" or options.era == "2017":
+            if "prefire" in syst and syst in df.keys():
+                df["event_weight"] *= df[syst]
+            else:
+                df["event_weight"] *= df["prefire_nom"]
+
+        if options.channel == "ggF":
             if options.scouting != 1:
                 # 2) TriggerSF weights
                 (
@@ -188,13 +200,6 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
                 )
                 df["event_weight"] *= trigSF
 
-                # 4) prefire weights
-                if options.era == "2016" or options.era == "2017":
-                    if "prefire" in syst and syst in df.keys():
-                        df["event_weight"] *= df[syst]
-                    else:
-                        df["event_weight"] *= df["prefire_nom"]
-
             else:
                 # 2) TriggerSF weights
                 trigSF = triggerSF.get_scout_trigSF_weight(
@@ -204,10 +209,6 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
 
                 # 4) prefire weights
                 # no prefire weights for scouting
-
-            # 4) PS weights
-            if "PSWeight" in syst and syst in df.keys():
-                df["event_weight"] *= df[syst]
 
             # 5) Higgs_pt weights
             if "mS125" in metadata["sample"]:
@@ -277,6 +278,8 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             cutflow=cutflow,
         )
 
+        if df_plot is None: continue
+
         # auto fill all histograms
         fill_utils.auto_fill(
             df_plot,
@@ -308,8 +311,11 @@ def main():
 
     if options.channel == "WH":
         config = {
-            "TopPT": {
-                "input_method": "TopPT",
+            # keys of config must include "HighestPT", but othewise can be named to convenience,
+            # NOTE: it functions as a label, so useful to name according to selections that the key points to
+            # input method should always be HighestPT
+            "HighestPT": {
+                "input_method": "HighestPT",
                 "selections": [],
             },
         }
@@ -583,7 +589,7 @@ def main():
     if options.isMC:
         logging.info("Applying normalization.")
         xsection = 1
-        if "SUEP" not in sample:
+        if ("SUEP" not in sample) or ("WHlepton" not in sample):
             xsection = fill_utils.getXSection(sample, options.era)
             logging.debug(f"Applying cross section {xsection}.")
         logging.debug(f"Applying total_gensumweight {total_gensumweight}.")

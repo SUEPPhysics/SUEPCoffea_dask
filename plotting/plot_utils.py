@@ -364,7 +364,7 @@ def loader(
         if xsec_SUEP:
             sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
             if (
-                "SUEP" in sample_name
+                ("SUEP" in sample_name) or ("WHlepton" in sample_name)
             ):  # xsec is already apply in make_hists.py for non SUEP samples
                 xsec = fill_utils.getXSection(sample_name, year=era)
                 norm *= xsec
