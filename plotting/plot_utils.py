@@ -63,7 +63,6 @@ def getColor(sample):
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
     "2016_apv": 19497.914,
-    "2016apv": 19497.914,
     "2016": 16810.813,
     "2017": 41471.589,
     "2018": 59817.406,
