@@ -1367,8 +1367,10 @@ def nested_dict(n, type):
     else:
         return defaultdict(lambda: nested_dict(n - 1, type))
 
-def make_cutflow_table(cutflow_dict, samples, selections, 
-                       efficiencies=False, relative_efficiencies=False):
+
+def make_cutflow_table(
+    cutflow_dict, samples, selections, efficiencies=False, relative_efficiencies=False
+):
     """
     Create a table with the cutflow for each sample.
     :param cutflow_dict: dictionary of cutflows (dimension: sample x selection)
@@ -1380,27 +1382,50 @@ def make_cutflow_table(cutflow_dict, samples, selections,
     table = []
 
     if efficiencies and relative_efficiencies:
-        raise ValueError('Cannot set both efficiencies and relative_efficiencies to True')
+        raise ValueError(
+            "Cannot set both efficiencies and relative_efficiencies to True"
+        )
 
     # add cutflow for each sample if needed
     for i in range(len(selections)):
-        if not selections[i].startswith('cutflow_'):
-            selections[i] = 'cutflow_' + selections[i]
+        if not selections[i].startswith("cutflow_"):
+            selections[i] = "cutflow_" + selections[i]
 
     for sample in samples:
-        if efficiencies: # calculate efficiency wrt total
-            tot = cutflow_dict[sample]['cutflow_total']
-            this_sample_values = [cutflow_dict[sample][selection]/tot for selection in selections]
-        elif relative_efficiencies: # calculate relative efficiency wrt previous selection
-            this_sample_values = [cutflow_dict[sample][selection]/cutflow_dict[sample][selections[i-1]] if i > 0 else 1 for i, selection in enumerate(selections)]
-        else: # just the cutflow
-            this_sample_values = [cutflow_dict[sample][selection] for selection in selections]
+        if efficiencies:  # calculate efficiency wrt total
+            tot = cutflow_dict[sample]["cutflow_total"]
+            this_sample_values = [
+                cutflow_dict[sample][selection] / tot for selection in selections
+            ]
+        elif (
+            relative_efficiencies
+        ):  # calculate relative efficiency wrt previous selection
+            this_sample_values = [
+                (
+                    cutflow_dict[sample][selection]
+                    / cutflow_dict[sample][selections[i - 1]]
+                    if i > 0
+                    else 1
+                )
+                for i, selection in enumerate(selections)
+            ]
+        else:  # just the cutflow
+            this_sample_values = [
+                cutflow_dict[sample][selection] for selection in selections
+            ]
         table.append(this_sample_values)
 
     return np.array(table)
 
-def cutflow_table(cutflow_dict, samples, selections, 
-                   sig_figs=2, efficiencies=False, relative_efficiencies=False):
+
+def cutflow_table(
+    cutflow_dict,
+    samples,
+    selections,
+    sig_figs=2,
+    efficiencies=False,
+    relative_efficiencies=False,
+):
     """
     Create a table with the cutflow for each sample.
     :param cutflow_dict: dictionary of cutflows (dimension: sample x selection)
@@ -1413,17 +1438,23 @@ def cutflow_table(cutflow_dict, samples, selections,
     from prettytable import PrettyTable
 
     prettytable = PrettyTable()
-    prettytable.add_column('Selection', selections)
+    prettytable.add_column("Selection", selections)
 
-    table = make_cutflow_table(cutflow_dict, samples, selections, efficiencies, relative_efficiencies)
+    table = make_cutflow_table(
+        cutflow_dict, samples, selections, efficiencies, relative_efficiencies
+    )
 
     # add cutflow for each sample if needed
     for sample, sample_values in zip(samples, table):
         # round if needed
-        values = ['{:g}'.format(float('{:.{p}g}'.format(v, p=sig_figs))) for v in sample_values]
+        values = [
+            "{:g}".format(float("{:.{p}g}".format(v, p=sig_figs)))
+            for v in sample_values
+        ]
         prettytable.add_column(sample, values)
 
     return prettytable
+
 
 def cutflow_plot(cutflow_dict, samples, selections):
     """
@@ -1433,8 +1464,8 @@ def cutflow_plot(cutflow_dict, samples, selections):
     :param selections: selections to plot
     """
     fig, ax = plt.subplots()
-    ax.set_yscale('log')
-    ax.set_ylabel('Events')
+    ax.set_yscale("log")
+    ax.set_ylabel("Events")
 
     table = make_cutflow_table(cutflow_dict, samples, selections)
 
@@ -1443,7 +1474,7 @@ def cutflow_plot(cutflow_dict, samples, selections):
 
     ax.legend(loc=(1.02, 0.5))
     hep.cms.label(ax=ax)
-    labels = [s.replace('cutflow_', '') for s in selections]
+    labels = [s.replace("cutflow_", "") for s in selections]
     ax.set_xticks(np.arange(len(labels)) + 0.5, labels, rotation=30, fontsize=12)
 
     return fig, ax
