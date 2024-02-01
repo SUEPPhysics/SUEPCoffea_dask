@@ -312,7 +312,7 @@ def main():
 
     if options.channel == "WH":
         config = {
-            # keys of config must include "HighestPT", but othewise can be named to convenience,
+            # keys of config must include "HighestPT", but otherwise can be named to convenience,
             # NOTE: it functions as a label, so useful to name according to selections that the key points to
             # input method should always be HighestPT
             "HighestPT": {
