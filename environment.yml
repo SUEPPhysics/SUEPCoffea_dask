@@ -13,3 +13,4 @@ dependencies:
   - pyyaml
   - hist
   - sympy
+  - prettytable
