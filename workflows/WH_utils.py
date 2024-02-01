@@ -119,9 +119,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
     cutHasOneElec = (ak.num(selElectrons, axis=1) == 1) & (
         ak.max(selElectrons.pt, axis=1, mask_identity=False) >= 35
     )
-    cutOneLep = (
-        ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)
-    ) < 2 
+    cutOneLep = (ak.num(selElectrons, axis=1) + ak.num(selMuons, axis=1)) < 2
     cutHasOneLep = ((cutHasOneMuon) | (cutHasOneElec)) & cutOneLep
 
     ### Cut the events, also return the selected leptons for operation down the line

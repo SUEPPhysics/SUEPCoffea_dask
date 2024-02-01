@@ -227,7 +227,6 @@ def prepare_DataFrame(
         if "SR2" in config.keys():
             df = blind_DataFrame(df, label_out, config["SR2"])
 
-
     # 3. make new variables
     if "new_variables" in config.keys():
         for var in config["new_variables"]:

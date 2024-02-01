@@ -160,7 +160,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
 
     # apply systematics and weights
     if options.isMC == 1:
-        
+
         # 1) pileup weights
         puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
             options.era
@@ -278,7 +278,8 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             cutflow=cutflow,
         )
 
-        if df_plot is None: continue
+        if df_plot is None:
+            continue
 
         # auto fill all histograms
         fill_utils.auto_fill(
