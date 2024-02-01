@@ -94,7 +94,7 @@ parser.add_argument(
     "--cores",
     type=int,
     help="Maximum number of cores to run multithread on.",
-    default=50,
+    default=10,
     required=False,
 )
 # parser from make_hists.py, works also for merge_ntuples.py
@@ -109,9 +109,9 @@ if options.method == "slurm":
         getpass.getuser(), np.random.randint(0, 10000)
     )
     os.system(f"mkdir {work_dir}")
-    os.system(f"cp -R ../* {work_dir}/.")
+    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir}/.")
     print("Working in", work_dir)
-    work_dir += "/histmaker/"
+    work_dir += "/SUEPCoffea_dask/histmaker/"
     log_dir = "/work/submit/{}/SUEP/logs/slurm_{}_{}/".format(
         os.environ["USER"],
         options.code,
@@ -121,13 +121,13 @@ if options.method == "slurm":
         os.mkdir(log_dir)
 elif options.method == "multithread":
     # Found it necessary to run on a space with enough memory
-    work_dir = "/work/submit/{}/dummy_directory{}".format(
+    work_dir = "/work/submit/{}/dummy_directory{}/".format(
         getpass.getuser(), np.random.randint(0, 10000)
     )
     os.system(f"mkdir {work_dir}")
-    os.system(f"cp -R ../* {work_dir}/.")
+    os.system(f"cp -a ../SUEPCoffea_dask {work_dir}/.")
     print("Working in", work_dir)
-    work_dir += "/histmaker/"
+    work_dir += "/SUEPCoffea_dask/histmaker/"
     pool = Pool(
         min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
     )
