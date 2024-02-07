@@ -108,13 +108,10 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
         cutMuons = (
             cutLooseMuons
             & (events.Muon.tightId)
-            & (events.Muon.pfIsoId >= 5) # PFIsoVeryTight, aka PF rel iso < 0.1
+            & (events.Muon.pfIsoId >= 5)  # PFIsoVeryTight, aka PF rel iso < 0.1
             & (abs(events.Muon.dz) <= 0.05)
         )
-        cutElectrons = (
-            cutLooseElectrons
-            & (events.Electron.mvaFall17V2Iso_WP80)
-        )
+        cutElectrons = cutLooseElectrons & (events.Electron.mvaFall17V2Iso_WP80)
 
     ### Apply the cuts
     # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
