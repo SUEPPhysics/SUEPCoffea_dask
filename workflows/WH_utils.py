@@ -24,8 +24,6 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "iso": events.Muon.pfRelIso04_all,  # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
             "isoMVA": events.Muon.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
             "miniIso": events.Muon.miniPFRelIso_all,
-            "multiIso": events.Muon.multiIsoId,  # 1=MultiIsoLoose, 2=MultiIsoMedium
-            "puppiIso": events.Muon.puppiIsoId,  # 1=Loose, 2=Medium, 3=Tight
             "dxy": events.Muon.dxy,
             "dz": events.Muon.dz,
         },
@@ -48,8 +46,6 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             "iso": events.Electron.pfRelIso03_all,
             "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
             "miniIso": events.Electron.miniPFRelIso_all,
-            "multiIso": -999,
-            "puppiIso": -999,
             "dxy": events.Electron.dxy,
             "dz": events.Electron.dz,
         },
@@ -84,7 +80,8 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             & (abs(events.Electron.eta) < 2.5)
         )
     else:
-        cutMuons = (
+        # "Loose" = ZH criteria, which we must impose for orthogonality
+        cutLooseMuons = (
             (events.Muon.looseId)
             & (events.Muon.pt >= 10)
             & (abs(events.Muon.dxy) <= 0.02)
@@ -92,7 +89,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             & (events.Muon.pfIsoId >= 2)
             & (abs(events.Muon.eta) < 2.4)
         )
-        cutElectrons = (
+        cutLooseElectrons = (
             (events.Electron.cutBased >= 2)
             & (events.Electron.pt >= 15)
             & (events.Electron.mvaFall17V2Iso_WP90)
@@ -107,6 +104,14 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
         )
+
+        cutMuons = (
+            cutLooseMuons
+            & (events.Muon.tightId)
+            & (events.Muon.pfIsoId >= 5)  # PFIsoVeryTight, aka PF rel iso < 0.1
+            & (abs(events.Muon.dz) <= 0.05)
+        )
+        cutElectrons = cutLooseElectrons & (events.Electron.mvaFall17V2Iso_WP80)
 
     ### Apply the cuts
     # Object selection. selMuons contain only the events that are filtered by cutMuons criteria.
