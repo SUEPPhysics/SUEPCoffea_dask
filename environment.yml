@@ -14,4 +14,3 @@ dependencies:
   - hist
   - sympy
   - prettytable
-  - vector
