@@ -103,6 +103,7 @@ def selectByLeptons(self, events, extraColls=[], lepveto=False):
             )
             & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
             & (abs(events.Electron.eta) < 2.5)
+        )
 
         cutMuons = (
             cutLooseMuons
