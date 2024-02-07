@@ -535,8 +535,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["lepton_iso" + out_label] = lepton.iso[:, 0]
         output["vars"]["lepton_isoMVA" + out_label] = lepton.isoMVA[:, 0]
         output["vars"]["lepton_miniIso" + out_label] = lepton.miniIso[:, 0]
-        output["vars"]["lepton_multiIso" + out_label] = lepton.multiIso[:, 0]
-        output["vars"]["lepton_puppiIso" + out_label] = lepton.puppiIso[:, 0]
         output["vars"]["lepton_dxy" + out_label] = lepton.dxy[:, 0]
         output["vars"]["lepton_dz" + out_label] = lepton.dz[:, 0]
 
