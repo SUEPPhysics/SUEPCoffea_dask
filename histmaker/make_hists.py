@@ -278,6 +278,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             cutflow=cutflow,
         )
 
+        # if there are no events left after selections, no need to fill histograms
         if df_plot is None:
             continue
 
@@ -317,7 +318,7 @@ def main():
             # input method should always be HighestPT
             "HighestPT": {
                 "input_method": "HighestPT",
-                "selections": [],
+                "selections": ["MET_pt > 50"],
             },
         }
     if options.channel == "ggF":
@@ -595,6 +596,7 @@ def main():
             logging.debug(f"Applying cross section {xsection}.")
         logging.debug(f"Applying total_gensumweight {total_gensumweight}.")
         output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
+        cutflow = fill_utils.apply_normalization(cutflow, xsection / total_gensumweight)
 
     # Make ABCD expected histogram for signal region
     if options.doABCD and options.predictSR:
