@@ -658,7 +658,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         selLeptons = selLeptons[clusterCut]
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
-        
+
         output["cutflow_oneCluster" + out_label] += len(tracks)
 
         # output file if no events pass selections, avoids errors later on
@@ -728,7 +728,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     "cutflow_qualityFilters_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "cutflow_oneCluster_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_oneCluster_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
                 }
             )
             output = self.analysis(
