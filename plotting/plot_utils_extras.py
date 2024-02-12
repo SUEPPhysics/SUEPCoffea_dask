@@ -69,7 +69,7 @@ def apply_cuts(plots, cuts):
 
 
 def split_bkgs_per_process(
-    plots: Dict[str, Dict[str, hist.Hist]], bkg_list: List[float]
+    plots: Dict[str, Dict[str, hist.Hist]], bkg_list: List[str]
 ) -> Dict[str, Dict[str, Dict[str, hist.Hist]]]:
     plots_out = {}
     for bkg in bkg_list:
@@ -106,7 +106,7 @@ def split_bkgs_per_process(
 
 
 def split_bkgs(
-    plots: Dict[str, Dict[str, hist.Hist]], bkg_list: List[float]
+    plots: Dict[str, Dict[str, hist.Hist]], bkg_list: List[str]
 ) -> Dict[str, Dict[str, hist.Hist]]:
     plots_out = {
         "c/b": {},
@@ -745,11 +745,11 @@ def plot_ratio_stack(
     if ylim is None:
         ylim = (0, hist_bkg_total.values().max() * 1.8)
         if ylog:
-            ylim = (1e-1, 1e10)
+            ylim = (1e-1, 1e11)
         if len(sig_list) > 0:
             ylim = (0, hist_bkg_total.values().max() * 2.2)
             if ylog:
-                ylim = (1e-1, 1e9)
+                ylim = (1e-1, 1e10)
 
     # Plot the stacked histogram
     hep.histplot(

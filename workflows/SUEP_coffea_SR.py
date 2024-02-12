@@ -116,6 +116,55 @@ class SUEP_cluster(processor.ProcessorABC):
 
         return events, muons
 
+    def fill_cutflow(self, events, muons, output):
+        dataset = events.metadata["dataset"]
+        weights = np.ones(len(events))
+        if self.isMC:
+            weights = events.genWeight
+
+        output[dataset]["cutflow"].fill(
+            len(events) * ["nMuon>4"],
+            weight=weights,
+        )
+
+        mask = ak.num(muons) >= 6
+        events = events[mask]
+        muons = muons[mask]
+        weights = weights[mask]
+        output[dataset]["cutflow"].fill(
+            len(events) * ["nMuon>=6"],
+            weight=weights,
+        )
+
+        muonsCollection = ak.zip(
+            {
+                "pt": muons.pt,
+                "eta": muons.eta,
+                "phi": muons.phi,
+                "mass": muons.mass,
+                "charge": muons.pdgId / (-13),
+            },
+            with_name="Momentum4D",
+        )
+        mask = SUEP_utils.inter_isolation(muonsCollection[:, 0], muonsCollection) > 1.0
+        events = events[mask]
+        muons = muons[mask]
+        weights = weights[mask]
+        output[dataset]["cutflow"].fill(
+            len(events) * ["lmu_inter_iso_16>1"],
+            weight=weights,
+        )
+
+        mask = ak.mean(muons.pt, axis=1) < 10
+        events = events[mask]
+        muons = muons[mask]
+        weights = weights[mask]
+        output[dataset]["cutflow"].fill(
+            len(events) * ["muon_pt_mean<10"],
+            weight=weights,
+        )
+
+
     def fill_histograms(self, events, muons, output):
         dataset = events.metadata["dataset"]
 
@@ -255,6 +304,11 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # fill the histograms
         events, muons = self.muon_filter(events)
+
+        # Fill the cutflow columns for nMuon>4, nMuon>=6, nMuon>=6 && inter_iso > 1.0
+        self.fill_cutflow(events, muons, output)
+
+        # Fill the histograms
         self.fill_histograms(events, muons, output)
 
         return
@@ -265,7 +319,10 @@ class SUEP_cluster(processor.ProcessorABC):
             [
                 "all",
                 "trigger",
-                "nMu==3",
+                "nMuon>4",
+                "nMuon>=6",
+                "lmu_inter_iso_16>1",
+                "muon_pt_mean<10",
             ],
             name="cutflow",
             label="cutflow",

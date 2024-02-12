@@ -121,7 +121,8 @@ lumis = {
     "2016_apv": 19497.914,
     "2016": 16810.813,
     "2017": 41471.589,
-    "2018": 59817.406,
+    # NOTE: 2018 lumi is only for the main trigger path
+    "2018": 54540.000,
 }
 
 sample_names = {

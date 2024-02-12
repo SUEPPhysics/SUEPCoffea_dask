@@ -128,8 +128,6 @@ def get_main_parser():
         choices=[
             "iterative",
             "futures",
-            "parsl/slurm",
-            "parsl/condor",
             "dask/condor",
             "dask/slurm",
             "dask/lpc",
@@ -140,8 +138,6 @@ def get_main_parser():
         default="futures",
         help="The type of executor to use (default: %(default)s). Other options can be implemented. "
         "For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html"
-        "- `parsl/slurm` - tested at DESY/Maxwell"
-        "- `parsl/condor` - tested at DESY, RWTH"
         "- `dask/slurm` - tested at DESY/Maxwell"
         "- `dask/condor` - tested at DESY, RWTH"
         "- `dask/lpc` - custom lpc/condor setup (due to write access restrictions)"
@@ -257,61 +253,6 @@ def specificProcessing(args, sample_dict):
             if args.only in sample_dict[key]:
                 sample_dict = dict([(key, [args.only])])
     return sample_dict
-
-
-def parslExecutor(args, env_extra, condor_extra):
-    import parsl
-    from parsl.addresses import address_by_hostname, address_by_query
-    from parsl.channels import LocalChannel
-    from parsl.config import Config
-    from parsl.executors import HighThroughputExecutor
-    from parsl.launchers import SrunLauncher
-    from parsl.providers import CondorProvider, SlurmProvider
-
-    if "slurm" in args.executor:
-        htex_config = Config(
-            executors=[
-                HighThroughputExecutor(
-                    label="coffea_parsl_slurm",
-                    address=address_by_hostname(),
-                    prefetch_capacity=0,
-                    provider=SlurmProvider(
-                        channel=LocalChannel(script_dir="logs_parsl"),
-                        launcher=SrunLauncher(),
-                        max_blocks=(args.scaleout) + 10,
-                        init_blocks=args.scaleout,
-                        partition="all",
-                        worker_init="\n".join(env_extra),
-                        walltime="00:120:00",
-                    ),
-                )
-            ],
-            retries=20,
-        )
-    elif "condor" in args.executor:
-        htex_config = Config(
-            executors=[
-                HighThroughputExecutor(
-                    label="coffea_parsl_condor",
-                    address=address_by_query(),
-                    # max_workers=1,
-                    provider=CondorProvider(
-                        nodes_per_block=1,
-                        init_blocks=1,
-                        max_blocks=1,
-                        worker_init="\n".join(env_extra + condor_extra),
-                        walltime="00:20:00",
-                    ),
-                )
-            ]
-        )
-    else:
-        raise NotImplementedError
-
-    parsl.load(htex_config)
-
-    executor = processor.ParslExecutor(config=htex_config)
-    return executor
 
 
 def daskExecutor(args, env_extra):
@@ -550,7 +491,7 @@ def setupSUEP(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         scouting=args.scouting,
         do_inf=args.doInf,
@@ -574,7 +515,7 @@ def setupSUEP_slim(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -596,7 +537,7 @@ def setupSUEP_fastjet_testing(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         scouting=args.scouting,
         do_inf=args.doInf,
@@ -620,7 +561,7 @@ def setupSUEP_ttbar_sources(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         scouting=args.scouting,
         do_inf=args.doInf,
@@ -644,7 +585,7 @@ def setupSUEP_data(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -667,7 +608,7 @@ def setupSUEP_SR(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -690,7 +631,7 @@ def setupSUEP_CRprompt(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -713,7 +654,7 @@ def setupSUEP_CRcb(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -736,7 +677,7 @@ def setupSUEP_CRlight(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -759,7 +700,7 @@ def setupSUEP_nbjet_comparison(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -782,7 +723,7 @@ def setupSUEP_DYstudy(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -805,7 +746,7 @@ def setupSUEP_combine(args, sample_dict):
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
-        weight_syst="",
+        weight_syst=False,
         flag=False,
         output_location=os.getcwd(),
         accum=args.executor,
@@ -823,8 +764,6 @@ def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     if args.executor in ["futures", "iterative"]:
         executor = nativeExecutors(args)
-    elif "parsl" in args.executor:
-        executor = parslExecutor(args, env_extra, condor_extra)
     elif "dask" in args.executor:
         executor = daskExecutor(args, env_extra)
     else:
