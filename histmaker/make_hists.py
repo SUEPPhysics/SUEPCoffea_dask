@@ -318,7 +318,7 @@ def main():
             # input method should always be HighestPT
             "HighestPT": {
                 "input_method": "HighestPT",
-                "selections": ["MET_pt > 50"],
+                "selections": [],
             },
         }
     if options.channel == "ggF":
