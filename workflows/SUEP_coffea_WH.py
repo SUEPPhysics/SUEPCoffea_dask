@@ -659,6 +659,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         tracks = tracks[clusterCut]
         indices = indices[clusterCut]
 
+        output["cutflow_oneCluster" + out_label] += len(tracks)
+
         # output file if no events pass selections, avoids errors later on
         if len(tracks) == 0:
             print("No events pass clusterCut.")
@@ -691,6 +693,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_all_triggers": processor.value_accumulator(float, 0),
                 "cutflow_oneLepton": processor.value_accumulator(float, 0),
                 "cutflow_qualityFilters": processor.value_accumulator(float, 0),
+                "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
             }
         )
@@ -725,7 +728,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     "cutflow_qualityFilters_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "cutflow_MET_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_oneCluster_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
                 }
             )
             output = self.analysis(

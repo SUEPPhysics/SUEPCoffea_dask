@@ -235,18 +235,32 @@ def prepare_DataFrame(
     # 4. apply selections
     if "selections" in config.keys():
         for sel in config["selections"]:
-            if type(sel) is str:
+            if (
+                type(sel) is str
+            ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
                 sel = sel.split(" ")
-            if sel[0] not in df.keys():
+            if (
+                sel[0] not in df.keys()
+            ):  # error out if variable doesn't exist in the DataFrame
                 raise Exception(
                     f"Trying to apply a cut on a variable {sel[0]} that does not exist in the DataFrame"
                 )
             if type(sel[2]) is str and sel[2].isdigit():
-                sel[2] = float(sel[2])  # convert to float if it's a number
+                sel[2] = float(
+                    sel[2]
+                )  # convert to float if the value to cut on is a number
+
+            # make the selection
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
-            cutflow[
+
+            # store number of events passing using the event weights into the cutflow dict
+            cutflow_label = (
                 "cutflow_" + sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out
-            ] = df.shape[0]
+            )
+            if cutflow_label in cutflow.keys():
+                cutflow[cutflow_label] += np.sum(df["event_weight"])
+            else:
+                cutflow[cutflow_label] = np.sum(df["event_weight"])
 
     return df
 
