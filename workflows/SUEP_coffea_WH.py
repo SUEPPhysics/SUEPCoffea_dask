@@ -22,9 +22,7 @@ from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import apply_jecs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
-from workflows.CMS_corrections.track_killing_utils import (
-    track_killing
-)
+from workflows.CMS_corrections.track_killing_utils import track_killing
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -41,7 +39,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         sample: str,
         do_syst: bool,
         flag: bool,
-        output_location = None,
+        output_location=None,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -137,7 +135,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # unboost for these
         SUEP_tracks = SUEP_tracks_b.boost_p4(SUEP_cand)
         output["vars"].loc(
-            indices, "SUEP_pt_avg_HighestPT" + out_label, ak.mean(SUEP_tracks.pt, axis=-1)
+            indices,
+            "SUEP_pt_avg_HighestPT" + out_label,
+            ak.mean(SUEP_tracks.pt, axis=-1),
         )
         output["vars"].loc(indices, "SUEP_pt_HighestPT" + out_label, SUEP_cand.pt)
         output["vars"].loc(indices, "SUEP_eta_HighestPT" + out_label, SUEP_cand.eta)
@@ -162,7 +162,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"][
             "SUEP_deltaPhiGen_HighestPT" + out_label
         ] = SUEP_genPhi_diff_HighestPT
-        output["vars"]["SUEP_deltaRGen_HighestPT" + out_label] = SUEP_genR_diff_HighestPT
+        output["vars"][
+            "SUEP_deltaRGen_HighestPT" + out_label
+        ] = SUEP_genR_diff_HighestPT
         output["vars"].loc(
             indices,
             "SUEP_deltaMassGen_HighestPT" + out_label,
@@ -210,11 +212,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["ngood_fastjets" + out_label] = ak.num(
             ak_inclusive_jets
         ).to_list()
-        
-        if out_label == "track_down": return # only the above variables are different for track_down
+
+        if out_label == "track_down":
+            return  # only the above variables are different for track_down
 
         # general event vars
-        if self.isMC: output["vars"]["genweight"] = events.genWeight
+        if self.isMC:
+            output["vars"]["genweight"] = events.genWeight
         output["vars"]["event" + out_label] = events.event.to_list()
         output["vars"]["run" + out_label] = events.run
         output["vars"]["luminosityBlock" + out_label] = events.luminosityBlock
@@ -236,9 +240,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # ht
         output["vars"]["ht" + out_label] = ak.sum(ak4jets.pt, axis=-1).to_list()
-        output["vars"]["ht_JEC" + out_label] = ak.sum(
-            jets_jec.pt, axis=-1
-        ).to_list()
+        output["vars"]["ht_JEC" + out_label] = ak.sum(jets_jec.pt, axis=-1).to_list()
         if self.isMC and self.do_syst:
             jets_jec_JERUp = WH_utils.getAK4Jets(jets_c["JER"].up, lepton)
             jets_jec_JERDown = WH_utils.getAK4Jets(jets_c["JER"].down, lepton)
@@ -333,26 +335,36 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # corrections on MET
         if self.isMC and self.do_syst:
 
-            output["vars"]["PuppiMET_pt" + out_label + "_JER_up"] = events.PuppiMET.ptJERUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JER_up"
+            ] = events.PuppiMET.ptJERUp
             output["vars"][
                 "PuppiMET_pt" + out_label + "_JER_down"
             ] = events.PuppiMET.ptJERDown
-            output["vars"]["PuppiMET_pt" + out_label + "_JES_up"] = events.PuppiMET.ptJESUp
+            output["vars"][
+                "PuppiMET_pt" + out_label + "_JES_up"
+            ] = events.PuppiMET.ptJESUp
             output["vars"][
                 "PuppiMET_pt" + out_label + "_JES_down"
             ] = events.PuppiMET.ptJESDown
-            output["vars"]["PuppiMET_phi" + out_label + "_JER_up"] =  events.PuppiMET.phiJERUp
+            output["vars"][
+                "PuppiMET_phi" + out_label + "_JER_up"
+            ] = events.PuppiMET.phiJERUp
             output["vars"][
                 "PuppiMET_phi" + out_label + "_JER_down"
             ] = events.PuppiMET.phiJERDown
-            output["vars"]["PuppiMET_phi" + out_label + "_JES_up"] = events.PuppiMET.phiJESUp
+            output["vars"][
+                "PuppiMET_phi" + out_label + "_JES_up"
+            ] = events.PuppiMET.phiJESUp
             output["vars"][
                 "PuppiMET_phi" + out_label + "_JES_down"
             ] = events.PuppiMET.phiJESDown
             output["vars"]["MET_JEC_pt" + out_label + "_JER_up"] = met_c.JER.up.pt
-            output["vars"]["MET_JEC_pt" + out_label + "_JER_down"] =  met_c.JER.up.pt
+            output["vars"]["MET_JEC_pt" + out_label + "_JER_down"] = met_c.JER.up.pt
             output["vars"]["MET_JEC_pt" + out_label + "_JES_up"] = met_c.JES_jes.up.pt
-            output["vars"]["MET_JEC_pt" + out_label + "_JES_down"] = met_c.JES_jes.down.pt
+            output["vars"][
+                "MET_JEC_pt" + out_label + "_JES_down"
+            ] = met_c.JES_jes.down.pt
             output["vars"][
                 "MET_JEC_pt" + out_label + "_UnclusteredEnergy_up"
             ] = met_c.MET_UnclusteredEnergy.up.pt
@@ -361,9 +373,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ] = met_c.MET_UnclusteredEnergy.down.pt
             output["vars"]["MET_JEC_phi" + out_label] = met_c.phi
             output["vars"]["MET_JEC_phi" + out_label + "_JER_up"] = met_c.JER.up.phi
-            output["vars"][
-                "MET_JEC_phi" + out_label + "_JER_down"
-            ] = met_c.JER.down.phi
+            output["vars"]["MET_JEC_phi" + out_label + "_JER_down"] = met_c.JER.down.phi
             output["vars"]["MET_JEC_phi" + out_label + "_JES_up"] = met_c.JES_jes.up.phi
             output["vars"][
                 "MET_JEC_phi" + out_label + "_JES_down"
@@ -497,7 +507,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if len(events) == 0:
             print("No events passed basic event selection. Saving empty outputs.")
             return output
-        
+
         #####################################################################################
         # ---- Lepton selection
         # Define the lepton objects and apply single lepton selection.
@@ -506,7 +516,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         _, _, tightLeptons = WH_utils.getTightLeptons(events)
 
         # require exactly one tight lepton
-        leptonSelection = (ak.num(tightLeptons) == 1)
+        leptonSelection = ak.num(tightLeptons) == 1
         events = events[leptonSelection]
         tightLeptons = tightLeptons[leptonSelection]
         output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
@@ -633,7 +643,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     "cutflow_oneCluster_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "cutflow_twoTracksInCluster_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_twoTracksInCluster_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
                 }
             )
             output = self.analysis(
