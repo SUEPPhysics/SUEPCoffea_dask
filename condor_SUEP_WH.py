@@ -45,24 +45,18 @@ def main():
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
     parser.add_argument("--chunkSize", type=int, default=100000, help="")
-    parser.add_argument("--doInf", type=str, default=-1, help="")
     options = parser.parse_args()
 
-    out_dir = os.getcwd()
     modules_era = []
 
     modules_era.append(
         SUEP_coffea_WH.SUEP_cluster_WH(
             isMC=options.isMC,
             era=str(options.era),
-            scouting=0,
             do_syst=options.doSyst,
-            syst_var="",
             sample=options.dataset,
-            weight_syst="",
             flag=False,
-            output_location=out_dir,
-            accum="pandas_merger",
+            output_location=os.getcwd(),
         )
     )
 

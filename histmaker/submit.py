@@ -125,7 +125,7 @@ elif options.method == "multithread":
         getpass.getuser(), np.random.randint(0, 10000)
     )
     os.system(f"mkdir {work_dir}")
-    os.system(f"cp -a ../SUEPCoffea_dask {work_dir}/.")
+    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir}/.")
     print("Working in", work_dir)
     work_dir += "/SUEPCoffea_dask/histmaker/"
     pool = Pool(
