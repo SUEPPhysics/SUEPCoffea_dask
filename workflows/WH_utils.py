@@ -1,7 +1,6 @@
 import awkward as ak
 import numpy as np
 import vector
-from vector._methods import LorentzMomentum, Planar
 
 
 def getAK4Jets(Jets, lepton):
@@ -16,7 +15,7 @@ def getAK4Jets(Jets, lepton):
                 "phi": Jets.phi,
                 "mass": Jets.mass,
                 "btag": Jets.btagDeepFlavB,
-                "jetId": Jets.jetId,
+                "jetId": Jets.jetId,    
                 "hadronFlavour": Jets.hadronFlavour,
                 "qgl": Jets.qgl,
             },
@@ -222,28 +221,55 @@ def getTightLeptons(events):
 
     return tightMuons, tightElectrons, tightLeptons
 
-def triggerSelection(events, output=None, out_label=None):
+def getTrigObj(events):
+    trigObj = ak.zip(
+        {
+            "pt": events.TrigObj.pt,
+            "eta": events.TrigObj.eta,
+            "phi": events.TrigObj.phi,
+            "filterBits": events.TrigObj.filterBits,
+        },
+        with_name="Momentum4D",
+    )
+    return trigObj
+
+def triggerSelection(events, era:str, isMC:bool, output=None, out_label=None):
         """
         Applies trigger, returns events.
-        Trigger single muon and EGamma.
+        Trigger single muon and EGamma; optionally updates the cutflows.
         """
 
+        # photon trigger
+        if era == "2016" or era == "2016apv":
+            triggerPhoton = events.HLT.Photon175
+        elif era == "2017" or era == "2018":
+            triggerPhoton = events.HLT.Photon200
+
+        # electron trigger
+        if era == "2017" and (not isMC):
+            # data 2017 is special <3<3
+            # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
+            # TODO: need to implement this
+            triggerElectron = (
+                events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+            )
+        else:
+            triggerElectron = (
+                events.HLT.Ele32_WPTight_Gsf
+                | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+            )
+
+        # muon trigger
         triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
-        triggerEGamma = (
-            events.HLT.Ele32_WPTight_Gsf
-            | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
-            | events.HLT.Photon200
-        )
 
         # this is just for cutflow
         if output:
             output["cutflow_triggerSingleMuon" + out_label] += ak.sum(
                 events[triggerSingleMuon].genWeight
             )
-            output["cutflow_triggerEGamma" + out_label] += ak.sum(events[triggerEGamma].genWeight)
+            output["cutflow_triggerEGamma" + out_label] += ak.sum(events[triggerPhoton | triggerElectron].genWeight)
 
-        events = events[triggerEGamma | triggerSingleMuon]
-
+        events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
         return events
 
 def orthogonalitySelection(events):
