@@ -4,32 +4,33 @@ import vector
 
 
 def getAK4Jets(Jets, lepton):
-        """
-        Create awkward array of jets. Applies basic selections.
-        Returns: awkward array of dimensions (events x jets x 4 momentum)
-        """
-        Jets_awk = ak.zip(
-            {
-                "pt": Jets.pt,
-                "eta": Jets.eta,
-                "phi": Jets.phi,
-                "mass": Jets.mass,
-                "btag": Jets.btagDeepFlavB,
-                "jetId": Jets.jetId,    
-                "hadronFlavour": Jets.hadronFlavour,
-                "qgl": Jets.qgl,
-            },
-            with_name="Momentum4D",
-        )
-        # jet pt cut, eta cut, and minimum separation from lepton
-        jet_awk_Cut = (
-            (Jets_awk.pt > 30)
-            & (abs(Jets_awk.eta) < 2.4)
-            & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
-        )
-        Jets_correct = Jets_awk[jet_awk_Cut]
+    """
+    Create awkward array of jets. Applies basic selections.
+    Returns: awkward array of dimensions (events x jets x 4 momentum)
+    """
+    Jets_awk = ak.zip(
+        {
+            "pt": Jets.pt,
+            "eta": Jets.eta,
+            "phi": Jets.phi,
+            "mass": Jets.mass,
+            "btag": Jets.btagDeepFlavB,
+            "jetId": Jets.jetId,
+            "hadronFlavour": Jets.hadronFlavour,
+            "qgl": Jets.qgl,
+        },
+        with_name="Momentum4D",
+    )
+    # jet pt cut, eta cut, and minimum separation from lepton
+    jet_awk_Cut = (
+        (Jets_awk.pt > 30)
+        & (abs(Jets_awk.eta) < 2.4)
+        & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
+    )
+    Jets_correct = Jets_awk[jet_awk_Cut]
 
-        return Jets_correct
+    return Jets_correct
+
 
 def getGenTracks(events):
     genParts = events.GenPart
@@ -44,6 +45,7 @@ def getGenTracks(events):
         with_name="Momentum4D",
     )
     return genParts
+
 
 def getTracks(events, lepton=None, leptonIsolation=None):
     Cands = ak.zip(
@@ -96,11 +98,10 @@ def getTracks(events, lepton=None, leptonIsolation=None):
 
     if leptonIsolation:
         # Sorting out the tracks that overlap with the lepton
-        tracks = tracks[
-            (tracks.deltaR(lepton[:, 0]) >= leptonIsolation)
-        ]
+        tracks = tracks[(tracks.deltaR(lepton[:, 0]) >= leptonIsolation)]
 
     return tracks, Cleaned_cands
+
 
 def getLeptons(events):
 
@@ -158,9 +159,10 @@ def getLeptons(events):
 
     return muons, electrons, leptons
 
+
 def getLooseLeptons(events):
     """
-    These leptons follow EXACTLY the ZH definitions, so that we can impose 
+    These leptons follow EXACTLY the ZH definitions, so that we can impose
     orthogonality between the ZH, offline, and WH selections.
     """
 
@@ -178,14 +180,8 @@ def getLooseLeptons(events):
         (events.Electron.cutBased >= 2)
         & (events.Electron.pt >= 15)
         & (events.Electron.mvaFall17V2Iso_WP90)
-        & (
-            abs(events.Electron.dxy)
-            < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
-        )
-        & (
-            abs(events.Electron.dz)
-            < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
-        )
+        & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
+        & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
         & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
         & (abs(events.Electron.eta) < 2.5)
     )
@@ -194,7 +190,8 @@ def getLooseLeptons(events):
     looseElectrons = electrons[cutLooseElectrons]
     looseLeptons = ak.concatenate([looseMuons, looseElectrons], axis=1)
 
-    return looseMuons, looseElectrons, looseLeptons 
+    return looseMuons, looseElectrons, looseLeptons
+
 
 def getTightLeptons(events):
     """
@@ -210,10 +207,7 @@ def getTightLeptons(events):
         & (abs(looseMuons.dz) <= 0.05)
         & (looseMuons.pt >= 30)
     )
-    cutTightElectrons = (
-        (looseElectrons.mvaFall17V2Iso_WP80)
-        & (looseElectrons.pt >= 35)
-    )
+    cutTightElectrons = (looseElectrons.mvaFall17V2Iso_WP80) & (looseElectrons.pt >= 35)
 
     tightMuons = looseMuons[cutTightMuons]
     tightElectrons = looseElectrons[cutTightElectrons]
@@ -285,7 +279,7 @@ def orthogonalitySelection(events):
         ak.max(looseElectrons.pt, axis=1, mask_identity=False) >= 25
     )
     cutAnyMuons = (ak.num(looseMuons, axis=1) > 0) & (
-       ak.max(looseMuons.pt, axis=1, mask_identity=False) >= 25
+        ak.max(looseMuons.pt, axis=1, mask_identity=False) >= 25
     )
     cutAnyLeps = cutAnyElecs | cutAnyMuons
 
@@ -308,7 +302,8 @@ def orthogonalitySelection(events):
 
     return events
 
-def qualityFiltersSelection(events, era:str):
+
+def qualityFiltersSelection(events, era: str):
     ### Apply MET filter selection (see https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2)
     if era == "2018" or era == "2017":
         cutAnyFilter = (
@@ -335,6 +330,7 @@ def qualityFiltersSelection(events, era:str):
         )
     return events[cutAnyFilter]
 
+
 def MET_delta_phi(x, MET):
     # define 4-vectors for MET (x already 4-vector)
     MET_4v = ak.zip(
@@ -350,6 +346,7 @@ def MET_delta_phi(x, MET):
     signed_dphi = MET_4v.deltaphi(x)
     abs_dphi = np.abs(signed_dphi)
     return abs_dphi
+
 
 def W_kinematics(lepton, MET):
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
