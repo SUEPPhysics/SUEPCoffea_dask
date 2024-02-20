@@ -492,11 +492,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
-            events.genWeight = np.ones(len(events)) # dummy value for data
-        
+            events.genWeight = np.ones(len(events))  # dummy value for data
+
         output["cutflow_goldenJSON" + out_label] += ak.sum(events.genWeight)
 
-        events = WH_utils.triggerSelection(events, self.era, self.isMC, output, out_label)
+        events = WH_utils.triggerSelection(
+            events, self.era, self.isMC, output, out_label
+        )
         output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
 
         events = WH_utils.qualityFiltersSelection(events, self.era)
@@ -613,7 +615,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if self.isMC:
             output["gensumweight"] += ak.sum(events.genWeight)
         else:
-            events.genWeight = np.ones(len(events)) # dummy value for data
+            events.genWeight = np.ones(len(events))  # dummy value for data
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
