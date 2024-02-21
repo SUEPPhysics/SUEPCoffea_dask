@@ -62,7 +62,6 @@ def getColor(sample):
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
 lumis = {
-    "2016_apv": 19497.914,
     "2016apv": 19497.914,
     "2016": 16810.813,
     "2017": 41471.589,
@@ -71,7 +70,7 @@ lumis = {
 }
 
 lumis_scouting = {
-    "2016_apv": 18843.384721292190552,
+    "2016apv": 18843.384721292190552,
     "2016": 16705.324242775104523,
     "2017": 35718.640387367889404,
     "2018": 58965.346247952011108,
@@ -90,7 +89,7 @@ def lumiLabel(year, scouting=False):
     if year in ["2017", "2018"]:
         return round(lumidir[year] / 1000, 1)
     elif year == "2016":
-        return round((lumidir[year] + lumidir[year + "_apv"]) / 1000, 1)
+        return round((lumidir[year] + lumidir[year + "apv"]) / 1000, 1)
     elif year == "all":
         return round(lumidir[year] / 1000, 1)
 
@@ -110,8 +109,8 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
             lumi = lumidir["2017"]
             era = "2017"
         elif "20UL16MiniAODAPVv2" in infile_name:
-            lumi = lumidir["2016_apv"]
-            era = "2016_apv"
+            lumi = lumidir["2016apv"]
+            era = "2016apv"
         elif "20UL18" in infile_name:
             lumi = lumidir["2018"]
             era = "2018"
