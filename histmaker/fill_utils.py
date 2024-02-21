@@ -421,16 +421,21 @@ def get_track_killing_config(config: dict) -> dict:
         label_out_new = label_out
         new_config[label_out_new] = deepcopy(config[label_out])
         new_config[label_out_new]["input_method"] += "_track_down"
-        if "xvar" in new_config[label_out_new].keys(): new_config[label_out_new]["xvar"] += "_track_down"
-        if "yvar" in new_config[label_out_new]: new_config[label_out_new]["yvar"] += "_track_down"
-        if "method_var" in new_config[label_out_new].keys(): new_config[label_out_new]["method_var"] += "_track_down"
+        if "xvar" in new_config[label_out_new].keys():
+            new_config[label_out_new]["xvar"] += "_track_down"
+        if "yvar" in new_config[label_out_new]:
+            new_config[label_out_new]["yvar"] += "_track_down"
+        if "method_var" in new_config[label_out_new].keys():
+            new_config[label_out_new]["method_var"] += "_track_down"
         if "SR" in new_config[label_out_new].keys():
             for iSel in range(len(new_config[label_out_new]["SR"])):
                 new_config[label_out_new]["SR"][iSel][0] += "_track_down"
         if "selections" in new_config[label_out_new].keys():
             for iSel in range(len(new_config[label_out_new]["selections"])):
                 if type(new_config[label_out_new]["selections"][iSel]) is str:
-                    new_config[label_out_new]["selections"][iSel] = new_config[label_out_new]["selections"][iSel].split(" ")
+                    new_config[label_out_new]["selections"][iSel] = new_config[
+                        label_out_new
+                    ]["selections"][iSel].split(" ")
                 if new_config[label_out_new]["selections"][iSel][0] in [
                     "ht",
                     "ngood_ak4jets",
@@ -443,7 +448,8 @@ def get_track_killing_config(config: dict) -> dict:
                 vars = new_config[label_out_new]["new_variables"][iVar][2]
                 new_vars = []
                 for var in vars:
-                    if var in ["ht", "ngood_ak4jets", "ht_JEC"]: continue
+                    if var in ["ht", "ngood_ak4jets", "ht_JEC"]:
+                        continue
                     new_vars.append(var + "_track_down")
 
     return new_config
