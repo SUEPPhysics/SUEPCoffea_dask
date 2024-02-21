@@ -216,10 +216,10 @@ def prepare_DataFrame(
     """
 
     # 1. keep only events that passed this method, if any defined
-    if config.get("xvar"):
-        if config["xvar"] not in df.columns:
+    if config.get("method_var"):
+        if config["method_var"] not in df.columns:
             return None
-        df = df[~df[config["xvar"]].isnull()]
+        df = df[~df[config["method_var"]].isnull()]
 
     # 2. blind
     if blind and not isMC:
