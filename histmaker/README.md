@@ -48,6 +48,7 @@ All of these are controlled by the `config` dictionary:
 config = {
     'Cluster' : {
         'input_method' : 'CL',
+        'method_var': 'SUEP_nconst_CL',
         'xvar' :'SUEP_S1_CL',
         'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
         'yvar' : 'SUEP_nconst_CL',
@@ -61,6 +62,7 @@ config = {
 
 This will:
 - Grab all ntuple variables from the input method `CL` and fill histograms in the output method `Cluster`.
+- Select all events that pass the `CL` method, using `method_var`.
 - Blind the SR for data.
 - Apply the `selections` to the DataFrame before filling the histograms.
 - Make each histogram for each ABCD region, and make an ABCD prediction for the SR.
@@ -135,10 +137,11 @@ The idea of this script is to map each of these methods to one or more set of hi
 
 1. Output tag: histograms will be named using this, and the systematics will extend each output tag (e.g. input method: CL --> output tag Cluster, with systematics Cluster_sys_up and Cluster_sys_down).
 2. `SR`: signal region definition (e.g. `[['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 80]]`), used to blind if needed.
-3. [Optional] `selections`: a set of selections, syntax: either a list of `['variable', 'operator', value]` or a single string `"variable operator value"`. e.g. `[['ht', '>', 1200], ['ntracks > 0']]`.
-4. [Optional] `xvar/yvar`: x/y variables for ABCD method
-5. [Optional] `xvar_ragions/yvar_regions`: regions for ABCD method. N.B.: Include lower and upper bounds for all ABCD regions (e.g. `[0.0, 0.5, 1.0]`).
-6. [Optional] `new_variables`: new variables to be defined as functions of existing variables in the DataFrame, syntax: `[['new_variable_name', callable, [callable inputs]]]`.
+3. [Semi-optional] `method_var`: variable to use to select events for this method.
+4. [Optional] `selections`: a set of selections, syntax: either a list of `['variable', 'operator', value]` or a single string `"variable operator value"`. e.g. `[['ht', '>', 1200], ['ntracks > 0']]`.
+5. [Optional] `xvar/yvar`: x/y variables for ABCD method
+6. [Optional] `xvar_ragions/yvar_regions`: regions for ABCD method. N.B.: Include lower and upper bounds for all ABCD regions (e.g. `[0.0, 0.5, 1.0]`).
+7. [Optional] `new_variables`: new variables to be defined as functions of existing variables in the DataFrame, syntax: `[['new_variable_name', callable, [callable inputs]]]`.
 
 Each own input methods have their own selections, ABCD regions, and signal region. Multiple output tags can be defined for the same input method: i.e. different selections, ABCD methods, and SRs can be defined. Thus, each input method has a dictionary defined for it which is in turn stores in the `config` dictionary, with the key being the output label, e.g.
 
@@ -146,6 +149,7 @@ Each own input methods have their own selections, ABCD regions, and signal regio
 config = {
     'Cluster' : {
         'input_method' : 'CL',
+        'method_var': 'SUEP_nconst_CL',
         'xvar' :'SUEP_S1_CL',
         'xvar_regions' : [0.35, 0.4, 0.5, 1.0],
         'yvar' : 'SUEP_nconst_CL',
