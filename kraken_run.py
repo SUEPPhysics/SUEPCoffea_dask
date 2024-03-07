@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 import time
-import datetime
 
 from histmaker.fill_utils import get_git_info
 from plotting.plot_utils import check_proxy
@@ -126,14 +125,23 @@ def main():
         "-m", "--maxFiles", type=int, default=-1, help="maximum number of files"
     )
     parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
-    parser.add_argument("--channel", type=str, required=True, help="Channel to run.", choices=["ggF", "WH"])
+    parser.add_argument(
+        "--channel",
+        type=str,
+        required=True,
+        help="Channel to run.",
+        choices=["ggF", "WH"],
+    )
     parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
     parser.add_argument(
         "-ML", "--ML", type=int, default=0, help="ML samples production."
     )
     parser.add_argument(
-        "-w", "--wait", type=float, default=1, 
-        help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the NIT T2 with xrootd requests."
+        "-w",
+        "--wait",
+        type=float,
+        default=1,
+        help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the NIT T2 with xrootd requests.",
     )
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     options = parser.parse_args()
@@ -154,7 +162,9 @@ def main():
         outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
         outdir_condor = "/" + username + "/SUEP/{tag}/{sample}/"
     else:
-        logging.error("Cannot access /data/submit/$USER or /data/submit/cms/store/user/$USER!")
+        logging.error(
+            "Cannot access /data/submit/$USER or /data/submit/cms/store/user/$USER!"
+        )
         sys.exit()
     workdir = os.getcwd()
     logdir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
@@ -354,7 +364,13 @@ def main():
             if iSample != 0 and options.wait > 0:
                 current_time = datetime.datetime.now()
                 formatted_time = current_time.strftime("%H:%M")
-                logging.info("Waiting {} hours ({:g} minutes) before submitting this sample... (current time: {})".format(options.wait, float("{:.{p}g}".format(options.wait*60, p=2)), formatted_time))
+                logging.info(
+                    "Waiting {} hours ({:g} minutes) before submitting this sample... (current time: {})".format(
+                        options.wait,
+                        float("{:.{p}g}".format(options.wait * 60, p=2)),
+                        formatted_time,
+                    )
+                )
                 time.sleep(options.wait * 3600)
 
             # submit!
@@ -371,11 +387,12 @@ def main():
             logging.info(f"condor submission status : {exit_status}")
 
     if len(missing_samples) > 0:
-        logging.info("\Samples with no input files:")
+        logging.info(r"\Samples with no input files:")
         for s in missing_samples:
             logging.info(s)
-    
+
     logging.info("All done!")
+
 
 if __name__ == "__main__":
     main()
