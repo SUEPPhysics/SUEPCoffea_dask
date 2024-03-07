@@ -322,12 +322,12 @@
   "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
-    "xsec": 687.1
+    "xsec": 88.29
   },
   "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
     "kr": 1,
-    "xsec": 687.1
+    "xsec": 365.34
   },
   "ST_tW_Dilept_5f_DR_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
@@ -368,6 +368,16 @@
     "br": 1,
     "kr": 1,
     "xsec": 1.325
+  },
+  "ZZZ_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.01398	
+  },
+  "WWZ_4F_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1_ext1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 0.1651
   },
   "ZGToLLG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
@@ -544,6 +554,11 @@
     "br": 1,
     "xsec": 86.55
   },
+  "ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 3.74
+  },
   "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
@@ -563,6 +578,11 @@
     "br": 1,
     "kr": 1,
     "xsec": 113.4
+  },
+  "VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 2.528	
   },
   "GluGluToSUEP_HT1000_T0p25_mS125.000_mPhi1.000_T0.250_modeleptonic_TuneCP5_13TeV-pythia8": {
     "br": 1,
@@ -8958,5 +8978,10 @@
       "br": 0.3177,
       "kr": 1,
       "xsec": 1.358
+  },
+  "ttH": {
+      "xsec": 4.987e-01,
+      "br":1,
+      "kr":1
   }
 }

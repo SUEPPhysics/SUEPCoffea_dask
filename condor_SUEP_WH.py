@@ -45,6 +45,7 @@ def main():
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
     parser.add_argument("--chunkSize", type=int, default=100000, help="")
+    parser.add_argument("--doInf", type=str, default=None, help="Only added for compatibility with kraken_run.py")
     options = parser.parse_args()
 
     modules_era = []

@@ -36,6 +36,8 @@ If the tag already exists use the `--force` option if you are trying to resubmit
 
 It will also create a log directory `/log/directory/jobs_TAG_SAMPLE` for each sample in the input list, where the condor jobs will be redirected to, as well as the condor.sub and executable that is passed to each job. Also in this directory, is a list of input files for each sample.
 
+*Nota bene*: if reading many samples (> few 1000) from MIT T2, use the `--wait` option to wait between submitting samples. If several thousand start concurrently, the xrootd reads might overload T2 and cause headaches for everyone. Typical wait times can be a couple of minutes for small samples, to something like an hour for larger ones.
+
 ### Monitoring and resubmitting jobs
 
 To monitor and resubmit jobs we can use the `monitor.py` file.
