@@ -672,7 +672,7 @@
   "VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8+RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v2+MINIAODSIM": {
     "br": 1,
     "kr": 1,
-    "xsec": 2.528	
+    "xsec": 0.935	
   },
   "GluGluToSUEP_HT1000_T0p25_mS125.000_mPhi1.000_T0.250_modeleptonic_TuneCP5_13TeV-pythia8": {
     "br": 1,
