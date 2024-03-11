@@ -2,6 +2,7 @@ import awkward as ak
 import numpy as np
 import vector
 
+
 def getGenModel(events):
     """
     Central signal samples are not split by parameters, so we need to extract the model from the input file
@@ -13,16 +14,21 @@ def getGenModel(events):
     if not hasattr(events, "GenModel"):
         raise ValueError("GenModel not found in events, please check the input file.")
     genModels = []
-    for genModelInfo in events.GenModel: # I can't figure out a way to do this with AwkwardArrays, so I'm doing it with two for loops, may I be forgiven
+    for (
+        genModelInfo
+    ) in (
+        events.GenModel
+    ):  # I can't figure out a way to do this with AwkwardArrays, so I'm doing it with two for loops, may I be forgiven
         genModel = []
-        genModelInfo = genModelInfo.tolist() # this actually becomes a dictionary
+        genModelInfo = genModelInfo.tolist()  # this actually becomes a dictionary
         for g, v in genModelInfo.items():
             if v:
                 genModel.append(g)
-        if len(genModel) != 1: 
+        if len(genModel) != 1:
             raise ValueError(f"Expected one genModel per event.")
         genModels.append(genModel[0])
     return genModels
+
 
 def getAK4Jets(Jets, lepton):
     """
@@ -64,7 +70,7 @@ def getGenPart(events):
             "pdgID": genParts.pdgId,
             "status": genParts.status,
             "genPartIdxMother": genParts.genPartIdxMother,
-            "statusFlags": genParts.statusFlags
+            "statusFlags": genParts.statusFlags,
         },
         with_name="Momentum4D",
     )
@@ -240,7 +246,7 @@ def getTightLeptons(events):
     return tightMuons, tightElectrons, tightLeptons
 
 
-def getPhotons(events, isMC:bool = 1):
+def getPhotons(events, isMC: bool = 1):
     """
     Get photons.
     """
@@ -259,13 +265,14 @@ def getPhotons(events, isMC:bool = 1):
             "pfRelIso03_all": events.Photon.pfRelIso03_all,
             "cutBased": events.Photon.cutBased,
             "isScEtaEB": events.Photon.isScEtaEB,
-            "isScEtaEE": events.Photon.isScEtaEE, 
-            "genPartFlav ": events.Photon.genPartFlav if isMC else None
+            "isScEtaEE": events.Photon.isScEtaEE,
+            "genPartFlav ": events.Photon.genPartFlav if isMC else None,
         },
         with_name="Momentum4D",
     )
 
     return photons
+
 
 def getTrigObj(events):
     trigObj = ak.zip(
@@ -286,12 +293,15 @@ def genSelection(events, sample: str):
     The WJets inclusive sample needs to be cut at W gen pT of 100 GeV in order to be stitched together with the WJets pT binned samples.
     """
 
-    if sample == "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM":
+    if (
+        sample
+        == "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM"
+    ):
         pt = events.LHE.Vpt
-        cut = (pt < 100)
+        cut = pt < 100
         events = events[cut]
 
-    return events 
+    return events
 
 
 def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
@@ -328,7 +338,7 @@ def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
         output["cutflow_triggerEGamma" + out_label] += ak.sum(
             events[triggerPhoton | triggerElectron].genWeight
         )
-       
+
     events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
     return events
 

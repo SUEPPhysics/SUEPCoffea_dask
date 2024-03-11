@@ -5,14 +5,15 @@ https://github.com/scikit-hep/fastjet
 Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
+import warnings
+
 import awkward as ak
 import numpy as np
 import pandas as pd
 import vector
 from coffea import processor
-import warnings
 
-warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 # Importing SUEP specific functions
 import workflows.SUEP_utils as SUEP_utils
@@ -60,7 +61,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output,
         out_label=None,
     ):
-        
+
         #####################################################################################
         # ---- Track selection
         # Prepare the clean PFCand matched to tracks collection, imposing a dR > 0.4
@@ -68,7 +69,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         tracks, _ = WH_utils.getTracks(events, lepton=leptons, leptonIsolation=0.4)
-        if self.isMC and 'track_down' in out_label:
+        if self.isMC and "track_down" in out_label:
             tracks = track_killing(self, tracks)
 
         #####################################################################################
@@ -77,13 +78,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         # make the ak15 clusters
-        ak15jets, clusters = SUEP_utils.FastJetReclustering(
-            tracks, r=1.5, minPt=60
-        )
-        
+        ak15jets, clusters = SUEP_utils.FastJetReclustering(tracks, r=1.5, minPt=60)
+
         # same some variables before making any selections on the ak15 clusters
         output["vars"].loc(indices, "ntracks" + out_label, ak.num(tracks).to_list())
-        output["vars"].loc(indices, "ngood_fastjets" + out_label, ak.num(ak15jets).to_list())
+        output["vars"].loc(
+            indices, "ngood_fastjets" + out_label, ak.num(ak15jets).to_list()
+        )
 
         #####################################################################################
         # ---- Highest pT Jet (PT)
@@ -126,7 +127,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if len(indices) == 0:
             print("No events pass singleTrackCut.")
             return
-        
+
         ######################################################################################
         # ---- SUEP kinematics
         # Store SUEP kinematics
@@ -150,9 +151,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )  ### boost the SUEP tracks to their restframe
 
         # SUEP candidate rest frame
-        eigs = SUEP_utils.sphericity(SUEP_cand_constituents_b, 1.0)  # Set r=1.0 for IRC safe
+        eigs = SUEP_utils.sphericity(
+            SUEP_cand_constituents_b, 1.0
+        )  # Set r=1.0 for IRC safe
         output["vars"].loc(
-            indices, "SUEP_nconst_HighestPT" + out_label, ak.num(SUEP_cand_constituents_b)
+            indices,
+            "SUEP_nconst_HighestPT" + out_label,
+            ak.num(SUEP_cand_constituents_b),
         )
         output["vars"].loc(
             indices,
@@ -175,26 +180,65 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"].loc(indices, "SUEP_mass_HighestPT" + out_label, SUEP_cand.mass)
 
         # JEC corrected ak4jets inside SUEP cluster
-        dR_ak4_SUEP = self.jets_jec[indices].deltaR(SUEP_cand) # delta R between jets (selecting events that pass the HighestPT selections) and the SUEP cluster
+        dR_ak4_SUEP = self.jets_jec[indices].deltaR(
+            SUEP_cand
+        )  # delta R between jets (selecting events that pass the HighestPT selections) and the SUEP cluster
         ak4jets_inSUEPcluster = self.jets_jec[indices][dR_ak4_SUEP < 1.5]
-        output["vars"].loc(indices, "ak4jets_inSUEPcluster_n", ak.num(ak4jets_inSUEPcluster, axis=1))
-        output["vars"].loc(indices, "ak4jets_inSUEPcluster_pt", ak.sum(ak4jets_inSUEPcluster.pt, axis=1))
-        ak4jets_inSUEPcluster_ptargsort = ak.argsort(ak4jets_inSUEPcluster.pt, axis=1, ascending=False, stable=True) # sort by pt to save some of these jets
-        ak4jets_inSUEPcluster_ptsort = ak4jets_inSUEPcluster[ak4jets_inSUEPcluster_ptargsort]
+        output["vars"].loc(
+            indices, "ak4jets_inSUEPcluster_n", ak.num(ak4jets_inSUEPcluster, axis=1)
+        )
+        output["vars"].loc(
+            indices,
+            "ak4jets_inSUEPcluster_pt",
+            ak.sum(ak4jets_inSUEPcluster.pt, axis=1),
+        )
+        ak4jets_inSUEPcluster_ptargsort = ak.argsort(
+            ak4jets_inSUEPcluster.pt, axis=1, ascending=False, stable=True
+        )  # sort by pt to save some of these jets
+        ak4jets_inSUEPcluster_ptsort = ak4jets_inSUEPcluster[
+            ak4jets_inSUEPcluster_ptargsort
+        ]
         for i in range(2):
-            output["vars"].loc(indices, "ak4jet" + str(i + 1) + "_inSUEPCluster_pT", ak.fill_none(
-                ak.pad_none(ak4jets_inSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True), -999
-            )[:, i])
-            output["vars"].loc(indices, "ak4jet" + str(i + 1) + "_inSUEPCluster_phi", ak.fill_none(
-                ak.pad_none(ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True), -999
-            )[:, i])
-            output["vars"].loc(indices, "ak4jet" + str(i + 1) + "_inSUEPCluster_eta", ak.fill_none(
-                ak.pad_none(ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True), -999
-            )[:, i])
-            output["vars"].loc(indices, "ak4jet" + str(i + 1) + "_inSUEPCluster_qgl", ak.fill_none(
-                ak.pad_none(ak4jets_inSUEPcluster_ptsort.qgl, i + 1, axis=1, clip=True), -999
-            )[:, i])
-
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_inSUEPCluster_pT",
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_inSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_inSUEPCluster_phi",
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_inSUEPCluster_eta",
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_inSUEPCluster_qgl",
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_inSUEPcluster_ptsort.qgl, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
 
     def storeEventVars(
         self,
@@ -209,7 +253,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # general event vars
         if self.isMC:
             output["vars"]["genweight"] = events.genWeight.to_list()
-            if "GenModel" in dir(events): # SUEP central samples have different genModels in each file
+            if "GenModel" in dir(
+                events
+            ):  # SUEP central samples have different genModels in each file
                 output["vars"]["genModel"] = WH_utils.getGenModel(events)
         output["vars"]["event"] = events.event.to_list()
         output["vars"]["run"] = events.run
@@ -301,7 +347,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # saving kinematic variables for the deltaphi(min(jet,MET)) jet
         ak4jets.deltaPhiMET = WH_utils.MET_delta_phi(ak4jets, events.MET)
-        sorted_deltaphiMET_jets = ak4jets[ak.argsort(ak4jets.deltaPhiMET, axis=1, ascending=True)]
+        sorted_deltaphiMET_jets = ak4jets[
+            ak.argsort(ak4jets.deltaPhiMET, axis=1, ascending=True)
+        ]
         output["vars"]["minDeltaPhiMETJet_pt"] = ak.fill_none(
             ak.pad_none(sorted_deltaphiMET_jets.pt, 1, axis=1, clip=True), -999
         )[:, 0]
@@ -314,7 +362,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["minDeltaPhiMETJet_qgl"] = ak.fill_none(
             ak.pad_none(sorted_deltaphiMET_jets.qgl, 1, axis=1, clip=True), -999
         )[:, 0]
-        
+
         # saving MET variables
         output["vars"]["CaloMET_pt"] = events.CaloMET.pt
         output["vars"]["CaloMET_phi"] = events.CaloMET.phi
@@ -346,36 +394,18 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # corrections on MET
         if self.isMC and self.do_syst:
 
-            output["vars"][
-                "PuppiMET_pt_JER_up"
-            ] = events.PuppiMET.ptJERUp
-            output["vars"][
-                "PuppiMET_pt_JER_down"
-            ] = events.PuppiMET.ptJERDown
-            output["vars"][
-                "PuppiMET_pt_JES_up"
-            ] = events.PuppiMET.ptJESUp
-            output["vars"][
-                "PuppiMET_pt_JES_down"
-            ] = events.PuppiMET.ptJESDown
-            output["vars"][
-                "PuppiMET_phi_JER_up"
-            ] = events.PuppiMET.phiJERUp
-            output["vars"][
-                "PuppiMET_phi_JER_down"
-            ] = events.PuppiMET.phiJERDown
-            output["vars"][
-                "PuppiMET_phi_JES_up"
-            ] = events.PuppiMET.phiJESUp
-            output["vars"][
-                "PuppiMET_phi_JES_down"
-            ] = events.PuppiMET.phiJESDown
+            output["vars"]["PuppiMET_pt_JER_up"] = events.PuppiMET.ptJERUp
+            output["vars"]["PuppiMET_pt_JER_down"] = events.PuppiMET.ptJERDown
+            output["vars"]["PuppiMET_pt_JES_up"] = events.PuppiMET.ptJESUp
+            output["vars"]["PuppiMET_pt_JES_down"] = events.PuppiMET.ptJESDown
+            output["vars"]["PuppiMET_phi_JER_up"] = events.PuppiMET.phiJERUp
+            output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
+            output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
+            output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
             output["vars"]["MET_JEC_pt_JER_up"] = met_c.JER.up.pt
             output["vars"]["MET_JEC_pt_JER_down"] = met_c.JER.up.pt
             output["vars"]["MET_JEC_pt_JES_up"] = met_c.JES_jes.up.pt
-            output["vars"][
-                "MET_JEC_pt_JES_down"
-            ] = met_c.JES_jes.down.pt
+            output["vars"]["MET_JEC_pt_JES_down"] = met_c.JES_jes.down.pt
             output["vars"][
                 "MET_JEC_pt_UnclusteredEnergy_up"
             ] = met_c.MET_UnclusteredEnergy.up.pt
@@ -386,9 +416,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["MET_JEC_phi_JER_up"] = met_c.JER.up.phi
             output["vars"]["MET_JEC_phi_JER_down"] = met_c.JER.down.phi
             output["vars"]["MET_JEC_phi_JES_up"] = met_c.JES_jes.up.phi
-            output["vars"][
-                "MET_JEC_phi_JES_down"
-            ] = met_c.JES_jes.down.phi
+            output["vars"]["MET_JEC_phi_JES_down"] = met_c.JES_jes.down.phi
             output["vars"][
                 "MET_JEC_phi_UnclusteredEnergy_up"
             ] = met_c.MET_UnclusteredEnergy.up.phi
@@ -520,16 +548,28 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["photon" + str(i + 1) + "_isScEtaEE"] = ak.fill_none(
                 ak.pad_none(photons.isScEtaEE, i + 1, axis=1, clip=True), -999
             )[:, i]
-            
+
             # if ith photon exist, compute deltaR with jets
             indices_i = np.arange(len(photons))[ak.num(photons) > i]
-            photon_i = photons[ak.num(photons) > i][:,i]
+            photon_i = photons[ak.num(photons) > i][:, i]
             jets_jec_i = self.jets_jec[ak.num(photons) > i]
             looseLeptons_i = looseLeptons[ak.num(photons) > i]
-            minDeltaR_ak4jet_photon_i = ak.fill_none(ak.min(jets_jec_i.deltaR(photon_i), axis=1), -999)
-            minDeltaR_lepton_photon_i = ak.fill_none(ak.min(looseLeptons_i.deltaR(photon_i), axis=1), -999)
-            output["vars"].loc(indices_i, "minDeltaR_ak4jet_photon" + str(i + 1), minDeltaR_ak4jet_photon_i)
-            output["vars"].loc(indices_i, "minDeltaR_lepton_photon" + str(i + 1), minDeltaR_lepton_photon_i)
+            minDeltaR_ak4jet_photon_i = ak.fill_none(
+                ak.min(jets_jec_i.deltaR(photon_i), axis=1), -999
+            )
+            minDeltaR_lepton_photon_i = ak.fill_none(
+                ak.min(looseLeptons_i.deltaR(photon_i), axis=1), -999
+            )
+            output["vars"].loc(
+                indices_i,
+                "minDeltaR_ak4jet_photon" + str(i + 1),
+                minDeltaR_ak4jet_photon_i,
+            )
+            output["vars"].loc(
+                indices_i,
+                "minDeltaR_lepton_photon" + str(i + 1),
+                minDeltaR_lepton_photon_i,
+            )
 
     def analysis(self, events, output, out_label=""):
 
@@ -539,8 +579,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Apply triggers, golden JSON, quality filters, and orthogonality selections.
         #####################################################################################
 
-        output["cutflow_total" + out_label] += ak.sum(events.genWeight) 
-        
+        output["cutflow_total" + out_label] += ak.sum(events.genWeight)
+
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
             events.genWeight = np.ones(len(events))  # dummy value for data
@@ -553,7 +593,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = WH_utils.triggerSelection(
             events, self.era, self.isMC, output, out_label
         )
-        output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight) 
+        output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
 
         events = WH_utils.qualityFiltersSelection(events, self.era)
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
@@ -685,9 +725,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     ),
                 }
             )
-            output = self.analysis(
-                events, output, out_label="_track_down"
-            )
+            output = self.analysis(events, output, out_label="_track_down")
 
         return {dataset: output}
 
