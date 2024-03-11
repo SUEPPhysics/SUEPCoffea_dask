@@ -286,7 +286,7 @@ def genSelection(events, sample: str):
     The WJets inclusive sample needs to be cut at W gen pT of 100 GeV in order to be stitched together with the WJets pT binned samples.
     """
 
-    if sample == "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM":
+    if sample == "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8":
         pt = events.LHE.Vpt
         cut = (pt < 100)
         events = events[cut]
