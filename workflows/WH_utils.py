@@ -3,6 +3,33 @@ import numpy as np
 import vector
 
 
+def getGenModel(events):
+    """
+    Central signal samples are not split by parameters, so we need to extract the model from the input file
+    and save it in the dataframe.
+    The expected structure is {'SUEP_mS125.000_mPhi1.000_T0.250_modeleptonic': True} for each event.
+    :param events: awkward array of events
+    :return: genModel for each event, as a list.
+    """
+    if not hasattr(events, "GenModel"):
+        raise ValueError("GenModel not found in events, please check the input file.")
+    genModels = []
+    for (
+        genModelInfo
+    ) in (
+        events.GenModel
+    ):  # I can't figure out a way to do this with AwkwardArrays, so I'm doing it with two for loops, may I be forgiven
+        genModel = []
+        genModelInfo = genModelInfo.tolist()  # this actually becomes a dictionary
+        for g, v in genModelInfo.items():
+            if v:
+                genModel.append(g)
+        if len(genModel) != 1:
+            raise ValueError(f"Expected one genModel per event.")
+        genModels.append(genModel[0])
+    return genModels
+
+
 def getAK4Jets(Jets, lepton):
     """
     Create awkward array of jets. Applies basic selections.
@@ -32,7 +59,7 @@ def getAK4Jets(Jets, lepton):
     return Jets_correct
 
 
-def getGenTracks(events):
+def getGenPart(events):
     genParts = events.GenPart
     genParts = ak.zip(
         {
@@ -41,6 +68,9 @@ def getGenTracks(events):
             "phi": genParts.phi,
             "mass": genParts.mass,
             "pdgID": genParts.pdgId,
+            "status": genParts.status,
+            "genPartIdxMother": genParts.genPartIdxMother,
+            "statusFlags": genParts.statusFlags,
         },
         with_name="Momentum4D",
     )
@@ -216,6 +246,34 @@ def getTightLeptons(events):
     return tightMuons, tightElectrons, tightLeptons
 
 
+def getPhotons(events, isMC: bool = 1):
+    """
+    Get photons.
+    """
+
+    photons = ak.zip(
+        {
+            "pt": events.Photon.pt,
+            "eta": events.Photon.eta,
+            "phi": events.Photon.phi,
+            "mass": events.Photon.mass,
+            "pixelSeed": events.Photon.pixelSeed,
+            "electronVeto": events.Photon.electronVeto,
+            "hoe": events.Photon.hoe,
+            "r9": events.Photon.r9,
+            "mvaID": events.Photon.mvaID,
+            "pfRelIso03_all": events.Photon.pfRelIso03_all,
+            "cutBased": events.Photon.cutBased,
+            "isScEtaEB": events.Photon.isScEtaEB,
+            "isScEtaEE": events.Photon.isScEtaEE,
+            "genPartFlav ": events.Photon.genPartFlav if isMC else None,
+        },
+        with_name="Momentum4D",
+    )
+
+    return photons
+
+
 def getTrigObj(events):
     trigObj = ak.zip(
         {
@@ -227,6 +285,20 @@ def getTrigObj(events):
         with_name="Momentum4D",
     )
     return trigObj
+
+
+def genSelection(events, sample: str):
+    """
+    Gen-level selections.
+    The WJets inclusive sample needs to be cut at W gen pT of 100 GeV in order to be stitched together with the WJets pT binned samples.
+    """
+
+    if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample:
+        pt = events.LHE.Vpt
+        cut = pt < 100
+        events = events[cut]
+
+    return events
 
 
 def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
@@ -345,7 +417,7 @@ def MET_delta_phi(x, MET):
         with_name="Momentum4D",
     )
 
-    signed_dphi = MET_4v.deltaphi(x)
+    signed_dphi = x.deltaphi(MET_4v)
     abs_dphi = np.abs(signed_dphi)
     return abs_dphi
 

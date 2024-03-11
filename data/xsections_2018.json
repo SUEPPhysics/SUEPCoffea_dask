@@ -336,7 +336,7 @@
   },
   "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.98753,
     "xsec": 66680.0
   },
   "WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
