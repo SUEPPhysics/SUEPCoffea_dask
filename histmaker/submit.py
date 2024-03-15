@@ -22,7 +22,7 @@ import shlex
 import subprocess
 import sys
 from multiprocessing.pool import Pool, ThreadPool
-
+import re
 import numpy as np
 
 sys.path.append("..")
@@ -44,9 +44,21 @@ export X509_USER_PROXY=/home/submit/{user}/{proxy}
 cd {work_dir}
 cd ..
 cd histmaker/
+echo hostname
+hostname
 {cmd}
 """
 
+def submit_slurm_job(slurm_script_file):
+    result = subprocess.run(["sbatch", slurm_script_file], capture_output=True, text=True)
+    match = re.search(r'Submitted batch job (\d+)', result.stdout)
+    if match:
+        job_id = match.group(1)
+        print("Submitted batch job", job_id)
+        return job_id
+    else:
+        return None
+    
 
 def call_process(cmd, work_dir):
     """This runs in a separate thread."""
@@ -105,13 +117,13 @@ options = parser.parse_args()
 # Set up where you're gonna work
 if options.method == "slurm":
     # Found it necessary to run on a space with enough memory
-    work_dir = "/work/submit/{}/dummy_directory{}".format(
+    work_dir_base = "/work/submit/{}/dummy_directory{}".format(
         getpass.getuser(), np.random.randint(0, 10000)
     )
-    os.system(f"mkdir {work_dir}")
-    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir}/.")
-    print("Working in", work_dir)
-    work_dir += "/SUEPCoffea_dask/histmaker/"
+    os.system(f"mkdir {work_dir_base}")
+    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir_base}/.")
+    print("Working in", work_dir_base)
+    work_dir = work_dir_base + "/SUEPCoffea_dask/histmaker/"
     log_dir = "/work/submit/{}/SUEP/logs/slurm_{}_{}/".format(
         os.environ["USER"],
         options.code,
@@ -121,13 +133,13 @@ if options.method == "slurm":
         os.mkdir(log_dir)
 elif options.method == "multithread":
     # Found it necessary to run on a space with enough memory
-    work_dir = "/work/submit/{}/dummy_directory{}/".format(
+    work_dir_base = "/work/submit/{}/dummy_directory{}/".format(
         getpass.getuser(), np.random.randint(0, 10000)
     )
-    os.system(f"mkdir {work_dir}")
-    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir}/.")
-    print("Working in", work_dir)
-    work_dir += "/SUEPCoffea_dask/histmaker/"
+    os.system(f"mkdir {work_dir_base}")
+    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir_base}/.")
+    print("Working in", work_dir_base)
+    work_dir = work_dir_base + "/SUEPCoffea_dask/histmaker/"
     pool = Pool(
         min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
     )
@@ -143,6 +155,7 @@ if options.xrootd:
     print(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 # Loop over samples
+job_ids = []
 for i, sample in enumerate(samples):
     if "/" in sample:
         sample = sample.split("/")[-1]
@@ -211,7 +224,8 @@ for i, sample in enumerate(samples):
             f.write(slurm_script_content)
 
         # Submit the SLURM job
-        subprocess.run(["sbatch", slurm_script_file])
+        job_id = submit_slurm_job(slurm_script_file)
+        job_ids.append(job_id)
 
 # Close the pool and wait for each running task to complete
 if options.method == "multithread":
@@ -226,3 +240,41 @@ if options.method == "multithread":
 
     # clean up
     os.system(f"rm -rf {work_dir}")
+
+# if submitted slurm jobs, send one final job to clean up the dummy directory
+if options.method == "slurm" and len(job_ids) > 0:
+    cleanup_script = """#!/bin/bash
+#SBATCH --job-name=cleanup_job
+#SBATCH --output={log_dir}cleanup_job.out
+#SBATCH --error={log_dir}cleanup_job.err
+#SBATCH --time=02:00:00
+#SBATCH --mem=100MB
+#SBATCH --partition=submit
+
+while true; do
+    all_finished=true
+    for job_id in {job_ids}; do
+        echo "checking $job_id"
+        job_state=$(sacct -j $job_id -X -n -o state)
+        job_state=$(echo $job_state | xargs)
+        echo "job state: $job_state"
+        if [[ "$job_state" != "COMPLETED" && "$job_state" != "FAILED" ]]; then
+            all_finished=false
+            break
+        fi
+    done
+    if $all_finished; then
+        echo "All jobs finished, cleaning up"
+        echo "rm -rf {work_dir_base}"
+        rm -rf {work_dir_base}
+        break
+    fi
+    echo "Sleeping for 1 minute"
+    sleep 60
+done
+""".format(log_dir=log_dir, job_ids=" ".join(job_ids), work_dir_base=work_dir_base)
+
+    with open(f"{log_dir}cleanup.sh", "w") as f:
+        f.write(cleanup_script)
+
+    cleanup_id = submit_slurm_job(f"{log_dir}cleanup.sh")

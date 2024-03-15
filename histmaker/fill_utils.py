@@ -5,9 +5,10 @@ import subprocess
 import sys
 from collections import defaultdict
 from copy import deepcopy
-
+import vector
 import numpy as np
 import pandas as pd
+import awkward as ak
 
 
 def h5load(ifile: str, label: str):
@@ -70,13 +71,10 @@ def get_git_info(path="."):
     )
     diff = subprocess.check_output(["git", "diff"]).strip().decode("utf-8")
 
-    logging.debug(f"Current Commit: {commit}")
-    logging.debug(f"Git Diff:\n{diff}")
-
     return commit, diff
 
 
-def getXSection(dataset: str, year=None, path="../data/") -> float:
+def getXSection(dataset: str, year=None, path="../data/", failOnKeyError=False) -> float:
     xsection = 1
 
     xsec_file = f"{path}/xsections_{year}.json"
@@ -90,7 +88,10 @@ def getXSection(dataset: str, year=None, path="../data/") -> float:
             logging.warning(
                 f"WARNING: I did not find the xsection for {dataset} in {xsec_file}. Check the dataset name and the relevant yaml file."
             )
-            return 1
+            if failOnKeyError:
+                raise KeyError(f"Could not find xsection for {dataset} in {xsec_file}")
+            else:
+                return 1
 
     return xsection
 
@@ -201,6 +202,7 @@ def prepare_DataFrame(
     blind: bool = True,
     isMC: bool = False,
     cutflow: dict = {},
+    output: dict = {},
 ) -> pd.DataFrame:
     """
     Applies blinding, selections, and makes new variables. See README.md for more details.
@@ -219,7 +221,7 @@ def prepare_DataFrame(
     if config.get("method_var"):
         if config["method_var"] not in df.columns:
             return None
-        df = df[~df[config["method_var"]].isnull()]
+        df = df[(~df[config["method_var"]].isnull())].copy()
 
     # 2. blind
     if blind and not isMC:
@@ -245,10 +247,24 @@ def prepare_DataFrame(
                 raise Exception(
                     f"Trying to apply a cut on a variable {sel[0]} that does not exist in the DataFrame"
                 )
-            if type(sel[2]) is str and sel[2].isdigit():
+            if type(sel[2]) is str and is_number(sel[2]):
                 sel[2] = float(
                     sel[2]
                 )  # convert to float if the value to cut on is a number
+
+            # if the histogram is already initialized for this variable, make the N-1 histogram
+            histName = sel[0] + "_" + label_out
+            if histName in output.keys():
+                if histName+"_full" not in output.keys():
+                    output[histName+"_full"] = output[histName].copy()
+                output[histName+"_full"].fill(df[sel[0]], weight=df["event_weight"])
+
+            # debug
+            if sel[0] ==  "minDeltaR_lepton_photon1":
+                print()
+                print(df[sel[0]])
+                print(df[df[sel[0]] < 0.4].shape)
+                print()
 
             # make the selection
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
@@ -264,6 +280,12 @@ def prepare_DataFrame(
 
     return df
 
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 def make_new_variable(
     df: pd.DataFrame, name: str, function: callable, *columns: list
@@ -272,6 +294,7 @@ def make_new_variable(
     Make a new column in the DataFrame df by applying the function to the columns
     passed as *columns. The new column will be named 'name'.
     """
+
     df[name] = function(*[df[col] for col in columns])
     return df
 
@@ -495,3 +518,61 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
         )
     ]
     return df
+
+def deltaPhi_x_y(xphi, yphi, xpt, ypt):
+
+    # cast inputs to numpy arrays
+    xpt = np.array(xpt)
+    ypt = np.array(ypt)
+    xphi = np.array(xphi)
+    yphi = np.array(yphi)
+
+    x_v = vector.arr({"pt": xpt, "phi": xphi})
+    y_v = vector.arr({"pt": ypt, "phi": yphi})
+
+    signed_dphi =  x_v.deltaphi(y_v)
+    abs_dphi = np.abs(signed_dphi.tolist())
+
+    # deal with the cases where phi was initialized to a moot value like -999
+    abs_dphi[(xphi>2*np.pi)] = -999
+    abs_dphi[yphi>2*np.pi] = -999
+    abs_dphi[xpt<-2*np.pi] = -999
+    abs_dphi[ypt<-2*np.pi] = -999
+
+    return abs_dphi
+
+def balancing_var(xpt, ypt):
+
+    # cast inputs to numpy arrays
+    xpt = np.array(xpt)
+    ypt = np.array(ypt)
+
+    var = (xpt - ypt) / ypt
+
+    # deal with the cases where pt was initialized to a moot value (-999 only fow now)
+    var[xpt == -999] = -999
+    var[ypt == -999] = -999
+
+    return var
+
+def vector_balancing_var(xphi, yphi, xpt, ypt):
+
+    # cast inputs to numpy arrays
+    xpt = np.array(xpt)
+    ypt = np.array(ypt)
+    xphi = np.array(xphi)
+    yphi = np.array(yphi)
+
+    x_v = vector.arr({"pt": xpt, "phi": xphi})
+    y_v = vector.arr({"pt": ypt, "phi": yphi})
+
+    var = (x_v - y_v).pt / ypt
+
+    if type(var) is ak.highlevel.Array:
+        var = var.to_numpy()
+
+    # deal with the cases where pt was initialized to a moot value (-999 only fow now)
+    var[xpt == -999] = -999
+    var[ypt == -999] = -999
+
+    return var

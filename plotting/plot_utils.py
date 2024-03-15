@@ -129,6 +129,8 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
             "Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed."
         )
 
+    print(f"Found lumi {lumi} and era {era}")
+
     return lumi, era
 
 
@@ -145,7 +147,7 @@ def getHistLists(plotDir, tag, filename, filters=None):
     return hists
 
 
-def formatSUEPNaming(file):
+def formatGluGluToSUEPNaming(file):
     tokens = file.split("_")
     temp = tokens[2]
     mS = tokens[3]
@@ -169,6 +171,27 @@ def formatSUEPNaming(file):
     return name
 
 
+def formatTTHToSUEPNaming(file):
+    tokens = file.split("_")
+
+    decay = tokens[1]
+    mS = tokens[2]
+    mD = tokens[3]
+    T = tokens[4]
+
+    T = T.replace("T", "")
+    T = str(float(T))
+
+    mD = mD.replace("MD", "")
+    mD = str(float(mD))
+
+    mS = mS.replace("M", "")
+    mS = str(float(mS))
+
+    name = "ttH-" + "_".join([mS, T, mD, decay])
+    return name
+
+
 def getSampleNameAndBin(sample_name):
     """
     From input sample, return a cleaned up sample name (var: bin),
@@ -189,9 +212,17 @@ def getSampleNameAndBin(sample_name):
         sample = "QCD_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif any([s in sample_name for s in ["TTJets", "TTTo2L2Nu", "TTToSemiLeptonic"]]):
+    elif any([s in sample_name for s in ["TTTo2L2Nu", "TTToSemiLeptonic"]]):
         sample = "tt"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif sample_name.startswith("TTJets_HT"):
+        sample = "TTJets_HT"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif sample_name.startswith("TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8"):
+        sample = "TTJets_incl"
+        bin = "TTJets_incl"
 
     elif any(
         [
@@ -203,6 +234,7 @@ def getSampleNameAndBin(sample_name):
                 "TTZToQQ",
                 "TTWJetsToQQ",
                 "TTZToLLNuNu",
+                'ttZJets'
             ]
         ]
     ):
@@ -217,24 +249,90 @@ def getSampleNameAndBin(sample_name):
         sample = "WJetsToLNu_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif "WJetsToLNu_Pt" in sample_name:
+    elif "WJetsToLNu_Pt" in sample_name or "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
+        # merging of inclusive sample and pT-binned. This is done by LHE_Vpt > 100 selection in ntuplemaker on the inclusive sample,
+        # and is accounted for in its normalization via its kr factor.
         sample = "WJetsToLNu_Pt"
-        bin = sample_name.split(".root")[0].split("_Tune")[0]
+        bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
+        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name: bin = "WJetsToLNu_incl"
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
         sample = "DYJetsToLL_LHEFilterPtZ"
         bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
 
-    elif "WJetsToLNu_HT" in sample_name:
-        sample = "WJetsToLNu_HT"
+    elif "DYJetsToLL_M" in sample_name:
+        sample = "DYJetsToLL_M"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                'WWTo1L1Nu2Q_4f',
+                'WWTo2L2Nu',
+                'WZTo1L1Nu2Q_4f',
+                'WZTo1L3Nu_4f',
+                'WZTo2Q2L_mllmin4p0',
+                'WZTo3LNu_mllmin4p0',
+                'ZZTo2L2Nu',
+                'ZZTo2Q2L_mllmin4p0',
+                'ZZTo4L_TuneCP5'
+            ]
+        ]
+    ):
+        sample = 'VV'
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                'ZZZ_TuneCP5_13TeV',
+                'WWZ_4F_TuneCP5_13TeV'
+            ]
+        ]
+    ):
+        sample = 'VVV'
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                'WGToLNuG',
+                'ZGToLLG_01J_5f'
+            ]
+        ]
+    ):
+        sample = 'VG'
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                'WminusH_HToBB_WToLNu_M-125',
+                'WplusH_HToBB_WToLNu_M-125'
+            ]
+        ]
+    ):
+        sample = 'WHtoBB'
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif "VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8" in sample_name:
+        sample = "VHtoNonBB"
+        bin = "VHtoNonBB"
 
     elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
         bin = None
 
-    elif "SUEP" in sample_name:
-        sample = formatSUEPNaming(sample_name)
+    elif sample_name.startswith("ttHpythia"): # private ttH samples
+        sample = formatTTHToSUEPNaming(sample_name)
+        bin = None
+
+    elif "GluGluToSUEP" in sample_name: # ggF samples
+        sample = formatGluGluToSUEPNaming(sample_name)
         bin = None
 
     else:
@@ -310,7 +408,7 @@ def loader(
     auto_lumi=True,  # once everyone starts making histograms with metadata, these can be dropped
     scouting=False,  # once everyone starts making histograms with metadata, these can be dropped
     by_bin=False,
-    by_year=True,
+    by_year=False,
     xsec_SUEP=True,
     load_cutflows=False,
     verbose=False,
@@ -358,6 +456,8 @@ def loader(
             lumi, era = findLumiAndEra(
                 year, auto_lumi, infile_name, scouting
             )  # once everyone starts making histograms with metadata, this can be dropped
+        if verbose:
+            print("Using lumi", lumi, "and era", era)
         norm *= lumi
 
         # get the normalization factor for SUEP samples
@@ -366,14 +466,19 @@ def loader(
             if "SUEP" in sample_name:
                 # xsec is already apply in make_hists.py for non SUEP samples
                 xsec = fill_utils.getXSection(sample_name, year=era)
+                if verbose: 
+                    print("Applying xsec", xsec)
                 norm *= xsec
 
         # get the sample name and the bin name
         # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
         sample, bin = getSampleNameAndBin(infile_name)
+        if verbose:
+            print("Found sample", sample)
+            if by_bin: print("and bin", bin)
 
         samplesToAdd = [sample]
-        if by_bin and (bin is not None):
+        if by_bin and (bin is not None) and (bin != sample):
             samplesToAdd.append(bin)
         if by_year:
             samplesToAdd.append("_".join([sample, era]))
@@ -401,11 +506,11 @@ def openHistFile(infile_name):
 def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
     assert len(samples) > 0
     if year:
-        year_tag = str(year)
+        year_tag = "_" + str(year)
     else:
         year_tag = ""
     plots["MC" + year_tag] = {}
-    for key in plots[samples[0] + "" + year_tag].keys():
+    for key in plots[samples[0] + year_tag].keys():
         for i, sample in enumerate(samples):
             if i == 0:
                 plots["MC" + year_tag][key] = plots[sample + year_tag][key].copy()
@@ -585,7 +690,7 @@ def plot_ratio(
     """
 
     # Set up variables for the stacked histogram
-    fig = plt.figure()
+    fig = plt.figure(figsize=(16,12))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
@@ -1428,7 +1533,8 @@ def cutflow_table(
     from prettytable import PrettyTable
 
     prettytable = PrettyTable()
-    prettytable.add_column("Selection", selections)
+    labels = [s.replace("cutflow_", "") for s in selections]
+    prettytable.add_column("Selection", labels)
 
     table = make_cutflow_table(
         cutflow_dict, samples, selections, efficiencies, relative_efficiencies
@@ -1462,9 +1568,57 @@ def cutflow_plot(cutflow_dict, samples, selections):
     for sample, cutflow_this_sample in zip(samples, table):
         ax.stairs(cutflow_this_sample, label=sample)
 
-    ax.legend(loc=(1.02, 0.5))
+    ax.legend(loc=(1.02, 0.0), fontsize="xx-small")
     hep.cms.label(ax=ax)
     labels = [s.replace("cutflow_", "") for s in selections]
-    ax.set_xticks(np.arange(len(labels)) + 0.5, labels, rotation=30, fontsize=12)
+    ax.set_xticks(np.arange(len(labels)) + 0.5, labels, rotation=45, fontsize=10)
 
     return fig, ax
+
+def make_n1_plots(plots:dict, cutflows:dict,  tag:str, samples:list = [], stackedSamples:list = []):
+    """
+    Make n-1 plots (produced by make_hists.py as "tag_full" prior to each selection).
+    :param plots: dictionary of histograms (dimension: sample x plot)
+    :param cutflows: dictionary of cutflows (dimension: sample x selection)
+    :param samples: list of samples to plot separately
+    :param stackedSamples: list of samples to stack
+    :param tag: tag to use for the n-1 plots
+    :return: list of figures
+    """
+
+    figs = []
+    allSamples =  samples + stackedSamples
+    if len(allSamples) == 0:
+        raise ValueError("No samples provided. Provide at least one samples or one stackedSamples.")
+    
+    n1_plots = [k for k in plots[allSamples[0]].keys() if k.endswith(tag+"_full")]
+
+    cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
+    for cut in cuts:
+        cut_bits = cut.split("_")
+        cut_val = float(cut_bits[-2])
+
+    samples_color = plt.cm.rainbow(np.linspace(0, 1, len(samples)))
+    for p in n1_plots:
+        
+        var = p.replace("_"+tag+"_full", "")
+        cut_val = None
+        for cut in cuts:
+            if var in cut:
+                cut_bits = cut.split("_")
+                cut_val = float(cut_bits[-2])
+                break
+
+        if cut_val is None:
+            print("Could not find a cutflow for", var)
+            
+        fig = plt.figure()
+        ax = fig.subplots()
+        if len(stackedSamples) > 0: hep.histplot([plots[s][p] for s in stackedSamples], label=stackedSamples, stack=True, histtype='fill', ax=ax)
+        if len(samples) > 0: hep.histplot([plots[s][p] for s in samples], label=samples, stack=False, histtype='step', linestyle='dashed', linewidth=3, color=samples_color, ax=ax)
+        if cut_val: ax.vlines(cut_val, 0, ax.get_ylim()[1], color='black', linestyle='--', linewidth=4, label=f"Cut value: {cut_val}")
+        ax.set_yscale("log")
+        ax.legend(fontsize='xx-small', loc=(1.05, 0))
+        figs.append(fig)
+
+    return figs
