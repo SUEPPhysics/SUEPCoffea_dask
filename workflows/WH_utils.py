@@ -30,7 +30,7 @@ def getGenModel(events):
     return genModels
 
 
-def getAK4Jets(self, Jets, lepton):
+def getAK4Jets(Jets, lepton, isMC: bool = 1):
     """
     Create awkward array of jets. Applies basic selections.
     Returns: awkward array of dimensions (events x jets x 4 momentum)
@@ -376,7 +376,7 @@ def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
         elif "SingleElectron" or "EGamma" in sample:
-            events = events [ triggerElectron | triggerPhoton & ~triggerSingleMuon ]
+            events = events [ (triggerElectron | triggerPhoton) & (~triggerSingleMuon) ]
         else:
             events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
 
