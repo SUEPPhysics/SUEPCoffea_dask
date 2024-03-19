@@ -30,24 +30,38 @@ def getGenModel(events):
     return genModels
 
 
-def getAK4Jets(Jets, lepton):
+def getAK4Jets(self, Jets, lepton):
     """
     Create awkward array of jets. Applies basic selections.
     Returns: awkward array of dimensions (events x jets x 4 momentum)
     """
-    Jets_awk = ak.zip(
-        {
-            "pt": Jets.pt,
-            "eta": Jets.eta,
-            "phi": Jets.phi,
-            "mass": Jets.mass,
-            "btag": Jets.btagDeepFlavB,
-            "jetId": Jets.jetId,
-            "hadronFlavour": Jets.hadronFlavour,
-            "qgl": Jets.qgl,
-        },
-        with_name="Momentum4D",
-    )
+    if self.isMC:
+        Jets_awk = ak.zip(
+            {
+                "pt": Jets.pt,
+                "eta": Jets.eta,
+                "phi": Jets.phi,
+                "mass": Jets.mass,
+                "btag": Jets.btagDeepFlavB,
+                "jetId": Jets.jetId,
+                "hadronFlavour": Jets.hadronFlavour,
+                "qgl": Jets.qgl,
+            },
+            with_name="Momentum4D",
+        )
+    else:
+        Jets_awk = ak.zip(
+            {
+                "pt": Jets.pt,
+                "eta": Jets.eta,
+                "phi": Jets.phi,
+                "mass": Jets.mass,
+                "btag": Jets.btagDeepFlavB,
+                "jetId": Jets.jetId,
+                "qgl": Jets.qgl,
+            },
+            with_name="Momentum4D",
+        )
     # jet pt cut, eta cut, and minimum separation from lepton
     jet_awk_Cut = (
         (Jets_awk.pt > 30)
@@ -250,26 +264,45 @@ def getPhotons(events, isMC: bool = 1):
     """
     Get photons.
     """
-
-    photons = ak.zip(
-        {
-            "pt": events.Photon.pt,
-            "eta": events.Photon.eta,
-            "phi": events.Photon.phi,
-            "mass": events.Photon.mass,
-            "pixelSeed": events.Photon.pixelSeed,
-            "electronVeto": events.Photon.electronVeto,
-            "hoe": events.Photon.hoe,
-            "r9": events.Photon.r9,
-            "mvaID": events.Photon.mvaID,
-            "pfRelIso03_all": events.Photon.pfRelIso03_all,
-            "cutBased": events.Photon.cutBased,
-            "isScEtaEB": events.Photon.isScEtaEB,
-            "isScEtaEE": events.Photon.isScEtaEE,
-            "genPartFlav ": events.Photon.genPartFlav if isMC else None,
-        },
-        with_name="Momentum4D",
-    )
+    if isMC:
+        photons = ak.zip(
+            {
+                "pt": events.Photon.pt,
+                "eta": events.Photon.eta,
+                "phi": events.Photon.phi,
+                "mass": events.Photon.mass,
+                "pixelSeed": events.Photon.pixelSeed,
+                "electronVeto": events.Photon.electronVeto,
+                "hoe": events.Photon.hoe,
+                "r9": events.Photon.r9,
+                "mvaID": events.Photon.mvaID,
+                "pfRelIso03_all": events.Photon.pfRelIso03_all,
+                "cutBased": events.Photon.cutBased,
+                "isScEtaEB": events.Photon.isScEtaEB,
+                "isScEtaEE": events.Photon.isScEtaEE,
+                "genPartFlav ": events.Photon.genPartFlav,
+            },
+            with_name="Momentum4D",
+        )
+    else:
+        photons = ak.zip(
+            {
+                "pt": events.Photon.pt,
+                "eta": events.Photon.eta,
+                "phi": events.Photon.phi,
+                "mass": events.Photon.mass,
+                "pixelSeed": events.Photon.pixelSeed,
+                "electronVeto": events.Photon.electronVeto,
+                "hoe": events.Photon.hoe,
+                "r9": events.Photon.r9,
+                "mvaID": events.Photon.mvaID,
+                "pfRelIso03_all": events.Photon.pfRelIso03_all,
+                "cutBased": events.Photon.cutBased,
+                "isScEtaEB": events.Photon.isScEtaEB,
+                "isScEtaEE": events.Photon.isScEtaEE,
+            },
+            with_name="Momentum4D",
+        )
 
     return photons
 
@@ -301,7 +334,7 @@ def genSelection(events, sample: str):
     return events
 
 
-def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
+def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out_label=None):
     """
     Applies trigger, returns events.
     Trigger single muon and EGamma; optionally updates the cutflows.
@@ -336,7 +369,17 @@ def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
             events[triggerPhoton | triggerElectron].genWeight
         )
 
-    events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+    #Apply selection on events
+    if isMC:
+        events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
+    else:
+        if "SingleMuon" in sample:
+            events = events[triggerSingleMuon]
+        elif "SingleElectron" or "EGamma" in sample:
+            events = events [ triggerElectron | triggerPhoton & ~triggerSingleMuon ]
+        else:
+            events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
+
     return events
 
 
