@@ -334,7 +334,9 @@ def genSelection(events, sample: str):
     return events
 
 
-def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out_label=None):
+def triggerSelection(
+    events, sample: str, era: str, isMC: bool, output=None, out_label=None
+):
     """
     Applies trigger, returns events.
     Trigger single muon and EGamma; optionally updates the cutflows.
@@ -369,16 +371,16 @@ def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out
             events[triggerPhoton | triggerElectron].genWeight
         )
 
-    #Apply selection on events
+    # Apply selection on events
     if isMC:
-        events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
+        events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
     else:
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
         elif "SingleElectron" or "EGamma" in sample:
-            events = events [ triggerElectron | triggerPhoton & ~triggerSingleMuon ]
+            events = events[triggerElectron | triggerPhoton & ~triggerSingleMuon]
         else:
-            events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
+            events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
 
     return events
 
