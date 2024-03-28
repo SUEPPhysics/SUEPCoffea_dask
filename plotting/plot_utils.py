@@ -6,7 +6,6 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
-
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -15,49 +14,97 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import uproot
+import sympy
 from sympy import diff, sqrt, symbols
 
 sys.path.append("..")
 from histmaker import fill_utils
 
 default_colors = {
-    "125": "cyan",
-    "200": "blue",
-    "300": "lightseagreen",
-    "400": "green",
-    "500": "darkgreen",
-    "600": "lawngreen",
-    "700": "goldenrod",
-    "800": "orange",
-    "900": "sienna",
-    "1000": "red",
+    "mS125": "cyan",
+    "mS200": "blue",
+    "mS300": "lightseagreen",
+    "mS400": "green",
+    "mS500": "darkgreen",
+    "mS600": "lawngreen",
+    "mS700": "goldenrod",
+    "mS800": "orange",
+    "mS900": "sienna",
+    "mS1000": "red",
     "data": "maroon",
     "QCD": "slateblue",
     "MC": "slateblue",
     "TTJets": "midnightblue",
+    "VVV": "green",
+    "VG": "slategray",
+    "VV": "brown",
+    "VH": "pink",
+    "WJets": "blue",
+    "DYJetsToLL": "darktorquoise",
+    "ttX": "orange",
+    "tt": "red",
+    "ST": "gold",
 }
 
 
 def getColor(sample):
-    if "mS" in sample:
-        sample = sample[sample.find("mS") + 2 :]
-        sample = sample.split("_")[0]
+
+    if sample in default_colors.keys():
         return default_colors[sample]
 
-    if "QCD" in sample:
+    if "GluGluToSUEP" and "mS" in sample:
+        sample = sample[sample.find("mS") + 2 :]
+        sample = sample.split("_")[0]
+        return default_colors["mS"+sample]
+
+    elif "QCD" in sample:
         return default_colors["QCD"]
 
-    if "data" in sample.lower():
+    elif "data" in sample.lower():
         return default_colors["data"]
 
-    if "ttjets" in sample.lower():
+    elif "ttjets" in sample.lower():
         return default_colors["TTJets"]
 
-    if "MC" in sample:
+    elif "VVV" in sample:
+        return default_colors["VVV"]
+
+    elif "VG" in sample:
+        return default_colors["VG"]
+
+    elif "VV" in sample:
+        return default_colors["VV"]
+
+    elif "ST" in sample:
+        return default_colors["ST"]
+
+    elif "ttX" in sample:
+        return default_colors["ttX"]
+
+    elif "WJetsToLNu" in sample:
+        return default_colors["WJets"]
+
+    elif "DYJetsToLL" in sample:
+        return default_colors["DYJetsToLL"]
+
+    elif "tt" in sample:
+        return default_colors["tt"]
+
+    elif "VH" in sample:
+        return default_colors["VH"]
+
+    elif "MC" in sample:
         return default_colors["MC"]
 
     else:
         return None
+
+
+def getColors(samples):
+    colors = []
+    for sample in samples:
+        colors.append(getColor(sample))
+    return colors
 
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
@@ -180,15 +227,15 @@ def formatTTHToSUEPNaming(file):
     T = tokens[4]
 
     T = T.replace("T", "")
-    T = str(float(T))
+    T = "T"+str(float(T))
 
     mD = mD.replace("MD", "")
-    mD = str(float(mD))
+    mD = "MD"+str(float(mD))
 
     mS = mS.replace("M", "")
-    mS = str(float(mS))
+    mS = "MS"+str(float(mS))
 
-    name = "ttH-" + "_".join([mS, T, mD, decay])
+    name = "ttH-" + "_".join([mS, mD, T, decay])
     return name
 
 
@@ -312,16 +359,13 @@ def getSampleNameAndBin(sample_name):
             s in sample_name
             for s in [
                 'WminusH_HToBB_WToLNu_M-125',
-                'WplusH_HToBB_WToLNu_M-125'
+                'WplusH_HToBB_WToLNu_M-125',
+                'VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8'
             ]
         ]
     ):
-        sample = 'WHtoBB'
+        sample = 'VH'
         bin = sample_name.split(".root")[0].split("_Tune")[0]
-
-    elif "VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8" in sample_name:
-        sample = "VHtoNonBB"
-        bin = "VHtoNonBB"
 
     elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
@@ -695,8 +739,8 @@ def plot_ratio(
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
     if density:
-        for h in hlist:
-            h /= h.sum().value
+        for i, h in enumerate(hlist):
+            hlist[i] = h.copy()/h.sum().value
 
     if labels is None:
         labels = [None] * len(hlist)
@@ -1193,13 +1237,9 @@ def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
         return SR, SR_exp
 
 
-def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
+def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None):
     """
-    Does 9 region ABCD using error propagation of the statistical
-    uncerantities of the regions. We need to scale histogram F or H
-    by some factor 'alpha' (defined in exp). For example, for F,
-    the new variance is:
-    variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance
+    Does 9 region ABCD using error propagation of the statistical uncertanties of the regions.
     """
 
     if sum_var == "y":
@@ -1209,16 +1249,24 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
         abcd, xregions, yregions, sum_var=sum_var, return_all=True
     )
 
+    if new_bins:
+        if sum_var == "x":
+            F = rebin_piecewise(F, new_bins)
+            C = rebin_piecewise(C, new_bins)
+            SR = rebin_piecewise(SR, new_bins)
+            SR_exp = rebin_piecewise(SR_exp, new_bins)
+
     preds, preds_err = [], []
     for i in range(len(F.values())):
         # this is needed in order to do error propagation correctly
         F_bin = F[i]
+        C_bin = C[i]
         F_other = F.copy()
         F_other[i] = hist.accumulators.WeightedSum()
 
         # define the scaling factor function
-        a, b, c, d, e, f_bin, f_other, g, h = symbols("A B C D E F_bin F_other G H")
-        if sum_var == "x":
+        a, b, c, c_bin, d, e, f_bin, f_other, g, h = symbols("A B C C_bin D E F_bin F_other G H")
+        if sum_var == "x" and approx:
             exp = (
                 f_bin
                 * (f_other + f_bin)
@@ -1230,15 +1278,27 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
                 * a**-1
                 * e**-4
             )
+        elif sum_var == "x" and not approx:
+            exp = (
+                f_bin**2
+                * h**2
+                * d**2
+                * b**2
+                * g**-1
+                * c_bin**-1
+                * a**-1
+                * e**-4
+            )
         elif sum_var == "y":
             pass
 
         # defines lists of variables (sympy symbols) and accumulators (hist.sum())
-        variables = [a, b, c, d, e, f_bin, f_other, g, h]
+        variables = [a, b, c, c_bin, d, e, f_bin, f_other, g, h]
         accs = [
             A.sum(),
             B.sum(),
             C.sum(),
+            C_bin,
             D.sum(),
             E.sum(),
             F_bin,
@@ -1261,6 +1321,9 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
         for var, acc in zip(variables, accs):
             variance = variance.subs(var, acc.value)
         sigma_alpha = variance
+
+        if type(alpha) != sympy.core.numbers.Float or alpha <= 0:
+            alpha = 0
 
         preds.append(alpha)
         preds_err.append(sigma_alpha)
@@ -1575,11 +1638,13 @@ def cutflow_plot(cutflow_dict, samples, selections):
 
     return fig, ax
 
-def make_n1_plots(plots:dict, cutflows:dict,  tag:str, samples:list = [], stackedSamples:list = []):
+def make_n1_plots(plots:dict, cutflows:dict,  tag:str, density:bool = False, samples:list = [], stackedSamples:list = []):
     """
     Make n-1 plots (produced by make_hists.py as "tag_full" prior to each selection).
     :param plots: dictionary of histograms (dimension: sample x plot)
     :param cutflows: dictionary of cutflows (dimension: sample x selection)
+    :param tag: tag to use for the n-1 plots
+    :param density: if True, plot densities
     :param samples: list of samples to plot separately
     :param stackedSamples: list of samples to stack
     :param tag: tag to use for the n-1 plots
@@ -1591,7 +1656,7 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, samples:list = [], stacke
     if len(allSamples) == 0:
         raise ValueError("No samples provided. Provide at least one samples or one stackedSamples.")
     
-    n1_plots = [k for k in plots[allSamples[0]].keys() if k.endswith(tag+"_full")]
+    n1_plots = [k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag+"_beforeCut")]
 
     cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
     for cut in cuts:
@@ -1607,6 +1672,7 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, samples:list = [], stacke
             if var in cut:
                 cut_bits = cut.split("_")
                 cut_val = float(cut_bits[-2])
+                cut_op = str(cut_bits[-3])
                 break
 
         if cut_val is None:
@@ -1614,8 +1680,8 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, samples:list = [], stacke
             
         fig = plt.figure()
         ax = fig.subplots()
-        if len(stackedSamples) > 0: hep.histplot([plots[s][p] for s in stackedSamples], label=stackedSamples, stack=True, histtype='fill', ax=ax)
-        if len(samples) > 0: hep.histplot([plots[s][p] for s in samples], label=samples, stack=False, histtype='step', linestyle='dashed', linewidth=3, color=samples_color, ax=ax)
+        if len(stackedSamples) > 0: hep.histplot([plots[s][p] for s in stackedSamples], label=stackedSamples, density=density, stack=True, histtype='fill', ax=ax)
+        if len(samples) > 0: hep.histplot([plots[s][p] for s in samples], label=samples, density=density, stack=False, histtype='step', linestyle='dashed', linewidth=3, color=samples_color, ax=ax)
         if cut_val: ax.vlines(cut_val, 0, ax.get_ylim()[1], color='black', linestyle='--', linewidth=4, label=f"Cut value: {cut_val}")
         ax.set_yscale("log")
         ax.legend(fontsize='xx-small', loc=(1.05, 0))
