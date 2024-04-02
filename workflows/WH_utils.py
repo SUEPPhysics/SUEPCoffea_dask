@@ -349,38 +349,43 @@ def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out
     elif era == "2017" or era == "2018":
         triggerPhoton = events.HLT.Photon200
 
-    # electron trigger
-    if era == "2017" and (not isMC):
+    # electron trigger (No EGamma for 2017)
+    if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
         # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
-
+         
         #remove events in the SingleMuon dataset
         events = events[~triggerSingleMuon]
+        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
 
         #Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
         filts = ((events.TrigObj.id==11) & ((events.TrigObj.filterBits&1024)==1024))
-        events = events[ak.num(events.TrigObj[filts])>0]
-        
+        events = events[(ak.num(events.TrigObj[filts])>0) | temp_trig]
+        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
         #grab prefiltered events
         trig_obs = getTrigObj(events)
         muons, electrons, leptons = getLeptons(events)
+        dR = ak.Array([[] for _ in range(len(events))])
+
         for i in range(ak.max(ak.num(trig_obs))):#only loop through the trigger objects that pass the filters
-            if i == 0:
-                dR = electrons.deltaR(trig_obs[:,i])
-            else:#Now events with multiple trigger objects. Find all dRs with electrons
-                mask = ak.Array(ak.mask(trig_obs, (ak.num(trig_obs)>i)))
-                dR_masked = ak.Array(electrons.deltaR(mask[:,i]))
-                dR = ak.concatenate([dR,dR_masked],axis=-1)
+            mask = ak.mask(trig_obs, (ak.num(trig_obs)>i))
+            dR_masked = ak.Array(electrons.deltaR(mask[:,i]))
+            dR_masked = ak.Array(x if x is not None else [] for x in dR_masked)
+            dR = ak.concatenate([dR,dR_masked],axis=-1)
+
         #remove events that do not have a trig object within dR of 0.1 of an electron
-        dR = dR[ak.min(dR,axis=-1)<0.1]
-        events = events[ak.num(dR)>0]
-        #triggerElectron = events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+        dR = ak.where(ak.num(dR,axis=-1) == 0, ak.Array([[1.0]]), dR)
+        events = events[(ak.min(dR,axis=-1) < 0.1) | temp_trig]
+
+        #Do cutflow and return events
+        if output: output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
         return events
+
     else:
         triggerElectron = (
             events.HLT.Ele32_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
         )
-
     # this is just for cutflow
     if output:
         output["cutflow_triggerSingleMuon" + out_label] += ak.sum(
