@@ -351,7 +351,6 @@ def triggerSelection(
     elif era == "2017" or era == "2018":
         triggerPhoton = events.HLT.Photon200
 
-    # electron trigger (No EGamma for 2017)
     if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
         # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
