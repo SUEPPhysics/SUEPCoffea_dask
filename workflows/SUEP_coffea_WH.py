@@ -281,9 +281,15 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["ht_JEC"] = ak.sum(self.jets_jec.pt, axis=-1).to_list()
         if self.isMC and self.do_syst:
             jets_jec_JERUp = WH_utils.getAK4Jets(jets_c["JER"].up, lepton, self.isMC)
-            jets_jec_JERDown = WH_utils.getAK4Jets(jets_c["JER"].down, lepton, self.isMC)
-            jets_jec_JESUp = WH_utils.getAK4Jets(jets_c["JES_jes"].up, lepton, self.isMC)
-            jets_jec_JESDown = WH_utils.getAK4Jets(jets_c["JES_jes"].down, lepton, self.isMC)
+            jets_jec_JERDown = WH_utils.getAK4Jets(
+                jets_c["JER"].down, lepton, self.isMC
+            )
+            jets_jec_JESUp = WH_utils.getAK4Jets(
+                jets_c["JES_jes"].up, lepton, self.isMC
+            )
+            jets_jec_JESDown = WH_utils.getAK4Jets(
+                jets_c["JES_jes"].down, lepton, self.isMC
+            )
 
             output["vars"]["ht_JEC" + "_JER_up"] = ak.sum(
                 jets_jec_JERUp.pt, axis=-1

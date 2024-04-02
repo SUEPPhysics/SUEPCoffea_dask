@@ -334,7 +334,9 @@ def genSelection(events, sample: str):
     return events
 
 
-def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out_label=None):
+def triggerSelection(
+    events, sample: str, era: str, isMC: bool, output=None, out_label=None
+):
     """
     Applies trigger, returns events.
     Trigger single muon and EGamma; optionally updates the cutflows.
@@ -353,33 +355,36 @@ def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out
     if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
         # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
-         
-        #remove events in the SingleMuon dataset
+
+        # remove events in the SingleMuon dataset
         events = events[~triggerSingleMuon]
         temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
 
-        #Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
-        filts = ((events.TrigObj.id==11) & ((events.TrigObj.filterBits&1024)==1024))
-        events = events[(ak.num(events.TrigObj[filts])>0) | temp_trig]
+        # Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
+        filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
+        events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
         temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
 
-        #grab prefiltered events
+        # grab prefiltered events
         trig_obs = getTrigObj(events)
         muons, electrons, leptons = getLeptons(events)
         dR = ak.Array([[] for _ in range(len(events))])
 
-        for i in range(ak.max(ak.num(trig_obs))):#only loop through the trigger objects that pass the filters
-            mask = ak.mask(trig_obs, (ak.num(trig_obs)>i))
-            dR_masked = ak.Array(electrons.deltaR(mask[:,i]))
+        for i in range(
+            ak.max(ak.num(trig_obs))
+        ):  # only loop through the trigger objects that pass the filters
+            mask = ak.mask(trig_obs, (ak.num(trig_obs) > i))
+            dR_masked = ak.Array(electrons.deltaR(mask[:, i]))
             dR_masked = ak.Array(x if x is not None else [] for x in dR_masked)
-            dR = ak.concatenate([dR,dR_masked],axis=-1)
+            dR = ak.concatenate([dR, dR_masked], axis=-1)
 
-        #remove events that do not have a trig object within dR of 0.1 of an electron
-        dR = ak.where(ak.num(dR,axis=-1) == 0, ak.Array([[1.0]]), dR)
-        events = events[(ak.min(dR,axis=-1) < 0.1) | temp_trig]
+        # remove events that do not have a trig object within dR of 0.1 of an electron
+        dR = ak.where(ak.num(dR, axis=-1) == 0, ak.Array([[1.0]]), dR)
+        events = events[(ak.min(dR, axis=-1) < 0.1) | temp_trig]
 
-        #Do cutflow and return events
-        if output: output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
+        # Do cutflow and return events
+        if output:
+            output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
         return events
 
     else:
@@ -395,16 +400,16 @@ def triggerSelection(events, sample: str, era: str, isMC: bool, output=None, out
             events[triggerPhoton | triggerElectron].genWeight
         )
 
-    #Apply selection on events
+    # Apply selection on events
     if isMC:
-        events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
+        events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
     else:
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
         elif "SingleElectron" or "EGamma" in sample:
-            events = events [ (triggerElectron | triggerPhoton) & (~triggerSingleMuon) ]
+            events = events[(triggerElectron | triggerPhoton) & (~triggerSingleMuon)]
         else:
-            events = events[triggerElectron | triggerPhoton | triggerSingleMuon ]
+            events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
 
     return events
 
