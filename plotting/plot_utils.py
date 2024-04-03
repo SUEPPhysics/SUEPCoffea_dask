@@ -369,7 +369,7 @@ def getSampleNameAndBin(sample_name):
 
     elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
-        bin = None
+        bin = sample_name.split("-")[0]
 
     elif sample_name.startswith("ttHpythia"): # private ttH samples
         sample = formatTTHToSUEPNaming(sample_name)
@@ -1237,7 +1237,132 @@ def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
         return SR, SR_exp
 
 
+def make_ABCD_9regions(hist_abcd, xregions, yregions, sum_var="X"):
+    if sum_var == "x":
+        A = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
+        B = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
+        C = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
+        D = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[0][0] : yregions[0][1]]
+        E = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[1][0] : yregions[1][1]]
+        F = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[2][0] : yregions[2][1]]
+        G = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]]
+        H = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]]
+        SR = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]]
+
+    elif sum_var == "y":
+        A = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
+        B = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
+        C = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
+        D = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[0][0] : yregions[0][1]]
+        E = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[1][0] : yregions[1][1]]
+        F = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[2][0] : yregions[2][1]]
+        G = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]]
+        H = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]]
+        SR = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]]
+       
+    return A, B, C, D, E, F, G, H, SR
+
+
+
 def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None):
+    """
+    Does 9 region ABCD using error propagation of the statistical uncertanties of the regions.
+    """
+
+    if sum_var == "y":
+        raise Exception("sum_var='y' not implemented yet")
+
+    A, B, C, D, E, F, G, H, SR = make_ABCD_9regions(
+        abcd, xregions, yregions, sum_var=sum_var
+    )
+    SR_exp = SR.copy()
+
+    if new_bins:
+        if sum_var == "x":
+            F = rebin_piecewise(F, new_bins)
+            C = rebin_piecewise(C, new_bins)
+            SR = rebin_piecewise(SR, new_bins)
+            SR_exp = rebin_piecewise(SR_exp, new_bins)
+
+    preds, preds_err = [], []
+    for i in range(len(F.values())):
+        # this is needed in order to do error propagation correctly
+        F_bin = F[i]
+        C_bin = C[i]
+        F_other = F.copy()
+        F_other[i] = hist.accumulators.WeightedSum()
+
+        # define the scaling factor function
+        a, b, c, c_bin, d, e, f_bin, f_other, g, h = symbols("A B C C_bin D E F_bin F_other G H")
+        if sum_var == "x" and approx:
+            exp = (
+                f_bin
+                * (f_other + f_bin)
+                * h**2
+                * d**2
+                * b**2
+                * g**-1
+                * c**-1
+                * a**-1
+                * e**-4
+            )
+        elif sum_var == "x" and not approx:
+            exp = (
+                f_bin**2
+                * h**2
+                * d**2
+                * b**2
+                * g**-1
+                * c_bin**-1
+                * a**-1
+                * e**-4
+            )
+        elif sum_var == "y":
+            pass
+
+        # defines lists of variables (sympy symbols) and accumulators (hist.sum())
+        variables = [a, b, c, c_bin, d, e, f_bin, f_other, g, h]
+        accs = [
+            A.sum(),
+            B.sum(),
+            C.sum(),
+            C_bin,
+            D.sum(),
+            E.sum(),
+            F_bin,
+            F_other.sum(),
+            G.sum(),
+            H.sum(),
+        ]
+
+        # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
+        alpha = exp.copy()
+        for var, acc in zip(variables, accs):
+            alpha = alpha.subs(var, acc.value)
+
+        # calculate the error on the scaling factor
+        variance = 0
+        for var, acc in zip(variables, accs):
+            der = diff(exp, var)
+            var = abs(acc.variance)
+            variance += der**2 * var
+        for var, acc in zip(variables, accs):
+            variance = variance.subs(var, acc.value)
+        sigma_alpha = variance
+
+        if type(alpha) != sympy.core.numbers.Float or alpha <= 0:
+            alpha = 0
+
+        preds.append(alpha)
+        preds_err.append(sigma_alpha)
+
+    SR_exp.view().variance = preds_err
+    SR_exp.view().value = preds
+
+    return SR, SR_exp
+
+
+def ABCD_9regions_errorProp_OLD(abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None):
     """
     Does 9 region ABCD using error propagation of the statistical uncertanties of the regions.
     """
@@ -1580,15 +1705,17 @@ def cutflow_table(
     cutflow_dict,
     samples,
     selections,
-    sig_figs=2,
-    efficiencies=False,
-    relative_efficiencies=False,
+    selection_labels: str = [],
+    sig_figs: int = 2,
+    efficiencies: bool = False,
+    relative_efficiencies: bool = False,
 ):
     """
     Create a table with the cutflow for each sample.
     :param cutflow_dict: dictionary of cutflows (dimension: sample x selection)
     :param samples: list of samples
     :param selections: list of selections
+    :param selection_labels: labels for the selections
     :param sig_figs: number of significant figures to round to
     :param efficiencies: if True, add efficiency columns
     :param relative_efficiencies: if True, add relative efficiency columns
@@ -1596,8 +1723,10 @@ def cutflow_table(
     from prettytable import PrettyTable
 
     prettytable = PrettyTable()
-    labels = [s.replace("cutflow_", "") for s in selections]
-    prettytable.add_column("Selection", labels)
+    
+    if len(selection_labels) == 0:
+        selection_labels = [s.replace("cutflow_", "") for s in selections]
+    prettytable.add_column("Selection", selection_labels)
 
     table = make_cutflow_table(
         cutflow_dict, samples, selections, efficiencies, relative_efficiencies
@@ -1615,12 +1744,13 @@ def cutflow_table(
     return prettytable
 
 
-def cutflow_plot(cutflow_dict, samples, selections):
+def cutflow_plot(cutflow_dict, samples, selections, selection_labels: str = []):
     """
     Create a plot with the cutflow for each sample.
     :param cutflow_dict: dictionary of cutflows (dimension: sample x selection)
     :param samples: list of samples
     :param selections: selections to plot
+    :param selection_labels: labels for the selections
     """
     fig, ax = plt.subplots()
     ax.set_yscale("log")
@@ -1633,8 +1763,9 @@ def cutflow_plot(cutflow_dict, samples, selections):
 
     ax.legend(loc=(1.02, 0.0), fontsize="xx-small")
     hep.cms.label(ax=ax)
-    labels = [s.replace("cutflow_", "") for s in selections]
-    ax.set_xticks(np.arange(len(labels)) + 0.5, labels, rotation=45, fontsize=10)
+    if len(selection_labels) == 0: # in the case these are not defined
+        selection_labels = [s.replace("cutflow_", "") for s in selections]
+    ax.set_xticks(np.arange(len(selection_labels)) + 0.5, selection_labels, rotation=45, fontsize=10)
 
     return fig, ax
 
@@ -1666,7 +1797,7 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, density:bool = False, sam
     samples_color = plt.cm.rainbow(np.linspace(0, 1, len(samples)))
     for p in n1_plots:
         
-        var = p.replace("_"+tag+"_full", "")
+        var = p[:-1].replace("_"+tag+"_beforeCut", "")
         cut_val = None
         for cut in cuts:
             if var in cut:

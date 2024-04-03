@@ -236,7 +236,7 @@ def prepare_DataFrame(
 
     # 4. apply selections
     if "selections" in config.keys():
-        for sel in config["selections"]:
+        for isel, sel in enumerate(config["selections"]):
             if (
                 type(sel) is str
             ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
@@ -255,16 +255,10 @@ def prepare_DataFrame(
             # if the histogram is already initialized for this variable, make the N-1 histogram
             histName = sel[0] + "_" + label_out
             if histName in output.keys():
-                if histName+"_full" not in output.keys():
-                    output[histName+"_full"] = output[histName].copy()
-                output[histName+"_full"].fill(df[sel[0]], weight=df["event_weight"])
-
-            # debug
-            if sel[0] ==  "minDeltaR_lepton_photon1":
-                print()
-                print(df[sel[0]])
-                print(df[df[sel[0]] < 0.4].shape)
-                print()
+                n1HistName = histName+"_beforeCut"+str(isel)
+                if n1HistName not in output.keys():
+                    output[n1HistName] = output[histName].copy()
+                output[n1HistName].fill(df[sel[0]], weight=df["event_weight"])
 
             # make the selection
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
@@ -547,7 +541,7 @@ def balancing_var(xpt, ypt):
     xpt = np.array(xpt)
     ypt = np.array(ypt)
 
-    var = (xpt - ypt) / ypt
+    var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt))*-999)
 
     # deal with the cases where pt was initialized to a moot value (-999 only fow now)
     var[xpt == -999] = -999
@@ -566,7 +560,7 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    var = (x_v - y_v).pt / ypt
+    var = np.where(ypt > 0, (x_v + y_v).pt.to_numpy() / ypt, np.ones(len(xpt))*-999)
 
     if type(var) is ak.highlevel.Array:
         var = var.to_numpy()

@@ -325,7 +325,7 @@ def main():
 
     if options.channel == "WH":
         config = {
-            "HighestPT": {
+            "SR": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
                 "selections": [
@@ -337,18 +337,19 @@ def main():
                     "deltaPhi_SUEP_W > 1.5",
                     "deltaPhi_SUEP_MET > 1.5",
                     "deltaPhi_lepton_SUEP > 1.5",
-                    "deltaPhi_lepton_MET > 0.4",
-                    # "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "ngood_ak4jets > 0",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
                     "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    #"ngood_ak4jets < 4",
+                    #"nak4jets_outsideSUEP < 2",
                     #"nphotons == 0",
-                    #"minDeltaR_lepton_photon1 < 0.4",
                 ],
                 "new_variables": [
                     ["bjetSel", lambda x, y : ((x == 0) & (y < 2)), ["nBTight", "nBLoose"]],
                     ["W_SUEP_BV", fill_utils.balancing_var, ["W_pT_from_MET", "SUEP_pt_HighestPT"]],
                     ["W_jet1_BV", fill_utils.balancing_var, ["W_pT_from_MET", "jet1_pT"]],
-                    ["ak4SUEP1_SUEP_BV", fill_utils.balancing_var, ["ak4jet1_inSUEPCluster_pT", "SUEP_pt_HighestPT"]],
+                    ["ak4SUEP1_SUEP_BV", fill_utils.balancing_var, ["ak4jet1_inSUEPcluster_pT", "SUEP_pt_HighestPT"]],
                     ["W_SUEP_vBV", fill_utils.vector_balancing_var, ["W_phi_from_MET", "SUEP_phi_HighestPT", "W_pT_from_MET", "SUEP_pt_HighestPT"]],
                     ["W_jet1_vBV", fill_utils.vector_balancing_var, ["W_phi_from_MET", "jet1_phi", "W_pT_from_MET", "jet1_pT"]],
                     ["deltaPhi_SUEP_W", fill_utils.deltaPhi_x_y, ["SUEP_phi_HighestPT", "W_phi_from_MET", "SUEP_pt_HighestPT", "W_pT_from_MET"]],
@@ -357,8 +358,13 @@ def main():
                     ["deltaPhi_lepton_SUEP", fill_utils.deltaPhi_x_y, ["lepton_phi", "SUEP_phi_HighestPT", "lepton_pt", "SUEP_pt_HighestPT"]],
                     ["deltaPhi_minDeltaPhiMETJet_SUEP", fill_utils.deltaPhi_x_y, ["minDeltaPhiMETJet_phi", "SUEP_phi_HighestPT", "minDeltaPhiMETJet_pt", "SUEP_pt_HighestPT"]],
                     ["deltaPhi_minDeltaPhiMETJet_MET", fill_utils.deltaPhi_x_y, ["minDeltaPhiMETJet_phi", "MET_phi", "minDeltaPhiMETJet_pt", "MET_pt"]],
+                    ["deltaPhi_SUEP_jet1", fill_utils.deltaPhi_x_y, ["SUEP_phi_HighestPT", "jet1_phi", "SUEP_pt_HighestPT", "jet1_pT"]],
+                    ["deltaPhi_SUEP_bjet", fill_utils.deltaPhi_x_y, ["SUEP_phi_HighestPT", "bjet_phi", "SUEP_pt_HighestPT", "bjet_pt"]],
+                    ["deltaPhi_jet1_bjet", fill_utils.deltaPhi_x_y, ["jet1_phi", "bjet_phi", "jet1_pT", "bjet_pt"]],
+                    ["deltaPhi_lepton_bjet", fill_utils.deltaPhi_x_y, ["lepton_phi", "bjet_phi", "lepton_pt", "bjet_pt"]],
+                    ["nak4jets_outsideSUEP", lambda x, y : (x - y), ["ngood_ak4jets", "ak4jets_inSUEPcluster_n"]],
                 ]
-            },   
+            },         
             "CRTT": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
@@ -371,18 +377,19 @@ def main():
                     "deltaPhi_SUEP_W > 1.5",
                     "deltaPhi_SUEP_MET > 1.5",
                     "deltaPhi_lepton_SUEP > 1.5",
-                    "deltaPhi_lepton_MET > 0.4",
-                    #"deltaPhi_minDeltaPhiMETJet_MET > 0.4",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "ngood_ak4jets > 0",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
                     "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    #"ngood_ak4jets < 4",
+                    #"nak4jets_outsideSUEP < 2",
                     #"nphotons == 0",
-                    #"minDeltaR_lepton_photon1 < 0.4",
                 ],
                 "new_variables": [
                     ["bjetSel", lambda x, y : ((x == 0) & (y < 2)), ["nBTight", "nBLoose"]],
                     ["W_SUEP_BV", fill_utils.balancing_var, ["W_pT_from_MET", "SUEP_pt_HighestPT"]],
                     ["W_jet1_BV", fill_utils.balancing_var, ["W_pT_from_MET", "jet1_pT"]],
-                    ["ak4SUEP1_SUEP_BV", fill_utils.balancing_var, ["ak4jet1_inSUEPCluster_pT", "SUEP_pt_HighestPT"]],
+                    ["ak4SUEP1_SUEP_BV", fill_utils.balancing_var, ["ak4jet1_inSUEPcluster_pT", "SUEP_pt_HighestPT"]],
                     ["W_SUEP_vBV", fill_utils.vector_balancing_var, ["W_phi_from_MET", "SUEP_phi_HighestPT", "W_pT_from_MET", "SUEP_pt_HighestPT"]],
                     ["W_jet1_vBV", fill_utils.vector_balancing_var, ["W_phi_from_MET", "jet1_phi", "W_pT_from_MET", "jet1_pT"]],
                     ["deltaPhi_SUEP_W", fill_utils.deltaPhi_x_y, ["SUEP_phi_HighestPT", "W_phi_from_MET", "SUEP_pt_HighestPT", "W_pT_from_MET"]],
@@ -391,8 +398,13 @@ def main():
                     ["deltaPhi_lepton_SUEP", fill_utils.deltaPhi_x_y, ["lepton_phi", "SUEP_phi_HighestPT", "lepton_pt", "SUEP_pt_HighestPT"]],
                     ["deltaPhi_minDeltaPhiMETJet_SUEP", fill_utils.deltaPhi_x_y, ["minDeltaPhiMETJet_phi", "SUEP_phi_HighestPT", "minDeltaPhiMETJet_pt", "SUEP_pt_HighestPT"]],
                     ["deltaPhi_minDeltaPhiMETJet_MET", fill_utils.deltaPhi_x_y, ["minDeltaPhiMETJet_phi", "MET_phi", "minDeltaPhiMETJet_pt", "MET_pt"]],
+                    ["deltaPhi_SUEP_jet1", fill_utils.deltaPhi_x_y, ["SUEP_phi_HighestPT", "jet1_phi", "SUEP_pt_HighestPT", "jet1_pT"]],
+                    ["deltaPhi_SUEP_bjet", fill_utils.deltaPhi_x_y, ["SUEP_phi_HighestPT", "bjet_phi", "SUEP_pt_HighestPT", "bjet_pt"]],
+                    ["deltaPhi_jet1_bjet", fill_utils.deltaPhi_x_y, ["jet1_phi", "bjet_phi", "jet1_pT", "bjet_pt"]],
+                    ["deltaPhi_lepton_bjet", fill_utils.deltaPhi_x_y, ["lepton_phi", "bjet_phi", "lepton_pt", "bjet_pt"]],
+                    ["nak4jets_outsideSUEP", lambda x, y : (x - y), ["ngood_ak4jets", "ak4jets_inSUEPcluster_n"]],
                 ]
-            }
+            },
         }
 
     if options.channel == "ggF":
@@ -551,7 +563,7 @@ def main():
             continue
 
         # check sample consistency
-        if "sample" in metadata.keys():
+        if metadata != 0 and "sample" in metadata.keys():
             if sample is None: # we did not pass in any sample, and this is the first file
                 sample = metadata["sample"]
             elif metadata["sample"] == 'X': # default option for ntuplemaker, when not run properly specifying which sample. Ignore this.
@@ -674,9 +686,9 @@ def main():
             )
 
     # apply xsec and gensumweight (but no xsec to SUEP signal samples)
+    xsection = 1
     if options.isMC:
         logging.info("Applying normalization.")
-        xsection = 1
         if "SUEP" not in sample:
             xsection = fill_utils.getXSection(sample, options.era, failOnKeyError=True)
             logging.debug(f"Applying cross section {xsection}.")
