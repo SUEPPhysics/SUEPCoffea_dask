@@ -69,7 +69,7 @@ def apply_jecs(self, Sample, events, prefix=""):
             jerdir = "Summer19UL18_JRV2_DATA"
             if ("RunA" in Sample) or ("Run2018A" in Sample):
                 jecdir = "Summer19UL18_RunA_V5_DATA"
-            elif ("RunB" in Sample) or "(Run2018B" in Sample):
+            elif ("RunB" in Sample) or ("Run2018B" in Sample):
                 jecdir = "Summer19UL18_RunB_V5_DATA"
             elif ("RunC" in Sample) or ("Run2018C" in Sample):
                 jecdir = "Summer19UL18_RunC_V5_DATA"
