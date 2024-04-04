@@ -53,27 +53,27 @@ def apply_jecs(self, Sample, events, prefix=""):
             jerdir = "Summer20UL16_JRV3_DATA"
         elif self.era == "2017":
             jerdir = "Summer19UL17_JRV3_DATA"
-            if "RunB" or "Run2017B" in Sample:
+            if ("RunB" or "Run2017B") in Sample:
                 jecdir = "Summer19UL17_RunB_V5_DATA"
-            elif "RunC" or "Run2017C" in Sample:
+            elif ("RunC" or "Run2017C") in Sample:
                 jecdir = "Summer19UL17_RunC_V5_DATA"
-            elif "RunD" or "Run2017D" in Sample:
+            elif ("RunD" or "Run2017D") in Sample:
                 jecdir = "Summer19UL17_RunD_V5_DATA"
-            elif "RunE" or "Run2017E" in Sample:
+            elif ("RunE" or "Run2017E") in Sample:
                 jecdir = "Summer19UL17_RunE_V5_DATA"
-            elif "RunF" or "Run2017F" in Sample:
+            elif ("RunF" or "Run2017F") in Sample:
                 jecdir = "Summer19UL17_RunF_V5_DATA"
             else:
                 print("WARNING: The JECs for the 2017 data era do not seem to exist!")
         elif self.era == "2018":
             jerdir = "Summer19UL18_JRV2_DATA"
-            if "RunA" or "Run2018A" in Sample:
+            if ("RunA" or "Run2018A") in Sample:
                 jecdir = "Summer19UL18_RunA_V5_DATA"
-            elif "RunB" or "Run2018B" in Sample:
+            elif ("RunB" or "Run2018B") in Sample:
                 jecdir = "Summer19UL18_RunB_V5_DATA"
-            elif "RunC" or "Run2018C" in Sample:
+            elif ("RunC" or "Run2018C") in Sample:
                 jecdir = "Summer19UL18_RunC_V5_DATA"
-            elif "RunD" or "Run2018D" in Sample:
+            elif ("RunD" or "Run2018D") in Sample:
                 jecdir = "Summer19UL18_RunD_V5_DATA"
             else:
                 print("WARNING: The JECs for the 2018 data era do not seem to exist!")
