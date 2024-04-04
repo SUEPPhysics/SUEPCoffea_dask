@@ -52,16 +52,16 @@ def main():
     )
     out_dir_xrd = "/" + username + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
-    jobs_base_dir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
+    jobs_base_dir = "/work/submit/" + username + "/SUEP/logs/"
 
     if options.move:
         if not os.path.isdir(
-            "/work/submit/" + username + "/SUEPCoffea_dask/" + options.tag
+            "/work/submit/" + username + "/SUEP/" + options.tag
         ):
             subprocess.run(
                 [
                     "mkdir",
-                    "/work/submit/" + username + "/SUEPCoffea_dask/" + options.tag,
+                    "/work/submit/" + username + "/SUEP/" + options.tag,
                 ]
             )
 
@@ -106,7 +106,7 @@ def main():
             else:
                 sample_name = sample
 
-            jobs_dir = "_".join(["jobs", options.tag, sample_name])
+            jobs_dir = "/".join([options.tag, sample_name])
             jobs_dir = jobs_base_dir + jobs_dir
 
             if not os.path.isdir(out_dir.format(sample_name)):
@@ -141,6 +141,7 @@ def main():
 
             njobs = len(jobs)
             complete_list = os.listdir(out_dir.format(sample_name))
+            complete_list = [f for f in complete_list if not f.startswith("gitinfo")]
             nfile = len(complete_list)
 
             if njobs == 0:
