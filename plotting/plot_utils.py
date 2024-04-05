@@ -547,20 +547,15 @@ def openHistFile(infile_name):
     return hists, metadata
 
 
-def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
-    assert len(samples) > 0
-    if year:
-        year_tag = "_" + str(year)
-    else:
-        year_tag = ""
-    plots["MC" + year_tag] = {}
-    for key in plots[samples[0] + year_tag].keys():
+def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
+    plots[new_tag] = {}
+    for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):
             if i == 0:
-                plots["MC" + year_tag][key] = plots[sample + year_tag][key].copy()
+                plots[new_tag][key] = plots[sample][key].copy()
             else:
                 try:
-                    plots["MC" + year_tag][key] += plots[sample + year_tag][key].copy()
+                    plots[new_tag][key] += plots[sample][key].copy()
                 except KeyError:
                     print(
                         f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping."
@@ -1193,69 +1188,25 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
     return SR, SR_exp
 
 
-def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
-    if sum_var == "x":
-        A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
-        B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
-        C = hist_abcd[xregions[0] : xregions[1] : sum, yregions[2] : yregions[3]]
-        D = hist_abcd[xregions[1] : xregions[2] : sum, yregions[0] : yregions[1]]
-        E = hist_abcd[xregions[1] : xregions[2] : sum, yregions[1] : yregions[2]]
-        F = hist_abcd[xregions[1] : xregions[2] : sum, yregions[2] : yregions[3]]
-        G = hist_abcd[xregions[2] : xregions[3] : sum, yregions[0] : yregions[1]]
-        H = hist_abcd[xregions[2] : xregions[3] : sum, yregions[1] : yregions[2]]
-        SR = hist_abcd[xregions[2] : xregions[3] : sum, yregions[2] : yregions[3]]
-        SR_exp = (
-            F
-            * F.sum().value ** 3
-            * (G.sum().value * C.sum().value / A.sum().value)
-            * ((H.sum().value / E.sum().value) ** 4)
-            * (G.sum().value * F.sum().value / D.sum().value) ** -2
-            * (H.sum().value * C.sum().value / B.sum().value) ** -2
-        )
-    elif sum_var == "y":
-        A = hist_abcd[xregions[0] : xregions[1], yregions[0] : yregions[1] : sum]
-        B = hist_abcd[xregions[0] : xregions[1], yregions[1] : yregions[2] : sum]
-        C = hist_abcd[xregions[0] : xregions[1], yregions[2] : yregions[3] : sum]
-        D = hist_abcd[xregions[1] : xregions[2], yregions[0] : yregions[1] : sum]
-        E = hist_abcd[xregions[1] : xregions[2], yregions[1] : yregions[2] : sum]
-        F = hist_abcd[xregions[1] : xregions[2], yregions[2] : yregions[3] : sum]
-        G = hist_abcd[xregions[2] : xregions[3], yregions[0] : yregions[1] : sum]
-        H = hist_abcd[xregions[2] : xregions[3], yregions[1] : yregions[2] : sum]
-        SR = hist_abcd[xregions[2] : xregions[3], yregions[2] : yregions[3] : sum]
-        SR_exp = (
-            H
-            * H.sum().value ** 3
-            * (G.sum().value * C.sum().value / A.sum().value)
-            * ((F.sum().value / E.sum().value) ** 4)
-            * (G.sum().value * F.sum().value / D.sum().value) ** -2
-            * (H.sum().value * C.sum().value / B.sum().value) ** -2
-        )
-
-    if return_all:
-        return A, B, C, D, E, F, G, H, SR, SR_exp
-    else:
-        return SR, SR_exp
-
-
 def make_ABCD_9regions(hist_abcd, xregions, yregions, sum_var="X"):
     if sum_var == "x":
-        A = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
-        B = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
-        C = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
-        D = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[0][0] : yregions[0][1]]
-        E = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[1][0] : yregions[1][1]]
-        F = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[2][0] : yregions[2][1]]
+        A = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
+        B = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
+        C = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
+        D = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]]
+        E = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]]
+        F = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]]
         G = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]]
         H = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]]
         SR = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]]
 
     elif sum_var == "y":
-        A = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
-        B = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
-        C = hist_abcd[xregions[0][1] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
-        D = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[0][0] : yregions[0][1]]
-        E = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[1][0] : yregions[1][1]]
-        F = hist_abcd[xregions[1][0] : xregions[2][2] : sum, yregions[2][0] : yregions[2][1]]
+        A = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
+        B = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
+        C = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
+        D = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]]
+        E = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]]
+        F = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]]
         G = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]]
         H = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]]
         SR = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]]
@@ -1277,103 +1228,7 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=True, 
     )
     SR_exp = SR.copy()
 
-    if new_bins:
-        if sum_var == "x":
-            F = rebin_piecewise(F, new_bins)
-            C = rebin_piecewise(C, new_bins)
-            SR = rebin_piecewise(SR, new_bins)
-            SR_exp = rebin_piecewise(SR_exp, new_bins)
-
-    preds, preds_err = [], []
-    for i in range(len(F.values())):
-        # this is needed in order to do error propagation correctly
-        F_bin = F[i]
-        C_bin = C[i]
-        F_other = F.copy()
-        F_other[i] = hist.accumulators.WeightedSum()
-
-        # define the scaling factor function
-        a, b, c, c_bin, d, e, f_bin, f_other, g, h = symbols("A B C C_bin D E F_bin F_other G H")
-        if sum_var == "x" and approx:
-            exp = (
-                f_bin
-                * (f_other + f_bin)
-                * h**2
-                * d**2
-                * b**2
-                * g**-1
-                * c**-1
-                * a**-1
-                * e**-4
-            )
-        elif sum_var == "x" and not approx:
-            exp = (
-                f_bin**2
-                * h**2
-                * d**2
-                * b**2
-                * g**-1
-                * c_bin**-1
-                * a**-1
-                * e**-4
-            )
-        elif sum_var == "y":
-            pass
-
-        # defines lists of variables (sympy symbols) and accumulators (hist.sum())
-        variables = [a, b, c, c_bin, d, e, f_bin, f_other, g, h]
-        accs = [
-            A.sum(),
-            B.sum(),
-            C.sum(),
-            C_bin,
-            D.sum(),
-            E.sum(),
-            F_bin,
-            F_other.sum(),
-            G.sum(),
-            H.sum(),
-        ]
-
-        # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
-        alpha = exp.copy()
-        for var, acc in zip(variables, accs):
-            alpha = alpha.subs(var, acc.value)
-
-        # calculate the error on the scaling factor
-        variance = 0
-        for var, acc in zip(variables, accs):
-            der = diff(exp, var)
-            var = abs(acc.variance)
-            variance += der**2 * var
-        for var, acc in zip(variables, accs):
-            variance = variance.subs(var, acc.value)
-        sigma_alpha = variance
-
-        if type(alpha) != sympy.core.numbers.Float or alpha <= 0:
-            alpha = 0
-
-        preds.append(alpha)
-        preds_err.append(sigma_alpha)
-
-    SR_exp.view().variance = preds_err
-    SR_exp.view().value = preds
-
-    return SR, SR_exp
-
-
-def ABCD_9regions_errorProp_OLD(abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None):
-    """
-    Does 9 region ABCD using error propagation of the statistical uncertanties of the regions.
-    """
-
-    if sum_var == "y":
-        raise Exception("sum_var='y' not implemented yet")
-
-    A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(
-        abcd, xregions, yregions, sum_var=sum_var, return_all=True
-    )
-
+    # we need to rebin here in the case appox=True
     if new_bins:
         if sum_var == "x":
             F = rebin_piecewise(F, new_bins)
