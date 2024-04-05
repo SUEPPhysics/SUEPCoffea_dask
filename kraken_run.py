@@ -209,15 +209,19 @@ def main():
             # skip commented out or incorrect sample paths
             if len(sample_path) < 1:
                 continue
-            if "#" in sample_path or ("/" in sample_path and len(sample_path.split("/")) <= 1):
+            if "#" in sample_path or (
+                "/" in sample_path and len(sample_path.split("/")) <= 1
+            ):
                 continue
-            
+
             # extract sample name from each sample path
             if "/" in sample_path:
                 sample_name = sample_path.split("/")[-1]
             else:
                 sample_name = sample_path
-            if sample_name.endswith(".root"): # case where 1 file is given as input, treated as a separate sample
+            if sample_name.endswith(
+                ".root"
+            ):  # case where 1 file is given as input, treated as a separate sample
                 sample_name = sample_name.replace(".root", "")
 
             # if the redirector is specified, take it, and strip it from the sample path, if not use the default
@@ -258,7 +262,7 @@ def main():
             # limit to max number of files, if specified
             if options.maxFiles > 0:
                 Raw_list = Raw_list[: options.maxFiles]
-                
+
             # write list of files to inputfiles.dat
             nfiles = 0
             with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:

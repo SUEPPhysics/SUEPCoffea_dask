@@ -9,6 +9,7 @@ import fill_utils
 import pandas as pd
 from tqdm import tqdm
 
+
 def makeParser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Famous Submitter")
@@ -30,7 +31,13 @@ def makeParser(parser=None):
     )
     parser.add_argument("--isMC", type=int, help="Is this MC or data", required=True)
     parser.add_argument("--redirector", type=str, default="root://submit50.mit.edu/")
-    parser.add_argument("-p", "--path", type=str, default=f"/store/user/{getpass.getuser()}/SUEP/", help="Input directory path where all the various production tags are stored, this will be joined as inputDir/tag/sample/.")
+    parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        default=f"/store/user/{getpass.getuser()}/SUEP/",
+        help="Input directory path where all the various production tags are stored, this will be joined as inputDir/tag/sample/.",
+    )
     return parser
 
 
@@ -82,7 +89,7 @@ def time_limited_move(infile, outfile, time_limit=60, max_attempts=5):
             else:
                 return 1
     return 0
-    
+
 
 def main():
 
@@ -126,9 +133,9 @@ def main():
 
         ### MERGE METADATA
         if options.isMC:
-            if type(metadata_tot) == int: # fill metadata for the first time
+            if type(metadata_tot) == int:  # fill metadata for the first time
                 metadata_tot = metadata
-            else: # for successive files, increase the counts
+            else:  # for successive files, increase the counts
                 metadata_tot["gensumweight"] += metadata["gensumweight"]
                 for key in metadata.keys():
                     if key.startswith("cutflow"):
@@ -180,6 +187,7 @@ def main():
         print("Result of xrootd transfer was 0: " + xrd_file)
     else:
         subprocess.run(["rm", output_file])
+
 
 if __name__ == "__main__":
     main()

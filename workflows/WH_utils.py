@@ -63,13 +63,10 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
             with_name="Momentum4D",
         )
     # jet pt cut, eta cut, and minimum separation from lepton
-    jet_awk_Cut = (
-        (Jets_awk.pt > 30)
-        & (abs(Jets_awk.eta) < 2.4)
-    )
+    jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
     # and minimum separation from lepton
     if lepton is not None:
-        jet_awk_Cut = (jet_awk_Cut & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4))
+        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
     Jets_correct = Jets_awk[jet_awk_Cut]
 
     return Jets_correct
@@ -307,10 +304,10 @@ def getPhotons(events, isMC: bool = 1):
         )
 
     cutPhotons = (
-        (events.Photon.mvaID_WP90) & 
-        (abs(events.Photon.eta) <= 2.5) & 
-        (events.Photon.electronVeto) &
-        (events.Photon.pt >= 15)
+        (events.Photon.mvaID_WP90)
+        & (abs(events.Photon.eta) <= 2.5)
+        & (events.Photon.electronVeto)
+        & (events.Photon.pt >= 15)
     )
 
     photons = photons[cutPhotons]
@@ -555,6 +552,7 @@ def W_kinematics(lepton, MET):
 
     return W_mt[:, 0], W_pt[:, 0], W_phi[:, 0]
 
+
 def getTopMass(lepton, MET, jets):
     """
     Calculate the top mass for each event.
@@ -565,17 +563,19 @@ def getTopMass(lepton, MET, jets):
     # get the W for each event (defined only in the transverse plane)
     W = make_Wt_4v(lepton, MET)
 
-    # project the jets onto the transverse plane    
+    # project the jets onto the transverse plane
     jets_T = projectOnTransversePlane(jets)
 
     # make an awkward array of W bosons of the same shape as the jets (the same W boson in each event is repeated N times, where N = # of jets in that event)
-    Ws = ak.cartesian({"W": W, "jets_T": jets_T}).W   
+    Ws = ak.cartesian({"W": W, "jets_T": jets_T}).W
 
     # make the top hypotheses by considering each combination of W and jets_T
     topHypotheses = Ws + jets_T
     topMassHypotheses = topHypotheses.mass
     bestTopMassArg = ak.from_regular(
-        ak.argmin(np.abs(topMassHypotheses - M_TOP), axis=1, keepdims=True, mask_identity=True)
+        ak.argmin(
+            np.abs(topMassHypotheses - M_TOP), axis=1, keepdims=True, mask_identity=True
+        )
     )
     bestTopMass = ak.flatten(topMassHypotheses[bestTopMassArg])
     return bestTopMass

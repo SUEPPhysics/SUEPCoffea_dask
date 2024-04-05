@@ -55,9 +55,7 @@ def main():
     jobs_base_dir = "/work/submit/" + username + "/SUEP/logs/"
 
     if options.move:
-        if not os.path.isdir(
-            "/work/submit/" + username + "/SUEP/" + options.tag
-        ):
+        if not os.path.isdir("/work/submit/" + username + "/SUEP/" + options.tag):
             subprocess.run(
                 [
                     "mkdir",
