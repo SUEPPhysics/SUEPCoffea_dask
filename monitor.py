@@ -101,10 +101,11 @@ def main():
             if "/" in sample and len(sample.split("/")) <= 1:
                 continue
 
-            if "/" in sample:
-                sample_name = sample.split("/")[-1]
-            else:
-                sample_name = sample
+            sample_name = sample
+            if "/" in sample_name:
+                sample_name = sample_name.split("/")[-1]
+            if ".root" in sample_name:
+                sample_name = sample_name.replace(".root", "")
 
             jobs_dir = "/".join([options.tag, sample_name])
             jobs_dir = jobs_base_dir + jobs_dir

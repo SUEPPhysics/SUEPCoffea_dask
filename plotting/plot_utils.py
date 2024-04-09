@@ -489,7 +489,7 @@ def loader(
 
         # sets the lumi based on year
         if file_metadata and (year is None) and ("isMC" in file_metadata.keys()):
-            if file_metadata["isMC"]:
+            if int(file_metadata["isMC"]):
                 lumi = getLumi(
                     file_metadata["era"], bool(float(file_metadata["scouting"]))
                 )

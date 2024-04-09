@@ -236,6 +236,14 @@ def prepare_DataFrame(
 
     # 4. apply selections
     if "selections" in config.keys():
+
+        # store number of events passing using the event weights into the cutflow dict
+        cutflow_label = "cutflow_total"
+        if cutflow_label in cutflow.keys():
+            cutflow[cutflow_label] += np.sum(df["event_weight"])
+        else:
+            cutflow[cutflow_label] = np.sum(df["event_weight"])
+
         for isel, sel in enumerate(config["selections"]):
             if (
                 type(sel) is str
