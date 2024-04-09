@@ -42,7 +42,13 @@ def main():
     parser.add_argument("--era", type=str, default="2018", help="")
     parser.add_argument("--doSyst", type=int, default=1, help="")
     parser.add_argument("--infile", required=True, type=str, default=None, help="")
-    parser.add_argument("--output", "-o", default='out.hdf5', help="Output file, can be a path or xrootd path.", type=str)
+    parser.add_argument(
+        "--output",
+        "-o",
+        default="out.hdf5",
+        help="Output file, can be a path or xrootd path.",
+        type=str,
+    )
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
     parser.add_argument("--chunkSize", type=int, default=100000, help="")
@@ -88,7 +94,9 @@ def main():
         # save output
         df = form_ntuple(options, output)
         metadata = form_metadata(options, output)
-        pandas_utils.save_dfs(instance, [df], ["vars"], options.output, metadata=metadata)
+        pandas_utils.save_dfs(
+            instance, [df], ["vars"], options.output, metadata=metadata
+        )
 
 
 if __name__ == "__main__":

@@ -5,10 +5,11 @@ import subprocess
 import sys
 from collections import defaultdict
 from copy import deepcopy
-import vector
+
+import awkward as ak
 import numpy as np
 import pandas as pd
-import awkward as ak
+import vector
 
 
 def h5load(ifile: str, label: str):
@@ -74,7 +75,9 @@ def get_git_info(path="."):
     return commit, diff
 
 
-def getXSection(dataset: str, year=None, path="../data/", failOnKeyError=False) -> float:
+def getXSection(
+    dataset: str, year=None, path="../data/", failOnKeyError=False
+) -> float:
     xsection = 1
 
     xsec_file = f"{path}/xsections_{year}.json"
@@ -263,7 +266,7 @@ def prepare_DataFrame(
             # if the histogram is already initialized for this variable, make the N-1 histogram
             histName = sel[0] + "_" + label_out
             if histName in output.keys():
-                n1HistName = histName+"_beforeCut"+str(isel)
+                n1HistName = histName + "_beforeCut" + str(isel)
                 if n1HistName not in output.keys():
                     output[n1HistName] = output[histName].copy()
                 output[n1HistName].fill(df[sel[0]], weight=df["event_weight"])
@@ -282,12 +285,14 @@ def prepare_DataFrame(
 
     return df
 
+
 def is_number(s):
     try:
         float(s)
         return True
     except ValueError:
         return False
+
 
 def make_new_variable(
     df: pd.DataFrame, name: str, function: callable, *columns: list
@@ -521,6 +526,7 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
     ]
     return df
 
+
 def deltaPhi_x_y(xphi, yphi, xpt, ypt):
 
     # cast inputs to numpy arrays
@@ -532,16 +538,17 @@ def deltaPhi_x_y(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    signed_dphi =  x_v.deltaphi(y_v)
+    signed_dphi = x_v.deltaphi(y_v)
     abs_dphi = np.abs(signed_dphi.tolist())
 
     # deal with the cases where phi was initialized to a moot value like -999
-    abs_dphi[(xphi>2*np.pi)] = -999
-    abs_dphi[yphi>2*np.pi] = -999
-    abs_dphi[xpt<-2*np.pi] = -999
-    abs_dphi[ypt<-2*np.pi] = -999
+    abs_dphi[(xphi > 2 * np.pi)] = -999
+    abs_dphi[yphi > 2 * np.pi] = -999
+    abs_dphi[xpt < -2 * np.pi] = -999
+    abs_dphi[ypt < -2 * np.pi] = -999
 
     return abs_dphi
+
 
 def balancing_var(xpt, ypt):
 
@@ -549,13 +556,14 @@ def balancing_var(xpt, ypt):
     xpt = np.array(xpt)
     ypt = np.array(ypt)
 
-    var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt))*-999)
+    var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value (-999 only fow now)
     var[xpt == -999] = -999
     var[ypt == -999] = -999
 
     return var
+
 
 def vector_balancing_var(xphi, yphi, xpt, ypt):
 
@@ -568,7 +576,7 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    var = np.where(ypt > 0, (x_v + y_v).pt.to_numpy() / ypt, np.ones(len(xpt))*-999)
+    var = np.where(ypt > 0, (x_v + y_v).pt.to_numpy() / ypt, np.ones(len(xpt)) * -999)
 
     if type(var) is ak.highlevel.Array:
         var = var.to_numpy()

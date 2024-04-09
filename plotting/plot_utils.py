@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
+
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -13,8 +14,8 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
-import uproot
 import sympy
+import uproot
 from sympy import diff, sqrt, symbols
 
 sys.path.append("..")
@@ -55,7 +56,7 @@ def getColor(sample):
     if "GluGluToSUEP" and "mS" in sample:
         sample = sample[sample.find("mS") + 2 :]
         sample = sample.split("_")[0]
-        return default_colors["mS"+sample]
+        return default_colors["mS" + sample]
 
     elif "QCD" in sample:
         return default_colors["QCD"]
@@ -227,13 +228,13 @@ def formatTTHToSUEPNaming(file):
     T = tokens[4]
 
     T = T.replace("T", "")
-    T = "T"+str(float(T))
+    T = "T" + str(float(T))
 
     mD = mD.replace("MD", "")
-    mD = "MD"+str(float(mD))
+    mD = "MD" + str(float(mD))
 
     mS = mS.replace("M", "")
-    mS = "MS"+str(float(mS))
+    mS = "MS" + str(float(mS))
 
     name = "ttH-" + "_".join([mS, mD, T, decay])
     return name
@@ -281,7 +282,7 @@ def getSampleNameAndBin(sample_name):
                 "TTZToQQ",
                 "TTWJetsToQQ",
                 "TTZToLLNuNu",
-                'ttZJets'
+                "ttZJets",
             ]
         ]
     ):
@@ -296,12 +297,16 @@ def getSampleNameAndBin(sample_name):
         sample = "WJetsToLNu_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif "WJetsToLNu_Pt" in sample_name or "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
+    elif (
+        "WJetsToLNu_Pt" in sample_name
+        or "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name
+    ):
         # merging of inclusive sample and pT-binned. This is done by LHE_Vpt > 100 selection in ntuplemaker on the inclusive sample,
         # and is accounted for in its normalization via its kr factor.
         sample = "WJetsToLNu_Pt"
         bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
-        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name: bin = "WJetsToLNu_incl"
+        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
+            bin = "WJetsToLNu_incl"
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
         sample = "DYJetsToLL_LHEFilterPtZ"
@@ -315,67 +320,51 @@ def getSampleNameAndBin(sample_name):
         [
             s in sample_name
             for s in [
-                'WWTo1L1Nu2Q_4f',
-                'WWTo2L2Nu',
-                'WZTo1L1Nu2Q_4f',
-                'WZTo1L3Nu_4f',
-                'WZTo2Q2L_mllmin4p0',
-                'WZTo3LNu_mllmin4p0',
-                'ZZTo2L2Nu',
-                'ZZTo2Q2L_mllmin4p0',
-                'ZZTo4L_TuneCP5'
+                "WWTo1L1Nu2Q_4f",
+                "WWTo2L2Nu",
+                "WZTo1L1Nu2Q_4f",
+                "WZTo1L3Nu_4f",
+                "WZTo2Q2L_mllmin4p0",
+                "WZTo3LNu_mllmin4p0",
+                "ZZTo2L2Nu",
+                "ZZTo2Q2L_mllmin4p0",
+                "ZZTo4L_TuneCP5",
             ]
         ]
     ):
-        sample = 'VV'
+        sample = "VV"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any([s in sample_name for s in ["ZZZ_TuneCP5_13TeV", "WWZ_4F_TuneCP5_13TeV"]]):
+        sample = "VVV"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any([s in sample_name for s in ["WGToLNuG", "ZGToLLG_01J_5f"]]):
+        sample = "VG"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif any(
         [
             s in sample_name
             for s in [
-                'ZZZ_TuneCP5_13TeV',
-                'WWZ_4F_TuneCP5_13TeV'
+                "WminusH_HToBB_WToLNu_M-125",
+                "WplusH_HToBB_WToLNu_M-125",
+                "VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8",
             ]
         ]
     ):
-        sample = 'VVV'
-        bin = sample_name.split(".root")[0].split("_Tune")[0]
-
-    elif any(
-        [
-            s in sample_name
-            for s in [
-                'WGToLNuG',
-                'ZGToLLG_01J_5f'
-            ]
-        ]
-    ):
-        sample = 'VG'
-        bin = sample_name.split(".root")[0].split("_Tune")[0]
-
-    elif any(
-        [
-            s in sample_name
-            for s in [
-                'WminusH_HToBB_WToLNu_M-125',
-                'WplusH_HToBB_WToLNu_M-125',
-                'VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8'
-            ]
-        ]
-    ):
-        sample = 'VH'
+        sample = "VH"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
         bin = sample_name.split("-")[0]
 
-    elif sample_name.startswith("ttHpythia"): # private ttH samples
+    elif sample_name.startswith("ttHpythia"):  # private ttH samples
         sample = formatTTHToSUEPNaming(sample_name)
         bin = None
 
-    elif "GluGluToSUEP" in sample_name: # ggF samples
+    elif "GluGluToSUEP" in sample_name:  # ggF samples
         sample = formatGluGluToSUEPNaming(sample_name)
         bin = None
 
@@ -510,7 +499,7 @@ def loader(
             if "SUEP" in sample_name:
                 # xsec is already apply in make_hists.py for non SUEP samples
                 xsec = fill_utils.getXSection(sample_name, year=era)
-                if verbose: 
+                if verbose:
                     print("Applying xsec", xsec)
                 norm *= xsec
 
@@ -519,7 +508,8 @@ def loader(
         sample, bin = getSampleNameAndBin(infile_name)
         if verbose:
             print("Found sample", sample)
-            if by_bin: print("and bin", bin)
+            if by_bin:
+                print("and bin", bin)
 
         samplesToAdd = [sample]
         if by_bin and (bin is not None) and (bin != sample):
@@ -729,13 +719,13 @@ def plot_ratio(
     """
 
     # Set up variables for the stacked histogram
-    fig = plt.figure(figsize=(16,12))
+    fig = plt.figure(figsize=(16, 12))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
     if density:
         for i, h in enumerate(hlist):
-            hlist[i] = h.copy()/h.sum().value
+            hlist[i] = h.copy() / h.sum().value
 
     if labels is None:
         labels = [None] * len(hlist)
@@ -1190,32 +1180,69 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
 
 def make_ABCD_9regions(hist_abcd, xregions, yregions, sum_var="X"):
     if sum_var == "x":
-        A = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
-        B = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
-        C = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
-        D = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]]
-        E = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]]
-        F = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]]
-        G = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]]
-        H = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]]
-        SR = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]]
+        A = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        B = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        C = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        D = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        E = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        F = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        G = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        H = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        SR = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
 
     elif sum_var == "y":
-        A = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]]
-        B = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]]
-        C = hist_abcd[xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]]
-        D = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]]
-        E = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]]
-        F = hist_abcd[xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]]
-        G = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]]
-        H = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]]
-        SR = hist_abcd[xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]]
-       
+        A = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        B = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        C = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        D = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        E = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        F = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        G = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        H = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        SR = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+
     return A, B, C, D, E, F, G, H, SR
 
 
-
-def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None):
+def ABCD_9regions_errorProp(
+    abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None
+):
     """
     Does 9 region ABCD using error propagation of the statistical uncertanties of the regions.
     """
@@ -1245,7 +1272,9 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=True, 
         F_other[i] = hist.accumulators.WeightedSum()
 
         # define the scaling factor function
-        a, b, c, c_bin, d, e, f_bin, f_other, g, h = symbols("A B C C_bin D E F_bin F_other G H")
+        a, b, c, c_bin, d, e, f_bin, f_other, g, h = symbols(
+            "A B C C_bin D E F_bin F_other G H"
+        )
         if sum_var == "x" and approx:
             exp = (
                 f_bin
@@ -1259,16 +1288,7 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=True, 
                 * e**-4
             )
         elif sum_var == "x" and not approx:
-            exp = (
-                f_bin**2
-                * h**2
-                * d**2
-                * b**2
-                * g**-1
-                * c_bin**-1
-                * a**-1
-                * e**-4
-            )
+            exp = f_bin**2 * h**2 * d**2 * b**2 * g**-1 * c_bin**-1 * a**-1 * e**-4
         elif sum_var == "y":
             pass
 
@@ -1578,7 +1598,7 @@ def cutflow_table(
     from prettytable import PrettyTable
 
     prettytable = PrettyTable()
-    
+
     if len(selection_labels) == 0:
         selection_labels = [s.replace("cutflow_", "") for s in selections]
     prettytable.add_column("Selection", selection_labels)
@@ -1618,13 +1638,26 @@ def cutflow_plot(cutflow_dict, samples, selections, selection_labels: str = []):
 
     ax.legend(loc=(1.02, 0.0), fontsize="xx-small")
     hep.cms.label(ax=ax)
-    if len(selection_labels) == 0: # in the case these are not defined
+    if len(selection_labels) == 0:  # in the case these are not defined
         selection_labels = [s.replace("cutflow_", "") for s in selections]
-    ax.set_xticks(np.arange(len(selection_labels)) + 0.5, selection_labels, rotation=45, fontsize=10)
+    ax.set_xticks(
+        np.arange(len(selection_labels)) + 0.5,
+        selection_labels,
+        rotation=45,
+        fontsize=10,
+    )
 
     return fig, ax
 
-def make_n1_plots(plots:dict, cutflows:dict,  tag:str, density:bool = False, samples:list = [], stackedSamples:list = []):
+
+def make_n1_plots(
+    plots: dict,
+    cutflows: dict,
+    tag: str,
+    density: bool = False,
+    samples: list = [],
+    stackedSamples: list = [],
+):
     """
     Make n-1 plots (produced by make_hists.py as "tag_full" prior to each selection).
     :param plots: dictionary of histograms (dimension: sample x plot)
@@ -1638,11 +1671,15 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, density:bool = False, sam
     """
 
     figs = []
-    allSamples =  samples + stackedSamples
+    allSamples = samples + stackedSamples
     if len(allSamples) == 0:
-        raise ValueError("No samples provided. Provide at least one samples or one stackedSamples.")
-    
-    n1_plots = [k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag+"_beforeCut")]
+        raise ValueError(
+            "No samples provided. Provide at least one samples or one stackedSamples."
+        )
+
+    n1_plots = [
+        k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_beforeCut")
+    ]
 
     cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
     for cut in cuts:
@@ -1651,8 +1688,8 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, density:bool = False, sam
 
     samples_color = plt.cm.rainbow(np.linspace(0, 1, len(samples)))
     for p in n1_plots:
-        
-        var = p[:-1].replace("_"+tag+"_beforeCut", "")
+
+        var = p[:-1].replace("_" + tag + "_beforeCut", "")
         cut_val = None
         for cut in cuts:
             if var in cut:
@@ -1663,14 +1700,42 @@ def make_n1_plots(plots:dict, cutflows:dict,  tag:str, density:bool = False, sam
 
         if cut_val is None:
             print("Could not find a cutflow for", var)
-            
+
         fig = plt.figure()
         ax = fig.subplots()
-        if len(stackedSamples) > 0: hep.histplot([plots[s][p] for s in stackedSamples], label=stackedSamples, density=density, stack=True, histtype='fill', ax=ax)
-        if len(samples) > 0: hep.histplot([plots[s][p] for s in samples], label=samples, density=density, stack=False, histtype='step', linestyle='dashed', linewidth=3, color=samples_color, ax=ax)
-        if cut_val: ax.vlines(cut_val, 0, ax.get_ylim()[1], color='black', linestyle='--', linewidth=4, label=f"Cut value: {cut_val}")
+        if len(stackedSamples) > 0:
+            hep.histplot(
+                [plots[s][p] for s in stackedSamples],
+                label=stackedSamples,
+                density=density,
+                stack=True,
+                histtype="fill",
+                ax=ax,
+            )
+        if len(samples) > 0:
+            hep.histplot(
+                [plots[s][p] for s in samples],
+                label=samples,
+                density=density,
+                stack=False,
+                histtype="step",
+                linestyle="dashed",
+                linewidth=3,
+                color=samples_color,
+                ax=ax,
+            )
+        if cut_val:
+            ax.vlines(
+                cut_val,
+                0,
+                ax.get_ylim()[1],
+                color="black",
+                linestyle="--",
+                linewidth=4,
+                label=f"Cut value: {cut_val}",
+            )
         ax.set_yscale("log")
-        ax.legend(fontsize='xx-small', loc=(1.05, 0))
+        ax.legend(fontsize="xx-small", loc=(1.05, 0))
         figs.append(fig)
 
     return figs

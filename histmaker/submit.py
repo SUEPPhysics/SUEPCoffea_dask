@@ -16,21 +16,22 @@ Date: July 2023
 
 import argparse
 import getpass
+import logging
 import multiprocessing
 import os
+import re
 import shlex
 import subprocess
 import sys
 from multiprocessing.pool import Pool, ThreadPool
-import re
+
 import numpy as np
-import logging
 
 sys.path.append("..")
 from make_hists import makeParser as makeHistsParser
 from merge_ntuples import makeParser as makeMergeParser
-from plotting.plot_utils import check_proxy
 
+from plotting.plot_utils import check_proxy
 
 # SLURM script template
 slurm_script_template = """#!/bin/bash
@@ -51,16 +52,19 @@ hostname
 {cmd}
 """
 
+
 def submit_slurm_job(slurm_script_file):
-    result = subprocess.run(["sbatch", slurm_script_file], capture_output=True, text=True)
-    match = re.search(r'Submitted batch job (\d+)', result.stdout)
+    result = subprocess.run(
+        ["sbatch", slurm_script_file], capture_output=True, text=True
+    )
+    match = re.search(r"Submitted batch job (\d+)", result.stdout)
     if match:
         job_id = match.group(1)
         logging.info("Submitted batch job " + str(job_id))
         return job_id
     else:
         return None
-    
+
 
 def call_process(cmd, work_dir):
     """This runs in a separate thread."""
@@ -133,7 +137,7 @@ logging.info("Working in " + work_dir_base)
 work_dir = work_dir_base + "/SUEPCoffea_dask/histmaker/"
 
 # Set up processing-specific options
-if options.method == "slurm":    
+if options.method == "slurm":
     log_dir = "/work/submit/{}/SUEP/logs/slurm_{}_{}/".format(
         os.environ["USER"],
         options.code,
@@ -158,17 +162,19 @@ with open(options.input) as f:
     samples = f.read().splitlines()
 
 # Making sure that the proxy is good
-if options.code == 'merge' or options.xrootd:
+if options.code == "merge" or options.xrootd:
     lifetime = check_proxy(time_min=10)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 # Loop over samples
 job_ids = []
 for i, sample in enumerate(samples):
-    
-    if "/" in sample: sample = sample.split("/")[-1]
-    if sample.endswith(".root"): sample = sample.replace(".root", "")
-    
+
+    if "/" in sample:
+        sample = sample.split("/")[-1]
+    if sample.endswith(".root"):
+        sample = sample.replace(".root", "")
+
     logging.info(f"Processing sample {i+1}/{len(samples)}: {sample}")
 
     # skip if the output file already exists, unless you --force
@@ -188,7 +194,7 @@ for i, sample in enumerate(samples):
             tag=options.tag,
             isMC=options.isMC,
             redirector=options.redirector,
-            path=options.path
+            path=options.path,
         )
 
     elif options.code == "plot":
@@ -291,7 +297,9 @@ while true; do
     echo "Sleeping for 1 minute"
     sleep 60
 done
-""".format(log_dir=log_dir, job_ids=" ".join(job_ids), work_dir_base=work_dir_base)
+""".format(
+        log_dir=log_dir, job_ids=" ".join(job_ids), work_dir_base=work_dir_base
+    )
 
     with open(f"{log_dir}cleanup.sh", "w") as f:
         f.write(cleanup_script)

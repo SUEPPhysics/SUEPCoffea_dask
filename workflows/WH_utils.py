@@ -30,32 +30,43 @@ def getGenModel(events):
     return genModels
 
 
-def getAK4Jets(Jets, lepton=None):
+def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
     """
     Create awkward array of jets. Applies basic selections.
     Returns: awkward array of dimensions (events x jets x 4 momentum)
     """
-    Jets_awk = ak.zip(
-        {
-            "pt": Jets.pt,
-            "eta": Jets.eta,
-            "phi": Jets.phi,
-            "mass": Jets.mass,
-            "btag": Jets.btagDeepFlavB,
-            "jetId": Jets.jetId,
-            "hadronFlavour": Jets.hadronFlavour,
-            "qgl": Jets.qgl,
-        },
-        with_name="Momentum4D",
-    )
-    # jet pt cut, eta cut
-    jet_awk_Cut = (
-        (Jets_awk.pt > 30)
-        & (abs(Jets_awk.eta) < 2.4)
-    )
+    if isMC:
+        Jets_awk = ak.zip(
+            {
+                "pt": Jets.pt,
+                "eta": Jets.eta,
+                "phi": Jets.phi,
+                "mass": Jets.mass,
+                "btag": Jets.btagDeepFlavB,
+                "jetId": Jets.jetId,
+                "hadronFlavour": Jets.hadronFlavour,
+                "qgl": Jets.qgl,
+            },
+            with_name="Momentum4D",
+        )
+    else:
+        Jets_awk = ak.zip(
+            {
+                "pt": Jets.pt,
+                "eta": Jets.eta,
+                "phi": Jets.phi,
+                "mass": Jets.mass,
+                "btag": Jets.btagDeepFlavB,
+                "jetId": Jets.jetId,
+                "qgl": Jets.qgl,
+            },
+            with_name="Momentum4D",
+        )
+    # jet pt cut, eta cut, and minimum separation from lepton
+    jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
     # and minimum separation from lepton
     if lepton is not None:
-        jet_awk_Cut = (jet_awk_Cut & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4))
+        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
     Jets_correct = Jets_awk[jet_awk_Cut]
 
     return Jets_correct
@@ -252,32 +263,51 @@ def getPhotons(events, isMC: bool = 1):
     """
     Get photons.
     """
-
-    photons = ak.zip(
-        {
-            "pt": events.Photon.pt,
-            "eta": events.Photon.eta,
-            "phi": events.Photon.phi,
-            "mass": events.Photon.mass,
-            "pixelSeed": events.Photon.pixelSeed,
-            "electronVeto": events.Photon.electronVeto,
-            "hoe": events.Photon.hoe,
-            "r9": events.Photon.r9,
-            "mvaID": events.Photon.mvaID,
-            "pfRelIso03_all": events.Photon.pfRelIso03_all,
-            "cutBased": events.Photon.cutBased,
-            "isScEtaEB": events.Photon.isScEtaEB,
-            "isScEtaEE": events.Photon.isScEtaEE,
-            "genPartFlav ": events.Photon.genPartFlav if isMC else None,
-        },
-        with_name="Momentum4D",
-    )
+    if isMC:
+        photons = ak.zip(
+            {
+                "pt": events.Photon.pt,
+                "eta": events.Photon.eta,
+                "phi": events.Photon.phi,
+                "mass": events.Photon.mass,
+                "pixelSeed": events.Photon.pixelSeed,
+                "electronVeto": events.Photon.electronVeto,
+                "hoe": events.Photon.hoe,
+                "r9": events.Photon.r9,
+                "mvaID": events.Photon.mvaID,
+                "pfRelIso03_all": events.Photon.pfRelIso03_all,
+                "cutBased": events.Photon.cutBased,
+                "isScEtaEB": events.Photon.isScEtaEB,
+                "isScEtaEE": events.Photon.isScEtaEE,
+                "genPartFlav ": events.Photon.genPartFlav,
+            },
+            with_name="Momentum4D",
+        )
+    else:
+        photons = ak.zip(
+            {
+                "pt": events.Photon.pt,
+                "eta": events.Photon.eta,
+                "phi": events.Photon.phi,
+                "mass": events.Photon.mass,
+                "pixelSeed": events.Photon.pixelSeed,
+                "electronVeto": events.Photon.electronVeto,
+                "hoe": events.Photon.hoe,
+                "r9": events.Photon.r9,
+                "mvaID": events.Photon.mvaID,
+                "pfRelIso03_all": events.Photon.pfRelIso03_all,
+                "cutBased": events.Photon.cutBased,
+                "isScEtaEB": events.Photon.isScEtaEB,
+                "isScEtaEE": events.Photon.isScEtaEE,
+            },
+            with_name="Momentum4D",
+        )
 
     cutPhotons = (
-        (events.Photon.mvaID_WP90) & 
-        (abs(events.Photon.eta) <= 2.5) & 
-        (events.Photon.electronVeto) &
-        (events.Photon.pt >= 15)
+        (events.Photon.mvaID_WP90)
+        & (abs(events.Photon.eta) <= 2.5)
+        & (events.Photon.electronVeto)
+        & (events.Photon.pt >= 15)
     )
 
     photons = photons[cutPhotons]
@@ -312,11 +342,16 @@ def genSelection(events, sample: str):
     return events
 
 
-def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
+def triggerSelection(
+    events, sample: str, era: str, isMC: bool, output=None, out_label=None
+):
     """
     Applies trigger, returns events.
     Trigger single muon and EGamma; optionally updates the cutflows.
     """
+
+    # muon trigger
+    triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
 
     # photon trigger
     if era == "2016" or era == "2016apv":
@@ -324,20 +359,45 @@ def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
     elif era == "2017" or era == "2018":
         triggerPhoton = events.HLT.Photon200
 
-    # electron trigger
-    if era == "2017" and (not isMC):
+    if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
         # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
-        # TODO: need to implement this
-        triggerElectron = events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        # remove events in the SingleMuon dataset
+        events = events[~triggerSingleMuon]
+        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        # Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
+        filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
+        events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
+        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        # grab prefiltered events
+        trig_obs = getTrigObj(events)
+        muons, electrons, leptons = getLeptons(events)
+        dR = ak.Array([[] for _ in range(len(events))])
+
+        for i in range(
+            ak.max(ak.num(trig_obs))
+        ):  # only loop through the trigger objects that pass the filters
+            mask = ak.mask(trig_obs, (ak.num(trig_obs) > i))
+            dR_masked = ak.Array(electrons.deltaR(mask[:, i]))
+            dR_masked = ak.Array(x if x is not None else [] for x in dR_masked)
+            dR = ak.concatenate([dR, dR_masked], axis=-1)
+
+        # remove events that do not have a trig object within dR of 0.1 of an electron
+        dR = ak.where(ak.num(dR, axis=-1) == 0, ak.Array([[1.0]]), dR)
+        events = events[(ak.min(dR, axis=-1) < 0.1) | temp_trig]
+
+        # Do cutflow and return events
+        if output:
+            output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
+        return events
+
     else:
         triggerElectron = (
             events.HLT.Ele32_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
         )
-
-    # muon trigger
-    triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
-
     # this is just for cutflow
     if output:
         output["cutflow_triggerSingleMuon" + out_label] += ak.sum(
@@ -347,7 +407,17 @@ def triggerSelection(events, era: str, isMC: bool, output=None, out_label=None):
             events[triggerPhoton | triggerElectron].genWeight
         )
 
-    events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+    # Apply selection on events
+    if isMC:
+        events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+    else:
+        if "SingleMuon" in sample:
+            events = events[triggerSingleMuon]
+        elif "SingleElectron" or "EGamma" in sample:
+            events = events[(triggerElectron | triggerPhoton) & (~triggerSingleMuon)]
+        else:
+            events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+
     return events
 
 
@@ -482,6 +552,7 @@ def W_kinematics(lepton, MET):
 
     return W_mt[:, 0], W_pt[:, 0], W_phi[:, 0]
 
+
 def getTopMass(lepton, MET, jets):
     """
     Calculate the top mass for each event.
@@ -492,17 +563,19 @@ def getTopMass(lepton, MET, jets):
     # get the W for each event (defined only in the transverse plane)
     W = make_Wt_4v(lepton, MET)
 
-    # project the jets onto the transverse plane    
+    # project the jets onto the transverse plane
     jets_T = projectOnTransversePlane(jets)
 
     # make an awkward array of W bosons of the same shape as the jets (the same W boson in each event is repeated N times, where N = # of jets in that event)
-    Ws = ak.cartesian({"W": W, "jets_T": jets_T}).W   
+    Ws = ak.cartesian({"W": W, "jets_T": jets_T}).W
 
     # make the top hypotheses by considering each combination of W and jets_T
     topHypotheses = Ws + jets_T
     topMassHypotheses = topHypotheses.mass
     bestTopMassArg = ak.from_regular(
-        ak.argmin(np.abs(topMassHypotheses - M_TOP), axis=1, keepdims=True, mask_identity=True)
+        ak.argmin(
+            np.abs(topMassHypotheses - M_TOP), axis=1, keepdims=True, mask_identity=True
+        )
     )
     bestTopMass = ak.flatten(topMassHypotheses[bestTopMassArg])
     return bestTopMass
