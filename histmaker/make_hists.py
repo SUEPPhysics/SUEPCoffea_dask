@@ -735,12 +735,12 @@ def main():
     metadata = {
         "ntuple_tag": options.tag,
         "analysis": options.channel,
-        "scouting": options.scouting,
-        "isMC": options.isMC,
+        "scouting": int(options.scouting),
+        "isMC": int(options.isMC),
         "era": options.era,
         "sample": sample,
         "xsec": xsection,
-        "gensumweight": total_gensumweight,
+        "gensumweight": int(total_gensumweight),
         "nfiles": ntotal,
         "nfailed": nfailed,
     }
