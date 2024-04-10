@@ -168,17 +168,17 @@ if __name__ == "__main__":
             allpoints += r
     allpoints = list(dict.fromkeys(allpoints))
     if options.hadd:
-      print("Will now hadd the split chunks")
-      if options.jobs == 1:
-        for p in allpoints:
-          haddfiles([options.output, p])
-      else:
-        allInputs = [[options.output, p] for p in allpoints]
-        with closing(Pool(options.jobs)) as p:
-          retlist1 = p.map_async(haddfiles, allInputs, 1)
-          while not retlist1.ready():
-            time.sleep(0.001)
-          retlist1 = retlist1.get()
-          p.close()
-          p.join()
-          p.terminate()
+        print("Will now hadd the split chunks")
+        if options.jobs == 1:
+            for p in allpoints:
+                haddfiles([options.output, p])
+        else:
+            allInputs = [[options.output, p] for p in allpoints]
+            with closing(Pool(options.jobs)) as p:
+                retlist1 = p.map_async(haddfiles, allInputs, 1)
+                while not retlist1.ready():
+                    time.sleep(0.001)
+                retlist1 = retlist1.get()
+                p.close()
+                p.join()
+                p.terminate()
