@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-'''
+"""
 Split SUEP samples by complete parameter points (mPhi, T, decay mode).
 
 Author: Carlos Cid
-'''
+"""
+
 
 import ROOT
 import os

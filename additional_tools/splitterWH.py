@@ -1,17 +1,14 @@
-import argparse
-import datetime
-import getpass
-import logging
-import os
-import shutil
-import subprocess
-import sys
 
 """
 Run splitTrees.py on unsplit SUEP samples on T2
 
 Author: Pietro Lugato
 """
+
+
+import argparse
+import subprocess
+
 
 def main():
     parser = argparse.ArgumentParser(description="signal splitting inputs")
@@ -22,6 +19,14 @@ def main():
         default="data.txt",
         help="input datasets",
         required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default="/data/submit/pmlugato/SUEP/split_signals_temp/",
+        help="output directory",
+        required=False
     )
     options = parser.parse_args()
 
@@ -50,7 +55,7 @@ def main():
             with open('temp_list.txt', 'w') as outfile:
                 outfile.write('\n'.join(str(i) for i in full_path_root_files))
 
-            splitTrees_run = subprocess.run(["python", "splitTrees.py", "--inputFiles", "temp_list.txt", "--output", "/data/submit/pmlugato/SUEP/split_signals_temp/", "--jobs", "10"])
+            splitTrees_run = subprocess.run(["python", "splitTrees.py", "--inputFiles", "temp_list.txt", "--output", options.output, "--jobs", "10"])
     
 if __name__ == "__main__":
     main()
