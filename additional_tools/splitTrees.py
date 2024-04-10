@@ -3,12 +3,11 @@
 """
 Split SUEP samples by complete parameter points (mPhi, T, decay mode).
 
-Author: Carlos Cid
+Author: Carlos Erice Cid
 """
 
 
 import os
-
 import ROOT
 
 
