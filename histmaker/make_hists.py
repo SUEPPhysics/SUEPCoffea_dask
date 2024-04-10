@@ -348,9 +348,6 @@ def main():
                     "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
                     "W_SUEP_BV < 2",
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    # "ngood_ak4jets < 4",
-                    # "nak4jets_outsideSUEP < 2",
-                    # "nphotons == 0",
                 ],
                 "new_variables": [
                     [
@@ -394,8 +391,6 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "W_phi_from_MET",
-                            "SUEP_pt_HighestPT",
-                            "W_pT_from_MET",
                         ],
                     ],
                     [
@@ -404,14 +399,12 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "MET_phi",
-                            "SUEP_pt_HighestPT",
-                            "MET_pt",
                         ],
                     ],
                     [
                         "deltaPhi_lepton_MET",
                         fill_utils.deltaPhi_x_y,
-                        ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"],
+                        ["lepton_phi", "MET_phi"],
                     ],
                     [
                         "deltaPhi_lepton_SUEP",
@@ -419,8 +412,6 @@ def main():
                         [
                             "lepton_phi",
                             "SUEP_phi_HighestPT",
-                            "lepton_pt",
-                            "SUEP_pt_HighestPT",
                         ],
                     ],
                     [
@@ -429,8 +420,6 @@ def main():
                         [
                             "minDeltaPhiMETJet_phi",
                             "SUEP_phi_HighestPT",
-                            "minDeltaPhiMETJet_pt",
-                            "SUEP_pt_HighestPT",
                         ],
                     ],
                     [
@@ -439,8 +428,6 @@ def main():
                         [
                             "minDeltaPhiMETJet_phi",
                             "MET_phi",
-                            "minDeltaPhiMETJet_pt",
-                            "MET_pt",
                         ],
                     ],
                     [
@@ -449,8 +436,6 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "jet1_phi",
-                            "SUEP_pt_HighestPT",
-                            "jet1_pT",
                         ],
                     ],
                     [
@@ -459,19 +444,17 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "bjet_phi",
-                            "SUEP_pt_HighestPT",
-                            "bjet_pt",
                         ],
                     ],
                     [
                         "deltaPhi_jet1_bjet",
                         fill_utils.deltaPhi_x_y,
-                        ["jet1_phi", "bjet_phi", "jet1_pT", "bjet_pt"],
+                        ["jet1_phi", "bjet_phi"],
                     ],
                     [
                         "deltaPhi_lepton_bjet",
                         fill_utils.deltaPhi_x_y,
-                        ["lepton_phi", "bjet_phi", "lepton_pt", "bjet_pt"],
+                        ["lepton_phi", "bjet_phi"],
                     ],
                     [
                         "nak4jets_outsideSUEP",
@@ -496,9 +479,6 @@ def main():
                     "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
                     "W_SUEP_BV < 2",
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    # "ngood_ak4jets < 4",
-                    # "nak4jets_outsideSUEP < 2",
-                    # "nphotons == 0",
                 ],
                 "new_variables": [
                     [
@@ -542,8 +522,6 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "W_phi_from_MET",
-                            "SUEP_pt_HighestPT",
-                            "W_pT_from_MET",
                         ],
                     ],
                     [
@@ -552,14 +530,12 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "MET_phi",
-                            "SUEP_pt_HighestPT",
-                            "MET_pt",
                         ],
                     ],
                     [
                         "deltaPhi_lepton_MET",
                         fill_utils.deltaPhi_x_y,
-                        ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"],
+                        ["lepton_phi", "MET_phi"],
                     ],
                     [
                         "deltaPhi_lepton_SUEP",
@@ -567,8 +543,6 @@ def main():
                         [
                             "lepton_phi",
                             "SUEP_phi_HighestPT",
-                            "lepton_pt",
-                            "SUEP_pt_HighestPT",
                         ],
                     ],
                     [
@@ -577,8 +551,6 @@ def main():
                         [
                             "minDeltaPhiMETJet_phi",
                             "SUEP_phi_HighestPT",
-                            "minDeltaPhiMETJet_pt",
-                            "SUEP_pt_HighestPT",
                         ],
                     ],
                     [
@@ -587,8 +559,6 @@ def main():
                         [
                             "minDeltaPhiMETJet_phi",
                             "MET_phi",
-                            "minDeltaPhiMETJet_pt",
-                            "MET_pt",
                         ],
                     ],
                     [
@@ -597,8 +567,6 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "jet1_phi",
-                            "SUEP_pt_HighestPT",
-                            "jet1_pT",
                         ],
                     ],
                     [
@@ -607,19 +575,17 @@ def main():
                         [
                             "SUEP_phi_HighestPT",
                             "bjet_phi",
-                            "SUEP_pt_HighestPT",
-                            "bjet_pt",
                         ],
                     ],
                     [
                         "deltaPhi_jet1_bjet",
                         fill_utils.deltaPhi_x_y,
-                        ["jet1_phi", "bjet_phi", "jet1_pT", "bjet_pt"],
+                        ["jet1_phi", "bjet_phi"],
                     ],
                     [
                         "deltaPhi_lepton_bjet",
                         fill_utils.deltaPhi_x_y,
-                        ["lepton_phi", "bjet_phi", "lepton_pt", "bjet_pt"],
+                        ["lepton_phi", "bjet_phi"],
                     ],
                     [
                         "nak4jets_outsideSUEP",

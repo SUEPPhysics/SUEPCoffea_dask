@@ -528,25 +528,22 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
     return df
 
 
-def deltaPhi_x_y(xphi, yphi, xpt, ypt):
+def deltaPhi_x_y(xphi, yphi):
 
     # cast inputs to numpy arrays
-    xpt = np.array(xpt)
-    ypt = np.array(ypt)
-    xphi = np.array(xphi)
     yphi = np.array(yphi)
 
-    x_v = vector.arr({"pt": xpt, "phi": xphi})
-    y_v = vector.arr({"pt": ypt, "phi": yphi})
+    x_v = vector.arr({"pt": np.ones(len(xphi)), "phi": xphi})
+    y_v = vector.arr({"pt": np.ones(len(yphi)), "phi": yphi})
 
     signed_dphi = x_v.deltaphi(y_v)
     abs_dphi = np.abs(signed_dphi.tolist())
 
     # deal with the cases where phi was initialized to a moot value like -999
-    abs_dphi[(xphi > 2 * np.pi)] = -999
+    abs_dphi[xphi > 2 * np.pi] = -999
     abs_dphi[yphi > 2 * np.pi] = -999
-    abs_dphi[xpt < -2 * np.pi] = -999
-    abs_dphi[ypt < -2 * np.pi] = -999
+    abs_dphi[xphi < -2 * np.pi] = -999
+    abs_dphi[yphi < -2 * np.pi] = -999
 
     return abs_dphi
 
