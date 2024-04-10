@@ -76,7 +76,7 @@ def get_git_info(path="."):
 
 
 def getXSection(
-    dataset: str, year, path:str = "../data/", failOnKeyError:bool = True
+    dataset: str, year, path: str = "../data/", failOnKeyError: bool = True
 ) -> float:
     xsection = 1
 
