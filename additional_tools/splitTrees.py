@@ -44,7 +44,7 @@ def splitfile(inputs):
 
     # Now we reactivate all branches so we save the whole tree!
     t.SetBranchStatus("*",1)
-    for drop in options.drop: t.SetBranchStatus(drop,0) # Except thos we don't want
+    for drop in options.drop: t.SetBranchStatus(drop,0) # Except those we don't want
     for keep in options.keep: t.SetBranchStatus(keep,1) # Just in case we want to do some regexp with the previous step
 
     # The actual saving
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         allpoints += r
     allpoints = list(dict.fromkeys(allpoints))
     if options.hadd:
-      print("Will now hadd the splitted chunks")
+      print("Will now hadd the split chunks")
       if options.jobs == 1:
         for p in allpoints:
           haddfiles([options.output, p])
