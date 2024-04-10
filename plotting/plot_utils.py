@@ -14,6 +14,7 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
+import sympy
 import uproot
 from sympy import diff, sqrt, symbols
 
@@ -21,43 +22,90 @@ sys.path.append("..")
 from histmaker import fill_utils
 
 default_colors = {
-    "125": "cyan",
-    "200": "blue",
-    "300": "lightseagreen",
-    "400": "green",
-    "500": "darkgreen",
-    "600": "lawngreen",
-    "700": "goldenrod",
-    "800": "orange",
-    "900": "sienna",
-    "1000": "red",
+    "mS125": "cyan",
+    "mS200": "blue",
+    "mS300": "lightseagreen",
+    "mS400": "green",
+    "mS500": "darkgreen",
+    "mS600": "lawngreen",
+    "mS700": "goldenrod",
+    "mS800": "orange",
+    "mS900": "sienna",
+    "mS1000": "red",
     "data": "maroon",
     "QCD": "slateblue",
     "MC": "slateblue",
     "TTJets": "midnightblue",
+    "VVV": "green",
+    "VG": "slategray",
+    "VV": "brown",
+    "VH": "pink",
+    "WJets": "blue",
+    "DYJetsToLL": "darktorquoise",
+    "ttX": "orange",
+    "tt": "red",
+    "ST": "gold",
 }
 
 
 def getColor(sample):
-    if "mS" in sample:
-        sample = sample[sample.find("mS") + 2 :]
-        sample = sample.split("_")[0]
+
+    if sample in default_colors.keys():
         return default_colors[sample]
 
-    if "QCD" in sample:
+    if "GluGluToSUEP" and "mS" in sample:
+        sample = sample[sample.find("mS") + 2 :]
+        sample = sample.split("_")[0]
+        return default_colors["mS" + sample]
+
+    elif "QCD" in sample:
         return default_colors["QCD"]
 
-    if "data" in sample.lower():
+    elif "data" in sample.lower():
         return default_colors["data"]
 
-    if "ttjets" in sample.lower():
+    elif "ttjets" in sample.lower():
         return default_colors["TTJets"]
 
-    if "MC" in sample:
+    elif "VVV" in sample:
+        return default_colors["VVV"]
+
+    elif "VG" in sample:
+        return default_colors["VG"]
+
+    elif "VV" in sample:
+        return default_colors["VV"]
+
+    elif "ST" in sample:
+        return default_colors["ST"]
+
+    elif "ttX" in sample:
+        return default_colors["ttX"]
+
+    elif "WJetsToLNu" in sample:
+        return default_colors["WJets"]
+
+    elif "DYJetsToLL" in sample:
+        return default_colors["DYJetsToLL"]
+
+    elif "tt" in sample:
+        return default_colors["tt"]
+
+    elif "VH" in sample:
+        return default_colors["VH"]
+
+    elif "MC" in sample:
         return default_colors["MC"]
 
     else:
         return None
+
+
+def getColors(samples):
+    colors = []
+    for sample in samples:
+        colors.append(getColor(sample))
+    return colors
 
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
@@ -129,6 +177,8 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
             "Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed."
         )
 
+    print(f"Found lumi {lumi} and era {era}")
+
     return lumi, era
 
 
@@ -145,7 +195,7 @@ def getHistLists(plotDir, tag, filename, filters=None):
     return hists
 
 
-def formatSUEPNaming(file):
+def formatGluGluToSUEPNaming(file):
     tokens = file.split("_")
     temp = tokens[2]
     mS = tokens[3]
@@ -169,6 +219,27 @@ def formatSUEPNaming(file):
     return name
 
 
+def formatTTHToSUEPNaming(file):
+    tokens = file.split("_")
+
+    decay = tokens[1]
+    mS = tokens[2]
+    mD = tokens[3]
+    T = tokens[4]
+
+    T = T.replace("T", "")
+    T = "T" + str(float(T))
+
+    mD = mD.replace("MD", "")
+    mD = "MD" + str(float(mD))
+
+    mS = mS.replace("M", "")
+    mS = "MS" + str(float(mS))
+
+    name = "ttH-" + "_".join([mS, mD, T, decay])
+    return name
+
+
 def getSampleNameAndBin(sample_name):
     """
     From input sample, return a cleaned up sample name (var: bin),
@@ -189,9 +260,17 @@ def getSampleNameAndBin(sample_name):
         sample = "QCD_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif any([s in sample_name for s in ["TTJets", "TTTo2L2Nu", "TTToSemiLeptonic"]]):
+    elif any([s in sample_name for s in ["TTTo2L2Nu", "TTToSemiLeptonic"]]):
         sample = "tt"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif sample_name.startswith("TTJets_HT"):
+        sample = "TTJets_HT"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif sample_name.startswith("TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8"):
+        sample = "TTJets_incl"
+        bin = "TTJets_incl"
 
     elif any(
         [
@@ -203,6 +282,7 @@ def getSampleNameAndBin(sample_name):
                 "TTZToQQ",
                 "TTWJetsToQQ",
                 "TTZToLLNuNu",
+                "ttZJets",
             ]
         ]
     ):
@@ -217,24 +297,75 @@ def getSampleNameAndBin(sample_name):
         sample = "WJetsToLNu_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif "WJetsToLNu_Pt" in sample_name:
+    elif (
+        "WJetsToLNu_Pt" in sample_name
+        or "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name
+    ):
+        # merging of inclusive sample and pT-binned. This is done by LHE_Vpt > 100 selection in ntuplemaker on the inclusive sample,
+        # and is accounted for in its normalization via its kr factor.
         sample = "WJetsToLNu_Pt"
-        bin = sample_name.split(".root")[0].split("_Tune")[0]
+        bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
+        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
+            bin = "WJetsToLNu_incl"
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
         sample = "DYJetsToLL_LHEFilterPtZ"
         bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
 
-    elif "WJetsToLNu_HT" in sample_name:
-        sample = "WJetsToLNu_HT"
+    elif "DYJetsToLL_M" in sample_name:
+        sample = "DYJetsToLL_M"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                "WWTo1L1Nu2Q_4f",
+                "WWTo2L2Nu",
+                "WZTo1L1Nu2Q_4f",
+                "WZTo1L3Nu_4f",
+                "WZTo2Q2L_mllmin4p0",
+                "WZTo3LNu_mllmin4p0",
+                "ZZTo2L2Nu",
+                "ZZTo2Q2L_mllmin4p0",
+                "ZZTo4L_TuneCP5",
+            ]
+        ]
+    ):
+        sample = "VV"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any([s in sample_name for s in ["ZZZ_TuneCP5_13TeV", "WWZ_4F_TuneCP5_13TeV"]]):
+        sample = "VVV"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any([s in sample_name for s in ["WGToLNuG", "ZGToLLG_01J_5f"]]):
+        sample = "VG"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
+    elif any(
+        [
+            s in sample_name
+            for s in [
+                "WminusH_HToBB_WToLNu_M-125",
+                "WplusH_HToBB_WToLNu_M-125",
+                "VHToNonbb_M125_TuneCP5_13TeV-amcatnloFXFX_madspin_pythia8",
+            ]
+        ]
+    ):
+        sample = "VH"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif "JetHT+Run" in sample_name or "ScoutingPFHT" in sample_name:
         sample = "data"
+        bin = sample_name.split("-")[0]
+
+    elif sample_name.startswith("ttHpythia"):  # private ttH samples
+        sample = formatTTHToSUEPNaming(sample_name)
         bin = None
 
-    elif "SUEP" in sample_name:
-        sample = formatSUEPNaming(sample_name)
+    elif "GluGluToSUEP" in sample_name:  # ggF samples
+        sample = formatGluGluToSUEPNaming(sample_name)
         bin = None
 
     else:
@@ -310,7 +441,7 @@ def loader(
     auto_lumi=True,  # once everyone starts making histograms with metadata, these can be dropped
     scouting=False,  # once everyone starts making histograms with metadata, these can be dropped
     by_bin=False,
-    by_year=True,
+    by_year=False,
     xsec_SUEP=True,
     load_cutflows=False,
     verbose=False,
@@ -347,7 +478,7 @@ def loader(
 
         # sets the lumi based on year
         if file_metadata and (year is None) and ("isMC" in file_metadata.keys()):
-            if file_metadata["isMC"]:
+            if int(file_metadata["isMC"]):
                 lumi = getLumi(
                     file_metadata["era"], bool(float(file_metadata["scouting"]))
                 )
@@ -358,6 +489,8 @@ def loader(
             lumi, era = findLumiAndEra(
                 year, auto_lumi, infile_name, scouting
             )  # once everyone starts making histograms with metadata, this can be dropped
+        if verbose:
+            print("Using lumi", lumi, "and era", era)
         norm *= lumi
 
         # get the normalization factor for SUEP samples
@@ -366,14 +499,20 @@ def loader(
             if "SUEP" in sample_name:
                 # xsec is already apply in make_hists.py for non SUEP samples
                 xsec = fill_utils.getXSection(sample_name, year=era)
+                if verbose:
+                    print("Applying xsec", xsec)
                 norm *= xsec
 
         # get the sample name and the bin name
         # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
         sample, bin = getSampleNameAndBin(infile_name)
+        if verbose:
+            print("Found sample", sample)
+            if by_bin:
+                print("and bin", bin)
 
         samplesToAdd = [sample]
-        if by_bin and (bin is not None):
+        if by_bin and (bin is not None) and (bin != sample):
             samplesToAdd.append(bin)
         if by_year:
             samplesToAdd.append("_".join([sample, era]))
@@ -398,20 +537,15 @@ def openHistFile(infile_name):
     return hists, metadata
 
 
-def combineMCSamples(plots, year=None, samples=["QCD_HT", "TTJets"]):
-    assert len(samples) > 0
-    if year:
-        year_tag = str(year)
-    else:
-        year_tag = ""
-    plots["MC" + year_tag] = {}
-    for key in plots[samples[0] + "" + year_tag].keys():
+def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
+    plots[new_tag] = {}
+    for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):
             if i == 0:
-                plots["MC" + year_tag][key] = plots[sample + year_tag][key].copy()
+                plots[new_tag][key] = plots[sample][key].copy()
             else:
                 try:
-                    plots["MC" + year_tag][key] += plots[sample + year_tag][key].copy()
+                    plots[new_tag][key] += plots[sample][key].copy()
                 except KeyError:
                     print(
                         f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping."
@@ -585,13 +719,13 @@ def plot_ratio(
     """
 
     # Set up variables for the stacked histogram
-    fig = plt.figure()
+    fig = plt.figure(figsize=(16, 12))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
     if density:
-        for h in hlist:
-            h /= h.sum().value
+        for i, h in enumerate(hlist):
+            hlist[i] = h.copy() / h.sum().value
 
     if labels is None:
         labels = [None] * len(hlist)
@@ -1044,76 +1178,104 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
     return SR, SR_exp
 
 
-def ABCD_9regions(hist_abcd, xregions, yregions, sum_var="x", return_all=False):
+def make_ABCD_9regions(hist_abcd, xregions, yregions, sum_var="X"):
     if sum_var == "x":
-        A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
-        B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
-        C = hist_abcd[xregions[0] : xregions[1] : sum, yregions[2] : yregions[3]]
-        D = hist_abcd[xregions[1] : xregions[2] : sum, yregions[0] : yregions[1]]
-        E = hist_abcd[xregions[1] : xregions[2] : sum, yregions[1] : yregions[2]]
-        F = hist_abcd[xregions[1] : xregions[2] : sum, yregions[2] : yregions[3]]
-        G = hist_abcd[xregions[2] : xregions[3] : sum, yregions[0] : yregions[1]]
-        H = hist_abcd[xregions[2] : xregions[3] : sum, yregions[1] : yregions[2]]
-        SR = hist_abcd[xregions[2] : xregions[3] : sum, yregions[2] : yregions[3]]
-        SR_exp = (
-            F
-            * F.sum().value ** 3
-            * (G.sum().value * C.sum().value / A.sum().value)
-            * ((H.sum().value / E.sum().value) ** 4)
-            * (G.sum().value * F.sum().value / D.sum().value) ** -2
-            * (H.sum().value * C.sum().value / B.sum().value) ** -2
-        )
+        A = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        B = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        C = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        D = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        E = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        F = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        G = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        H = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        SR = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+
     elif sum_var == "y":
-        A = hist_abcd[xregions[0] : xregions[1], yregions[0] : yregions[1] : sum]
-        B = hist_abcd[xregions[0] : xregions[1], yregions[1] : yregions[2] : sum]
-        C = hist_abcd[xregions[0] : xregions[1], yregions[2] : yregions[3] : sum]
-        D = hist_abcd[xregions[1] : xregions[2], yregions[0] : yregions[1] : sum]
-        E = hist_abcd[xregions[1] : xregions[2], yregions[1] : yregions[2] : sum]
-        F = hist_abcd[xregions[1] : xregions[2], yregions[2] : yregions[3] : sum]
-        G = hist_abcd[xregions[2] : xregions[3], yregions[0] : yregions[1] : sum]
-        H = hist_abcd[xregions[2] : xregions[3], yregions[1] : yregions[2] : sum]
-        SR = hist_abcd[xregions[2] : xregions[3], yregions[2] : yregions[3] : sum]
-        SR_exp = (
-            H
-            * H.sum().value ** 3
-            * (G.sum().value * C.sum().value / A.sum().value)
-            * ((F.sum().value / E.sum().value) ** 4)
-            * (G.sum().value * F.sum().value / D.sum().value) ** -2
-            * (H.sum().value * C.sum().value / B.sum().value) ** -2
-        )
+        A = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        B = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        C = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        D = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        E = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        F = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
+        G = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        H = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        SR = hist_abcd[
+            xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]
+        ]
 
-    if return_all:
-        return A, B, C, D, E, F, G, H, SR, SR_exp
-    else:
-        return SR, SR_exp
+    return A, B, C, D, E, F, G, H, SR
 
 
-def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
+def ABCD_9regions_errorProp(
+    abcd, xregions, yregions, sum_var="x", approx=True, new_bins=None
+):
     """
-    Does 9 region ABCD using error propagation of the statistical
-    uncerantities of the regions. We need to scale histogram F or H
-    by some factor 'alpha' (defined in exp). For example, for F,
-    the new variance is:
-    variance = F_value**2 * sigma_alpha**2 + alpha**2 * F_variance
+    Does 9 region ABCD using error propagation of the statistical uncertanties of the regions.
     """
 
     if sum_var == "y":
         raise Exception("sum_var='y' not implemented yet")
 
-    A, B, C, D, E, F, G, H, SR, SR_exp = ABCD_9regions(
-        abcd, xregions, yregions, sum_var=sum_var, return_all=True
+    A, B, C, D, E, F, G, H, SR = make_ABCD_9regions(
+        abcd, xregions, yregions, sum_var=sum_var
     )
+    SR_exp = SR.copy()
+
+    # we need to rebin here in the case appox=True
+    if new_bins:
+        if sum_var == "x":
+            F = rebin_piecewise(F, new_bins)
+            C = rebin_piecewise(C, new_bins)
+            SR = rebin_piecewise(SR, new_bins)
+            SR_exp = rebin_piecewise(SR_exp, new_bins)
 
     preds, preds_err = [], []
     for i in range(len(F.values())):
         # this is needed in order to do error propagation correctly
         F_bin = F[i]
+        C_bin = C[i]
         F_other = F.copy()
         F_other[i] = hist.accumulators.WeightedSum()
 
         # define the scaling factor function
-        a, b, c, d, e, f_bin, f_other, g, h = symbols("A B C D E F_bin F_other G H")
-        if sum_var == "x":
+        a, b, c, c_bin, d, e, f_bin, f_other, g, h = symbols(
+            "A B C C_bin D E F_bin F_other G H"
+        )
+        if sum_var == "x" and approx:
             exp = (
                 f_bin
                 * (f_other + f_bin)
@@ -1125,15 +1287,18 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
                 * a**-1
                 * e**-4
             )
+        elif sum_var == "x" and not approx:
+            exp = f_bin**2 * h**2 * d**2 * b**2 * g**-1 * c_bin**-1 * a**-1 * e**-4
         elif sum_var == "y":
             pass
 
         # defines lists of variables (sympy symbols) and accumulators (hist.sum())
-        variables = [a, b, c, d, e, f_bin, f_other, g, h]
+        variables = [a, b, c, c_bin, d, e, f_bin, f_other, g, h]
         accs = [
             A.sum(),
             B.sum(),
             C.sum(),
+            C_bin,
             D.sum(),
             E.sum(),
             F_bin,
@@ -1156,6 +1321,9 @@ def ABCD_9regions_errorProp(abcd, xregions, yregions, sum_var="x"):
         for var, acc in zip(variables, accs):
             variance = variance.subs(var, acc.value)
         sigma_alpha = variance
+
+        if type(alpha) != sympy.core.numbers.Float or alpha <= 0:
+            alpha = 0
 
         preds.append(alpha)
         preds_err.append(sigma_alpha)
@@ -1412,15 +1580,17 @@ def cutflow_table(
     cutflow_dict,
     samples,
     selections,
-    sig_figs=2,
-    efficiencies=False,
-    relative_efficiencies=False,
+    selection_labels: str = [],
+    sig_figs: int = 2,
+    efficiencies: bool = False,
+    relative_efficiencies: bool = False,
 ):
     """
     Create a table with the cutflow for each sample.
     :param cutflow_dict: dictionary of cutflows (dimension: sample x selection)
     :param samples: list of samples
     :param selections: list of selections
+    :param selection_labels: labels for the selections
     :param sig_figs: number of significant figures to round to
     :param efficiencies: if True, add efficiency columns
     :param relative_efficiencies: if True, add relative efficiency columns
@@ -1428,7 +1598,10 @@ def cutflow_table(
     from prettytable import PrettyTable
 
     prettytable = PrettyTable()
-    prettytable.add_column("Selection", selections)
+
+    if len(selection_labels) == 0:
+        selection_labels = [s.replace("cutflow_", "") for s in selections]
+    prettytable.add_column("Selection", selection_labels)
 
     table = make_cutflow_table(
         cutflow_dict, samples, selections, efficiencies, relative_efficiencies
@@ -1446,12 +1619,13 @@ def cutflow_table(
     return prettytable
 
 
-def cutflow_plot(cutflow_dict, samples, selections):
+def cutflow_plot(cutflow_dict, samples, selections, selection_labels: str = []):
     """
     Create a plot with the cutflow for each sample.
     :param cutflow_dict: dictionary of cutflows (dimension: sample x selection)
     :param samples: list of samples
     :param selections: selections to plot
+    :param selection_labels: labels for the selections
     """
     fig, ax = plt.subplots()
     ax.set_yscale("log")
@@ -1462,9 +1636,106 @@ def cutflow_plot(cutflow_dict, samples, selections):
     for sample, cutflow_this_sample in zip(samples, table):
         ax.stairs(cutflow_this_sample, label=sample)
 
-    ax.legend(loc=(1.02, 0.5))
+    ax.legend(loc=(1.02, 0.0), fontsize="xx-small")
     hep.cms.label(ax=ax)
-    labels = [s.replace("cutflow_", "") for s in selections]
-    ax.set_xticks(np.arange(len(labels)) + 0.5, labels, rotation=30, fontsize=12)
+    if len(selection_labels) == 0:  # in the case these are not defined
+        selection_labels = [s.replace("cutflow_", "") for s in selections]
+    ax.set_xticks(
+        np.arange(len(selection_labels)) + 0.5,
+        selection_labels,
+        rotation=45,
+        fontsize=10,
+    )
 
     return fig, ax
+
+
+def make_n1_plots(
+    plots: dict,
+    cutflows: dict,
+    tag: str,
+    density: bool = False,
+    samples: list = [],
+    stackedSamples: list = [],
+):
+    """
+    Make n-1 plots (produced by make_hists.py as "tag_full" prior to each selection).
+    :param plots: dictionary of histograms (dimension: sample x plot)
+    :param cutflows: dictionary of cutflows (dimension: sample x selection)
+    :param tag: tag to use for the n-1 plots
+    :param density: if True, plot densities
+    :param samples: list of samples to plot separately
+    :param stackedSamples: list of samples to stack
+    :param tag: tag to use for the n-1 plots
+    :return: list of figures
+    """
+
+    figs = []
+    allSamples = samples + stackedSamples
+    if len(allSamples) == 0:
+        raise ValueError(
+            "No samples provided. Provide at least one samples or one stackedSamples."
+        )
+
+    n1_plots = [
+        k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_beforeCut")
+    ]
+
+    cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
+    for cut in cuts:
+        cut_bits = cut.split("_")
+        cut_val = float(cut_bits[-2])
+
+    samples_color = plt.cm.rainbow(np.linspace(0, 1, len(samples)))
+    for p in n1_plots:
+
+        var = p[:-1].replace("_" + tag + "_beforeCut", "")
+        cut_val = None
+        for cut in cuts:
+            if var in cut:
+                cut_bits = cut.split("_")
+                cut_val = float(cut_bits[-2])
+                cut_op = str(cut_bits[-3])
+                break
+
+        if cut_val is None:
+            print("Could not find a cutflow for", var)
+
+        fig = plt.figure()
+        ax = fig.subplots()
+        if len(stackedSamples) > 0:
+            hep.histplot(
+                [plots[s][p] for s in stackedSamples],
+                label=stackedSamples,
+                density=density,
+                stack=True,
+                histtype="fill",
+                ax=ax,
+            )
+        if len(samples) > 0:
+            hep.histplot(
+                [plots[s][p] for s in samples],
+                label=samples,
+                density=density,
+                stack=False,
+                histtype="step",
+                linestyle="dashed",
+                linewidth=3,
+                color=samples_color,
+                ax=ax,
+            )
+        if cut_val:
+            ax.vlines(
+                cut_val,
+                0,
+                ax.get_ylim()[1],
+                color="black",
+                linestyle="--",
+                linewidth=4,
+                label=f"Cut value: {cut_val}",
+            )
+        ax.set_yscale("log")
+        ax.legend(fontsize="xx-small", loc=(1.05, 0))
+        figs.append(fig)
+
+    return figs

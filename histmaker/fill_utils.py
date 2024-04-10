@@ -6,8 +6,10 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 
+import awkward as ak
 import numpy as np
 import pandas as pd
+import vector
 
 
 def h5load(ifile: str, label: str):
@@ -70,13 +72,12 @@ def get_git_info(path="."):
     )
     diff = subprocess.check_output(["git", "diff"]).strip().decode("utf-8")
 
-    logging.debug(f"Current Commit: {commit}")
-    logging.debug(f"Git Diff:\n{diff}")
-
     return commit, diff
 
 
-def getXSection(dataset: str, year=None, path="../data/") -> float:
+def getXSection(
+    dataset: str, year, path: str = "../data/", failOnKeyError: bool = True
+) -> float:
     xsection = 1
 
     xsec_file = f"{path}/xsections_{year}.json"
@@ -90,7 +91,10 @@ def getXSection(dataset: str, year=None, path="../data/") -> float:
             logging.warning(
                 f"WARNING: I did not find the xsection for {dataset} in {xsec_file}. Check the dataset name and the relevant yaml file."
             )
-            return 1
+            if failOnKeyError:
+                raise KeyError(f"Could not find xsection for {dataset} in {xsec_file}")
+            else:
+                return 1
 
     return xsection
 
@@ -201,6 +205,7 @@ def prepare_DataFrame(
     blind: bool = True,
     isMC: bool = False,
     cutflow: dict = {},
+    output: dict = {},
 ) -> pd.DataFrame:
     """
     Applies blinding, selections, and makes new variables. See README.md for more details.
@@ -219,7 +224,8 @@ def prepare_DataFrame(
     if config.get("method_var"):
         if config["method_var"] not in df.columns:
             return None
-        df = df[~df[config["method_var"]].isnull()]
+        # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
+        df = df[(~df[config["method_var"]].isnull())].copy()
 
     # 2. blind
     if blind and not isMC:
@@ -234,7 +240,15 @@ def prepare_DataFrame(
 
     # 4. apply selections
     if "selections" in config.keys():
-        for sel in config["selections"]:
+
+        # store number of events passing using the event weights into the cutflow dict
+        cutflow_label = "cutflow_total"
+        if cutflow_label in cutflow.keys():
+            cutflow[cutflow_label] += np.sum(df["event_weight"])
+        else:
+            cutflow[cutflow_label] = np.sum(df["event_weight"])
+
+        for isel, sel in enumerate(config["selections"]):
             if (
                 type(sel) is str
             ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
@@ -245,10 +259,18 @@ def prepare_DataFrame(
                 raise Exception(
                     f"Trying to apply a cut on a variable {sel[0]} that does not exist in the DataFrame"
                 )
-            if type(sel[2]) is str and sel[2].isdigit():
+            if type(sel[2]) is str and is_number(sel[2]):
                 sel[2] = float(
                     sel[2]
                 )  # convert to float if the value to cut on is a number
+
+            # if the histogram is already initialized for this variable, make the N-1 histogram
+            histName = sel[0] + "_" + label_out
+            if histName in output.keys():
+                n1HistName = histName + "_beforeCut" + str(isel)
+                if n1HistName not in output.keys():
+                    output[n1HistName] = output[histName].copy()
+                output[n1HistName].fill(df[sel[0]], weight=df["event_weight"])
 
             # make the selection
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
@@ -265,6 +287,14 @@ def prepare_DataFrame(
     return df
 
 
+def is_number(s: str) -> bool:
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 def make_new_variable(
     df: pd.DataFrame, name: str, function: callable, *columns: list
 ) -> pd.DataFrame:
@@ -272,6 +302,7 @@ def make_new_variable(
     Make a new column in the DataFrame df by applying the function to the columns
     passed as *columns. The new column will be named 'name'.
     """
+
     df[name] = function(*[df[col] for col in columns])
     return df
 
@@ -495,3 +526,61 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
         )
     ]
     return df
+
+
+def deltaPhi_x_y(xphi, yphi):
+
+    # cast inputs to numpy arrays
+    yphi = np.array(yphi)
+
+    x_v = vector.arr({"pt": np.ones(len(xphi)), "phi": xphi})
+    y_v = vector.arr({"pt": np.ones(len(yphi)), "phi": yphi})
+
+    signed_dphi = x_v.deltaphi(y_v)
+    abs_dphi = np.abs(signed_dphi.tolist())
+
+    # deal with the cases where phi was initialized to a moot value like -999
+    abs_dphi[xphi > 2 * np.pi] = -999
+    abs_dphi[yphi > 2 * np.pi] = -999
+    abs_dphi[xphi < -2 * np.pi] = -999
+    abs_dphi[yphi < -2 * np.pi] = -999
+
+    return abs_dphi
+
+
+def balancing_var(xpt, ypt):
+
+    # cast inputs to numpy arrays
+    xpt = np.array(xpt)
+    ypt = np.array(ypt)
+
+    var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt)) * -999)
+
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    var[xpt < 0] = -999
+    var[ypt < 0] = -999
+
+    return var
+
+
+def vector_balancing_var(xphi, yphi, xpt, ypt):
+
+    # cast inputs to numpy arrays
+    xpt = np.array(xpt)
+    ypt = np.array(ypt)
+    xphi = np.array(xphi)
+    yphi = np.array(yphi)
+
+    x_v = vector.arr({"pt": xpt, "phi": xphi})
+    y_v = vector.arr({"pt": ypt, "phi": yphi})
+
+    var = np.where(ypt > 0, (x_v + y_v).pt / ypt, np.ones(len(xpt)) * -999)
+
+    if type(var) is ak.highlevel.Array:
+        var = var.to_numpy()
+
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    var[xpt < 0] = -999
+    var[ypt < 0] = -999
+
+    return var

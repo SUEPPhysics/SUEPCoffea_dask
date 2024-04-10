@@ -16,8 +16,10 @@ Date: July 2023
 
 import argparse
 import getpass
+import logging
 import multiprocessing
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -27,6 +29,7 @@ import numpy as np
 
 sys.path.append("..")
 from make_hists import makeParser as makeHistsParser
+from merge_ntuples import makeParser as makeMergeParser
 
 from plotting.plot_utils import check_proxy
 
@@ -35,8 +38,8 @@ slurm_script_template = """#!/bin/bash
 #SBATCH --job-name={sample}
 #SBATCH --output={log_dir}{sample}.out
 #SBATCH --error={log_dir}{sample}.err
-#SBATCH --time=02:00:00
-#SBATCH --mem=2GB
+#SBATCH --time={time}
+#SBATCH --mem={memory}
 #SBATCH --partition=submit
 
 source ~/.bashrc
@@ -44,13 +47,27 @@ export X509_USER_PROXY=/home/submit/{user}/{proxy}
 cd {work_dir}
 cd ..
 cd histmaker/
+echo hostname
+hostname
 {cmd}
 """
 
 
+def submit_slurm_job(slurm_script_file):
+    result = subprocess.run(
+        ["sbatch", slurm_script_file], capture_output=True, text=True
+    )
+    match = re.search(r"Submitted batch job (\d+)", result.stdout)
+    if match:
+        job_id = match.group(1)
+        logging.info("Submitted batch job " + str(job_id))
+        return job_id
+    else:
+        return None
+
+
 def call_process(cmd, work_dir):
     """This runs in a separate thread."""
-    print("----[%] :", cmd)
     p = subprocess.Popen(
         ["bash", "-c", " ".join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
@@ -97,21 +114,30 @@ parser.add_argument(
     default=10,
     required=False,
 )
+
 # parser from make_hists.py, works also for merge_ntuples.py
-parser = makeHistsParser(parser)
+general_options, _ = parser.parse_known_args()
+if general_options.code == "plot":
+    parser = makeHistsParser(parser)
+elif general_options.code == "merge":
+    parser = makeMergeParser(parser)
 
 options = parser.parse_args()
 
-# Set up where you're gonna work
+# logging
+logging.basicConfig(level=logging.INFO)
+
+# Found it necessary to run on a space with enough disk space
+work_dir_base = "/work/submit/{}/dummy_directory{}".format(
+    getpass.getuser(), np.random.randint(0, 10000)
+)
+os.system(f"mkdir {work_dir_base}")
+os.system(f"cp -a ../../SUEPCoffea_dask {work_dir_base}/.")
+logging.info("Working in " + work_dir_base)
+work_dir = work_dir_base + "/SUEPCoffea_dask/histmaker/"
+
+# Set up processing-specific options
 if options.method == "slurm":
-    # Found it necessary to run on a space with enough memory
-    work_dir = "/work/submit/{}/dummy_directory{}".format(
-        getpass.getuser(), np.random.randint(0, 10000)
-    )
-    os.system(f"mkdir {work_dir}")
-    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir}/.")
-    print("Working in", work_dir)
-    work_dir += "/SUEPCoffea_dask/histmaker/"
     log_dir = "/work/submit/{}/SUEP/logs/slurm_{}_{}/".format(
         os.environ["USER"],
         options.code,
@@ -119,15 +145,13 @@ if options.method == "slurm":
     )
     if not os.path.isdir(log_dir):
         os.mkdir(log_dir)
+    if options.code == "plot":
+        memory = "12GB"
+        time = "02:00:00"
+    elif options.code == "merge":
+        memory = "16GB"
+        time = "12:00:00"
 elif options.method == "multithread":
-    # Found it necessary to run on a space with enough memory
-    work_dir = "/work/submit/{}/dummy_directory{}/".format(
-        getpass.getuser(), np.random.randint(0, 10000)
-    )
-    os.system(f"mkdir {work_dir}")
-    os.system(f"cp -a ../../SUEPCoffea_dask {work_dir}/.")
-    print("Working in", work_dir)
-    work_dir += "/SUEPCoffea_dask/histmaker/"
     pool = Pool(
         min([multiprocessing.cpu_count(), options.cores]), maxtasksperchild=1000
     )
@@ -138,27 +162,39 @@ with open(options.input) as f:
     samples = f.read().splitlines()
 
 # Making sure that the proxy is good
-if options.xrootd:
+if options.code == "merge" or options.xrootd:
     lifetime = check_proxy(time_min=10)
-    print(f"--- proxy lifetime is {round(lifetime, 1)} hours")
+    logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 # Loop over samples
+job_ids = []
 for i, sample in enumerate(samples):
+
     if "/" in sample:
         sample = sample.split("/")[-1]
+    if sample.endswith(".root"):
+        sample = sample.replace(".root", "")
+
+    logging.info(f"Processing sample {i+1}/{len(samples)}: {sample}")
+
+    # skip if the output file already exists, unless you --force
     if options.code == "plot" and (
         os.path.isfile(
             f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.root"
         )
         and not options.force
     ):
-        print(sample, "finished, skipping")
+        logging.info("Finished, skipping")
         continue
 
     # Code to execute
     if options.code == "merge":
-        cmd = "python merge_ntuples.py --tag={tag} --sample={sample} --isMC={isMC}".format(
-            tag=options.tag, sample=sample, isMC=options.isMC
+        cmd = "python merge_ntuples.py --sample={sample} --tag={tag}  --isMC={isMC} --redirector={redirector} --path={path}".format(
+            sample=sample,
+            tag=options.tag,
+            isMC=options.isMC,
+            redirector=options.redirector,
+            path=options.path,
         )
 
     elif options.code == "plot":
@@ -183,12 +219,12 @@ for i, sample in enumerate(samples):
             dataDirLocal=options.dataDirLocal,
             dataDirXRootD=options.dataDirXRootD,
             redirector=options.redirector,
-            id=os.getuid(),
         )
 
     # execute the command with singularity
     singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
     cmd = singularity_prefix + cmd
+    logging.info(f"Command to run: {cmd}")
 
     # Method to execute the code with
     if options.method == "multithread":
@@ -203,6 +239,8 @@ for i, sample in enumerate(samples):
             sample=sample,
             user=getpass.getuser(),
             proxy=f"x509up_u{os.getuid()}",
+            memory=memory,
+            time=time,
         )
 
         # Write the SLURM script to a file
@@ -211,7 +249,8 @@ for i, sample in enumerate(samples):
             f.write(slurm_script_content)
 
         # Submit the SLURM job
-        subprocess.run(["sbatch", slurm_script_file])
+        job_id = submit_slurm_job(slurm_script_file)
+        job_ids.append(job_id)
 
 # Close the pool and wait for each running task to complete
 if options.method == "multithread":
@@ -220,9 +259,50 @@ if options.method == "multithread":
     for result in results:
         out, err = result.get()
         if "error" in str(err).lower():
-            print(str(err))
-            print(" ----------------- ")
-            print()
+            logging.info(str(err))
+            logging.info(" ----------------- ")
+            logging.info()
 
     # clean up
     os.system(f"rm -rf {work_dir}")
+
+# if submitted slurm jobs, send one final job to clean up the dummy directory
+if options.method == "slurm" and len(job_ids) > 0:
+    cleanup_script = """#!/bin/bash
+#SBATCH --job-name=cleanup_job
+#SBATCH --output={log_dir}cleanup_job.out
+#SBATCH --error={log_dir}cleanup_job.err
+#SBATCH --time=02:00:00
+#SBATCH --mem=100MB
+#SBATCH --partition=submit
+
+while true; do
+    all_finished=true
+    for job_id in {job_ids}; do
+        echo "checking $job_id"
+        job_state=$(sacct -j $job_id -X -n -o state)
+        job_state=$(echo $job_state | xargs)
+        echo "job state: $job_state"
+        if [[ "$job_state" != "COMPLETED" && "$job_state" != "FAILED" ]]; then
+            all_finished=false
+            break
+        fi
+    done
+    if $all_finished; then
+        echo "All jobs finished, cleaning up"
+        echo "rm -rf {work_dir_base}"
+        rm -rf {work_dir_base}
+        break
+    fi
+    echo "Sleeping for 1 minute"
+    sleep 60
+done
+""".format(
+        log_dir=log_dir, job_ids=" ".join(job_ids), work_dir_base=work_dir_base
+    )
+
+    with open(f"{log_dir}cleanup.sh", "w") as f:
+        f.write(cleanup_script)
+
+    logging.info("Submitting cleanup job")
+    cleanup_id = submit_slurm_job(f"{log_dir}cleanup.sh")

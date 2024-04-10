@@ -141,7 +141,7 @@ def main():
         "--wait",
         type=float,
         default=1,
-        help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the NIT T2 with xrootd requests.",
+        help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the MIT T2 with xrootd requests.",
     )
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     options = parser.parse_args()
@@ -167,8 +167,9 @@ def main():
         )
         sys.exit()
     workdir = os.getcwd()
-    logdir = "/work/submit/" + username + "/SUEPCoffea_dask/logs/"
-    redirector = "root://submit50.mit.edu/"
+    logdir = "/work/submit/" + username + "/SUEP/logs/"
+    default_input_redirector = "root://xrootd.cmsaf.mit.edu/"
+    output_redirector = "root://submit50.mit.edu/"
     proxy_base = f"x509up_u{os.getuid()}"
     home_base = os.environ["HOME"]
 
@@ -204,97 +205,68 @@ def main():
     missing_samples = []
 
     with open(options.input) as stream:
-        for iSample, sample in enumerate(stream.read().split("\n")):
-            if len(sample) < 1:
+        for iSample, sample_path in enumerate(stream.read().split("\n")):
+            # skip commented out or incorrect sample paths
+            if len(sample_path) < 1:
                 continue
-            if "#" in sample or ("/" in sample and len(sample.split("/")) <= 1):
+            if "#" in sample_path or (
+                "/" in sample_path and len(sample_path.split("/")) <= 1
+            ):
                 continue
-            if "/" in sample:
-                sample_name = sample.split("/")[-1]
+
+            # extract sample name from each sample path
+            if "/" in sample_path:
+                sample_name = sample_path.split("/")[-1]
             else:
-                sample_name = sample
-            jobs_dir = "_".join([logdir + "jobs", options.tag, sample_name])
-            logging.info("-- sample_name : " + sample)
+                sample_name = sample_path
+            if sample_name.endswith(
+                ".root"
+            ):  # case where 1 file is given as input, treated as a separate sample
+                sample_name = sample_name.replace(".root", "")
+
+            # if the redirector is specified, take it, and strip it from the sample path, if not use the default
+            if sample_path.startswith("root://"):
+                sample_input_redirector = "root://" + sample_path.split("//")[1] + "/"
+                sample_path = sample_path.replace(sample_input_redirector, "")
+            else:
+                sample_input_redirector = default_input_redirector
+
+            logging.info("-- sample : " + sample_name)
 
             # set up the jobs directory
+            jobs_dir = "/".join([logdir, options.tag, sample_name])
             if os.path.isdir(jobs_dir):
                 if not options.force:
-                    logging.error(" " + jobs_dir + " already exist !")
+                    logging.error(" " + jobs_dir + " already exists !")
                     continue
                 else:
                     logging.warning(
                         " " + jobs_dir + " already exists, forcing its deletion!"
                     )
                     shutil.rmtree(jobs_dir)
-                    os.mkdir(jobs_dir)
+                    os.makedirs(jobs_dir)
             else:
-                os.mkdir(jobs_dir)
+                os.makedirs(jobs_dir)
 
-            # ---- getting the list of file for the dataset by xrdfs ls
-            if (
-                (options.era == "2018" or options.era == "2017")
-                and options.private == 1
-                and options.channel == "ggF"
-            ):
-                userOwner = "bmaier/suep"
-                sample_path = "/store/user/{}/official_private/{}/{}".format(
-                    userOwner, options.era, sample_name
-                )
-            elif (
-                (options.era == "2016" or options.era == "2016apv")
-                and options.private == 1
-                and options.channel == "ggF"
-            ):
-                userOwner = "cfreer/suep_correct"
-                sample_path = "/store/user/{}/official_private/{}/{}".format(
-                    userOwner, options.era, sample_name
-                )
-            elif options.private == 1 and options.channel == "WH":
-                sample_path = "/jreicher/SUEP/WH_private_signals/merged/"
-            elif not options.private and "/" in sample:
-                sample_path = sample
-            else:
-                sys.exit("Double check this.")
-
+            # get the filelist with xrootd
             Raw_list = []
-            if options.channel == "WH" and options.private == 1:
-                # input txt file of signal samples includes the path (samples not in xrdfs so this is current work around)
-                file = (
-                    "root://submit50.mit.edu/"
-                    + sample_path
-                    + "/"
-                    + sample_name
-                    + ".root"
-                    + " 0 0 1 1 1 1"
-                )
-                Raw_list.append(file)
+            comm = subprocess.Popen(
+                ["xrdfs", sample_input_redirector, "ls", sample_path],
+                stdout=subprocess.PIPE,
+            )
+            Raw_list = comm.communicate()[0].decode("utf-8").split("\n")
+            Raw_list = [sample_input_redirector + f for f in Raw_list if ".root" in f]
+            if len(Raw_list) == 0:
+                missing_samples.append(sample_name)
 
-            else:
-                # get the filelist with xrootd (use same door to take advantage of caching and speed up the process)
-                comm = subprocess.Popen(
-                    ["xrdfs", "root://xrootd.cmsaf.mit.edu/", "ls", sample_path],
-                    stdout=subprocess.PIPE,
-                )
-                raw_input_list = comm.communicate()[0].decode("utf-8").split("\n")
-
-                if raw_input_list == [""]:
-                    missing_samples.append(sample_name)
-
-                # limit to max number of files, if specified
-                if options.maxFiles > 0:
-                    raw_input_list = raw_input_list[: options.maxFiles]
-
-                for f in raw_input_list:
-                    if len(f) == 0:
-                        continue
-                    new_f = f"root://xrootd.cmsaf.mit.edu/{f} 0 0 1 1 1 1"
-                    Raw_list.append(new_f)
+            # limit to max number of files, if specified
+            if options.maxFiles > 0:
+                Raw_list = Raw_list[: options.maxFiles]
 
             # write list of files to inputfiles.dat
             nfiles = 0
             with open(os.path.join(jobs_dir, "inputfiles.dat"), "w") as infiles:
-                for i in Raw_list:
-                    full_file = i.split(" ")[0]
+                for full_file in Raw_list:
                     just_file = full_file.split("/")[-1]
                     infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
@@ -319,7 +291,7 @@ def main():
                     condor_file=condor_file,
                     outfile=outfile,
                     file_ext=file_ext,
-                    redirector=redirector,
+                    redirector=output_redirector,
                     extras=extras,
                 )
                 scriptfile.write(script)

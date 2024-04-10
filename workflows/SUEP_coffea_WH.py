@@ -201,7 +201,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         for i in range(2):
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPCluster_pT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_pt",
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True
@@ -211,7 +211,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPCluster_phi",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_phi",
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True
@@ -221,7 +221,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPCluster_eta",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_eta",
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True
@@ -231,10 +231,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPCluster_qgl",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_qgl",
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.qgl, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_mass",
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_inSUEPcluster_ptsort.mass, i + 1, axis=1, clip=True
                     ),
                     -999,
                 )[:, i],
@@ -319,7 +329,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         highpt_jet = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
         jets_pTsorted = ak4jets[highpt_jet]
         for i in range(3):
-            output["vars"]["jet" + str(i + 1) + "_pT"] = ak.fill_none(
+            output["vars"]["jet" + str(i + 1) + "_pt"] = ak.fill_none(
                 ak.pad_none(jets_pTsorted.pt, i + 1, axis=1, clip=True), -999
             )[:, i]
             output["vars"]["jet" + str(i + 1) + "_phi"] = ak.fill_none(
@@ -330,6 +340,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )[:, i]
             output["vars"]["jet" + str(i + 1) + "_qgl"] = ak.fill_none(
                 ak.pad_none(jets_pTsorted.qgl, i + 1, axis=1, clip=True), -999
+            )[:, i]
+            output["vars"]["jet" + str(i + 1) + "_mass"] = ak.fill_none(
+                ak.pad_none(jets_pTsorted.mass, i + 1, axis=1, clip=True), -999
             )[:, i]
 
         # saving kinematic variables for the leading b-tagged jet
@@ -472,7 +485,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["SUEP_genEta"] = SUEP_genEta
         output["vars"]["SUEP_genPhi"] = SUEP_genPhi
 
-        # saving lepton kinematics
+        # saving tight lepton kinematics
         output["vars"]["lepton_pt"] = lepton.pt[:, 0]
         output["vars"]["lepton_eta"] = lepton.eta[:, 0]
         output["vars"]["lepton_phi"] = lepton.phi[:, 0]
@@ -485,6 +498,42 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["lepton_miniIso"] = lepton.miniIso[:, 0]
         output["vars"]["lepton_dxy"] = lepton.dxy[:, 0]
         output["vars"]["lepton_dz"] = lepton.dz[:, 0]
+
+        # other loose leptons
+        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events)
+        output["vars"]["nLooseLeptons"] = ak.num(looseLeptons).to_list()
+        output["vars"]["nLooseMuons"] = ak.num(looseMuons).to_list()
+        output["vars"]["nLooseElectrons"] = ak.num(looseElectrons).to_list()
+        highpt_leptons = ak.argsort(
+            looseLeptons.pt, axis=1, ascending=False, stable=True
+        )
+        looseLeptons_pTsorted = looseLeptons[highpt_leptons]
+        for i in range(3):
+            output["vars"]["looseLepton" + str(i + 1) + "_pt"] = ak.fill_none(
+                ak.pad_none(looseLeptons_pTsorted.pt, i + 1, axis=1, clip=True), -999
+            )[:, i]
+            output["vars"]["looseLepton" + str(i + 1) + "_phi"] = ak.fill_none(
+                ak.pad_none(looseLeptons_pTsorted.phi, i + 1, axis=1, clip=True), -999
+            )[:, i]
+            output["vars"]["looseLepton" + str(i + 1) + "_eta"] = ak.fill_none(
+                ak.pad_none(looseLeptons_pTsorted.eta, i + 1, axis=1, clip=True), -999
+            )[:, i]
+            output["vars"]["looseLepton" + str(i + 1) + "_flavor"] = ak.fill_none(
+                ak.pad_none(looseLeptons_pTsorted.pdgID, i + 1, axis=1, clip=True), -999
+            )[:, i]
+
+        # ak4jets w/o lepton isolation
+        ak4jets_noLepIso = WH_utils.getAK4Jets(events.Jet)
+        output["vars"]["ngood_ak4jets_noLepIso"] = ak.num(ak4jets_noLepIso).to_list()
+        output["vars"]["nBLoose_noLepIso"] = ak.sum(
+            (ak4jets_noLepIso.btag >= btagcuts("Loose", int(self.era))), axis=1
+        )[:]
+        output["vars"]["nBMedium_noLepIso"] = ak.sum(
+            (ak4jets_noLepIso.btag >= btagcuts("Medium", int(self.era))), axis=1
+        )[:]
+        output["vars"]["nBTight_noLepIso"] = ak.sum(
+            (ak4jets_noLepIso.btag >= btagcuts("Tight", int(self.era))), axis=1
+        )[:]
 
         # W kinematics
         (
@@ -506,17 +555,28 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["W_mT_from_PuppiMET"] = W_mT_from_PuppiMET
         output["vars"]["W_mT_from_MET"] = W_mT_from_MET
 
-        output["vars"]["W_pT_from_CaloMET"] = W_pT_from_CaloMET
-        output["vars"]["W_pT_from_PuppiMET"] = W_pT_from_PuppiMET
-        output["vars"]["W_pT_from_MET"] = W_pT_from_MET
+        output["vars"]["W_pt_from_CaloMET"] = W_pT_from_CaloMET
+        output["vars"]["W_pt_from_PuppiMET"] = W_pT_from_PuppiMET
+        output["vars"]["W_pt_from_MET"] = W_pT_from_MET
 
         output["vars"]["W_phi_from_CaloMET"] = W_phi_from_CaloMET
         output["vars"]["W_phi_from_PuppiMET"] = W_phi_from_PuppiMET
         output["vars"]["W_phi_from_MET"] = W_phi_from_MET
 
+        # pair W and jets to get the mass of the system
+        output["vars"]["topMass"] = WH_utils.getTopMass(
+            lepton, events.MET, ak4jets
+        ).to_list()
+        output["vars"]["topMassJetClosestToMET"] = WH_utils.getTopMass(
+            lepton, events.MET, sorted_deltaphiMET_jets[:, :1]
+        ).to_list()
+        output["vars"]["topMassBJet"] = WH_utils.getTopMass(
+            lepton, events.MET, jets_btag_sorted[:, :1]
+        ).to_list()
+
         # photon information
         photons = WH_utils.getPhotons(events, self.isMC)
-        _, _, looseLeptons = WH_utils.getLooseLeptons(events)
+        output["vars"]["nphotons"] = ak.num(photons).to_list()
         for i in range(2):
             output["vars"]["photon" + str(i + 1) + "_pt"] = ak.fill_none(
                 ak.pad_none(photons.pt, i + 1, axis=1, clip=True), -999
@@ -556,26 +616,25 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )[:, i]
 
             # if ith photon exist, compute deltaR with jets
-            indices_i = np.arange(len(photons))[ak.num(photons) > i]
-            photon_i = photons[ak.num(photons) > i][:, i]
-            jets_jec_i = self.jets_jec[ak.num(photons) > i]
-            looseLeptons_i = looseLeptons[ak.num(photons) > i]
-            minDeltaR_ak4jet_photon_i = ak.fill_none(
+            hasIthPhoton = ak.num(photons) > i
+            indices_i = np.arange(len(events))[hasIthPhoton]
+            photon_i = photons[hasIthPhoton][:, i]
+            jets_jec_i = self.jets_jec[hasIthPhoton]
+            looseLeptons_i = looseLeptons[hasIthPhoton]
+            minDeltaR_ak4jet_photon_i = np.ones(len(events)) * -999
+            minDeltaR_lepton_photon_i = np.ones(len(events)) * -999
+            minDeltaR_ak4jet_photon_i[indices_i] = ak.fill_none(
                 ak.min(jets_jec_i.deltaR(photon_i), axis=1), -999
             )
-            minDeltaR_lepton_photon_i = ak.fill_none(
+            minDeltaR_lepton_photon_i[indices_i] = ak.fill_none(
                 ak.min(looseLeptons_i.deltaR(photon_i), axis=1), -999
             )
-            output["vars"].loc(
-                indices_i,
-                "minDeltaR_ak4jet_photon" + str(i + 1),
-                minDeltaR_ak4jet_photon_i,
-            )
-            output["vars"].loc(
-                indices_i,
-                "minDeltaR_lepton_photon" + str(i + 1),
-                minDeltaR_lepton_photon_i,
-            )
+            output["vars"][
+                "minDeltaR_ak4jet_photon" + str(i + 1)
+            ] = minDeltaR_ak4jet_photon_i
+            output["vars"][
+                "minDeltaR_lepton_photon" + str(i + 1)
+            ] = minDeltaR_lepton_photon_i
 
     def analysis(self, events, output, out_label=""):
 
@@ -606,6 +665,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         events = WH_utils.orthogonalitySelection(events)
         output["cutflow_orthogonality" + out_label] += ak.sum(events.genWeight)
+
+        # DEBUG: select events with at least one ak4jet
+        events = events[ak.num(WH_utils.getAK4Jets(events.Jet)) > 0]
+        output["cutflow_oneAK4jet" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
@@ -678,6 +741,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_orthogonality": processor.value_accumulator(float, 0),
                 "cutflow_oneLepton": processor.value_accumulator(float, 0),
                 "cutflow_qualityFilters": processor.value_accumulator(float, 0),
+                "cutflow_oneAK4jet": processor.value_accumulator(float, 0),
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
@@ -722,6 +786,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                         float, 0
                     ),
                     "cutflow_qualityFilters_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "cutflow_oneAK4jet_track_down": processor.value_accumulator(
                         float, 0
                     ),
                     "cutflow_oneCluster_track_down": processor.value_accumulator(

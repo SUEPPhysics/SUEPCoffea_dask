@@ -377,7 +377,7 @@ def plot(
         jetsAK15_tracks = jetsAK15_tracks.boost_p4(boost_SUEP)
         scalarParticle = scalarParticle.boost_p4(boost_SUEP)
         leptons = leptons.boost_p4(boost_SUEP)
-        MET = MET.boost_p4(boost_SUEP)
+        MET = MET.boost_p4(boost_SUEP)[0]
 
     if ax is None:
         fig = plt.figure(figsize=(8, 8))
@@ -510,7 +510,9 @@ def plot(
     if showWHCandidate:
         highpt_jet = ak.argsort(jetsAK15.pt, axis=0, ascending=False, stable=True)
         jets_pTsorted = jetsAK15[highpt_jet]
+        clusters_pTsorted = jetsAK15_tracks[highpt_jet]
         SUEP_cand = jets_pTsorted[0]
+        SUEP_cluster_tracks = clusters_pTsorted[0]
         SUEP_pt = SUEP_cand.pt
 
         if boost:  # highlight tracks from SUEP candidate
@@ -937,6 +939,8 @@ def main():
                 args.output
                 + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png"
             )
+
+        plt.close(fig)
 
 
 if __name__ == "__main__":
