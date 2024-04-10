@@ -574,7 +574,7 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    var = np.where(ypt > 0, (x_v + y_v).pt.to_numpy() / ypt, np.ones(len(xpt)) * -999)
+    var = np.where(ypt > 0, (x_v + y_v).pt / ypt, np.ones(len(xpt)) * -999)
 
     if type(var) is ak.highlevel.Array:
         var = var.to_numpy()
