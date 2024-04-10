@@ -541,6 +541,13 @@ def init_hists_GNNInverted(output, label, config, regions_list=[""]):
 def init_hists_highestPT(output, label, regions_list=[""]):
     output.update(
         {
+            f"SUEP_nconst_{label}": Hist.new.Reg(
+                    100,
+                    0,
+                    100,
+                    name=f"{r}SUEP_nconst_{label}",
+                    label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            ).Weight(),
             f"CaloMET_pt_{label}": Hist.new.Reg(
                 100,
                 0,

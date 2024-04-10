@@ -76,7 +76,7 @@ def get_git_info(path="."):
 
 
 def getXSection(
-    dataset: str, year=None, path="../data/", failOnKeyError=False
+    dataset: str, year, path:str = "../data/", failOnKeyError:bool = True
 ) -> float:
     xsection = 1
 
@@ -224,6 +224,7 @@ def prepare_DataFrame(
     if config.get("method_var"):
         if config["method_var"] not in df.columns:
             return None
+        # N.B.: this is the pandas-suggested way to do this, changing it gives perfomance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
 
     # 2. blind
@@ -286,7 +287,7 @@ def prepare_DataFrame(
     return df
 
 
-def is_number(s):
+def is_number(s: str) -> bool:
     try:
         float(s)
         return True
