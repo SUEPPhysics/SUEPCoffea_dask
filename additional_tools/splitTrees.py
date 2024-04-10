@@ -44,19 +44,13 @@ def splitfile(inputs):
         print("-------%s: %d events" % (m, allpoints[m].GetN()))
 
     # Now we reactivate all branches so we save the whole tree!
-<<<<<<< HEAD
-    t.SetBranchStatus("*",1)
-    for drop in options.drop: t.SetBranchStatus(drop,0) # Except those we don't want
-    for keep in options.keep: t.SetBranchStatus(keep,1) # Just in case we want to do some regexp with the previous step
-=======
     t.SetBranchStatus("*", 1)
     for drop in options.drop:
-        t.SetBranchStatus(drop, 0)  # Except thos we don't want
+        t.SetBranchStatus(drop, 0)  # Except those we don't want
     for keep in options.keep:
         t.SetBranchStatus(
             keep, 1
         )  # Just in case we want to do some regexp with the previous step
->>>>>>> 9b33f641987632333344adbfe6ac19c93eaf3ce0
 
     # The actual saving
     for m, elist in allpoints.items():
@@ -174,7 +168,6 @@ if __name__ == "__main__":
             allpoints += r
     allpoints = list(dict.fromkeys(allpoints))
     if options.hadd:
-<<<<<<< HEAD
       print("Will now hadd the split chunks")
       if options.jobs == 1:
         for p in allpoints:
@@ -189,19 +182,3 @@ if __name__ == "__main__":
           p.close()
           p.join()
           p.terminate()
-=======
-        print("Will now hadd the splitted chunks")
-        if options.jobs == 1:
-            for p in allpoints:
-                haddfiles([options.output, p])
-        else:
-            allInputs = [[options.output, p] for p in allpoints]
-            with closing(Pool(options.jobs)) as p:
-                retlist1 = p.map_async(haddfiles, allInputs, 1)
-                while not retlist1.ready():
-                    time.sleep(0.001)
-                retlist1 = retlist1.get()
-                p.close()
-                p.join()
-                p.terminate()
->>>>>>> 9b33f641987632333344adbfe6ac19c93eaf3ce0
