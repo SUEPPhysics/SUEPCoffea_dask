@@ -224,7 +224,7 @@ def prepare_DataFrame(
     if config.get("method_var"):
         if config["method_var"] not in df.columns:
             return None
-        # N.B.: this is the pandas-suggested way to do this, changing it gives perfomance warnings
+        # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
 
     # 2. blind
@@ -556,9 +556,9 @@ def balancing_var(xpt, ypt):
 
     var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt)) * -999)
 
-    # deal with the cases where pt was initialized to a moot value (-999 only fow now)
-    var[xpt == -999] = -999
-    var[ypt == -999] = -999
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    var[xpt < 0] = -999
+    var[ypt < 0] = -999
 
     return var
 
@@ -579,8 +579,8 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     if type(var) is ak.highlevel.Array:
         var = var.to_numpy()
 
-    # deal with the cases where pt was initialized to a moot value (-999 only fow now)
-    var[xpt == -999] = -999
-    var[ypt == -999] = -999
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    var[xpt < 0] = -999
+    var[ypt < 0] = -999
 
     return var

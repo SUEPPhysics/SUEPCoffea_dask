@@ -702,11 +702,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"nBTight_noLepIso_{label}",
                 label="# tight cut b jets",
             ).Weight(),
-            f"jet1_pT_{label}": Hist.new.Reg(
+            f"jet1_pt_{label}": Hist.new.Reg(
                 1000,
                 0,
                 2000,
-                name=f"jet1_pT_{label}",
+                name=f"jet1_pt_{label}",
                 label="leading jet $p_T$",
             ).Weight(),
             f"jet1_phi_{label}": Hist.new.Reg(
@@ -737,11 +737,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"jet1_mass_{label}",
                 label="leading jet mass",
             ).Weight(),
-            f"jet2_pT_{label}": Hist.new.Reg(
+            f"jet2_pt_{label}": Hist.new.Reg(
                 100,
                 0,
                 2000,
-                name=f"jet2_pT_{label}",
+                name=f"jet2_pt_{label}",
                 label="2nd leading jet $p_T$",
             ).Weight(),
             f"jet2_phi_{label}": Hist.new.Reg(
@@ -765,11 +765,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"jet2_qgl_{label}",
                 label="2nd leading jet qgl",
             ).Weight(),
-            f"jet3_pT_{label}": Hist.new.Reg(
+            f"jet3_pt_{label}": Hist.new.Reg(
                 100,
                 0,
                 2000,
-                name=f"jet3_pT_{label}",
+                name=f"jet3_pt_{label}",
                 label="3rd leading jet $p_T$",
             ).Weight(),
             f"jet3_phi_{label}": Hist.new.Reg(
@@ -842,11 +842,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"ak4jets_inSUEPcluster_pt_{label}",
                 label="ak4jets in SUEP cluster $p_T$",
             ).Weight(),
-            f"ak4jet1_inSUEPcluster_pT_{label}": Hist.new.Reg(
+            f"ak4jet1_inSUEPcluster_pt_{label}": Hist.new.Reg(
                 1000,
                 0,
                 1000,
-                name=f"ak4jet1_inSUEPcluster_pT_{label}",
+                name=f"ak4jet1_inSUEPcluster_pt_{label}",
                 label="ak4jet1 in SUEP cluster $p_T$",
             ).Weight(),
             f"ak4jet1_inSUEPcluster_mass_{label}": Hist.new.Reg(
@@ -856,11 +856,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"ak4jet1_inSUEPcluster_mass_{label}",
                 label="ak4jet1 in SUEP cluster mass",
             ).Weight(),
-            f"ak4jet2_inSUEPcluster_pT_{label}": Hist.new.Reg(
+            f"ak4jet2_inSUEPcluster_pt_{label}": Hist.new.Reg(
                 100,
                 0,
                 2000,
-                name=f"ak4jet2_inSUEPcluster_pT_{label}",
+                name=f"ak4jet2_inSUEPcluster_pt_{label}",
                 label="ak4jet2 in SUEP cluster $p_T$",
             ).Weight(),
             f"nak4jets_outsideSUEP_{label}": Hist.new.Reg(
@@ -1135,25 +1135,25 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"W_mT_from_MET_{label}",
                 label=r"$W^{\mathrm{PFMET}} m_T$ ",
             ).Weight(),
-            f"W_pT_from_CaloMET_{label}": Hist.new.Reg(
+            f"W_pt_from_CaloMET_{label}": Hist.new.Reg(
                 100,
                 0,
                 2000,
-                name=f"W_pT_from_CaloMET_{label}",
+                name=f"W_pt_from_CaloMET_{label}",
                 label=r"$W^{\mathrm{CaloMET}}$ $p_T$",
             ).Weight(),
-            f"W_pT_from_PuppiMET_{label}": Hist.new.Reg(
+            f"W_pt_from_PuppiMET_{label}": Hist.new.Reg(
                 100,
                 0,
                 2000,
-                name=f"W_pT_from_PuppiMET_{label}",
+                name=f"W_pt_from_PuppiMET_{label}",
                 label=r"$W^{\mathrm{PuppiMET}}$ $p_T$",
             ).Weight(),
-            f"W_pT_from_MET_{label}": Hist.new.Reg(
+            f"W_pt_from_MET_{label}": Hist.new.Reg(
                 2000,
                 0,
                 2000,
-                name=f"W_pT_from_MET_{label}",
+                name=f"W_pt_from_MET_{label}",
                 label=r"$W^{\mathrm{PFMET}}$ $p_T$",
             ).Weight(),
             f"W_phi_from_CaloMET_{label}": Hist.new.Reg(
@@ -1324,11 +1324,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"deltaPhi_SUEP_bjet_{label}",
                 label=r"$\Delta\phi$(SUEP, bjet)",
             ).Weight(),
-            f"2D_jet1_pT_vs_SUEP_nconst_{label}": Hist.new.Reg(
+            f"2D_jet1_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
                 1000,
                 0,
                 2000,
-                name=f"jet1_pT_{label}",
+                name=f"jet1_pt_{label}",
                 label="Leading AK4Jet $p_T$",
             )
             .Reg(
@@ -1339,11 +1339,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
             .Weight(),
-            f"2D_ak4jet1_inSUEPcluster_pT_vs_SUEP_nconst_{label}": Hist.new.Reg(
+            f"2D_ak4jet1_inSUEPcluster_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
                 1000,
                 0,
                 2000,
-                name=f"ak4jet1_inSUEPcluster_pT_{label}",
+                name=f"ak4jet1_inSUEPcluster_pt_{label}",
                 label="Leading AK4Jet in SUEP AK15 cluster $p_T$",
             )
             .Reg(

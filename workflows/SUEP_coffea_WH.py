@@ -329,7 +329,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         highpt_jet = ak.argsort(ak4jets.pt, axis=1, ascending=False, stable=True)
         jets_pTsorted = ak4jets[highpt_jet]
         for i in range(3):
-            output["vars"]["jet" + str(i + 1) + "_pT"] = ak.fill_none(
+            output["vars"]["jet" + str(i + 1) + "_pt"] = ak.fill_none(
                 ak.pad_none(jets_pTsorted.pt, i + 1, axis=1, clip=True), -999
             )[:, i]
             output["vars"]["jet" + str(i + 1) + "_phi"] = ak.fill_none(
@@ -386,7 +386,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["CaloMET_pt"] = events.CaloMET.pt
         output["vars"]["CaloMET_phi"] = events.CaloMET.phi
         output["vars"]["CaloMET_sumEt"] = events.CaloMET.sumEt
-        output["vars"]["PuppiMET_pT"] = events.PuppiMET.pt
+        output["vars"]["PuppiMET_pt"] = events.PuppiMET.pt
         output["vars"]["PuppiMET_phi"] = events.PuppiMET.phi
         output["vars"]["PuppiMET_sumEt"] = events.PuppiMET.sumEt
         output["vars"]["MET_pt"] = events.MET.pt
@@ -395,18 +395,18 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # Will not be used for nominal analysis but keep around for studies
         """
-        output["vars"]["ChsMET_pT"] = events.ChsMET.pt
+        output["vars"]["ChsMET_pt"] = events.ChsMET.pt
         output["vars"]["ChsMET_phi"] = events.ChsMET.phi
         output["vars"]["ChsMET_sumEt"] = events.ChsMET.sumEt
-        output["vars"]["TkMET_pT"] = events.TkMET.pt
+        output["vars"]["TkMET_pt"] = events.TkMET.pt
         output["vars"]["TkMET_phi"] = events.TkMET.phi
         output["vars"]["TkMET_sumEt"] = events.TkMET.sumEt
-        output["vars"]["RawMET_pT"] = events.RawMET.pt
+        output["vars"]["RawMET_pt"] = events.RawMET.pt
         output["vars"]["RawMET_phi"] = events.RawMET.phi
         output["vars"]["RawMET_sumEt"] = events.RawMET.sumEt
-        output["vars"]["RawPuppiMET_pT"] = events.RawPuppiMET.pt
+        output["vars"]["RawPuppiMET_pt"] = events.RawPuppiMET.pt
         output["vars"]["RawPuppiMET_phi"] = events.RawPuppiMET.phi
-        output["vars"]["MET_JEC_pT"] = met_c.pt
+        output["vars"]["MET_JEC_pt"] = met_c.pt
         output["vars"]["MET_JEC_sumEt"] = met_c.sumEt
         """
 
@@ -509,7 +509,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
         looseLeptons_pTsorted = looseLeptons[highpt_leptons]
         for i in range(3):
-            output["vars"]["looseLepton" + str(i + 1) + "_pT"] = ak.fill_none(
+            output["vars"]["looseLepton" + str(i + 1) + "_pt"] = ak.fill_none(
                 ak.pad_none(looseLeptons_pTsorted.pt, i + 1, axis=1, clip=True), -999
             )[:, i]
             output["vars"]["looseLepton" + str(i + 1) + "_phi"] = ak.fill_none(
@@ -555,9 +555,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["W_mT_from_PuppiMET"] = W_mT_from_PuppiMET
         output["vars"]["W_mT_from_MET"] = W_mT_from_MET
 
-        output["vars"]["W_pT_from_CaloMET"] = W_pT_from_CaloMET
-        output["vars"]["W_pT_from_PuppiMET"] = W_pT_from_PuppiMET
-        output["vars"]["W_pT_from_MET"] = W_pT_from_MET
+        output["vars"]["W_pt_from_CaloMET"] = W_pT_from_CaloMET
+        output["vars"]["W_pt_from_PuppiMET"] = W_pT_from_PuppiMET
+        output["vars"]["W_pt_from_MET"] = W_pT_from_MET
 
         output["vars"]["W_phi_from_CaloMET"] = W_phi_from_CaloMET
         output["vars"]["W_phi_from_PuppiMET"] = W_phi_from_PuppiMET
