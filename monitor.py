@@ -173,7 +173,7 @@ def main():
             totals += njobs
 
             # If files are missing we resubmit with the same condor.sub
-            if options.resubmit:
+            if options.resubmit and (nfile < njobs):
                 logging.info(f"-- resubmitting files for {sample}")
                 file_names = []
                 for item in complete_list:

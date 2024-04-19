@@ -242,7 +242,7 @@ def prepare_DataFrame(
     if "selections" in config.keys():
 
         # store number of events passing using the event weights into the cutflow dict
-        cutflow_label = "cutflow_total"
+        cutflow_label = "cutflow_histmaker_total"
         if cutflow_label in cutflow.keys():
             cutflow[cutflow_label] += np.sum(df["event_weight"])
         else:
@@ -574,10 +574,12 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    var = np.where(ypt > 0, (x_v + y_v).pt / ypt, np.ones(len(xpt)) * -999)
+    vector_sum_pt = (x_v + y_v).pt
 
-    if type(var) is ak.highlevel.Array:
-        var = var.to_numpy()
+    if type(vector_sum_pt) is ak.highlevel.Array:
+        vector_sum_pt = vector_sum_pt.to_numpy()
+
+    var = np.where(ypt > 0, vector_sum_pt / ypt, np.ones(len(xpt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     var[xpt < 0] = -999

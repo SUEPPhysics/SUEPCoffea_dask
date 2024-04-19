@@ -224,7 +224,7 @@ for i, sample in enumerate(samples):
     # execute the command with singularity
     singularity_prefix = "singularity run --bind /work/,/data/ /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest "
     cmd = singularity_prefix + cmd
-    logging.info(f"Command to run: {cmd}")
+    logging.debug(f"Command to run: {cmd}")
 
     # Method to execute the code with
     if options.method == "multithread":
@@ -261,7 +261,6 @@ if options.method == "multithread":
         if "error" in str(err).lower():
             logging.info(str(err))
             logging.info(" ----------------- ")
-            logging.info()
 
     # clean up
     os.system(f"rm -rf {work_dir}")

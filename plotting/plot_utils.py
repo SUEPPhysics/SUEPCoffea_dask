@@ -187,6 +187,7 @@ def getHistLists(plotDir, tag, filename, filters=None):
     with open(filename) as file:
         for line in file:
             sample_name = line.strip().split("/")[-1]
+            sample_name = sample_name.replace(".root", "")
             result_path = f"{plotDir}{sample_name}_{tag}.root"
             if filters:
                 if not all([filt in sample_name for filt in filters]):
@@ -196,7 +197,9 @@ def getHistLists(plotDir, tag, filename, filters=None):
 
 
 def formatGluGluToSUEPNaming(file):
+    file = file.split("/")[-1]
     tokens = file.split("_")
+
     temp = tokens[2]
     mS = tokens[3]
     mPhi = tokens[4]
@@ -219,24 +222,51 @@ def formatGluGluToSUEPNaming(file):
     return name
 
 
+def formatWHToSUEPNaming(file):
+    file = file.split("/")[-1]
+    tokens = file.split("_")
+
+    mS = tokens[1]
+    mPhi = tokens[2]
+    T = tokens[3]
+    decay = tokens[4]
+
+    if "." in mS:
+        mS = mS[: mS.find(".")]
+
+    T = "T" + str(float(T[1:]))
+    mPhi = "mPhi" + str(float(mPhi[4:]))
+
+    if "mode" in decay:
+        decay = decay[4:]
+
+    name = "SUEP-WH-" + "_".join([mS, T, mPhi, decay])
+    return name
+
+
 def formatTTHToSUEPNaming(file):
+    file = file.split("/")[-1]
     tokens = file.split("_")
 
     decay = tokens[1]
     mS = tokens[2]
-    mD = tokens[3]
+    mPhi = tokens[3]
     T = tokens[4]
 
-    T = T.replace("T", "")
-    T = "T" + str(float(T))
+    if "." in mS:
+        mS = mS[: mS.find(".")]
+    mS = mS.replace("MS", "mS")
+    mS = mS.replace("M", "mS")
 
-    mD = mD.replace("MD", "")
-    mD = "MD" + str(float(mD))
+    T = "T" + str(float(T[1:]))
 
-    mS = mS.replace("M", "")
-    mS = "MS" + str(float(mS))
+    if "MD" in mPhi:
+        mPhi = "mPhi" + str(float(mPhi[2:]))
 
-    name = "ttH-" + "_".join([mS, mD, T, decay])
+    if "mode" in decay:
+        decay = decay[4:]
+
+    name = "SUEP-ttH-" + "_".join([mS, T, mPhi, decay])
     return name
 
 
@@ -250,6 +280,7 @@ def getSampleNameAndBin(sample_name):
 
     # if needed, remove the preceding path
     if "/" in sample_name:
+        path_name = sample_name
         sample_name = sample_name.split("/")[-1]
 
     if "QCD_Pt" in sample_name:
@@ -366,6 +397,10 @@ def getSampleNameAndBin(sample_name):
 
     elif "GluGluToSUEP" in sample_name:  # ggF samples
         sample = formatGluGluToSUEPNaming(sample_name)
+        bin = None
+
+    elif sample_name.startswith("SUEP_mS125.000"):  # this is bad naming
+        sample = formatWHToSUEPNaming(sample_name)
         bin = None
 
     else:
@@ -494,10 +529,18 @@ def loader(
         norm *= lumi
 
         # get the normalization factor for SUEP samples
+        # xsec is already apply in make_hists.py for non SUEP samples
         if xsec_SUEP:
-            sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
-            if "SUEP" in sample_name:
-                # xsec is already apply in make_hists.py for non SUEP samples
+            if "sample" in file_metadata.keys():
+                if "SUEP" in file_metadata["sample"]:
+                    xsec = fill_utils.getXSection(file_metadata["sample"], year=era)
+                    if verbose:
+                        print("Applying xsec", xsec)
+                    norm *= xsec
+            elif "SUEP" in infile_name.split("/")[-1]:
+                sample_name = (
+                    infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
+                )
                 xsec = fill_utils.getXSection(sample_name, year=era)
                 if verbose:
                     print("Applying xsec", xsec)
@@ -719,7 +762,7 @@ def plot_ratio(
     """
 
     # Set up variables for the stacked histogram
-    fig = plt.figure(figsize=(16, 12))
+    fig = plt.figure(figsize=(14, 12))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
@@ -838,7 +881,7 @@ def plot_ratio(
         plot_label = hlist[0].axes[0].label
         if plot_label == "Axis 0":
             plot_label = None
-    ax1.legend(loc="best")
+    ax1.legend(loc="best", fontsize="xx-small")
     ax2.set_xlabel(plot_label, y=1)
 
     return fig, (ax1, ax2)
