@@ -9308,5 +9308,355 @@
     "br": 1,
     "kr": 1,
     "xsec": 0.4987
+  },
+  "SUEP_mS125.000_mPhi1.000_T0.250_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.000_T0.500_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.000_T1.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.000_T2.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.000_T4.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.400_T0.350_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.400_T0.700_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.400_T1.400_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.400_T2.800_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi1.400_T5.600_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T0.500_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi2.000_T0.500_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T0.500_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T1.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi2.000_T1.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T1.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T2.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi2.000_T2.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T2.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T4.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi2.000_T4.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T4.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T8.000_modegeneric ": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi2.000_T8.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi2.000_T8.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T0.750_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi3.000_T0.750_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T0.750_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T1.500_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi3.000_T1.500_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T1.500_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T12.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi3.000_T12.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T12.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T3.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi3.000_T3.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T3.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T6.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi3.000_T6.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi3.000_T6.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T1.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi4.000_T1.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T1.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T16.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi4.000_T16.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T16.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T2.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi4.000_T2.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T2.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T4.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi4.000_T4.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T4.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T8.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi4.000_T8.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi4.000_T8.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T16.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi8.000_T16.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T16.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T2.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi8.000_T2.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T2.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T32.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi8.000_T32.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T32.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T4.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi8.000_T4.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T4.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T8.000_modegeneric": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.,000_mPhi8.000_T8.000_modehadronic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
+  },
+  "SUEP_mS125.000_mPhi8.000_T8.000_modeleptonic": {
+    "br": 0.3177,
+    "kr": 1,
+    "xsec": 1.358
   }
 }
