@@ -471,8 +471,8 @@ def getLumi(era: str, scouting: bool) -> float:
 
 
 def loader(
-    infile_names, 
-    year=None,       # once everyone starts making histograms with metadata, these can be dropped   
+    infile_names,
+    year=None,  # once everyone starts making histograms with metadata, these can be dropped
     auto_lumi=True,  # once everyone starts making histograms with metadata, these can be dropped
     scouting=False,  # once everyone starts making histograms with metadata, these can be dropped
     by_bin=False,
@@ -512,18 +512,22 @@ def loader(
         norm = 1
 
         # finds era
-        if file_metadata and ("era" in file_metadata.keys()) and ("lumi" in file_metadata.keys()):
+        if (
+            file_metadata
+            and ("era" in file_metadata.keys())
+            and ("lumi" in file_metadata.keys())
+        ):
             era = file_metadata["era"]
             lumi = float(file_metadata["lumi"])
         else:
             # for older histograms, we need to scale by lumi, and find era via the filename
             # once everyone starts making histograms with metadata, this can be dropped
-            lumi, era = findLumiAndEra(
-                year, auto_lumi, infile_name, scouting
-            )  
+            lumi, era = findLumiAndEra(year, auto_lumi, infile_name, scouting)
             norm *= lumi
-            if verbose: print("Applying lumi", lumi)
-        if verbose: print("Found era", era)
+            if verbose:
+                print("Applying lumi", lumi)
+        if verbose:
+            print("Found era", era)
 
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
@@ -533,12 +537,10 @@ def loader(
                 if verbose:
                     print("Applying xsec", xsec)
                     print("Applying lumi", lumi)
-                norm *= xsec*lumi
+                norm *= xsec * lumi
         elif "SUEP" in infile_name.split("/")[-1]:
             # for older histograms, we didn't have metadata, so we need to find xsec via string manipulation
-            sample_name = (
-                infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
-            )
+            sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
             xsec = fill_utils.getXSection(sample_name, year=era)
             if verbose:
                 print("Applying xsec", xsec)
