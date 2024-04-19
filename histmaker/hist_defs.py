@@ -1329,7 +1329,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 1000,
                 name=f"SUEP_highestPTtrack_{label}",
-                label="SUEP top $p_T$ track",
+                label="SUEP highest $p_T$ track",
             ).Weight(),
             f"BV_highestPTSUEPtrack_SUEP_{label}": Hist.new.Reg(
                 100,
