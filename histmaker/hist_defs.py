@@ -1343,7 +1343,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 -100,
                 100,
                 name=f"SUEP_nconst_minus_otherAK15_maxConst{label}",
-                label="$n^{\mathrm{SUEP}}_{\mathrm{constituents}} - n^{\mathrm{most numerous, non SUEP, AK15}}_{\mathrm{constituents}}$",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituents}} - n^{\mathrm{most numerous, non SUEP, AK15}}_{\mathrm{constituents}}$",
             ).Weight(),
             f"ak4jets_outsideSUEP_inv_mass_{label}": Hist.new.Reg(
                 1000,
@@ -1527,7 +1527,6 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"maxDeltaEtaJetPT50Lepton_{label}",
                 label=r"max($\Delta \eta$(ak4jetsPT50, lepton))",
             ).Weight(),
-
             f"minDeltaRJetLooseLepton_{label}": Hist.new.Reg(
                 100,
                 0,
@@ -1617,7 +1616,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 1000,
                 name=f"ak4jets_outsideSUEP_inv_mass_{label}",
-                label="ak4jets_outsideSUEP_inv_mass"
+                label="ak4jets_outsideSUEP_inv_mass",
             ).Weight(),
             f"jetsLeptonMET_inv_mass_{label}": Hist.new.Reg(
                 1000,
@@ -1638,7 +1637,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 100,
                 name=f"otherAK15_maxConst_{label}",
-                label="Max(non-SUEP-candidate AK15 jets $n_{\mathrm{const}}$)",
+                label=r"Max(non-SUEP-candidate AK15 jets $n_{\mathrm{const}}$)",
             ).Weight(),
             f"ntracks_outsideSUEP_{label}": Hist.new.Reg(
                 200,
@@ -1652,14 +1651,14 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 6,
                 name=f"maxDeltaR_ak4jets_outsideSUEPcluster_{label}",
-                label="Max($\Delta R$(SUEP, ak4jets outside SUEP cluster))",
+                label=r"Max($\Delta R$(SUEP, ak4jets outside SUEP cluster))",
             ).Weight(),
             f"minDeltaR_ak4jets_outsideSUEPcluster_{label}": Hist.new.Reg(
                 100,
                 0,
                 6,
                 name=f"minDeltaR_ak4jets_outsideSUEPcluster_{label}",
-                label="Min($\Delta R$(SUEP, ak4jets outside SUEP cluster))",
+                label=r"Min($\Delta R$(SUEP, ak4jets outside SUEP cluster))",
             ).Weight(),
             f"2D_jet1_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
                 1000,

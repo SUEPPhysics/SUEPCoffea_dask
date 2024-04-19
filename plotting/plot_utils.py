@@ -399,7 +399,7 @@ def getSampleNameAndBin(sample_name):
         sample = formatGluGluToSUEPNaming(sample_name)
         bin = None
 
-    elif sample_name.startswith("SUEP_mS125.000"): # this is bad naming
+    elif sample_name.startswith("SUEP_mS125.000"):  # this is bad naming
         sample = formatWHToSUEPNaming(sample_name)
         bin = None
 
@@ -537,13 +537,15 @@ def loader(
                     if verbose:
                         print("Applying xsec", xsec)
                     norm *= xsec
-            elif ("SUEP" in infile_name.split("/")[-1]):
-                sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
+            elif "SUEP" in infile_name.split("/")[-1]:
+                sample_name = (
+                    infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
+                )
                 xsec = fill_utils.getXSection(sample_name, year=era)
                 if verbose:
                     print("Applying xsec", xsec)
                 norm *= xsec
-         
+
         # get the sample name and the bin name
         # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
         sample, bin = getSampleNameAndBin(infile_name)
@@ -879,7 +881,7 @@ def plot_ratio(
         plot_label = hlist[0].axes[0].label
         if plot_label == "Axis 0":
             plot_label = None
-    ax1.legend(loc="best", fontsize='xx-small')
+    ax1.legend(loc="best", fontsize="xx-small")
     ax2.set_xlabel(plot_label, y=1)
 
     return fig, (ax1, ax2)

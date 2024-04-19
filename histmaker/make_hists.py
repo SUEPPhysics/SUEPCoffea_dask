@@ -332,7 +332,7 @@ def main():
     """
 
     if options.channel == "WH":
-        new_variables_WH =  [
+        new_variables_WH = [
             [
                 "bjetSel",
                 lambda x, y: ((x == 0) & (y < 2)),
@@ -446,8 +446,8 @@ def main():
             ],
             [
                 "nonSUEP_S1",
-                lambda x, y: 1.5*(x+y),
-                ["nonSUEP_eig0", "nonSUEP_eig1"]
+                lambda x, y: 1.5 * (x + y),
+                ["nonSUEP_eig0", "nonSUEP_eig1"],
             ],
             [
                 "ntracks_outsideSUEP",
@@ -462,13 +462,13 @@ def main():
             [
                 "SUEP_nconst_minus_otherAK15_maxConst",
                 lambda x, y: (x - y),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst"]
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst"],
             ],
             [
                 "jetsInSameHemisphere",
-                lambda x, y: ( (x == 1) | (y < 1.5) ),
-                ["ngood_ak4jets", "maxDeltaPhiJets"]
-            ]
+                lambda x, y: ((x == 1) | (y < 1.5)),
+                ["ngood_ak4jets", "maxDeltaPhiJets"],
+            ],
         ]
         config = {
             "SR": {
@@ -488,7 +488,7 @@ def main():
                     "W_SUEP_BV < 2",
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
                 ],
-                "new_variables": new_variables_WH
+                "new_variables": new_variables_WH,
             },
             "CRTT": {
                 "input_method": "HighestPT",
@@ -507,8 +507,8 @@ def main():
                     "W_SUEP_BV < 2",
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
                 ],
-                "new_variables": new_variables_WH
-            }
+                "new_variables": new_variables_WH,
+            },
         }
 
     if options.channel == "ggF":
