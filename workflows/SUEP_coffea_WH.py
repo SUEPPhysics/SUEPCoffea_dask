@@ -178,7 +178,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             "SUEP_pt_avg_HighestPT" + out_label,
             ak.mean(SUEP_cand_constituents.pt, axis=-1),
         )
-        output["vars"].loc(indices, "SUEP_topPTtrack_HighestPT" + out_label, ak.max(SUEP_cand_constituents.pt, axis=-1))
+        output["vars"].loc(indices, "SUEP_highestPTtrack_HighestPT" + out_label, ak.max(SUEP_cand_constituents.pt, axis=-1))
         output["vars"].loc(indices, "SUEP_pt_HighestPT" + out_label, SUEP_cand.pt)
         output["vars"].loc(indices, "SUEP_eta_HighestPT" + out_label, SUEP_cand.eta)
         output["vars"].loc(indices, "SUEP_phi_HighestPT" + out_label, SUEP_cand.phi)

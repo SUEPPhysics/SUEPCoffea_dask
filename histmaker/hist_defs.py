@@ -1324,19 +1324,19 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"deltaPhi_SUEP_bjet_{label}",
                 label=r"$\Delta\phi$(SUEP, bjet)",
             ).Weight(),
-            f"SUEP_topPTtrack_{label}": Hist.new.Reg(
+            f"SUEP_highestPTtrack_{label}": Hist.new.Reg(
                 1000,
                 0,
                 1000,
-                name=f"SUEP_topPTtrack_{label}",
+                name=f"SUEP_highestPTtrack_{label}",
                 label="SUEP top $p_T$ track",
             ).Weight(),
-            f"BV_topSUEPTrack_SUEP_{label}": Hist.new.Reg(
+            f"BV_highestPTSUEPtrack_SUEP_{label}": Hist.new.Reg(
                 100,
                 -1,
                 10,
-                name=f"BV_topSUEPTrack_SUEP_{label}",
-                label="($p_T^{top SUEP track} - p_T^{SUEP}$)/$p_T^{SUEP}$",
+                name=f"BV_highestPTSUEPtrack_SUEP_{label}",
+                label="($p_T^{hardest SUEP track} - p_T^{SUEP}$)/$p_T^{SUEP}$",
             ).Weight(),
             f"SUEP_nconst_minus_otherAK15_maxConst_{label}": Hist.new.Reg(
                 200,

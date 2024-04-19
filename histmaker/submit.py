@@ -125,7 +125,7 @@ elif general_options.code == "merge":
 options = parser.parse_args()
 
 # logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Found it necessary to run on a space with enough disk space
 work_dir_base = "/work/submit/{}/dummy_directory{}".format(

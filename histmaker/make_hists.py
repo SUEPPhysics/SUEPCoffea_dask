@@ -455,9 +455,9 @@ def main():
                 ["ntracks", "SUEP_nconst_HighestPT"],
             ],
             [
-                "BV_topSUEPTrack_SUEP",
+                "BV_highestSUEPTrack_SUEP",
                 fill_utils.balancing_var,
-                ["SUEP_topPTtrack_HighestPT", "SUEP_pt_HighestPT"],
+                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"],
             ],
             [
                 "SUEP_nconst_minus_otherAK15_maxConst",
