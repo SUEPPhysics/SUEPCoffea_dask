@@ -103,6 +103,7 @@ def get_main_parser():
             "SUEP_nbjet_comparison",
             "SUEP_DYstudy",
             "SUEP_combine",
+            "SUEP_SR_extrapolation",
         ],
         help="Which processor to run",
         required=True,
@@ -758,6 +759,29 @@ def setupSUEP_combine(args, sample_dict):
     return instance
 
 
+def setupSUEP_SR_extrapolation(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_SR_extrapolation import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=int(args.era),
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst=False,
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
 def execute(args, processor_instance, sample_dict, env_extra, condor_extra):
     """
     Main function to execute the workflow
@@ -883,6 +907,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_DYstudy(args, sample_dict)
     elif args.workflow == "SUEP_combine":
         processor_instance = setupSUEP_combine(args, sample_dict)
+    elif args.workflow == "SUEP_SR_extrapolation":
+        processor_instance = setupSUEP_SR_extrapolation(args, sample_dict)
     else:
         raise NotImplementedError
 

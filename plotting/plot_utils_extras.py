@@ -22,9 +22,7 @@ def convert_permuon_to_perevent(h):
     ).Weight()
     h_new[0] = h[0]
     for i in range(1, 10):
-        h_new[i] = hist.accumulators.WeightedSum(
-            h[i].value / i, h[i].variance / (i**2)
-        )
+        h_new[i] = hist.accumulators.WeightedSum(h[i].value / i, h[i].variance / (i**2))
     return h_new
 
 
@@ -246,7 +244,7 @@ def plot_overlay(
     if slc is None:
         slc = slice(None)
     hists = []
-    hist_max = []
+    max_value = 0  # to calculate the y-axis range
     for bkg in bkg_list:
         h_temp = None
         if cut is None:
@@ -260,12 +258,14 @@ def plot_overlay(
             h_temp = plots[bkg][lbl_plot][tuple(cut)]
         if density:
             h_temp /= h_temp.sum(flow=False).value
-        hist_max.append(h_temp.values().max())
         hists.append(h_temp.copy())
+        max_value = max(max_value, h_temp.values().max())
 
     # calculate desired y-axis range
     if ylim is None:
-        ylim = (0, max(hist_max) * 1.5)
+        ylim = (0, max_value * 1.8)
+        if ylog:
+            ylim = (1e-4, max_value * 1e3)
         if density:
             ylim = (0, 1)
             if ylog:
@@ -301,7 +301,7 @@ def plot_overlay(
     if text_to_show is not None:
         midpoint = int(len(hists[0].axes[0].edges) / 2)
         x_txt = hists[0].axes[0].edges[midpoint]
-        y_txt = max(hist_max) * 1.1
+        y_txt = max_value * 1.1
         if density:
             y_txt = 0.4
         ax.text(x_txt, y_txt, text_to_show, horizontalalignment="center")
@@ -340,8 +340,8 @@ def plot_stack(
         List of background samples to be stacked
     label : tuple of str
         Tuple of two strings: [0]: Label of the plot, [0]: Label of the axis
-    slc : tuple
-        Tuple of slices to apply to the histograms
+    slc : slice
+        Slice to apply to the histogramsw
     """
 
     # Set up figure and axes
@@ -355,12 +355,23 @@ def plot_stack(
     hists = []
     hist_bkg_total = None
     for bkg in bkg_list:
-        h_temp = plots[bkg][lbl_plot].project(lbl_axis)[slc]
+        if cut is None:
+            h_temp = plots[bkg][lbl_plot].project(lbl_axis)[slc]
+        else:
+            axis_i = plots[bkg][lbl_plot].axes.name.index(lbl_axis)
+            cut = list(cut)
+            cut[axis_i] = (
+                slice(cut[axis_i].start, cut[axis_i].stop) if override_slice else slc
+            )
+            h_temp = plots[bkg][lbl_plot][tuple(cut)]
         hists.append(h_temp.copy())
         if hist_bkg_total is None:
             hist_bkg_total = h_temp.copy()
         else:
             hist_bkg_total += h_temp.copy()
+
+    # to calculate the y-axis range
+    max_value = hist_bkg_total.values().max()
 
     hists_sig = []
     for sig in sig_list:
@@ -374,11 +385,14 @@ def plot_stack(
                 slice(cut[axis_i].start, cut[axis_i].stop) if override_slice else slc
             )
             h_temp = plots[sig][lbl_plot][tuple(cut)]
+        max_value = max(max_value, h_temp.values().max())
         hists_sig.append(h_temp.copy())
 
     # calculate desired y-axis range
     if ylim is None:
-        ylim = (0, hist_bkg_total.values().max() * 1.5)
+        ylim = (0, max_value * 1.8)
+        if ylog:
+            ylim = (1e-4, max_value * 1e6)
 
     # Plot the stacked histogram
     hep.histplot(
@@ -421,7 +435,16 @@ def plot_stack(
     if len(sig_list) > 0:
         hep.histplot(
             hists_sig,
-            label=[sig.replace("_2018", "").replace("SUEP-", "") for sig in sig_list],
+            label=[
+                sig.replace("_2018", "")
+                .replace("SUEP-", "")
+                .replace("SUEP_", "")
+                .replace("mMed", "mS")
+                .replace("mDark", "mD")
+                .replace("temp", "T")
+                .replace("decay-", "")
+                for sig in sig_list
+            ],
             lw=3,
             ax=ax,
         )

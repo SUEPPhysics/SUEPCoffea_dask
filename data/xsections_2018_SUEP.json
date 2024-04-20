@@ -32,5 +32,15 @@
 	"generic_M200_MD2_T2_HT": 16.94,
 	"generic_M600_MD2_T2_HT": 1.001,
 	"generic_M300_MD2_T2_HT": 6.59,
-	"generic_M700_MD2_T2_HT": 0.6206
+	"generic_M700_MD2_T2_HT": 0.6206,
+	"SUEP_mMed-125_mDark-2_temp-8_decay-darkPhoHad": 45.2,
+	"SUEP_mMed-125_mDark-2_temp-8_decay-darkPho": 45.2,
+	"SUEP_mMed-125_mDark-4_temp-16_decay-darkPhoHad": 45.2,
+	"SUEP_mMed-125_mDark-4_temp-16_decay-darkPho": 45.2,
+	"SUEP_mMed-125_mDark-8_temp-16_decay-darkPhoHad": 45.2,
+	"SUEP_mMed-125_mDark-8_temp-16_decay-darkPho": 45.2,
+	"SUEP_mMed-125_mDark-8_temp-32_decay-darkPhoHad": 45.2,
+	"SUEP_mMed-125_mDark-8_temp-32_decay-darkPho": 45.2,
+	"SUEP_mMed-125_mDark-8_temp-8_decay-darkPhoHad": 45.2,
+	"SUEP_mMed-125_mDark-8_temp-8_decay-darkPho": 45.2
 }

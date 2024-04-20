@@ -4,6 +4,7 @@ Coffea producer for SUEP analysis. Uses fastjet package to recluster large jets:
 https://github.com/scikit-hep/fastjet
 Chad Freer and Luca Lavezzo, 2021
 """
+
 from typing import Optional
 
 import awkward as ak
@@ -113,7 +114,6 @@ class SUEP_cluster(processor.ProcessorABC):
         select_by_muons_high = ak.num(muons, axis=-1) > 4
         events = events[select_by_muons_high]
         muons = muons[select_by_muons_high]
-
         return events, muons
 
     def fill_cutflow(self, events, muons, output):
@@ -163,7 +163,6 @@ class SUEP_cluster(processor.ProcessorABC):
             len(events) * ["muon_pt_mean<10"],
             weight=weights,
         )
-
 
     def fill_histograms(self, events, muons, output):
         dataset = events.metadata["dataset"]

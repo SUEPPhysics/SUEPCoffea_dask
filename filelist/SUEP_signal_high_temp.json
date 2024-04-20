@@ -1,0 +1,32 @@
+{
+  "SUEP_mMed-125_mDark-2_temp-8_decay-darkPhoHad": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-2_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-2_temp-8_decay-darkPho": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-2_temp-8_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-4_temp-16_decay-darkPhoHad": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-4_temp-16_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-4_temp-16_decay-darkPho": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-4_temp-16_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-8_temp-16_decay-darkPhoHad": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-16_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-8_temp-16_decay-darkPho": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-16_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-8_temp-32_decay-darkPhoHad": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-32_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-8_temp-32_decay-darkPho": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-32_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-8_temp-8_decay-darkPhoHad": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_mMed-125_mDark-8_temp-8_decay-darkPho": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-8_decay-darkPho_13TeV-pythia8.root"
+  ]
+}

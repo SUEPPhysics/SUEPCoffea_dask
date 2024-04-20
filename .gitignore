@@ -28,9 +28,6 @@ dask-report.html
 *.sub
 *.txt
 
-# Shell scripts (do we really want to exclude those???)
-*.sh
-
 # Image files
 *.png
 *.pdf

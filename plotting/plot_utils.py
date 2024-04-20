@@ -1,4 +1,5 @@
 import logging
+from math import inf
 import os
 import pickle
 import shutil
@@ -175,7 +176,7 @@ def findLumi(year, auto_lumi, infile_name):
             lumi = lumis["2016_apv"]
         if "20UL18" in infile_name:
             lumi = lumis["2018"]
-        if "SUEP-m" in infile_name:
+        if "SUEP-m" in infile_name or "SUEP_m" in infile_name:
             lumi = lumis["2018"]
         if "JetHT+Run" in infile_name:
             lumi = 1
@@ -267,7 +268,7 @@ def fillSample(infile_name, plots, lumi):
                 1
             ]  # hack for Carlos naming convention
         else:
-            sample = infile_name.split("/")
+            sample = infile_name.split("/")[-1].replace("_histograms.pkl", "")
     elif "DoubleMuon" in infile_name:
         sample = infile_name.split("/")[-1].split(".pkl")[0]
     elif sample is None:
