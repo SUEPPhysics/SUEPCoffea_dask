@@ -64,7 +64,10 @@ def apply_jecs(self, Sample, events, prefix=""):
             elif ("RunF" in Sample) or ("Run2017F" in Sample):
                 jecdir = "Summer19UL17_RunF_V5_DATA"
             else:
-                raise Exception("The JECs for the 2017 data era do not seem to exist! Found sample: " + Sample)
+                raise Exception(
+                    "The JECs for the 2017 data era do not seem to exist! Found sample: "
+                    + Sample
+                )
         elif str(self.era) == "2018":
             jerdir = "Summer19UL18_JRV2_DATA"
             if ("RunA" in Sample) or ("Run2018A" in Sample):
@@ -76,11 +79,19 @@ def apply_jecs(self, Sample, events, prefix=""):
             elif ("RunD" in Sample) or ("Run2018D" in Sample):
                 jecdir = "Summer19UL18_RunD_V5_DATA"
             else:
-                raise Exception("The JECs for the 2018 data era do not seem to exist! Found sample" + Sample)
+                raise Exception(
+                    "The JECs for the 2018 data era do not seem to exist! Found sample"
+                    + Sample
+                )
         else:
-            raise Exception("Unable to find the correct JECs for Data! Found era: " + str(self.era))
+            raise Exception(
+                "Unable to find the correct JECs for Data! Found era: " + str(self.era)
+            )
     else:
-        raise Exception("Unable to determine if this is MC or Data! Found value of isMC: " + str(self.isMC))
+        raise Exception(
+            "Unable to determine if this is MC or Data! Found value of isMC: "
+            + str(self.isMC)
+        )
 
     # Start working here
     jec_path = prefix + "data/jetmet/JEC/" + jecdir + "/"
