@@ -62,11 +62,11 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
             },
             with_name="Momentum4D",
         )
-    # jet pt cut, eta cut, and minimum separation from lepton
-    jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+    # jet pt cut, eta cut, and jet ID
+    jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4) & (0<(Jets_awk.jetId & 0b010))
     # and minimum separation from lepton
     if lepton is not None:
-        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
+        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton) >= 0.4)
     Jets_correct = Jets_awk[jet_awk_Cut]
 
     return Jets_correct
@@ -88,6 +88,18 @@ def getGenPart(events):
         with_name="Momentum4D",
     )
     return genParts
+
+
+def getGenDarkPseudoscalars(events):
+    """
+    Get the gen-level dark pseudoscalar particles (phi's) produced by the scalar (S).
+    This depends on how you set up your signal samples. This function assumes the SUEP WH layout in e.g. https://gitlab.cern.ch/cms-exo-mci/EXO-MCsampleRequests/-/merge_requests/205/diffs
+    """
+
+    genParticles = getGenPart(events)
+    darkPseudoscalarParticles = genParticles[genParticles.pdgID == 999999] 
+
+    return darkPseudoscalarParticles
 
 
 def getTracks(events, lepton=None, leptonIsolation=None):
@@ -141,7 +153,7 @@ def getTracks(events, lepton=None, leptonIsolation=None):
 
     if leptonIsolation:
         # Sorting out the tracks that overlap with the lepton
-        tracks = tracks[(tracks.deltaR(lepton[:, 0]) >= leptonIsolation)]
+        tracks = tracks[(tracks.deltaR(lepton) >= leptonIsolation)]
 
     return tracks, Cleaned_cands
 
@@ -499,6 +511,19 @@ def make_MET_4v(MET):
     return MET_4v
 
 
+def make_nu_4v(MET, pz=0):
+    make_nu_4v = ak.zip(
+        {
+            "pt": MET.pt,
+            "pz": pz,
+            "phi": MET.phi,
+            "mass": 0,
+        },
+        with_name="Momentum4D",
+    )
+    return make_nu_4v
+
+
 def MET_delta_phi(x, MET):
     MET_4v = make_MET_4v(MET)
     signed_dphi = x.deltaphi(MET_4v)
@@ -550,7 +575,7 @@ def W_kinematics(lepton, MET):
     # phi calculation
     W_phi = np.arctan2(W_pty, W_ptx)
 
-    return W_mt[:, 0], W_pt[:, 0], W_phi[:, 0]
+    return W_mt, W_pt, W_phi
 
 
 def getTopMass(lepton, MET, jets):
@@ -579,3 +604,67 @@ def getTopMass(lepton, MET, jets):
     )
     bestTopMass = ak.flatten(topMassHypotheses[bestTopMassArg])
     return bestTopMass
+
+
+def getNeutrinoEz(lepton, MET, MW=80.379):
+    Wt = make_Wt_4v(lepton, MET)
+    A = MW**2 + Wt.pt**2 - lepton.pt**2 - MET.pt**2
+    delta = np.sqrt(A**2 - 4*(lepton.pt**2)*(MET.pt**2))
+    Ez_p = (A * lepton.pz + lepton.e * delta)/(2*(lepton.pt**2))
+    Ez_m = (A * lepton.pz - lepton.e * delta)/(2*(lepton.pt**2))
+    return Ez_p, Ez_m
+
+
+def make_W_4v(lepton, MET, MW=80.379):
+    """
+    Make the W boson 4-vector from lepton and MET.
+    Since the sign of the neutrino pz is not known, we have two possible W bosons.
+    """
+    nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
+    nu_p = make_nu_4v(MET, pz=nu_pz_p)
+    nu_m = make_nu_4v(MET, pz=nu_pz_m)
+    W_4v_p = lepton +  nu_p
+    W_4v_m = lepton +  nu_m
+    return W_4v_p, W_4v_m
+
+
+def getCosThetaCS(lepton, MET, MW=80.379):
+
+    nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
+
+    nu_p = make_nu_4v(MET, pz=nu_pz_p)
+    nu_m = make_nu_4v(MET, pz=nu_pz_m)
+    
+    # random_bits = np.random.randint(2, size=len(lepton))
+    # nu = ak.where(random_bits, nu_p, nu_m)
+    nu = nu_p
+    W = lepton + nu
+
+    Pp1 = np.sqrt(2)**-1 * (lepton.e + lepton.pz)
+    Pp2 = np.sqrt(2)**-1 * (nu.e + nu.pz)
+    Pm1 = np.sqrt(2)**-1 * (lepton.e - lepton.pz)
+    Pm2 = np.sqrt(2)**-1 * (nu.e - nu.pz)
+
+    return (nu.pz/np.abs(nu.pz))*2*(Pp1*Pm2 - Pm1*Pp2)/(MW*np.sqrt(MW**2 + W.pt**2))
+
+def getCosThetaCS2(lepton, MET, MW=80.379):
+
+    nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
+
+    nu_p = make_nu_4v(MET, pz=nu_pz_p)
+    nu_m = make_nu_4v(MET, pz=nu_pz_m)
+    
+    # random_bits = np.random.randint(2, size=len(lepton))
+    # nu = ak.where(random_bits, nu_p, nu_m)
+    nu = nu_p
+    W = lepton + nu
+
+    boost_W = ak.zip({
+        "px": -W.px,
+        "py": -W.py,
+        "pz": -W.pz,
+        "mass": W.m,
+    }, with_name="Momentum4D")
+
+    boost_lepton = lepton.boost_p4(boost_W)
+    return np.cos(boost_lepton.theta)
