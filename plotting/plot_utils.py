@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
-
+import time
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -182,13 +182,13 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
     return lumi, era
 
 
-def getHistLists(plotDir, tag, filename, filters=None):
+def getHistLists(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []
     with open(filename) as file:
         for line in file:
             sample_name = line.strip().split("/")[-1]
             sample_name = sample_name.replace(".root", "")
-            result_path = f"{plotDir}{sample_name}_{tag}.root"
+            result_path = f"{plotDir}{sample_name}_{tag}{file_ext}"
             if filters:
                 if not all([filt in sample_name for filt in filters]):
                     continue
@@ -505,7 +505,7 @@ def loader(
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
             continue
-        elif ".root" not in infile_name:
+        elif ".root" not in infile_name and ".pkl" not in infile_name:
             continue
 
         file_hists, file_metadata = openHistFile(infile_name)
@@ -513,7 +513,7 @@ def loader(
 
         # finds era
         if file_metadata and ("era" in file_metadata.keys()) and ("lumi" in file_metadata.keys()):
-            era = file_metadata["era"]
+            era = str(file_metadata["era"])
             lumi = float(file_metadata["lumi"])
         else:
             # for older histograms, we need to scale by lumi, and find era via the filename
@@ -528,7 +528,7 @@ def loader(
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
         if "signal" in file_metadata.keys():
-            if file_metadata["signal"]:
+            if int(file_metadata["signal"]):
                 xsec = float(file_metadata["xsec"])
                 if verbose:
                     print("Applying xsec", xsec)
@@ -570,11 +570,10 @@ def loader(
 
 
 def openHistFile(infile_name):
-    if ".root" in infile_name:
+    if infile_name.endswith(".root"):
         hists, metadata = openroot(infile_name)
-    elif ".pkl" in infile_name:
-        hists = openpickle(infile_name)
-        metadata = None  # not supported yet for pickle files
+    elif infile_name.endswith(".pkl"):
+        hists, metadata = openpickle(infile_name)
     return hists, metadata
 
 
@@ -625,7 +624,7 @@ def check_proxy(time_min=100):
             lifetime = 140
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
-        shutil.copyfile("/tmp/" + proxy_base, proxy_copy)
+        shutil.copyfile(os.environ['X509_USER_PROXY'] + proxy_base, proxy_copy)
 
     return lifetime
 
@@ -664,14 +663,17 @@ def apply_binwise_scaling(h_in, bins, scales, dim="x"):
 
 # function to load files from pickle
 def openpickle(infile_name):
-    plots = {}
+    _plots = {}
+    _metadata = {}
     with open(infile_name, "rb") as openfile:
         while True:
             try:
-                plots.update(pickle.load(openfile))
+                input = pickle.load(openfile)
+                _plots.update(input["hists"])
+                _metadata.update(input["metadata"])
             except EOFError:
                 break
-    return plots
+    return _plots, _metadata
 
 
 def openroot(infile_name):
@@ -1476,7 +1478,7 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
     return h_out
 
 
-def linearFit2DHist(h):
+def poly_fit_hist2d(h, deg=1):
     z_values = h.values().flatten()
     x_centers = h.axes[0].centers
     y_centers = h.axes[1].centers
@@ -1486,9 +1488,9 @@ def linearFit2DHist(h):
         x_values = np.concatenate((x_values, np.ones_like(y_centers) * x_centers[i]))
     for _i in range(len(x_centers)):
         y_values = np.concatenate((y_values, y_centers))
-    p = np.poly1d(np.polyfit(x_values, y_values, 1, w=z_values, cov=False))
+    p = np.poly1d(np.polyfit(x_values, y_values, deg, w=z_values, cov=False))
     logging.info("Linear fit result:", p)
-    return p
+    return p    
 
 
 def hist_mean(hist):
@@ -1700,7 +1702,7 @@ def make_n1_plots(
     stackedSamples: list = [],
 ):
     """
-    Make n-1 plots (produced by make_hists.py as "tag_full" prior to each selection).
+    Make n-1 plots (produced by make_hists.py as "<histogram-name>_N-1").
     :param plots: dictionary of histograms (dimension: sample x plot)
     :param cutflows: dictionary of cutflows (dimension: sample x selection)
     :param tag: tag to use for the n-1 plots
@@ -1719,7 +1721,7 @@ def make_n1_plots(
         )
 
     n1_plots = [
-        k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_beforeCut")
+        k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_N-1")
     ]
 
     cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
@@ -1730,7 +1732,7 @@ def make_n1_plots(
     samples_color = plt.cm.rainbow(np.linspace(0, 1, len(samples)))
     for p in n1_plots:
 
-        var = p[:-1].replace("_" + tag + "_beforeCut", "")
+        var = p[:-1].replace("_" + tag + "_N-1", "")
         cut_val = None
         for cut in cuts:
             if var in cut:
