@@ -550,11 +550,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["prefire_down"] = prefireweights[2]
 
         # get gen SUEP kinematics
-        SUEP_genMass = len(events) * [0]
-        SUEP_genPt = len(events) * [0]
-        SUEP_genEta = len(events) * [0]
-        SUEP_genPhi = len(events) * [0]
-        darkphis = len(events) * [0]
+        SUEP_genMass = ak.Array(len(events) * [0])
+        SUEP_genPt = ak.Array(len(events) * [0])
+        SUEP_genEta = ak.Array(len(events) * [0])
+        SUEP_genPhi = ak.Array(len(events) * [0])
+        darkphis = ak.Array(len(events) * [0])
+        cleaned_darkphis = ak.Array(len(events) * [0])
 
         if self.isMC:
             genParts = WH_utils.getGenPart(events)
@@ -574,8 +575,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["SUEP_genPt"] = SUEP_genPt
         output["vars"]["SUEP_genEta"] = SUEP_genEta
         output["vars"]["SUEP_genPhi"] = SUEP_genPhi
-        output["vars"]["n_darkphis"] = ak.num(darkphis, axis=-1).to_list()
-        output["vars"]["n_darkphis_inTracker"] = ak.num(cleaned_darkphis, axis=-1).to_list()
+        output["vars"]["n_darkphis"] = ak.num(darkphis, axis=-1)
+        output["vars"]["n_darkphis_inTracker"] = ak.num(cleaned_darkphis, axis=-1)
 
         # saving tight lepton kinematics
         output["vars"]["lepton_pt"] = self.lepton.pt
