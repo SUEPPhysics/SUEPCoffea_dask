@@ -472,13 +472,13 @@ def getLumi(era: str, scouting: bool) -> float:
 
 def loader(
     infile_names,
-    year=None,
+    year=None,  # once everyone starts making histograms with metadata, these can be dropped
     auto_lumi=True,  # once everyone starts making histograms with metadata, these can be dropped
     scouting=False,  # once everyone starts making histograms with metadata, these can be dropped
     by_bin=False,
     by_year=False,
-    xsec_SUEP=True,
     load_cutflows=False,
+    only_cutflows=False,
     verbose=False,
 ):
     """
@@ -491,8 +491,8 @@ def loader(
     - scouting (bool, optional): Flag to indicate whether the data is from scouting, used for the lumi. Default is False.
     - by_bin (bool, optional): Flag to group histograms by bin. Default is False.
     - by_year (bool, optional): Flag to group histograms by year. Default is True.
-    - xsec_SUEP (bool, optional): Flag to apply the cross-section normalization factor for SUEP samples. Default is True.
-    - cutflows (bool, optional): Flag to load cutflows instead of histograms. Default is False.
+    - load_cutflows (bool, optional): Flag to load cutflows along side histograms. Default is False.
+    - only_cutflows (bool, optional): Flag to load cutflows instead of histograms. Default is False.
 
     Returns:
     - output (dict): Dictionary containing the loaded histograms (or cutflows) grouped by sample, bin, and year.
@@ -511,40 +511,40 @@ def loader(
         file_hists, file_metadata = openHistFile(infile_name)
         norm = 1
 
-        # sets the lumi based on year
-        if file_metadata and (year is None) and ("isMC" in file_metadata.keys()):
-            if int(file_metadata["isMC"]):
-                lumi = getLumi(
-                    file_metadata["era"], bool(float(file_metadata["scouting"]))
-                )
-            else:
-                lumi = 1
+        # finds era
+        if (
+            file_metadata
+            and ("era" in file_metadata.keys())
+            and ("lumi" in file_metadata.keys())
+        ):
             era = file_metadata["era"]
+            lumi = float(file_metadata["lumi"])
         else:
-            lumi, era = findLumiAndEra(
-                year, auto_lumi, infile_name, scouting
-            )  # once everyone starts making histograms with metadata, this can be dropped
+            # for older histograms, we need to scale by lumi, and find era via the filename
+            # once everyone starts making histograms with metadata, this can be dropped
+            lumi, era = findLumiAndEra(year, auto_lumi, infile_name, scouting)
+            norm *= lumi
+            if verbose:
+                print("Applying lumi", lumi)
         if verbose:
-            print("Using lumi", lumi, "and era", era)
-        norm *= lumi
+            print("Found era", era)
 
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
-        if xsec_SUEP:
-            if "sample" in file_metadata.keys():
-                if "SUEP" in file_metadata["sample"]:
-                    xsec = fill_utils.getXSection(file_metadata["sample"], year=era)
-                    if verbose:
-                        print("Applying xsec", xsec)
-                    norm *= xsec
-            elif "SUEP" in infile_name.split("/")[-1]:
-                sample_name = (
-                    infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
-                )
-                xsec = fill_utils.getXSection(sample_name, year=era)
+        if "signal" in file_metadata.keys():
+            if file_metadata["signal"]:
+                xsec = float(file_metadata["xsec"])
                 if verbose:
                     print("Applying xsec", xsec)
-                norm *= xsec
+                    print("Applying lumi", lumi)
+                norm *= xsec * lumi
+        elif "SUEP" in infile_name.split("/")[-1]:
+            # for older histograms, we didn't have metadata, so we need to find xsec via string manipulation
+            sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
+            xsec = fill_utils.getXSection(sample_name, year=era)
+            if verbose:
+                print("Applying xsec", xsec)
+            norm *= xsec
 
         # get the sample name and the bin name
         # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
@@ -563,9 +563,9 @@ def loader(
                 samplesToAdd.append("_".join([bin, era]))
 
         for s in samplesToAdd:
-            if load_cutflows:
+            if only_cutflows or load_cutflows:
                 output = fillCutflows(file_metadata, s, output, norm)
-            else:
+            if not only_cutflows:
                 output = fillSample(file_hists, s, output, norm)
 
     return output

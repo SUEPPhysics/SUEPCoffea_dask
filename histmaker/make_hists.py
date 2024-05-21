@@ -32,7 +32,7 @@ from CMS_corrections import (
     triggerSF,
 )
 
-import plotting.plot_utils
+import plotting.plot_utils as plot_utils
 
 
 ### Parser #######################################################################################################
@@ -106,9 +106,6 @@ def makeParser(parser=None):
         type=int,
         default=0,
         help="Run systematic up and down variations in additional to the nominal.",
-    )
-    parser.add_argument(
-        "--predictSR", type=int, default=0, help="Predict SR using ABCD method."
     )
     parser.add_argument(
         "--blind", type=int, default=1, help="Blind the data (default=True)"
@@ -612,6 +609,8 @@ def main():
     nfailed = 0
     ntotal = 0
     total_gensumweight = 0
+    xsection = 1
+    lumi = 1
     output = {"labels": []}
     cutflow = {}
 
@@ -797,51 +796,26 @@ def main():
                 out_label="GNN",
             )
 
-    # apply xsec and gensumweight (but no xsec to SUEP signal samples)
-    xsection = 1
+    # store whether sample is signal
+    isSignal = (options.isMC) and (fill_utils.isSampleSignal(sample, options.era))
+    logging.debug("Is signal: " + str(isSignal))
+
+    # apply normalization to samples
     if options.isMC:
-        logging.info("Applying normalization.")
-        if "SUEP" not in sample:
-            xsection = fill_utils.getXSection(sample, options.era, failOnKeyError=True)
-            logging.debug(f"Applying cross section {xsection}.")
-        logging.debug(f"Applying total_gensumweight {total_gensumweight}.")
-        output = fill_utils.apply_normalization(output, xsection / total_gensumweight)
-        cutflow = fill_utils.apply_normalization(cutflow, xsection / total_gensumweight)
+        logging.debug(f"Found total_gensumweight {total_gensumweight}.")
+        xsection = fill_utils.getXSection(sample, options.era, failOnKeyError=True)
+        logging.debug(f"Found cross section x kr x br: {xsection}.")
+        lumi = plot_utils.getLumi(options.era, options.scouting)
+        logging.debug(f"Found lumi: {lumi}.")
 
-    # Make ABCD expected histogram for signal region
-    if options.doABCD and options.predictSR:
-        logging.info("Predicting SR using ABCD method.")
+        if isSignal:
+            normalization = 1 / total_gensumweight
+        else:
+            normalization = xsection * lumi / total_gensumweight
 
-        # Loop through every configuration
-        for label_out, config_out in config.items():
-            xregions = np.array(config_out["xvar_regions"]) * 1.0j
-            yregions = np.array(config_out["yvar_regions"]) * 1.0j
-            xvar = config_out["xvar"].replace("_" + config_out["input_method"], "")
-            yvar = config_out["yvar"].replace("_" + config_out["input_method"], "")
-            hist_name = f"2D_{xvar}_vs_{yvar}_{label_out}"
-
-            # Check if histogram exists
-            if hist_name not in output.keys():
-                logging.warning(f"{hist_name} has not been created.")
-                continue
-
-            # Only calculate predicted for 9 region ABCD for now, should be made flexible based on the number of regions defined in the config
-            if (len(xregions) != 4) or (len(yregions) != 4):
-                logging.warning(
-                    f"Can only calculate SR for 9 region ABCD, skipping {label_out}"
-                )
-                continue
-
-            try:
-                # Calculate expected SR from ABCD method
-                # sum_var = 'x' corresponds to scaling F histogram
-                _, SR_exp = plot_utils.ABCD_9regions_errorProp(
-                    output[hist_name], xregions, yregions, sum_var="x"
-                )
-                output[f"I_{yvar}_{label_out}_exp"] = SR_exp
-            except ZeroDivisionError:
-                logging.warning(f"ZeroDivisionError for {label_out}, skipping.")
-                continue
+        logging.info(f"Applying normalization: {normalization}.")
+        output = fill_utils.apply_normalization(output, normalization)
+        cutflow = fill_utils.apply_normalization(cutflow, normalization)
 
     # form metadata
     metadata = {
@@ -849,10 +823,12 @@ def main():
         "analysis": options.channel,
         "scouting": int(options.scouting),
         "isMC": int(options.isMC),
+        "signal": int(isSignal),
         "era": options.era,
         "sample": sample,
-        "xsec": xsection,
+        "xsec": float(xsection),
         "gensumweight": int(total_gensumweight),
+        "lumi": float(lumi),
         "nfiles": ntotal,
         "nfailed": nfailed,
     }

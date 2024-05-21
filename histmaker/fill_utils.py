@@ -75,6 +75,16 @@ def get_git_info(path="."):
     return commit, diff
 
 
+def isSampleSignal(sample: str, year: str, path: str = "../data/") -> bool:
+    """
+    Check the xsections json database to see if a sample is signal or not.
+    """
+    xsecs_database = f"{path}/xsections_{year}.json"
+    with open(xsecs_database) as file:
+        MC_xsecs = json.load(file)
+        return bool(MC_xsecs[sample]["signal"])
+
+
 def getXSection(
     dataset: str, year, path: str = "../data/", failOnKeyError: bool = True
 ) -> float:
