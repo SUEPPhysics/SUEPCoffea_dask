@@ -31,6 +31,7 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
+
 import plotting.plot_utils as plot_utils
 
 
@@ -1231,7 +1232,7 @@ def main():
         lumi = plot_utils.getLumi(options.era, options.scouting)
         logging.debug(f"Found lumi: {lumi}.")
 
-        if isSignal:  
+        if isSignal:
             normalization = 1 / total_gensumweight
         else:
             normalization = xsection * lumi / total_gensumweight
