@@ -471,7 +471,10 @@ def main():
             "SR": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
-                "SR": [["SUEP_S1_HighestPT", ">=", 0.5], ["SUEP_nconst_HighestPT", ">=", 40]],
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.5],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
                 "selections": [
                     "MET_pt > 30",
                     "W_pt_from_MET > 40",
@@ -491,7 +494,10 @@ def main():
             "CRTT": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
-                "SR": [["SUEP_S1_HighestPT", ">=", 0.5], ["SUEP_nconst_HighestPT", ">=", 40]],
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.5],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
                 "selections": [
                     "MET_pt > 30",
                     "W_pt_from_MET > 40",
