@@ -11,7 +11,7 @@ from workflows.utils import pandas_utils
 
 def form_ntuple(options, output):
     df = pandas_utils.format_dataframe(
-        output["out"][options.dataset]["vars"].value, reducePrecision=True
+        output["out"][options.dataset]["vars"].value
     )
     return df
 
