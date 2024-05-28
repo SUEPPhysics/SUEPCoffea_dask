@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 from collections import defaultdict
-import time
+
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -626,7 +626,7 @@ def check_proxy(time_min=100):
             lifetime = 140
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
-        shutil.copyfile(os.environ['X509_USER_PROXY'] + proxy_base, proxy_copy)
+        shutil.copyfile(os.environ["X509_USER_PROXY"] + proxy_base, proxy_copy)
 
     return lifetime
 
@@ -1492,7 +1492,7 @@ def poly_fit_hist2d(h, deg=1):
         y_values = np.concatenate((y_values, y_centers))
     p = np.poly1d(np.polyfit(x_values, y_values, deg, w=z_values, cov=False))
     logging.info("Linear fit result:", p)
-    return p    
+    return p
 
 
 def hist_mean(hist):
@@ -1722,9 +1722,7 @@ def make_n1_plots(
             "No samples provided. Provide at least one samples or one stackedSamples."
         )
 
-    n1_plots = [
-        k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_N-1")
-    ]
+    n1_plots = [k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_N-1")]
 
     cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
     for cut in cuts:

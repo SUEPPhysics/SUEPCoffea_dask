@@ -207,51 +207,53 @@ def init_hists_default(output: dict, label: str, regions_list: list = [""]) -> N
                         name=f"{r}SUEP_delta_mass_genMass_{label}",
                         label="SUEP Mass - genSUEP Mass [GeV]",
                     ).Weight(),
-                    
                 }
             )
+
 
 def init_hists_cluster(output, label, regions_list=[""]):
     for r in regions_list:
 
         # these histograms will be made for each systematic, and no ABCD region
         if r == "":
-            output.update({
-                f"ht_{label}": Hist.new.Reg(
-                    100, 0, 10000, name=f"ht_{label}", label="HT"
-                ).Weight(),
-                f"ht_JEC_{label}": Hist.new.Reg(
-                    100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
-                ).Weight(),
-                f"ht_JEC_JER_up_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"ht_JEC_JER_up_{label}",
-                    label="HT JEC up",
-                ).Weight(),
-                f"ht_JEC_JER_down_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"ht_JEC_JER_down_{label}",
-                    label="HT JEC JER down",
-                ).Weight(),
-                f"ht_JEC_JES_up_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"ht_JEC_JES_up_{label}",
-                    label="HT JEC JES up",
-                ).Weight(),
-                f"ht_JEC_JES_down_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    10000,
-                    name=f"ht_JEC_JES_down_{label}",
-                    label="HT JEC JES down",
-                ).Weight(),
-            })
+            output.update(
+                {
+                    f"ht_{label}": Hist.new.Reg(
+                        100, 0, 10000, name=f"ht_{label}", label="HT"
+                    ).Weight(),
+                    f"ht_JEC_{label}": Hist.new.Reg(
+                        100, 0, 10000, name=f"ht_JEC_{label}", label="HT JEC"
+                    ).Weight(),
+                    f"ht_JEC_JER_up_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JER_up_{label}",
+                        label="HT JEC up",
+                    ).Weight(),
+                    f"ht_JEC_JER_down_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JER_down_{label}",
+                        label="HT JEC JER down",
+                    ).Weight(),
+                    f"ht_JEC_JES_up_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JES_up_{label}",
+                        label="HT JEC JES up",
+                    ).Weight(),
+                    f"ht_JEC_JES_down_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        10000,
+                        name=f"ht_JEC_JES_down_{label}",
+                        label="HT JEC JES down",
+                    ).Weight(),
+                }
+            )
 
         # these histograms will be made for only nominal, and no ABCD regions
         if (
@@ -259,30 +261,32 @@ def init_hists_cluster(output, label, regions_list=[""]):
             and not label.lower().endswith("up")
             and not label.lower().endswith("down")
         ):
-            output.update({
-                f"{r}SUEP_genMass_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    1200,
-                    name=f"{r}SUEP_genMass_{label}",
-                    label="Gen Mass of SUEP ($m_S$) [GeV]",
-                ).Weight(),
-                f"{r}SUEP_delta_pt_genPt_{label}": Hist.new.Reg(
-                    400,
-                    -2000,
-                    2000,
-                    name=f"{r}SUEP_delta_pt_genPt_{label}",
-                    label="SUEP $p_T$ - genSUEP $p_T$ [GeV]",
-                ).Weight(),
-                f"{r}SUEP_ISR_deltaPhi_{label}": Hist.new.Reg(
-                    400,
-                    -6,
-                    6,
-                    name=f"{r}SUEP_ISR_deltaPhi_{label}",
-                    label=r"SUEP $\phi$ - ISR $\phi$ [GeV]",
-                ).Weight(),
-            })
-            
+            output.update(
+                {
+                    f"{r}SUEP_genMass_{label}": Hist.new.Reg(
+                        100,
+                        0,
+                        1200,
+                        name=f"{r}SUEP_genMass_{label}",
+                        label="Gen Mass of SUEP ($m_S$) [GeV]",
+                    ).Weight(),
+                    f"{r}SUEP_delta_pt_genPt_{label}": Hist.new.Reg(
+                        400,
+                        -2000,
+                        2000,
+                        name=f"{r}SUEP_delta_pt_genPt_{label}",
+                        label="SUEP $p_T$ - genSUEP $p_T$ [GeV]",
+                    ).Weight(),
+                    f"{r}SUEP_ISR_deltaPhi_{label}": Hist.new.Reg(
+                        400,
+                        -6,
+                        6,
+                        name=f"{r}SUEP_ISR_deltaPhi_{label}",
+                        label=r"SUEP $\phi$ - ISR $\phi$ [GeV]",
+                    ).Weight(),
+                }
+            )
+
 
 def init_hists_clusterInverted(output, label, regions_list=[""]):
     output.update(
@@ -607,42 +611,34 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 200,
                 name=f"n_darkphis_inTracker_{label}",
-                label="$n_{\phi_D}$ in Tracker ($|\eta| < 2.5$)"
+                label=r"$n_{\phi_D}$ in Tracker ($|\eta| < 2.5$)",
             ).Weight(),
             f"percent_darkphis_inTracker_{label}": Hist.new.Reg(
                 100,
                 0,
                 1.1,
                 name=f"percent_darkphis_inTracker_{label}",
-                label="% $\phi_D$ in Tracker ($|\eta| < 2.5$)"
+                label=r"% $\phi_D$ in Tracker ($|\eta| < 2.5$)",
             ).Weight(),
             f"WH_system_mass_{label}": Hist.new.Reg(
-                1000,
-                0,
-                5000,
-                name=f"WH_system_mass_{label}",
-                label="$m^{WH}$"
+                1000, 0, 5000, name=f"WH_system_mass_{label}", label="$m^{WH}$"
             ).Weight(),
             f"WH_system_pt_{label}": Hist.new.Reg(
-                1000,
-                0,
-                5000,
-                name=f"WH_system_pt_{label}",
-                label="$p^{WH}_T$"
+                1000, 0, 5000, name=f"WH_system_pt_{label}", label="$p^{WH}_T$"
             ).Weight(),
             f"highestPTtrack_pt_norm_{label}": Hist.new.Reg(
                 100,
                 0,
                 2,
                 name=f"highestPTtrack_pt_norm_{label}",
-                label="Highest SUEP $p_T$ Track $p_T$ / $p^{SUEP}_T$"
+                label="Highest SUEP $p_T$ Track $p_T$ / $p^{SUEP}_T$",
             ).Weight(),
             f"highestPTtrack_pt_norm2_{label}": Hist.new.Reg(
                 100,
                 0,
                 20,
                 name=f"highestPTtrack_pt_norm2_{label}",
-                label="Highest SUEP $p_T$ Track $p_T$ / Avg. SUEP track $p_T$"
+                label="Highest SUEP $p_T$ Track $p_T$ / Avg. SUEP track $p_T$",
             ).Weight(),
             # f"CaloMET_pt_{label}": Hist.new.Reg(
             #     100,
@@ -1013,7 +1009,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 3.2,
                 name=f"minDeltaPhiJetW_{label}",
-                label="$min(\Delta\phi(AK4jets, W))$",
+                label=r"$min(\Delta\phi(AK4jets, W))$",
             ).Weight(),
             f"minDeltaPhiMETJet_pt_{label}": Hist.new.Reg(
                 100,
@@ -1940,7 +1936,8 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 300,
                 name=f"nconst_{label}",
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-            ).Weight(),
+            )
+            .Weight(),
             f"3D_SUEP_S1_vs_ak4SUEP1_SUEP_BV_vs_SUEP_nconst_{label}": Hist.new.Reg(
                 100,
                 0,
@@ -1961,7 +1958,8 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 300,
                 name=f"nconst_{label}",
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-            ).Weight(),
+            )
+            .Weight(),
             # f"3D_SUEP_eta_vs_ak4jet1_inSUEPcluster_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
             #     60,
             #     -3,

@@ -654,6 +654,7 @@ def getCosThetaCS(lepton, MET, MW=80.379):
         / (MW * np.sqrt(MW**2 + W.pt**2))
     )
 
+
 def getCosThetaCS2(lepton, MET, MW=80.379):
 
     nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
