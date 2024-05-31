@@ -32,7 +32,13 @@ def main():
     )
     parser.add_argument("-t", "--tag", type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
-    parser.add_argument("-w", "--wait", type=float, default=0, help="Number of hours to wait between sample resubmissions.")
+    parser.add_argument(
+        "-w",
+        "--wait",
+        type=float,
+        default=0,
+        help="Number of hours to wait between sample resubmissions.",
+    )
     parser.add_argument(
         "-m",
         "--move",
@@ -191,7 +197,9 @@ def main():
                 resubmit_file.close()
 
                 if options.wait > 0 and isample != 0:
-                    logging.info(f"Waiting {options.wait} hours ({round(options.wait*60)} minutes) before resubmitting")
+                    logging.info(
+                        f"Waiting {options.wait} hours ({round(options.wait*60)} minutes) before resubmitting"
+                    )
                     subprocess.run(["sleep", str(options.wait * 3600)])
 
                 htc = subprocess.Popen(
