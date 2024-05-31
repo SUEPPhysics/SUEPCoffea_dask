@@ -32,6 +32,7 @@ def main():
     )
     parser.add_argument("-t", "--tag", type=str, default="IronMan", required=True)
     parser.add_argument("-r", "--resubmit", type=int, default=0, help="")
+    parser.add_argument("-w", "--wait", type=float, default=0, help="Number of hours to wait between sample resubmissions.")
     parser.add_argument(
         "-m",
         "--move",
@@ -90,7 +91,7 @@ def main():
         totals, completeds = 0, 0
         missing_samples = []  # samples with no inputfiles.dat or output dir
         empty_samples = []  # samples with  no completed jobs
-        for sample in stream.read().split("\n"):
+        for isample, sample in enumerate(stream.read().split("\n")):
             if len(sample) <= 1:
                 continue
             if "#" in sample:
@@ -188,6 +189,10 @@ def main():
                 for redo_file in jobs_resubmit:
                     resubmit_file.write(redo_file + "\n")
                 resubmit_file.close()
+
+                if options.wait > 0 and isample != 0:
+                    logging.info(f"Waiting {options.wait} hours ({round(options.wait*60)} minutes) before resubmitting")
+                    subprocess.run(["sleep", str(options.wait * 3600)])
 
                 htc = subprocess.Popen(
                     "condor_submit " + os.path.join(jobs_dir, "condor.sub"),
