@@ -63,9 +63,7 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
             with_name="Momentum4D",
         )
     # jet pt cut, eta cut, and jet ID
-    jet_awk_Cut = (
-        (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4) & (0 < (Jets_awk.jetId & 0b010))
-    )
+    jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4) & (0<(Jets_awk.jetId & 0b010))
     # and minimum separation from lepton
     if lepton is not None:
         jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton) >= 0.4)
@@ -92,6 +90,15 @@ def getGenPart(events):
     return genParts
 
 
+def getGenW(events):
+    """
+    Get the gen-level W boson, lastCopy (statusFlag 13)
+    """
+    genParticles = getGenPart(events)
+    genW = genParticles[(abs(genParticles.pdgID) == 24) & (0<(genParticles.statusFlags & (1 << 13)))]
+    return genW
+
+
 def getGenDarkPseudoscalars(events):
     """
     Get the gen-level dark pseudoscalar particles (phi's) produced by the scalar (S).
@@ -99,7 +106,7 @@ def getGenDarkPseudoscalars(events):
     """
 
     genParticles = getGenPart(events)
-    darkPseudoscalarParticles = genParticles[genParticles.pdgID == 999999]
+    darkPseudoscalarParticles = genParticles[genParticles.pdgID == 999999] 
 
     return darkPseudoscalarParticles
 
@@ -611,9 +618,9 @@ def getTopMass(lepton, MET, jets):
 def getNeutrinoEz(lepton, MET, MW=80.379):
     Wt = make_Wt_4v(lepton, MET)
     A = MW**2 + Wt.pt**2 - lepton.pt**2 - MET.pt**2
-    delta = np.sqrt(A**2 - 4 * (lepton.pt**2) * (MET.pt**2))
-    Ez_p = (A * lepton.pz + lepton.e * delta) / (2 * (lepton.pt**2))
-    Ez_m = (A * lepton.pz - lepton.e * delta) / (2 * (lepton.pt**2))
+    delta = np.sqrt(A**2 - 4*(lepton.pt**2)*(MET.pt**2))
+    Ez_p = (A * lepton.pz + lepton.e * delta)/(2*(lepton.pt**2))
+    Ez_m = (A * lepton.pz - lepton.e * delta)/(2*(lepton.pt**2))
     return Ez_p, Ez_m
 
 
@@ -625,8 +632,8 @@ def make_W_4v(lepton, MET, MW=80.379):
     nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
     nu_p = make_nu_4v(MET, pz=nu_pz_p)
     nu_m = make_nu_4v(MET, pz=nu_pz_m)
-    W_4v_p = lepton + nu_p
-    W_4v_m = lepton + nu_m
+    W_4v_p = lepton +  nu_p
+    W_4v_m = lepton +  nu_m
     return W_4v_p, W_4v_m
 
 
@@ -636,24 +643,18 @@ def getCosThetaCS(lepton, MET, MW=80.379):
 
     nu_p = make_nu_4v(MET, pz=nu_pz_p)
     nu_m = make_nu_4v(MET, pz=nu_pz_m)
-
+    
     # random_bits = np.random.randint(2, size=len(lepton))
     # nu = ak.where(random_bits, nu_p, nu_m)
     nu = nu_p
     W = lepton + nu
 
-    Pp1 = np.sqrt(2) ** -1 * (lepton.e + lepton.pz)
-    Pp2 = np.sqrt(2) ** -1 * (nu.e + nu.pz)
-    Pm1 = np.sqrt(2) ** -1 * (lepton.e - lepton.pz)
-    Pm2 = np.sqrt(2) ** -1 * (nu.e - nu.pz)
+    Pp1 = np.sqrt(2)**-1 * (lepton.e + lepton.pz)
+    Pp2 = np.sqrt(2)**-1 * (nu.e + nu.pz)
+    Pm1 = np.sqrt(2)**-1 * (lepton.e - lepton.pz)
+    Pm2 = np.sqrt(2)**-1 * (nu.e - nu.pz)
 
-    return (
-        (nu.pz / np.abs(nu.pz))
-        * 2
-        * (Pp1 * Pm2 - Pm1 * Pp2)
-        / (MW * np.sqrt(MW**2 + W.pt**2))
-    )
-
+    return (nu.pz/np.abs(nu.pz))*2*(Pp1*Pm2 - Pm1*Pp2)/(MW*np.sqrt(MW**2 + W.pt**2))
 
 def getCosThetaCS2(lepton, MET, MW=80.379):
 
@@ -661,21 +662,18 @@ def getCosThetaCS2(lepton, MET, MW=80.379):
 
     nu_p = make_nu_4v(MET, pz=nu_pz_p)
     nu_m = make_nu_4v(MET, pz=nu_pz_m)
-
+    
     # random_bits = np.random.randint(2, size=len(lepton))
     # nu = ak.where(random_bits, nu_p, nu_m)
     nu = nu_p
     W = lepton + nu
 
-    boost_W = ak.zip(
-        {
-            "px": -W.px,
-            "py": -W.py,
-            "pz": -W.pz,
-            "mass": W.m,
-        },
-        with_name="Momentum4D",
-    )
+    boost_W = ak.zip({
+        "px": -W.px,
+        "py": -W.py,
+        "pz": -W.pz,
+        "mass": W.m,
+    }, with_name="Momentum4D")
 
     boost_lepton = lepton.boost_p4(boost_W)
     return np.cos(boost_lepton.theta)
