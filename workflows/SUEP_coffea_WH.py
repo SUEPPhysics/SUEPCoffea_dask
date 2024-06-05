@@ -692,7 +692,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["W_mt"] = WH_utils.calc_W_mt(self.lepton, events.MET)
         output["vars"]["W_pt_PuppiMET"] = self.W_PuppiMET.pt
         output["vars"]["W_phi_PuppiMET"] = self.W_PuppiMET.phi
-        output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(self.lepton, events.PuppiMET)
+        output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(
+            self.lepton, events.PuppiMET
+        )
         output["vars"]["W_pt_CaloMET"] = self.W_CaloMET.pt
         output["vars"]["W_phi_CaloMET"] = self.W_CaloMET.phi
         output["vars"]["W_mt_CaloMET"] = WH_utils.calc_W_mt(self.lepton, events.CaloMET)
