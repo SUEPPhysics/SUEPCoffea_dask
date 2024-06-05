@@ -317,29 +317,36 @@ def make_new_variable(
     return df
 
 
-def fill_2d_distributions(df, output, label_out, input_method):
+def fill_ND_distributions(df, output, label_out, input_method):
+    """
+    Fill all N>1 dimensional histograms.
+    To do, we expect that they are named as follows:
+    ND_var1_vs_var2_vs_var3_vs_..._vs_varN_label_out
+    Where var1, var2, ..., varN are the variables to be plotted in each dimension,
+    and N is an integer greater than 1.
+    """
+
     keys = list(output.keys())
-    keys_2Dhists = [k for k in keys if "2D" in k]
+    keys_NDhists = [k for k in keys if "_vs_" in k and k.endswith(label_out)]
     df_keys = list(df.keys())
 
-    for key in keys_2Dhists:
-        if not key.endswith(label_out):
-            continue
-        string = key[
-            len("2D") + 1 : -(len(label_out) + 1)
-        ]  # cut out "2D_" and output label
-        var1 = string.split("_vs_")[0]
-        var2 = string.split("_vs_")[1]
-        if var1 not in df_keys:
-            var1 += "_" + input_method
-            if var1 not in df_keys:
-                continue
-        if var2 not in df_keys:
-            var2 += "_" + input_method
-            if var2 not in df_keys:
-                continue
-        output[key].fill(df[var1], df[var2], weight=df["event_weight"])
+    for key in keys_NDhists:
 
+        nd_hist_name = key[
+            3 : -(len(label_out) + 1)
+        ]  # cut out "ND_" and output label
+        variables = nd_hist_name.split("_vs_")
+
+        # skip histograms if there is a variable is not in the dataframe
+        # if the input method is not in the veriable name, add it
+        for ivar, var in enumerate(variables):
+            if var not in df_keys:
+                var += "_" + input_method
+                if var not in df_keys:
+                    continue
+                variables[ivar] = var
+
+        output[key].fill(*[df[var] for var in variables], weight=df["event_weight"])
 
 def auto_fill(
     df: pd.DataFrame,
@@ -376,8 +383,8 @@ def auto_fill(
             df[plot], weight=df["event_weight"]
         )
 
-    # 2. fill some 2D distributions
-    fill_2d_distributions(df, output, label_out, input_method)
+    # 2. fill some ND distributions
+    fill_ND_distributions(df, output, label_out, input_method)
 
     # 3. divide the dfs by region
     if do_abcd:

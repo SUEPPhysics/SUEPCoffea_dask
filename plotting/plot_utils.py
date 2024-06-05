@@ -182,13 +182,13 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
     return lumi, era
 
 
-def getHistLists(plotDir, tag, filename, filters=None):
+def getHistLists(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []
     with open(filename) as file:
         for line in file:
             sample_name = line.strip().split("/")[-1]
             sample_name = sample_name.replace(".root", "")
-            result_path = f"{plotDir}{sample_name}_{tag}.root"
+            result_path = f"{plotDir}{sample_name}_{tag}{file_ext}"
             if filters:
                 if not all([filt in sample_name for filt in filters]):
                     continue
@@ -424,11 +424,11 @@ def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dic
     if sample not in list(plots.keys()):
         plots[sample] = plotsToAdd
     else:
-        try:
-            for plot in list(plotsToAdd.keys()):
+        for plot in list(plotsToAdd.keys()):
+            try:
                 plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot]
-        except KeyError:
-            print("WARNING: " + sample + " has a different set of plots")
+            except KeyError:
+                print("WARNING: could not find histogram", plot)
 
     return plots
 
@@ -532,7 +532,7 @@ def loader(
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
         if "signal" in file_metadata.keys():
-            if file_metadata["signal"]:
+            if file_metadata["signal"] and ("SUEP_mS" in infile_name):
                 xsec = float(file_metadata["xsec"])
                 if verbose:
                     print("Applying xsec", xsec)
@@ -583,6 +583,9 @@ def openHistFile(infile_name):
 def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
     plots[new_tag] = {}
     for key in plots[samples[0]].keys():
+        if '3D_SUEP_S1' not in key:
+            continue
+        print("combining histograms for", key)
         for i, sample in enumerate(samples):
             if i == 0:
                 plots[new_tag][key] = plots[sample][key].copy()
@@ -1189,13 +1192,14 @@ def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
             D = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
             E = hist_abcd[xregions[1] : xregions[2] : sum, yregions[1] : yregions[2]]
             SR = hist_abcd[xregions[2] : xregions[3] : sum, yregions[1] : yregions[2]]
-        SR_exp = (
-            E
-            * E.sum().value
-            * C.sum().value
-            * A.sum().value
-            / (B.sum().value ** 2 * D.sum().value)
-        )
+
+            SR_exp = (
+                E
+                * E.sum().value
+                * C.sum().value
+                * A.sum().value
+                / (B.sum().value ** 2 * D.sum().value)
+            )
     elif sum_var == "y":
         if len(xregions) == 3:
             A = hist_abcd[xregions[0] : xregions[1], yregions[0] : yregions[1] : sum]

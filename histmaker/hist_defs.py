@@ -1705,6 +1705,48 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
             .Weight(),
+            f"3D_SUEP_S1_vs_ak4jet1_inSUEPcluster_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                100,
+                0,
+                1.0,
+                name=f"SUEP_S1_{label}",
+                label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
+            )
+            .Reg(
+                500,
+                0,
+                1000,
+                name=f"ak4jet1_inSUEPcluster_pt_{label}",
+                label="ak4jet1 in SUEP cluster $p_T$",
+            )
+            .Reg(
+                300,
+                0,
+                300,
+                name=f"nconst_{label}",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            ).Weight(),
+            f"3D_SUEP_S1_vs_ak4SUEP1_SUEP_BV_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                100,
+                0,
+                1.0,
+                name=f"SUEP_S1_{label}",
+                label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
+            )
+            .Reg(
+                100,
+                -1,
+                5,
+                name=f"ak4SUEP1_SUEP_BV{label}",
+                label="ak4SUEP1_SUEP_BV",
+            )
+            .Reg(
+                300,
+                0,
+                300,
+                name=f"nconst_{label}",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            ).Weight(),
             #            f"MET_sumEt_{label}": Hist.new.Reg(
             #                100,
             #                0,

@@ -40,7 +40,7 @@ slurm_script_template = """#!/bin/bash
 #SBATCH --error={log_dir}{sample}.err
 #SBATCH --time={time}
 #SBATCH --mem={memory}
-#SBATCH --partition=submit
+#SBATCH --partition=submit,submit-centos07
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
@@ -198,7 +198,8 @@ for i, sample in enumerate(samples):
         )
 
     elif options.code == "plot":
-        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --saveDir={saveDir} --channel={channel} --maxFiles={maxFiles}".format(
+        # had to take out --predictSR from cmd bc not in current version of make_hists
+        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --saveDir={saveDir} --channel={channel} --maxFiles={maxFiles}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -212,7 +213,7 @@ for i, sample in enumerate(samples):
             doABCD=options.doABCD,
             doSyst=options.doSyst,
             blind=options.blind,
-            predictSR=options.predictSR,
+            #predictSR=options.predictSR,
             saveDir=options.saveDir,
             channel=options.channel,
             maxFiles=options.maxFiles,
