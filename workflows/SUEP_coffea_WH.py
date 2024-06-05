@@ -689,13 +689,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.W_CaloMET = WH_utils.make_Wt_4v(self.lepton, events.CaloMET)
         output["vars"]["W_pt"] = self.W.pt
         output["vars"]["W_phi"] = self.W.phi
-        output["vars"]["W_mt"] = self.W.mt
+        output["vars"]["W_mt"] = WH_utils.calc_W_mt(self.lepton, events.MET)
         output["vars"]["W_pt_PuppiMET"] = self.W_PuppiMET.pt
         output["vars"]["W_phi_PuppiMET"] = self.W_PuppiMET.phi
-        output["vars"]["W_mt_PuppiMET"] = self.W_PuppiMET.mt
+        output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(self.lepton, events.PuppiMET)
         output["vars"]["W_pt_CaloMET"] = self.W_CaloMET.pt
         output["vars"]["W_phi_CaloMET"] = self.W_CaloMET.phi
-        output["vars"]["W_mt_CaloMET"] = self.W_CaloMET.mt
+        output["vars"]["W_mt_CaloMET"] = WH_utils.calc_W_mt(self.lepton, events.CaloMET)
 
         # save genW for MC
         if self.isMC:

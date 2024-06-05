@@ -568,16 +568,20 @@ def make_Wt_4v(lepton, MET):
     return W_4v
 
 
-def W_kinematics(lepton, MET):
+def calc_W_mt(lepton, MET):
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
-    phi = MET_delta_phi(lepton, MET)
-    W_mt_2 = (
+    _deltaPhi_lepton_MET = MET_delta_phi(lepton, MET)
+    _W_mt = np.sqrt(
         2
         * np.abs(lepton.pt)
         * np.abs(MET.pt)
-        * (1 - np.cos(phi))  # from PDG review on kinematics, eq 38.61
+        * (1 - np.cos(_deltaPhi_lepton_MET))  # from PDG review on kinematics, eq 38.61
     )
-    W_mt = np.sqrt(W_mt_2)
+    return _W_mt
+
+
+def W_kinematics(lepton, MET):
+    W_mt = calc_W_mt(lepton, MET)
 
     # pT calculation
     W_ptx = lepton.px + MET.px
