@@ -348,7 +348,7 @@ def main():
             [
                 "ak4SUEP1_SUEP_BV",
                 fill_utils.balancing_var,
-                ["ak4jet1_inSUEPcluster_pt", "SUEP_pt_HighestPT"],
+                ["ak4jet1_inSUEPcluster_pt_HighestPT", "SUEP_pt_HighestPT"],
             ],
             [
                 "W_SUEP_vBV",
@@ -439,12 +439,12 @@ def main():
             [
                 "nak4jets_outsideSUEP",
                 lambda x, y: (x - y),
-                ["ngood_ak4jets", "ak4jets_inSUEPcluster_n"],
+                ["ngood_ak4jets", "ak4jets_inSUEPcluster_n_HighestPT"],
             ],
             [
                 "nonSUEP_S1",
                 lambda x, y: 1.5 * (x + y),
-                ["nonSUEP_eig0", "nonSUEP_eig1"],
+                ["nonSUEP_eig0_HighestPT", "nonSUEP_eig1_HighestPT"],
             ],
             [
                 "ntracks_outsideSUEP",
@@ -459,7 +459,7 @@ def main():
             [
                 "SUEP_nconst_minus_otherAK15_maxConst",
                 lambda x, y: (x - y),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst"],
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
             ],
             [
                 "jetsInSameHemisphere",

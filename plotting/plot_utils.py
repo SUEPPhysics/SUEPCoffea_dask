@@ -583,8 +583,6 @@ def openHistFile(infile_name):
 def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
     plots[new_tag] = {}
     for key in plots[samples[0]].keys():
-        if '3D_SUEP_S1' not in key:
-            continue
         print("combining histograms for", key)
         for i, sample in enumerate(samples):
             if i == 0:
