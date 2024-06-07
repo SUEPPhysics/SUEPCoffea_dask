@@ -1,0 +1,4 @@
+/store/user/cfreer/WHSUEP_pietro//2018_MC//SUEP_mS125.000_mPhi2.000_T0.500_modegeneric
+/store/user/cfreer/WHSUEP_pietro//2018_MC//SUEP_mS125.000_mPhi2.000_T2.000_modegeneric
+/store/user/cfreer/WHSUEP_pietro//2018_MC//SUEP_mS125.000_mPhi3.000_T3.000_modegeneric
+/store/user/cfreer/WHSUEP_pietro//2018_MC//SUEP_mS125.000_mPhi8.000_T8.000_modegeneric
