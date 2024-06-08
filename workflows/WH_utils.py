@@ -438,7 +438,7 @@ def triggerSelection(
     else:
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
-        elif "SingleElectron" or "EGamma" in sample:
+        elif ("SingleElectron" in sample) or ("EGamma" in sample):
             events = events[(triggerElectron | triggerPhoton) & (~triggerSingleMuon)]
         else:
             events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
