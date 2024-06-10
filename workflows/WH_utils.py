@@ -92,6 +92,17 @@ def getGenPart(events):
     return genParts
 
 
+def getGenW(events):
+    """
+    Get the gen-level W boson, lastCopy (statusFlag 13)
+    """
+    genParticles = getGenPart(events)
+    genW = genParticles[
+        (abs(genParticles.pdgID) == 24) & (0 < (genParticles.statusFlags & (1 << 13)))
+    ]
+    return genW
+
+
 def getGenDarkPseudoscalars(events):
     """
     Get the gen-level dark pseudoscalar particles (phi's) produced by the scalar (S).
@@ -427,7 +438,7 @@ def triggerSelection(
     else:
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
-        elif "SingleElectron" or "EGamma" in sample:
+        elif ("SingleElectron" in sample) or ("EGamma" in sample):
             events = events[(triggerElectron | triggerPhoton) & (~triggerSingleMuon)]
         else:
             events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
@@ -557,16 +568,29 @@ def make_Wt_4v(lepton, MET):
     return W_4v
 
 
-def W_kinematics(lepton, MET):
+def calc_W_mt(lepton, MET):
     # mT calculation -- m1 = m2 = 0, e.g. MT for W uses mass_lepton = mass_MET = 0
-    phi = MET_delta_phi(lepton, MET)
-    W_mt_2 = (
+    _deltaPhi_lepton_MET = MET_delta_phi(lepton, MET)
+    _W_mt = np.sqrt(
         2
         * np.abs(lepton.pt)
         * np.abs(MET.pt)
-        * (1 - np.cos(phi))  # from PDG review on kinematics, eq 38.61
+        * (1 - np.cos(_deltaPhi_lepton_MET))  # from PDG review on kinematics, eq 38.61
     )
-    W_mt = np.sqrt(W_mt_2)
+    return _W_mt
+
+
+##########################################################################################################################
+# The following functions are deprecated, but kept around for they might be useful in the future.
+##########################################################################################################################
+
+
+def W_kinematics(lepton, MET):
+    """
+    WARNING: deprecated.
+    Calculate W kinematics.
+    """
+    W_mt = calc_W_mt(lepton, MET)
 
     # pT calculation
     W_ptx = lepton.px + MET.px
@@ -582,6 +606,7 @@ def W_kinematics(lepton, MET):
 
 def getTopMass(lepton, MET, jets):
     """
+    WARNING: deprecated.
     Calculate the top mass for each event.
     """
 
@@ -609,6 +634,10 @@ def getTopMass(lepton, MET, jets):
 
 
 def getNeutrinoEz(lepton, MET, MW=80.379):
+    """
+    WARNING: deprecated.
+    Get the neutrino z component, assuming the MW.
+    """
     Wt = make_Wt_4v(lepton, MET)
     A = MW**2 + Wt.pt**2 - lepton.pt**2 - MET.pt**2
     delta = np.sqrt(A**2 - 4 * (lepton.pt**2) * (MET.pt**2))
@@ -619,7 +648,8 @@ def getNeutrinoEz(lepton, MET, MW=80.379):
 
 def make_W_4v(lepton, MET, MW=80.379):
     """
-    Make the W boson 4-vector from lepton and MET.
+    WARNING: deprecated.
+    Make the W boson 4-vector from lepton and MET, assuming the MW.
     Since the sign of the neutrino pz is not known, we have two possible W bosons.
     """
     nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
@@ -631,15 +661,18 @@ def make_W_4v(lepton, MET, MW=80.379):
 
 
 def getCosThetaCS(lepton, MET, MW=80.379):
+    """
+    WARNING: deprecated.
+    Get the cosine of the Collins-Soper angle. Assumes the MW.
+    """
 
     nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
 
     nu_p = make_nu_4v(MET, pz=nu_pz_p)
     nu_m = make_nu_4v(MET, pz=nu_pz_m)
 
-    # random_bits = np.random.randint(2, size=len(lepton))
-    # nu = ak.where(random_bits, nu_p, nu_m)
-    nu = nu_p
+    random_bits = np.random.randint(2, size=len(lepton))
+    nu = ak.where(random_bits, nu_p, nu_m)
     W = lepton + nu
 
     Pp1 = np.sqrt(2) ** -1 * (lepton.e + lepton.pz)
@@ -656,15 +689,18 @@ def getCosThetaCS(lepton, MET, MW=80.379):
 
 
 def getCosThetaCS2(lepton, MET, MW=80.379):
+    """
+    WARNING: deprecated.
+    Alternative way to get the cosine of the Collins-Soper angle. Assumes the MW.
+    """
 
     nu_pz_p, nu_pz_m = getNeutrinoEz(lepton, MET, MW=MW)
 
     nu_p = make_nu_4v(MET, pz=nu_pz_p)
     nu_m = make_nu_4v(MET, pz=nu_pz_m)
 
-    # random_bits = np.random.randint(2, size=len(lepton))
-    # nu = ak.where(random_bits, nu_p, nu_m)
-    nu = nu_p
+    random_bits = np.random.randint(2, size=len(lepton))
+    nu = ak.where(random_bits, nu_p, nu_m)
     W = lepton + nu
 
     boost_W = ak.zip(
@@ -679,3 +715,69 @@ def getCosThetaCS2(lepton, MET, MW=80.379):
 
     boost_lepton = lepton.boost_p4(boost_W)
     return np.cos(boost_lepton.theta)
+
+
+def savePhotonInfo(output, events, photons, jets_jec, looseLeptons):
+    """
+    WARNING: deprecated
+    Function to save photon information in the output DataFrame.
+    """
+
+    for i in range(2):
+        output["vars"]["photon" + str(i + 1) + "_pt"] = ak.fill_none(
+            ak.pad_none(photons.pt, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_phi"] = ak.fill_none(
+            ak.pad_none(photons.phi, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_eta"] = ak.fill_none(
+            ak.pad_none(photons.eta, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_pixelSeed"] = ak.fill_none(
+            ak.pad_none(photons.pixelSeed, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_mvaID"] = ak.fill_none(
+            ak.pad_none(photons.mvaID, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_electronVeto"] = ak.fill_none(
+            ak.pad_none(photons.electronVeto, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_hoe"] = ak.fill_none(
+            ak.pad_none(photons.hoe, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_r9"] = ak.fill_none(
+            ak.pad_none(photons.r9, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_cutBased"] = ak.fill_none(
+            ak.pad_none(photons.cutBased, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_pfRelIso03_all"] = ak.fill_none(
+            ak.pad_none(photons.pfRelIso03_all, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_isScEtaEB"] = ak.fill_none(
+            ak.pad_none(photons.isScEtaEB, i + 1, axis=1, clip=True), -999
+        )[:, i]
+        output["vars"]["photon" + str(i + 1) + "_isScEtaEE"] = ak.fill_none(
+            ak.pad_none(photons.isScEtaEE, i + 1, axis=1, clip=True), -999
+        )[:, i]
+
+        # if ith photon exist, compute deltaR with jets
+        hasIthPhoton = ak.num(photons) > i
+        indices_i = np.arange(len(events))[hasIthPhoton]
+        photon_i = photons[hasIthPhoton][:, i]
+        jets_jec_i = jets_jec[hasIthPhoton]
+        looseLeptons_i = looseLeptons[hasIthPhoton]
+        minDeltaR_ak4jet_photon_i = np.ones(len(events)) * -999
+        minDeltaR_lepton_photon_i = np.ones(len(events)) * -999
+        minDeltaR_ak4jet_photon_i[indices_i] = ak.fill_none(
+            ak.min(np.abs(jets_jec_i.deltaR(photon_i)), axis=1), -999
+        )
+        minDeltaR_lepton_photon_i[indices_i] = ak.fill_none(
+            ak.min(np.abs(looseLeptons_i.deltaR(photon_i)), axis=1), -999
+        )
+        output["vars"][
+            "minDeltaR_ak4jet_photon" + str(i + 1)
+        ] = minDeltaR_ak4jet_photon_i
+        output["vars"][
+            "minDeltaR_lepton_photon" + str(i + 1)
+        ] = minDeltaR_lepton_photon_i
