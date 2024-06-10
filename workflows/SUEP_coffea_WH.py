@@ -779,7 +779,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ak.min(jet_W_deltaPhi, axis=-1), -999
         )
 
-
     def analysis(self, events, output, out_label=""):
 
         #####################################################################################
