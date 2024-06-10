@@ -456,14 +456,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ).to_list()
 
         # saving number of bjets for different definitions (higher or lower requirements on b-likeliness) - see btag_utils.py
+        # btag function requests eras as integers (used again for btag weights)
+        if self.era == "2016apv":
+            era_int = 2015
+        else:
+            era_int = int(self.era)
+
         output["vars"]["nBLoose"] = ak.sum(
-            (self.jets_jec.btag >= btagcuts("Loose", int(self.era))), axis=1
+            (self.jets_jec.btag >= btagcuts("Loose", era_int)), axis=1
         )[:]
         output["vars"]["nBMedium"] = ak.sum(
-            (self.jets_jec.btag >= btagcuts("Medium", int(self.era))), axis=1
+            (self.jets_jec.btag >= btagcuts("Medium", era_int)), axis=1
         )[:]
         output["vars"]["nBTight"] = ak.sum(
-            (self.jets_jec.btag >= btagcuts("Tight", int(self.era))), axis=1
+            (self.jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
         )[:]
 
         # saving kinematic variables for three leading pT jets
@@ -601,7 +607,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output["vars"]["PSWeight"] = psweights
 
             bTagWeights = doBTagWeights(
-                events, self.jets_jec, int(self.era), "L", do_syst=self.do_syst
+                events, self.jets_jec, era_int, "L", do_syst=self.do_syst
             )  # Does not change selection
             output["vars"]["bTagWeight"] = bTagWeights["central"][:]  # BTag weights
 
