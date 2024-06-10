@@ -411,7 +411,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if self.isMC:
             output["vars"]["LHE_Vpt"] = events.LHE.Vpt
             output["vars"]["LHE_HT"] = events.LHE.HT
-            
+
         # select out ak4jets
         uncorrected_ak4jets = WH_utils.getAK4Jets(events.Jet, isMC=self.isMC)
         jets_c, met_c = apply_jecs(
