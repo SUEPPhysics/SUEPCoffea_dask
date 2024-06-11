@@ -219,7 +219,7 @@ for i, sample in enumerate(samples):
             dataDirLocal=options.dataDirLocal,
             dataDirXRootD=options.dataDirXRootD,
             redirector=options.redirector,
-            pkl=options.pkl
+            pkl=options.pkl,
         )
 
     # execute the command with singularity

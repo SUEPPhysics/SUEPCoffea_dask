@@ -130,7 +130,7 @@ def format_selection(selection: str, df: pd.DataFrame) -> list:
         selection[2] = float(
             selection[2]
         )  # convert to float if the value to cut on is a number
-    
+
     return selection
 
 
@@ -277,7 +277,7 @@ def prepare_DataFrame(
                 logging.warning(
                     f"Could not make new variable {var[0]} because of KeyError: {e}"
                 )
-            
+
     # 4. apply selections
     if "selections" in config.keys():
 
@@ -294,21 +294,32 @@ def prepare_DataFrame(
 
             # if the histogram is already initialized for this variable, make the N-1 histogram
             histName = isel[0] + "_" + label_out
-            if histName not in output.keys(): continue
+            if histName not in output.keys():
+                continue
 
-            n1HistName = isel[0] + "_noCut_" + isel[0] + "_" + isel[1] + "_" + str(isel[2]) + "_" + label_out
+            n1HistName = (
+                isel[0]
+                + "_noCut_"
+                + isel[0]
+                + "_"
+                + isel[1]
+                + "_"
+                + str(isel[2])
+                + "_"
+                + label_out
+            )
             if n1HistName not in output.keys():
                 output[n1HistName] = output[histName].copy()
 
             # apply all but the ith selection
-            mask = (~df[config["method_var"]].isnull())
+            mask = ~df[config["method_var"]].isnull()
             for j, jsel in enumerate(config["selections"]):
                 if j == i:
                     continue
                 jsel = format_selection(jsel, df)
                 jmask = make_selection(df, jsel[0], jsel[1], jsel[2], apply=False)
                 mask = mask & jmask
-                
+
             assert len(mask) == df.shape[0]
             output[n1HistName].fill(df[mask][isel[0]], weight=df[mask]["event_weight"])
 
@@ -363,12 +374,10 @@ def fill_ND_distributions(df, output, label_out, input_method):
     df_keys = list(df.keys())
 
     for key in keys_NDhists:
-       
-        nd_hist_name = key[
-            3 : -(len(label_out) + 1)
-        ]  # cut out "ND_" and output label
+
+        nd_hist_name = key[3 : -(len(label_out) + 1)]  # cut out "ND_" and output label
         variables = nd_hist_name.split("_vs_")
-        
+
         # skip histograms if there is a variable is not in the dataframe
         # if the input method is not in the veriable name, add it
         skip = False
@@ -378,13 +387,13 @@ def fill_ND_distributions(df, output, label_out, input_method):
                 if var not in df_keys:
                     skip = True
                 variables[ivar] = var
-        if skip: continue    
-        
+        if skip:
+            continue
+
         output[key].fill(*[df[var] for var in variables], weight=df["event_weight"])
 
 
 def auto_fill(
-
     df: pd.DataFrame,
     output: dict,
     config: dict,
@@ -664,6 +673,7 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     var[ypt < 0] = -999
 
     return var
+
 
 def vector_balancing_var2(xphi, yphi, xpt, ypt):
 

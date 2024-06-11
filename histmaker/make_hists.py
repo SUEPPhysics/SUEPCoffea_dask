@@ -14,9 +14,10 @@ import argparse
 import getpass
 import logging
 import os
+import pickle
 import subprocess
 import sys
-import pickle
+
 import numpy as np
 import uproot
 from tqdm import tqdm
@@ -183,7 +184,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             df, syst, puweights, puweights_up, puweights_down
         )
         df["event_weight"] *= pu
-        
+
         # 2) PS weights
         if "PSWeight" in syst and syst in df.keys():
             df["event_weight"] *= df[syst]
@@ -482,7 +483,7 @@ def main():
                 lambda x, y: ((x == 1) | (y < 1.5)),
                 ["ngood_ak4jets", "maxDeltaPhiJets"],
             ],
-            [  
+            [
                 "deltaPhi_genSUEP_SUEP",
                 fill_utils.deltaPhi_x_y,
                 ["SUEP_genPhi", "SUEP_phi_HighestPT"],
@@ -490,82 +491,88 @@ def main():
             [
                 "deltaR_genSUEP_SUEP",
                 fill_utils.deltaR,
-                ["SUEP_genEta", "SUEP_eta_HighestPT", "SUEP_genPhi", "SUEP_phi_HighestPT"],
+                [
+                    "SUEP_genEta",
+                    "SUEP_eta_HighestPT",
+                    "SUEP_genPhi",
+                    "SUEP_phi_HighestPT",
+                ],
             ],
             [
                 "percent_darkphis_inTracker",
-                lambda x, y: x/y,
-                ["n_darkphis_inTracker", "n_darkphis"]
+                lambda x, y: x / y,
+                ["n_darkphis_inTracker", "n_darkphis"],
             ],
             [
                 "percent_tracks_dPhiW0p2",
-                lambda x, y: x/y,
-                ["ntracks_dPhiW0p2", "ntracks"]
+                lambda x, y: x / y,
+                ["ntracks_dPhiW0p2", "ntracks"],
             ],
             [
                 "SUEPMostNumerous",
                 lambda x, y: x > y,
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"]
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
             ],
             [
                 "MaxConstAK15_phi",
-                lambda x_nconst, y_nconst, x_phi, y_phi: np.where(x_nconst > y_nconst, x_phi, y_phi),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT", "SUEP_phi_HighestPT", "otherAK15_maxConst_phi_HighestPT"]
+                lambda x_nconst, y_nconst, x_phi, y_phi: np.where(
+                    x_nconst > y_nconst, x_phi, y_phi
+                ),
+                [
+                    "SUEP_nconst_HighestPT",
+                    "otherAK15_maxConst_nconst_HighestPT",
+                    "SUEP_phi_HighestPT",
+                    "otherAK15_maxConst_phi_HighestPT",
+                ],
             ],
             [
                 "MaxConstAK15_eta",
-                lambda x_nconst, y_nconst, x_eta, y_eta: np.where(x_nconst > y_nconst, x_eta, y_eta),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT", "SUEP_eta_HighestPT", "otherAK15_maxConst_eta_HighestPT"]
+                lambda x_nconst, y_nconst, x_eta, y_eta: np.where(
+                    x_nconst > y_nconst, x_eta, y_eta
+                ),
+                [
+                    "SUEP_nconst_HighestPT",
+                    "otherAK15_maxConst_nconst_HighestPT",
+                    "SUEP_eta_HighestPT",
+                    "otherAK15_maxConst_eta_HighestPT",
+                ],
             ],
             [
                 "deltaPhi_SUEPgen_MaxConstAK15",
                 fill_utils.deltaPhi_x_y,
-                ["SUEP_genPhi", "MaxConstAK15_phi"]
+                ["SUEP_genPhi", "MaxConstAK15_phi"],
             ],
             [
                 "deltaR_SUEPgen_MaxConstAK15",
                 fill_utils.deltaR,
-                ["SUEP_genEta", "MaxConstAK15_eta", "SUEP_genPhi", "MaxConstAK15_phi"]
+                ["SUEP_genEta", "MaxConstAK15_eta", "SUEP_genPhi", "MaxConstAK15_phi"],
             ],
             [
                 "highestPTtrack_pt_norm",
-                lambda x, y: x/y,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"]
+                lambda x, y: x / y,
+                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"],
             ],
             [
                 "highestPTtrack_pt_norm2",
-                lambda x, y: x/y,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_avg_HighestPT"]
+                lambda x, y: x / y,
+                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_avg_HighestPT"],
             ],
-            [
-                "isMuon",
-                lambda x: abs(x) == 13,
-                ["lepton_flavor"]
-            ],
-            [
-                "isElectron",
-                lambda x: abs(x) == 11,
-                ["lepton_flavor"]
-            ]
+            ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
+            ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
         ]
         if options.isMC:
             new_variables_WH += [
-                [
-                    "deltaPhi_W_genW",
-                    fill_utils.deltaPhi_x_y,
-                    ["genW_phi", "W_phi"]
-                ],
-                [
-                    "deltaPt_W_genW",
-                    lambda x, y: x - y,
-                    ["genW_pt", "W_pt"]
-                ],
+                ["deltaPhi_W_genW", fill_utils.deltaPhi_x_y, ["genW_phi", "W_phi"]],
+                ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
             ]
         config = {
             "SR": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
-                "SR": [["SUEP_S1_HighestPT", ">=", 0.3], ["SUEP_nconst_HighestPT", ">=", 50]],
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 50],
+                ],
                 "selections": [
                     "MET_pt > 30",
                     "W_pt > 40",
@@ -585,7 +592,10 @@ def main():
             "CRWJ": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
-                "SR": [["SUEP_S1_HighestPT", ">=", 0.3], ["SUEP_nconst_HighestPT", ">=", 50]],
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 50],
+                ],
                 "selections": [
                     "MET_pt > 30",
                     "W_pt > 40",
@@ -606,7 +616,10 @@ def main():
             "CRTT": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
-                "SR": [["SUEP_S1_HighestPT", ">=", 0.3], ["SUEP_nconst_HighestPT", ">=", 40]],
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
                 "selections": [
                     "MET_pt > 30",
                     "W_pt > 40",
@@ -660,7 +673,12 @@ def main():
                     "yvar": "SUEP_nconst_CL",
                     "yvar_regions": [30, 50, 70, 1000],
                     "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0], "SUEP_nconst_CL > 30", "SUEP_S1_CL > 0.3"],
+                    "selections": [
+                        ["ht_JEC", ">", 1200],
+                        ["ntracks", ">", 0],
+                        "SUEP_nconst_CL > 30",
+                        "SUEP_S1_CL > 0.3",
+                    ],
                     "new_variables": [
                         [
                             "SUEP_ISR_deltaPhi_CL",
@@ -977,6 +995,7 @@ def main():
             # write out histograms
             for h, hist in output.items():
                 froot[h] = hist
+
 
 if __name__ == "__main__":
     main()
