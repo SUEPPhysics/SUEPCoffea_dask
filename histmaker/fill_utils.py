@@ -364,7 +364,7 @@ def fill_ND_distributions(df, output, label_out, input_method):
     """
     Fill all N>1 dimensional histograms.
     To do, we expect that they are named as follows:
-    ND_var1_vs_var2_vs_var3_vs_..._vs_varN_label_out
+    ND_var1_vs_var2_vs_var3_vs_..._vs_varNth_label_out
     Where var1, var2, ..., varN are the variables to be plotted in each dimension,
     and N is an integer greater than 1.
     """
@@ -379,7 +379,7 @@ def fill_ND_distributions(df, output, label_out, input_method):
         variables = nd_hist_name.split("_vs_")
 
         # skip histograms if there is a variable is not in the dataframe
-        # if the input method is not in the veriable name, add it
+        # if the input method is not in the variable name, add it
         skip = False
         for ivar, var in enumerate(variables):
             if var not in df_keys:
