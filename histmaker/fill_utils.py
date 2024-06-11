@@ -109,6 +109,31 @@ def getXSection(
     return xsection
 
 
+def format_selection(selection: str, df: pd.DataFrame) -> list:
+    """
+    Format a selection string into a list of the form [attribute, operator, value].
+    Converts value to a float, if needed.
+    Checks if the attribute exists in the DataFrame.
+    :return list: [attribute, operator, value]
+    """
+    if (
+        type(selection) is str
+    ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
+        selection = selection.split(" ")
+    if (
+        selection[0] not in df.keys()
+    ):  # error out if variable doesn't exist in the DataFrame
+        raise Exception(
+            f"Trying to apply a cut on a variable {selection[0]} that does not exist in the DataFrame"
+        )
+    if type(selection[2]) is str and is_number(selection[2]):
+        selection[2] = float(
+            selection[2]
+        )  # convert to float if the value to cut on is a number
+
+    return selection
+
+
 def make_selection(
     df: pd.DataFrame, variable: str, operator: str, value, apply: bool = True
 ) -> pd.DataFrame:
@@ -246,43 +271,61 @@ def prepare_DataFrame(
     # 3. make new variables
     if "new_variables" in config.keys():
         for var in config["new_variables"]:
-            df = make_new_variable(df, var[0], var[1], *var[2])
+            try:
+                df = make_new_variable(df, var[0], var[1], *var[2])
+            except KeyError as e:
+                logging.warning(
+                    f"Could not make new variable {var[0]} because of KeyError: {e}"
+                )
 
     # 4. apply selections
     if "selections" in config.keys():
 
-        # store number of events passing using the event weights into the cutflow dict
+        # store number of events passing using the event weights into the cutflow dict (this is redundant since the last cutflow value from ntuplemaker already exists)
         cutflow_label = "cutflow_histmaker_total"
         if cutflow_label in cutflow.keys():
             cutflow[cutflow_label] += np.sum(df["event_weight"])
         else:
             cutflow[cutflow_label] = np.sum(df["event_weight"])
 
-        for isel, sel in enumerate(config["selections"]):
-            if (
-                type(sel) is str
-            ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
-                sel = sel.split(" ")
-            if (
-                sel[0] not in df.keys()
-            ):  # error out if variable doesn't exist in the DataFrame
-                raise Exception(
-                    f"Trying to apply a cut on a variable {sel[0]} that does not exist in the DataFrame"
-                )
-            if type(sel[2]) is str and is_number(sel[2]):
-                sel[2] = float(
-                    sel[2]
-                )  # convert to float if the value to cut on is a number
+        # make n-1 plots
+        for i, isel in enumerate(config["selections"]):
+            isel = format_selection(isel, df)
 
             # if the histogram is already initialized for this variable, make the N-1 histogram
-            histName = sel[0] + "_" + label_out
-            if histName in output.keys():
-                n1HistName = histName + "_beforeCut" + str(isel)
-                if n1HistName not in output.keys():
-                    output[n1HistName] = output[histName].copy()
-                output[n1HistName].fill(df[sel[0]], weight=df["event_weight"])
+            histName = isel[0] + "_" + label_out
+            if histName not in output.keys():
+                continue
 
-            # make the selection
+            n1HistName = (
+                isel[0]
+                + "_noCut_"
+                + isel[0]
+                + "_"
+                + isel[1]
+                + "_"
+                + str(isel[2])
+                + "_"
+                + label_out
+            )
+            if n1HistName not in output.keys():
+                output[n1HistName] = output[histName].copy()
+
+            # apply all but the ith selection
+            mask = ~df[config["method_var"]].isnull()
+            for j, jsel in enumerate(config["selections"]):
+                if j == i:
+                    continue
+                jsel = format_selection(jsel, df)
+                jmask = make_selection(df, jsel[0], jsel[1], jsel[2], apply=False)
+                mask = mask & jmask
+
+            assert len(mask) == df.shape[0]
+            output[n1HistName].fill(df[mask][isel[0]], weight=df[mask]["event_weight"])
+
+        # now, apply selections
+        for isel, sel in enumerate(config["selections"]):
+            sel = format_selection(sel, df)
             df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
             # store number of events passing using the event weights into the cutflow dict
@@ -317,28 +360,37 @@ def make_new_variable(
     return df
 
 
-def fill_2d_distributions(df, output, label_out, input_method):
+def fill_ND_distributions(df, output, label_out, input_method):
+    """
+    Fill all N>1 dimensional histograms.
+    To do, we expect that they are named as follows:
+    ND_var1_vs_var2_vs_var3_vs_..._vs_varNth_label_out
+    Where var1, var2, ..., var N are the variables to be plotted in each dimension,
+    and N is an integer greater than 1.
+    """
+
     keys = list(output.keys())
-    keys_2Dhists = [k for k in keys if "2D" in k]
+    keys_NDhists = [k for k in keys if "_vs_" in k and k.endswith(label_out)]
     df_keys = list(df.keys())
 
-    for key in keys_2Dhists:
-        if not key.endswith(label_out):
+    for key in keys_NDhists:
+
+        nd_hist_name = key[3 : -(len(label_out) + 1)]  # cut out "ND_" and output label
+        variables = nd_hist_name.split("_vs_")
+
+        # skip histograms if there is a variable is not in the dataframe
+        # if the input method is not in the variable name, add it
+        skip = False
+        for ivar, var in enumerate(variables):
+            if var not in df_keys:
+                var += "_" + input_method
+                if var not in df_keys:
+                    skip = True
+                variables[ivar] = var
+        if skip:
             continue
-        string = key[
-            len("2D") + 1 : -(len(label_out) + 1)
-        ]  # cut out "2D_" and output label
-        var1 = string.split("_vs_")[0]
-        var2 = string.split("_vs_")[1]
-        if var1 not in df_keys:
-            var1 += "_" + input_method
-            if var1 not in df_keys:
-                continue
-        if var2 not in df_keys:
-            var2 += "_" + input_method
-            if var2 not in df_keys:
-                continue
-        output[key].fill(df[var1], df[var2], weight=df["event_weight"])
+
+        output[key].fill(*[df[var] for var in variables], weight=df["event_weight"])
 
 
 def auto_fill(
@@ -376,8 +428,8 @@ def auto_fill(
             df[plot], weight=df["event_weight"]
         )
 
-    # 2. fill some 2D distributions
-    fill_2d_distributions(df, output, label_out, input_method)
+    # 2. fill some ND distributions
+    fill_ND_distributions(df, output, label_out, input_method)
 
     # 3. divide the dfs by region
     if do_abcd:
@@ -558,6 +610,31 @@ def deltaPhi_x_y(xphi, yphi):
     return abs_dphi
 
 
+def deltaR(xEta, yEta, xPhi, yPhi):
+
+    # cast inputs to numpy arrays
+    xEta = np.array(xEta)
+    yEta = np.array(yEta)
+    xPhi = np.array(xPhi)
+    yPhi = np.array(yPhi)
+
+    x_v = vector.arr({"eta": xEta, "phi": xPhi, "pt": np.ones(len(xEta))})
+    y_v = vector.arr({"eta": yEta, "phi": yPhi, "pt": np.ones(len(yEta))})
+
+    dR = x_v.deltaR(y_v)
+
+    if type(dR) is ak.highlevel.Array:
+        dR = dR.to_numpy()
+
+    # deal with the cases where eta and phi were initialized to a moot value like -999
+    dR[xEta < -100] = -999
+    dR[yEta < -100] = -999
+    dR[xPhi < -100] = -999
+    dR[yPhi < -100] = -999
+
+    return dR
+
+
 def balancing_var(xpt, ypt):
 
     # cast inputs to numpy arrays
@@ -590,6 +667,31 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
         vector_sum_pt = vector_sum_pt.to_numpy()
 
     var = np.where(ypt > 0, vector_sum_pt / ypt, np.ones(len(xpt)) * -999)
+
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    var[xpt < 0] = -999
+    var[ypt < 0] = -999
+
+    return var
+
+
+def vector_balancing_var2(xphi, yphi, xpt, ypt):
+
+    # cast inputs to numpy arrays
+    xpt = np.array(xpt)
+    ypt = np.array(ypt)
+    xphi = np.array(xphi)
+    yphi = np.array(yphi)
+
+    x_v = vector.arr({"pt": xpt, "phi": xphi})
+    y_v = vector.arr({"pt": ypt, "phi": yphi})
+
+    vector_sum_pt = (x_v + y_v).pt
+
+    if type(vector_sum_pt) is ak.highlevel.Array:
+        vector_sum_pt = vector_sum_pt.to_numpy()
+
+    var = np.where(ypt > 0, vector_sum_pt, np.ones(len(xpt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     var[xpt < 0] = -999

@@ -21,91 +21,115 @@ from sympy import diff, sqrt, symbols
 sys.path.append("..")
 from histmaker import fill_utils
 
-default_colors = {
-    "mS125": "cyan",
-    "mS200": "blue",
-    "mS300": "lightseagreen",
-    "mS400": "green",
-    "mS500": "darkgreen",
-    "mS600": "lawngreen",
-    "mS700": "goldenrod",
-    "mS800": "orange",
-    "mS900": "sienna",
-    "mS1000": "red",
-    "data": "maroon",
-    "QCD": "slateblue",
-    "MC": "slateblue",
-    "TTJets": "midnightblue",
-    "VVV": "green",
-    "VG": "slategray",
-    "VV": "brown",
-    "VH": "pink",
-    "WJets": "blue",
-    "DYJetsToLL": "darktorquoise",
-    "ttX": "orange",
-    "tt": "red",
-    "ST": "gold",
+default_style = {
+    "data": {
+        "color": "black",
+        "fmt": "o",
+        "linewidth": 2,
+        "linestyle": "",
+    },
+    "MC": {
+        "color": "slateblue",
+        "fmt": "",
+        "linewidth": 2,
+        "linestyle": "-",
+    },
+    "QCD": {  # as used in ggf-offline
+        "color": "slateblue",
+    },
+    "QCD_Pt": {
+        "color": "hotpink",
+    },
+    "VVV": {
+        "color": "darkorange",
+    },
+    "VG": {
+        "color": "red",
+    },
+    "VV": {
+        "color": "gold",
+    },
+    "VH": {
+        "color": "royalblue",
+    },
+    "WJetsToLNu_Pt": {
+        "color": "deepskyblue",
+    },
+    "DYJetsToLL_LHEFilterPtZ": {
+        "color": "gray",
+    },
+    "ttX": {
+        "color": "palegreen",
+    },
+    "tt": {
+        "color": "green",
+    },
+    "ST": {
+        "color": "seagreen",
+    },
+    "TTJets": {
+        "color": "midnightblue",
+    },
+    "ggf-mS125": {
+        "color": "cyan",
+    },
+    "ggf-mS200": {
+        "color": "blue",
+    },
+    "ggf-mS300": {
+        "color": "lightseagreen",
+    },
+    "ggf-mS400": {
+        "color": "green",
+    },
+    "ggf-mS500": {
+        "color": "darkgreen",
+    },
+    "ggf-mS600": {
+        "color": "lawngreen",
+    },
+    "ggf-mS700": {
+        "color": "goldenrod",
+    },
+    "ggf-mS800": {
+        "color": "orange",
+    },
+    "ggf-mS900": {
+        "color": "sienna",
+    },
+    "ggf-mS1000": {
+        "color": "red",
+    },
 }
 
 
-def getColor(sample):
+def getStyle(sample):
 
-    if sample in default_colors.keys():
-        return default_colors[sample]
+    if sample in default_style.keys():
+        return default_style[sample]
 
     if "GluGluToSUEP" and "mS" in sample:
         sample = sample[sample.find("mS") + 2 :]
         sample = sample.split("_")[0]
-        return default_colors["mS" + sample]
+        return default_style["ggf-mS" + sample]
 
-    elif "QCD" in sample:
-        return default_colors["QCD"]
+    else:
+        return {}
 
-    elif "data" in sample.lower():
-        return default_colors["data"]
 
-    elif "ttjets" in sample.lower():
-        return default_colors["TTJets"]
-
-    elif "VVV" in sample:
-        return default_colors["VVV"]
-
-    elif "VG" in sample:
-        return default_colors["VG"]
-
-    elif "VV" in sample:
-        return default_colors["VV"]
-
-    elif "ST" in sample:
-        return default_colors["ST"]
-
-    elif "ttX" in sample:
-        return default_colors["ttX"]
-
-    elif "WJetsToLNu" in sample:
-        return default_colors["WJets"]
-
-    elif "DYJetsToLL" in sample:
-        return default_colors["DYJetsToLL"]
-
-    elif "tt" in sample:
-        return default_colors["tt"]
-
-    elif "VH" in sample:
-        return default_colors["VH"]
-
-    elif "MC" in sample:
-        return default_colors["MC"]
-
+def getColor(sample):
+    style = getStyle(sample)
+    if style:
+        return style.get("color", None)
     else:
         return None
 
 
-def getColors(samples):
-    colors = []
+def getStyles(samples):
+    styles = []
     for sample in samples:
-        colors.append(getColor(sample))
-    return colors
+        styles.append(getStyle(sample))
+    return styles
 
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
@@ -182,13 +206,13 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
     return lumi, era
 
 
-def getHistLists(plotDir, tag, filename, filters=None):
+def getHistLists(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []
     with open(filename) as file:
         for line in file:
             sample_name = line.strip().split("/")[-1]
             sample_name = sample_name.replace(".root", "")
-            result_path = f"{plotDir}{sample_name}_{tag}.root"
+            result_path = f"{plotDir}{sample_name}_{tag}{file_ext}"
             if filters:
                 if not all([filt in sample_name for filt in filters]):
                     continue
@@ -328,16 +352,13 @@ def getSampleNameAndBin(sample_name):
         sample = "WJetsToLNu_HT"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
-    elif (
-        "WJetsToLNu_Pt" in sample_name
-        or "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name
-    ):
-        # merging of inclusive sample and pT-binned. This is done by LHE_Vpt > 100 selection in ntuplemaker on the inclusive sample,
-        # and is accounted for in its normalization via its kr factor.
+    elif "WJetsToLNu_Pt" in sample_name:
         sample = "WJetsToLNu_Pt"
         bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
-        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
-            bin = "WJetsToLNu_incl"
+
+    elif "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
+        sample = "WJetsToLNu_incl"
+        bin = None
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
         sample = "DYJetsToLL_LHEFilterPtZ"
@@ -391,6 +412,14 @@ def getSampleNameAndBin(sample_name):
         sample = "data"
         bin = sample_name.split("-")[0]
 
+    elif "EGamma+Run" in sample_name:
+        sample = "EGamma"
+        bin = sample_name.split("-")[0]
+
+    elif "SingleMuon+Run" in sample_name:
+        sample = "SingleMuon"
+        bin = sample_name.split("-")[0]
+
     elif sample_name.startswith("ttHpythia"):  # private ttH samples
         sample = formatTTHToSUEPNaming(sample_name)
         bin = None
@@ -424,11 +453,11 @@ def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dic
     if sample not in list(plots.keys()):
         plots[sample] = plotsToAdd
     else:
-        try:
-            for plot in list(plotsToAdd.keys()):
+        for plot in list(plotsToAdd.keys()):
+            try:
                 plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot]
-        except KeyError:
-            print("WARNING: " + sample + " has a different set of plots")
+            except KeyError:
+                print(f"WARNING: could not find histogram {plot} in sample {sample}.")
 
     return plots
 
@@ -453,11 +482,11 @@ def fillCutflows(
     if sample not in list(cutflows.keys()):
         cutflows[sample] = metaToAdd
     else:
-        try:
-            for key in list(metaToAdd.keys()):
+        for key in list(metaToAdd.keys()):
+            try:
                 cutflows[sample][key] += metaToAdd[key]
-        except KeyError:
-            print("WARNING: " + sample + " has a different set of cutflows.")
+            except KeyError:
+                print(f"WARNING: could not find cutflow {key} in sample {sample}.")
 
     return cutflows
 
@@ -498,6 +527,7 @@ def loader(
     - output (dict): Dictionary containing the loaded histograms (or cutflows) grouped by sample, bin, and year.
     """
     output = {}
+    hists, cutflows = {}, {}
     for infile_name in infile_names:
         if verbose:
             print("Loading", infile_name)
@@ -505,7 +535,7 @@ def loader(
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
             continue
-        elif ".root" not in infile_name:
+        elif ".root" not in infile_name and ".pkl" not in infile_name:
             continue
 
         file_hists, file_metadata = openHistFile(infile_name)
@@ -532,7 +562,7 @@ def loader(
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
         if "signal" in file_metadata.keys():
-            if file_metadata["signal"]:
+            if int(file_metadata["signal"]):
                 xsec = float(file_metadata["xsec"])
                 if verbose:
                     print("Applying xsec", xsec)
@@ -552,7 +582,7 @@ def loader(
         if verbose:
             print("Found sample", sample)
             if by_bin:
-                print("and bin", bin)
+                print("Found bin", bin)
 
         samplesToAdd = [sample]
         if by_bin and (bin is not None) and (bin != sample):
@@ -563,20 +593,26 @@ def loader(
                 samplesToAdd.append("_".join([bin, era]))
 
         for s in samplesToAdd:
+            output[s] = {}
             if only_cutflows or load_cutflows:
-                output = fillCutflows(file_metadata, s, output, norm)
+                cutflows = fillCutflows(file_metadata, s, cutflows, norm)
             if not only_cutflows:
-                output = fillSample(file_hists, s, output, norm)
+                hists = fillSample(file_hists, s, hists, norm)
+            output[s].update(hists.get(s, {}))
+            output[s].update(cutflows.get(s, {}))
 
+        if verbose:
+            print("Finished loading sample")
+
+    print("Finished loading all files")
     return output
 
 
 def openHistFile(infile_name):
-    if ".root" in infile_name:
+    if infile_name.endswith(".root"):
         hists, metadata = openroot(infile_name)
-    elif ".pkl" in infile_name:
-        hists = openpickle(infile_name)
-        metadata = None  # not supported yet for pickle files
+    elif infile_name.endswith(".pkl"):
+        hists, metadata = openpickle(infile_name)
     return hists, metadata
 
 
@@ -584,15 +620,31 @@ def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
     plots[new_tag] = {}
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):
-            if i == 0:
-                plots[new_tag][key] = plots[sample][key].copy()
+            h = plots[sample].get(key, None)
+            htype = type(h)
+            if htype == hist.hist.Hist:  # histograms
+                if i == 0:
+                    plots[new_tag][key] = h.copy()
+                else:
+                    try:
+                        plots[new_tag][key] += h.copy()
+                    except (ValueError, KeyError) as e:
+                        print(
+                            f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping. (Error: {e})"
+                        )
+            elif htype == float or htype == int:  # cutflows
+                if i == 0:
+                    plots[new_tag][key] = h
+                else:
+                    try:
+                        plots[new_tag][key] += h
+                    except (ValueError, KeyError) as e:
+                        print(
+                            f"WARNING: couldn't merge cutflow {key} for sample {sample}. Skipping. (Error: {e})"
+                        )
             else:
-                try:
-                    plots[new_tag][key] += plots[sample][key].copy()
-                except KeyError:
-                    print(
-                        f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping."
-                    )
+                print(f"WARNING: unknown type for {key} in sample {sample}: {htype}")
+
     return plots
 
 
@@ -627,7 +679,7 @@ def check_proxy(time_min=100):
             lifetime = 140
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
-        shutil.copyfile("/tmp/" + proxy_base, proxy_copy)
+        shutil.copyfile(os.environ["X509_USER_PROXY"] + proxy_base, proxy_copy)
 
     return lifetime
 
@@ -666,14 +718,17 @@ def apply_binwise_scaling(h_in, bins, scales, dim="x"):
 
 # function to load files from pickle
 def openpickle(infile_name):
-    plots = {}
+    _plots = {}
+    _metadata = {}
     with open(infile_name, "rb") as openfile:
         while True:
             try:
-                plots.update(pickle.load(openfile))
+                input = pickle.load(openfile)
+                _plots.update(input["hists"])
+                _metadata.update(input["metadata"])
             except EOFError:
                 break
-    return plots
+    return _plots, _metadata
 
 
 def openroot(infile_name):
@@ -689,61 +744,65 @@ def openroot(infile_name):
     return _plots, _metadata
 
 
-def plot1d(h, ax, label, color="default", lw=1):
-    if color == "default":
-        color = default_colors[label]
-    if label == "QCD" and lw == 1:
-        lw = 3
-
-    y, x = h.to_numpy()
-    e = np.sqrt(h.variances())
-    x = x[:-1]
-
-    # ax.step(x[:-1],values, label=label, color=color, lw=lw)
-    ax.errorbar(
-        x, y, yerr=e, label=label, lw=lw, color=color, fmt="", drawstyle="steps-mid"
+def styled_plot_ratio(
+    hlist,
+    labels,
+    stacked_hlist=None,
+    stacked_labels=None,
+    density=False,
+    systs=None,
+    xlabel=None,
+    xlim=None,
+    log=True,
+):
+    styles = getStyles(labels)
+    fig, axs = plot_ratio(
+        hlist,
+        labels,
+        density=density,
+        systs=systs,
+        xlabel=xlabel,
+        xlim=xlim,
+        log=log,
+        cmap=[style.get("color", None) for style in styles],
+        linewidth=[style.get("linewidth", 1) for style in styles],
+        linestyle=[style.get("linestyle", "-") for style in styles],
+        fmt=[style.get("fmt", "") for style in styles],
     )
-    ax.set_xlabel(h.axes[0].label)
-    ax.set_ylabel("Events")
 
-
-def plot1d_stacked(hlist, ax, labels, color="midnightblue", lw=1):
-    cmap = plt.cm.rainbow(np.linspace(0, 1, len(labels)))
-
-    ylist = []
-    for lbl, h, c in zip(labels, hlist, cmap):
-        y, x = h.to_numpy()
-        e = np.sqrt(h.variances())
-        x = x[:-1]
-
-        if len(ylist) > 0:
-            y = y + ylist[len(ylist) - 1]
-        ylist.append(y)
-
-        # ax.step(x[:-1],values, label=label, color=color, lw=lw)
-        ax.errorbar(
-            x, y, yerr=e, label=lbl, lw=lw, color=c, fmt="", drawstyle="steps-mid"
+    if stacked_hlist:
+        if stacked_labels:
+            stacked_styles = getStyles(stacked_labels)
+        hep.histplot(
+            stacked_hlist,
+            label=stacked_labels,
+            ax=axs[0],
+            density=density,
+            stack=True,
+            histtype="fill",
+            color=[style.get("color", None) for style in stacked_styles],
+            zorder=0,
         )
-    ax.set_xlabel(hlist[0].axes[0].label)
-    ax.set_ylabel("Events")
+        axs[0].set_xlabel("")
+        if stacked_labels:
+            leg_handles, leg_labels = axs[0].get_legend_handles_labels()
+            # reverse order to follow the stacking
+            stacked_leg_labels = [l for l in leg_labels if l in stacked_labels][::-1]
+            stacked_leg_handles = [
+                leg_handles[leg_labels.index(l)] for l in stacked_leg_labels
+            ]
+            # for unstacked histograms, reorder legend labels and handles to follow the parameter 'labels' order
+            # this is already done in plot_ratio, but since we are adding the stacked histograms after the fact, we need to do it again
+            other_leg_labels = labels
+            other_leg_handles = [
+                leg_handles[leg_labels.index(l)] for l in other_leg_labels
+            ]
+            # put them back together
+            leg_handles = other_leg_handles + stacked_leg_handles
+            leg_labels = other_leg_labels + stacked_leg_labels
+            axs[0].legend(leg_handles, leg_labels, fontsize="xx-small", loc=(1.01, 0))
 
-
-def plot2d(h, fig, ax, log=False, cmap="RdYlBu"):
-    w, x, y = h.to_numpy()
-    if log:
-        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap, norm=colors.LogNorm())
-    else:
-        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap)
-    ax.set_xlabel(h.axes[0].label)
-    ax.set_ylabel(h.axes[1].label)
-    fig.colorbar(mesh)
-
-
-def bin_midpoints(bins):
-    midpoints = []
-    for i in range(len(bins) - 1):
-        midpoints.append((bins[i] + bins[i + 1]) / 2)
-    return np.array(midpoints)
+    return fig, axs
 
 
 def plot_ratio(
@@ -752,8 +811,11 @@ def plot_ratio(
     systs=None,
     density=False,
     cmap=None,
-    plot_label=None,
-    xlim="default",
+    linewidth=None,
+    linestyle=None,
+    fmt=None,
+    xlabel=None,
+    xlim=None,
     log=True,
 ):
     """
@@ -761,38 +823,58 @@ def plot_ratio(
     The errors in the ratio are taken to be independent between histograms.
     """
 
-    # Set up variables for the stacked histogram
-    fig = plt.figure(figsize=(14, 12))
-    plt.subplots_adjust(bottom=0.15, left=0.17)
-    ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
-
+    # pre-processing of histograms before plotting routine
     if density:
         for i, h in enumerate(hlist):
             hlist[i] = h.copy() / h.sum().value
 
+    # Set up variables for the stacked histogram
+    fig = plt.figure(figsize=(15, 15))
+    plt.subplots_adjust(bottom=0.15, left=0.17)
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
+    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
+
+    # Set up default values for the optional draw arguments
     if labels is None:
         labels = [None] * len(hlist)
     if cmap is None:
         cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
-    for c, h, l in zip(cmap, hlist, labels):
-        y, x = h.to_numpy()
-        x_mid = h.axes.centers[0]
-        y_errs = np.sqrt(h.variances())
-        ax1.stairs(y, x, color=c, label=l)
-        ax1.errorbar(
+    if linewidth is None:
+        linewidth = [1] * len(hlist)
+    if linestyle is None:
+        linestyle = ["-"] * len(hlist)
+    if fmt is None:
+        fmt = [""] * len(hlist)
+
+    # plot the histograms and errorbars
+    for ihist, hist in enumerate(hlist):
+        y, x = hist.to_numpy()
+        x_mid = hist.axes.centers[0]
+        y_errs = np.sqrt(hist.variances())
+        errorbar = ax1.errorbar(
             x_mid,
             y,
             yerr=y_errs,
-            color=c,
-            fmt="",
+            color=cmap[ihist],
+            fmt=fmt[ihist],
+            elinewidth=linewidth[ihist],
             drawstyle="default",
             linestyle="",
+            label=None if linestyle[ihist] != "" else labels[ihist],
+        )
+        ax1.stairs(
+            y,
+            x,
+            color=errorbar.lines[0].get_color(),
+            label=None if linestyle[ihist] == "" else labels[ihist],
+            linewidth=linewidth[ihist],
+            linestyle=linestyle[ihist],
         )
 
-    # Set parameters that will be used to make the plots prettier
+    # set x and y limits, scales
     if log:
         ax1.set_yscale("log")
-    if type(xlim) is not str:
+    if xlim is not None:
         xmin = xlim[0]
         xmax = xlim[1]
         ax1.set_xlim([xmin, xmax])
@@ -817,27 +899,30 @@ def plot_ratio(
         xmax = max(xmaxs)
         xrange = xmax - xmin
         ax1.set_xlim([xmin - xrange * 0.1, xmax + xrange * 0.1])
+    if not density:
+        ax1.set_ylim(1)
 
-    ax1.set_ylabel("Events", y=1, ha="right")
-
-    ax2 = plt.subplot2grid((4, 1), (2, 0), sharex=ax1)
+    # define the ratio axis
+    ax2 = plt.subplot2grid((3, 1), (2, 0), sharex=ax1)
     plt.setp(ax1.get_xticklabels(), visible=False)
+    ax2.axhline(1, ls="--", color="gray")
 
     # calculate the ratio, with error propagation, and plot them
-    for i, (c, h) in enumerate(zip(cmap, hlist)):
-        if i == 0:
+    for ihist, hist in enumerate(hlist):
+        if ihist == 0:
             continue
         ratio = np.divide(
-            h.values(),
+            hist.values(),
             hlist[0].values(),
-            out=np.ones_like(h.values()),
+            out=np.ones_like(hist.values()),
             where=hlist[0].values() != 0,
         )
         ratio_err = np.where(
             hlist[0].values() > 0,
             np.sqrt(
-                (hlist[0].values() ** -2) * (h.variances())
-                + (h.values() ** 2 * hlist[0].values() ** -4) * (hlist[0].variances())
+                (hlist[0].values() ** -2) * (hist.variances())
+                + (hist.values() ** 2 * hlist[0].values() ** -4)
+                * (hlist[0].variances())
             ),
             0,
         )
@@ -845,14 +930,13 @@ def plot_ratio(
             hlist[0].axes.centers[0],
             ratio,
             yerr=ratio_err,
-            color=c,
+            color=cmap[ihist],
             fmt="o",
             linestyle="none",
+            label=None,
         )
 
-    ax2.axhline(1, ls="--", color="gray")
-    ax2.set_ylabel("Ratio", y=1, ha="right")
-
+    # plot systematics as a gray band in the ratio
     if systs is not None:
         assert len(systs) == len(hlist[0].axes.centers[0])
         widths = hlist[0].axes.widths[0]
@@ -874,15 +958,25 @@ def plot_ratio(
             alpha=0.3,
             color="gray",
         )
-        # add to legend
         ax1.plot([0, 0], color="gray", label="Systematics")
 
-    if plot_label is None:
-        plot_label = hlist[0].axes[0].label
-        if plot_label == "Axis 0":
-            plot_label = None
-    ax1.legend(loc="best", fontsize="xx-small")
-    ax2.set_xlabel(plot_label, y=1)
+    # set labels, legend
+    ax1.set_ylabel("Events", y=1, ha="right")
+    if labels != [None] * len(hlist):  # manually re-order legend to follow the labels
+        leg_handles, leg_labels = ax1.get_legend_handles_labels()
+        leg_handles = [leg_handles[leg_labels.index(l)] for l in labels]
+        ax1.legend(leg_handles, labels, loc="best", fontsize="xx-small")
+    if xlabel is None:
+        xlabel = hlist[0].axes[0].label
+        if xlabel == "Axis 0":
+            xlabel = None
+    ax2.set_xlabel(xlabel, y=1)
+    ax2.set_ylabel(
+        f"Ratio to {labels[0]}" if labels is not None else "Ratio",
+        y=1,
+        ha="right",
+        fontsize="small",
+    )
 
     return fig, (ax1, ax2)
 
@@ -1104,7 +1198,13 @@ def slice_hist2d(hist, regions_list, slice_var="y"):
 
 
 def plot_sliced_hist2d(
-    hist, regions_list, stack=False, density=False, slice_var="y", labels=None
+    hist,
+    regions_list,
+    stack=False,
+    density=False,
+    slice_var="y",
+    labels=None,
+    ratio=False,
 ):
     """
     Takes a 2d histogram, slices it in different regions, and plots the regions.
@@ -1126,97 +1226,379 @@ def plot_sliced_hist2d(
     else:
         histtype = "step"
 
-    fig = plt.figure()
-    ax = fig.subplots()
-    hep.histplot(
-        hist_list,
-        yerr=True,
-        stack=stack,
-        histtype=histtype,
-        density=density,
-        label=labels,
-        color=cmap,
-        ax=ax,
-    )
-    ax.legend(
-        fontsize=14,
-        framealpha=1,
-        facecolor="white",
-        shadow=True,
-        bbox_to_anchor=(1.04, 1),
-        loc="upper left",
-    )
-    ax.set_yscale("log")
+    if not ratio:
+        fig = plt.figure()
+        axs = fig.subplots()
+        hep.histplot(
+            hist_list,
+            yerr=True,
+            stack=stack,
+            histtype=histtype,
+            density=density,
+            label=labels,
+            color=cmap,
+            ax=axs,
+        )
+        axs.legend(
+            fontsize=14,
+            framealpha=1,
+            facecolor="white",
+            shadow=True,
+            bbox_to_anchor=(1.04, 1),
+            loc="upper left",
+        )
+        axs.set_yscale("log")
 
-    return fig, ax
+    else:
+        if stack:
+            print("Stacking not supported in ratio plot")
+        fig, axs = plot_ratio(hist_list, density=density, labels=labels, cmap=cmap)
+
+        axs[0].legend(
+            fontsize=14,
+            framealpha=1,
+            facecolor="white",
+            shadow=True,
+            bbox_to_anchor=(1.04, 1),
+            loc="upper left",
+        )
+        axs[0].set_yscale("log")
+
+    return fig, axs
 
 
-def ABCD_4regions(
-    hist_abcd,
-    xregions,
-    yregions,
-    sum_var="x",
-):
-    if sum_var == "x":
-        A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
-        B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
-        C = hist_abcd[xregions[1] : xregions[2] : sum, yregions[0] : yregions[1]]
-        SR = hist_abcd[xregions[1] : xregions[2] : sum, yregions[1] : yregions[2]]
-        SR_exp = B * C.sum().value / A.sum().value
+def make_ABCD_4regions(hist_abcd, xregions, yregions, sum_var=None):
+    if sum_var is not None and sum_var not in ["x", "y"]:
+        raise ValueError("sum_var must be 'x' or 'y'")
+    if sum_var is None:
+        A = hist_abcd[xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1]]
+        B = hist_abcd[xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1]]
+        C = hist_abcd[xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1]]
+        SR = hist_abcd[xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1]]
+    elif sum_var == "x":
+        A = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        B = hist_abcd[
+            xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
+        C = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+        ]
+        SR = hist_abcd[
+            xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+        ]
     elif sum_var == "y":
-        A = hist_abcd[xregions[0] : xregions[1], yregions[0] : yregions[1] : sum]
-        B = hist_abcd[xregions[0] : xregions[1], yregions[1] : yregions[2] : sum]
-        C = hist_abcd[xregions[1] : xregions[2], yregions[0] : yregions[1] : sum]
-        SR = hist_abcd[xregions[1] : xregions[2], yregions[1] : yregions[2] : sum]
-        SR_exp = C * B.sum().value / A.sum().value
+        A = hist_abcd[
+            xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1] : sum
+        ]
+        B = hist_abcd[
+            xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1] : sum
+        ]
+        C = hist_abcd[
+            xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1] : sum
+        ]
+        SR = hist_abcd[
+            xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1] : sum
+        ]
+
+    return A, B, C, SR
+
+
+def ABCD_4regions_errorProp(hist_abcd, xregions, yregions, sum_var="x", new_bins=None):
+    """
+    Does the ABCD method for 4 regions, with error propagation.
+    """
+
+    if sum_var not in ["x", "y"]:
+        raise ValueError("sum_var must be 'x' or 'y'")
+
+    A, B, C, SR = make_ABCD_4regions(hist_abcd, xregions, yregions, sum_var=sum_var)
+
+    # define the histogram that will be scaled up, and the dimension that will be summed
+    if sum_var == "x":
+        hNUM = B
+        hDEN = C
+        SR = SR
+    elif sum_var == "y":
+        hNUM = C
+        hDEN = B
+        SR = SR
+
+    # rebin
+    if new_bins is not None:
+        hNUM = rebin_piecewise(hNUM, new_bins)
+        SR = rebin_piecewise(SR, new_bins)
+
+    # initialize the SR_exp as empty
+    SR_exp = SR.copy()
+    SR_exp.view().variance = [0] * len(SR.values())
+    SR_exp.view().value = [0] * len(SR.values())
+
+    preds, preds_err = [], []
+    for i in range(len(hNUM.values())):
+        hNUM_bin = hNUM[i]
+
+        # define the scaling factor function
+        a, hnum_bin, hden = symbols(
+            "A hnum_bin hden",
+        )
+        exp = hnum_bin * hden * a**-1
+
+        # defines lists of variables (sympy symbols) and accumulators (hist.sum())
+        variables = [a, hnum_bin, hden]
+        accs = [
+            A.sum(),
+            hNUM_bin,
+            hDEN.sum(),
+        ]
+
+        # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
+        alpha = exp.copy()
+        for var, acc in zip(variables, accs):
+            alpha = alpha.subs(var, acc.value)
+
+        # calculate the error on the scaling factor
+        variance = 0
+        for var, acc in zip(variables, accs):
+            der = diff(exp, var)
+            var = abs(acc.variance)
+            variance += der**2 * var
+        for var, acc in zip(variables, accs):
+            variance = variance.subs(var, acc.value)
+        sigma_alpha = variance
+
+        if type(alpha) != sympy.core.numbers.Float or alpha <= 0:
+            alpha = 0
+
+        preds.append(alpha)
+        preds_err.append(sigma_alpha)
+
+    SR_exp.view().variance = preds_err
+    SR_exp.view().value = preds
 
     return SR, SR_exp
 
 
-def ABCD_6regions(hist_abcd, xregions, yregions, sum_var="x"):
-    if sum_var == "x":
-        if len(xregions) == 3:
-            A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
-            B = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
-            C = hist_abcd[xregions[0] : xregions[1] : sum, yregions[2] : yregions[3]]
-            D = hist_abcd[xregions[1] : xregions[2] : sum, yregions[0] : yregions[1]]
-            E = hist_abcd[xregions[1] : xregions[2] : sum, yregions[1] : yregions[2]]
-            SR = hist_abcd[xregions[1] : xregions[2] : sum, yregions[2] : yregions[3]]
-        elif len(xregions) == 4:
-            A = hist_abcd[xregions[0] : xregions[1] : sum, yregions[0] : yregions[1]]
-            B = hist_abcd[xregions[1] : xregions[2] : sum, yregions[0] : yregions[1]]
-            C = hist_abcd[xregions[2] : xregions[3] : sum, yregions[0] : yregions[1]]
-            D = hist_abcd[xregions[0] : xregions[1] : sum, yregions[1] : yregions[2]]
-            E = hist_abcd[xregions[1] : xregions[2] : sum, yregions[1] : yregions[2]]
-            SR = hist_abcd[xregions[2] : xregions[3] : sum, yregions[1] : yregions[2]]
-        SR_exp = (
-            E
-            * E.sum().value
-            * C.sum().value
-            * A.sum().value
-            / (B.sum().value ** 2 * D.sum().value)
+def make_ABCD_6regions(hist_abcd, xregions, yregions, sum_var=None):
+    if sum_var is not None and sum_var not in ["x", "y"]:
+        raise ValueError("sum_var must be 'x' or 'y'")
+    if len(xregions) == 2 and len(yregions) == 3:
+        if sum_var is None:
+            A = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1]
+            ]
+            B = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1]
+            ]
+            C = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[2][0] : yregions[2][1]
+            ]
+            D = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1]
+            ]
+            E = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1]
+            ]
+            SR = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[2][0] : yregions[2][1]
+            ]
+        elif sum_var == "x":
+            A = hist_abcd[
+                xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+            ]
+            B = hist_abcd[
+                xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+            ]
+            C = hist_abcd[
+                xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]
+            ]
+            D = hist_abcd[
+                xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+            ]
+            E = hist_abcd[
+                xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+            ]
+            SR = hist_abcd[
+                xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]
+            ]
+        elif sum_var == "y":
+            A = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1] : sum
+            ]
+            B = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1] : sum
+            ]
+            C = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[2][0] : yregions[2][1] : sum
+            ]
+            D = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1] : sum
+            ]
+            E = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1] : sum
+            ]
+            SR = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[2][0] : yregions[2][1] : sum
+            ]
+    elif len(xregions) == 3 and len(yregions) == 2:
+        if sum_var is None:
+            A = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1]
+            ]
+            B = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1]
+            ]
+            C = hist_abcd[
+                xregions[2][0] : xregions[2][1], yregions[0][0] : yregions[0][1]
+            ]
+            D = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1]
+            ]
+            E = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1]
+            ]
+            SR = hist_abcd[
+                xregions[2][0] : xregions[2][1], yregions[1][0] : yregions[1][1]
+            ]
+        elif sum_var == "x":
+            A = hist_abcd[
+                xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+            ]
+            B = hist_abcd[
+                xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+            ]
+            C = hist_abcd[
+                xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]
+            ]
+            D = hist_abcd[
+                xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+            ]
+            E = hist_abcd[
+                xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+            ]
+            SR = hist_abcd[
+                xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]
+            ]
+        elif sum_var == "y":
+            A = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1] : sum
+            ]
+            B = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1] : sum
+            ]
+            C = hist_abcd[
+                xregions[2][0] : xregions[2][1], yregions[0][0] : yregions[0][1] : sum
+            ]
+            D = hist_abcd[
+                xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1] : sum
+            ]
+            E = hist_abcd[
+                xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1] : sum
+            ]
+            SR = hist_abcd[
+                xregions[2][0] : xregions[2][1], yregions[1][0] : yregions[1][1] : sum
+            ]
+    else:
+        raise ValueError(
+            "xregions (yregions) must have len==2 (len==3) or len==3 (len==2)"
         )
-    elif sum_var == "y":
-        if len(xregions) == 3:
-            A = hist_abcd[xregions[0] : xregions[1], yregions[0] : yregions[1] : sum]
-            B = hist_abcd[xregions[0] : xregions[1], yregions[1] : yregions[2] : sum]
-            C = hist_abcd[xregions[0] : xregions[1], yregions[2] : yregions[3] : sum]
-            D = hist_abcd[xregions[1] : xregions[2], yregions[0] : yregions[1] : sum]
-            E = hist_abcd[xregions[1] : xregions[2], yregions[1] : yregions[2] : sum]
-            SR = hist_abcd[xregions[1] : xregions[2], yregions[2] : yregions[3] : sum]
-        elif len(xregions) == 4:
-            A = hist_abcd[xregions[0] : xregions[1], yregions[0] : yregions[1] : sum]
-            B = hist_abcd[xregions[1] : xregions[2], yregions[0] : yregions[1] : sum]
-            C = hist_abcd[xregions[2] : xregions[3], yregions[0] : yregions[1] : sum]
-            D = hist_abcd[xregions[0] : xregions[1], yregions[1] : yregions[2] : sum]
-            E = hist_abcd[xregions[1] : xregions[2], yregions[1] : yregions[2] : sum]
-            SR = hist_abcd[xregions[2] : xregions[3], yregions[1] : yregions[2] : sum]
-        SR_exp = (
-            C
-            * E.sum().value ** 2
-            * A.sum().value
-            / (B.sum().value ** 2 * D.sum().value)
+    return A, B, C, D, E, SR
+
+
+def ABCD_6regions_errorProp(abcd, xregions, yregions, sum_var="x", new_bins=None):
+    """
+    Does 6 region ABCD using error propagation of the statistical uncertanties of the regions.
+    """
+
+    A, B, C, D, E, SR = make_ABCD_6regions(abcd, xregions, yregions, sum_var=sum_var)
+
+    # initialize the SR_exp as empty
+    SR_exp = SR.copy()
+    SR_exp.view().variance = [0] * len(SR.values())
+    SR_exp.view().value = [0] * len(SR.values())
+
+    # there are two modes, depending on which dimension is integrated, and which dimension has 3 regions
+    # the two modes define different expression for the predicted SR in each bin
+    mode1 = (sum_var == "x" and len(xregions) == 3) or (
+        sum_var == "y" and len(xregions) == 2
+    )
+    mode2 = (sum_var == "x" and len(xregions) == 2) or (
+        sum_var == "y" and len(xregions) == 3
+    )
+
+    # define the histograms that will be used to calculate the scaling factor
+    if mode1:
+        hNUM = E
+        hNUM2 = C
+        hDEN = D
+    elif mode2:
+        hNUM = C
+        hNUM2 = E
+        hDEN = D
+    else:
+        raise ValueError(
+            "This should not happen. sum_var should be 'x' or 'y', and one of xregions or yregions should have len==2, the other len==3."
         )
+
+    # we need to rebin here in the case appox=True
+    if new_bins:
+        hNUM = rebin_piecewise(hNUM, new_bins)
+        if mode1:
+            hDEN = rebin_piecewise(hDEN, new_bins)
+        SR = rebin_piecewise(SR, new_bins)
+        SR_exp = rebin_piecewise(SR_exp, new_bins)
+
+    preds, preds_err = [], []
+    for i in range(len(hNUM.values())):
+        hNUM_bin = hNUM[i]
+        hDEN_bin = (
+            hDEN[i] if mode1 else hist.accumulators.WeightedSum()
+        )  # only needed for mode1, if mode 2, just initialize it to an empty accumulator
+
+        # define the scaling factor function
+        a, b, hnum_bin, hnum2, hden_bin, hden = symbols(
+            "A B hNUM_bin hNUM2 hDEN_bin hDEN"
+        )
+        if mode1:
+            exp = hnum_bin**2 * hnum2 * a * hden_bin**-1 * b**-2
+        elif mode2:
+            exp = hnum_bin * hnum2**2 * a * b**-2 * hden**-1
+
+        # defines lists of variables (sympy symbols) and accumulators (hist.sum())
+        variables = [a, b, hnum_bin, hnum2, hden_bin, hden]
+        accs = [
+            A.sum(),
+            B.sum(),
+            hNUM_bin,
+            hNUM2.sum(),
+            hDEN_bin,
+            hDEN.sum(),
+        ]
+
+        # calculate scaling factor by substituting values of the histograms' sums for the sympy symbols
+        alpha = exp.copy()
+        for var, acc in zip(variables, accs):
+            alpha = alpha.subs(var, acc.value)
+
+        # calculate the error on the scaling factor
+        variance = 0
+        for var, acc in zip(variables, accs):
+            der = diff(exp, var)
+            var = abs(acc.variance)
+            variance += der**2 * var
+        for var, acc in zip(variables, accs):
+            variance = variance.subs(var, acc.value)
+        sigma_alpha = variance
+
+        if type(alpha) != sympy.core.numbers.Float or alpha <= 0:
+            alpha = 0
+
+        preds.append(alpha)
+        preds_err.append(sigma_alpha)
+
+    SR_exp.view().variance = preds_err
+    SR_exp.view().value = preds
 
     return SR, SR_exp
 
@@ -1297,6 +1679,8 @@ def ABCD_9regions_errorProp(
         abcd, xregions, yregions, sum_var=sum_var
     )
     SR_exp = SR.copy()
+    SR_exp.view().variance = [0] * len(SR.values())
+    SR_exp.view().value = [0] * len(SR.values())
 
     # we need to rebin here in the case appox=True
     if new_bins:
@@ -1377,40 +1761,6 @@ def ABCD_9regions_errorProp(
     return SR, SR_exp
 
 
-def ABCD_9regions_yield(abcd, xregions, yregions):
-    A, B, C, D, E, F, G, H, SR, _ = ABCD_9regions(
-        abcd, xregions, yregions, sum_var="x", return_all=True
-    )
-
-    A = A.sum().value
-    B = B.sum().value
-    C = C.sum().value
-    D = D.sum().value
-    E = E.sum().value
-    F = F.sum().value
-    G = G.sum().value
-    H = H.sum().value
-    SR = SR.sum().value
-    tot = A + B + C + D + E + F + G + H + SR
-
-    SR_exp = (F**2) * (H**2) * (D**2) * (B**2) * (G**-1) * (C**-1) * (A**-1) * (E**-4)
-    sigma_SR_exp = (
-        np.sqrt(
-            4 * (F**-1)
-            + 4 * (H**-1)
-            + 4 * (D**-1)
-            + 4 * (B**-1)
-            + (G**-1)
-            + (C**-1)
-            + (A**-1)
-            + 16 * (E**-1)
-        )
-        * SR_exp
-    )
-
-    return SR, SR_exp, sigma_SR_exp
-
-
 def integrate(h, lower, upper):
     i = h[lower:upper].sum()
     return i.value, np.sqrt(i.variance)
@@ -1478,7 +1828,7 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
     return h_out
 
 
-def linearFit2DHist(h):
+def poly_fit_hist2d(h, deg=1):
     z_values = h.values().flatten()
     x_centers = h.axes[0].centers
     y_centers = h.axes[1].centers
@@ -1488,7 +1838,7 @@ def linearFit2DHist(h):
         x_values = np.concatenate((x_values, np.ones_like(y_centers) * x_centers[i]))
     for _i in range(len(x_centers)):
         y_values = np.concatenate((y_values, y_centers))
-    p = np.poly1d(np.polyfit(x_values, y_values, 1, w=z_values, cov=False))
+    p = np.poly1d(np.polyfit(x_values, y_values, deg, w=z_values, cov=False))
     logging.info("Linear fit result:", p)
     return p
 
@@ -1686,7 +2036,7 @@ def cutflow_plot(cutflow_dict, samples, selections, selection_labels: str = []):
     ax.set_xticks(
         np.arange(len(selection_labels)) + 0.5,
         selection_labels,
-        rotation=45,
+        rotation=90,
         fontsize=10,
     )
 
@@ -1695,14 +2045,13 @@ def cutflow_plot(cutflow_dict, samples, selections, selection_labels: str = []):
 
 def make_n1_plots(
     plots: dict,
-    cutflows: dict,
     tag: str,
     density: bool = False,
     samples: list = [],
     stackedSamples: list = [],
 ):
     """
-    Make n-1 plots (produced by make_hists.py as "tag_full" prior to each selection).
+    Make n-1 plots (produced by make_hists.py as "<histogram-name>_N-1").
     :param plots: dictionary of histograms (dimension: sample x plot)
     :param cutflows: dictionary of cutflows (dimension: sample x selection)
     :param tag: tag to use for the n-1 plots
@@ -1720,29 +2069,17 @@ def make_n1_plots(
             "No samples provided. Provide at least one samples or one stackedSamples."
         )
 
-    n1_plots = [
-        k for k in plots[allSamples[0]].keys() if k[:-1].endswith(tag + "_beforeCut")
-    ]
-
-    cuts = [k for k in cutflows[allSamples[0]].keys() if k.endswith(tag)]
-    for cut in cuts:
-        cut_bits = cut.split("_")
-        cut_val = float(cut_bits[-2])
+    n1_plots = [k for k in plots[allSamples[0]].keys() if "_noCut_" in k and tag in k]
 
     samples_color = plt.cm.rainbow(np.linspace(0, 1, len(samples)))
     for p in n1_plots:
 
-        var = p[:-1].replace("_" + tag + "_beforeCut", "")
-        cut_val = None
-        for cut in cuts:
-            if var in cut:
-                cut_bits = cut.split("_")
-                cut_val = float(cut_bits[-2])
-                cut_op = str(cut_bits[-3])
-                break
+        p_notag = p.replace("_" + tag, "")
 
-        if cut_val is None:
-            print("Could not find a cutflow for", var)
+        var = p_notag.split("_noCut_")[0]
+        cut_bits = p_notag.split("_noCut_")[1].split("_")
+        cut_val = float(cut_bits[-1])
+        cut_operator = cut_bits[-2]
 
         fig = plt.figure()
         ax = fig.subplots()
@@ -1763,7 +2100,7 @@ def make_n1_plots(
                 stack=False,
                 histtype="step",
                 linestyle="dashed",
-                linewidth=3,
+                linewidth=2,
                 color=samples_color,
                 ax=ax,
             )
@@ -1778,7 +2115,11 @@ def make_n1_plots(
                 label=f"Cut value: {cut_val}",
             )
         ax.set_yscale("log")
-        ax.legend(fontsize="xx-small", loc=(1.05, 0))
+        pretty_sel = p_notag.split("_noCut_")[1].replace("_", " ")
+        title = f"N-1 plot for region: {tag}\nSelection omitted: {pretty_sel}"
+        ax.legend(
+            fontsize="xx-small", loc=(1.05, 0), title=title, title_fontsize="xx-small"
+        )
         figs.append(fig)
 
     return figs
