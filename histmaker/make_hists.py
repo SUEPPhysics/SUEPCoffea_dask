@@ -669,24 +669,6 @@ def main():
                         ]
                     ],
                 },
-                "Cluster70Eta": {
-                    "input_method": "CL",
-                    "method_var": "SUEP_S1_CL",
-                    "xvar": "SUEP_S1_CL",
-                    "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-                    "yvar": "SUEP_nconst_CL",
-                    "yvar_regions": [30, 50, 70, 1000],
-                    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0], 
-                                   "SUEP_nconst_CL > 30", "SUEP_S1_CL > 0.3", "SUEP_eta_CL > -1.0", "SUEP_eta_CL < 1.0"],
-                    "new_variables": [
-                        [
-                            "SUEP_ISR_deltaPhi_CL",
-                            lambda x, y: abs(x - y),
-                            ["SUEP_phi_CL", "ISR_phi_CL"],
-                        ]
-                    ],
-                },
                 "ClusterInverted": {
                     "input_method": "CL",
                     "method_var": "ISR_S1_CL",
