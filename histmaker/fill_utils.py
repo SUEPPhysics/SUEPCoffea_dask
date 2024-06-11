@@ -365,7 +365,7 @@ def fill_ND_distributions(df, output, label_out, input_method):
     Fill all N>1 dimensional histograms.
     To do, we expect that they are named as follows:
     ND_var1_vs_var2_vs_var3_vs_..._vs_varNth_label_out
-    Where var1, var2, ..., varN are the variables to be plotted in each dimension,
+    Where var1, var2, ..., var N are the variables to be plotted in each dimension,
     and N is an integer greater than 1.
     """
 
