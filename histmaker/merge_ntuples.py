@@ -74,7 +74,7 @@ def time_limited_move(infile, outfile, time_limit=60, max_attempts=5):
         p.join(time_limit)
         # If thread is active
         if p.is_alive():
-            print("TIME ERROR", file, "taking too long to be transferred")
+            print("TIME ERROR", infile, "taking too long to be transferred")
             p.terminate()
             p.join()
             attempt += 1

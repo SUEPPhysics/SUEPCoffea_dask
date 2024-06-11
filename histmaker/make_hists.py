@@ -16,7 +16,7 @@ import logging
 import os
 import subprocess
 import sys
-
+import pickle
 import numpy as np
 import uproot
 from tqdm import tqdm
@@ -31,6 +31,7 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
+
 import plotting.plot_utils as plot_utils
 
 
@@ -144,6 +145,12 @@ def makeParser(parser=None):
         required=False,
     )
     parser.add_argument(
+        "--pkl",
+        type=int,
+        default=0,
+        help="Use pickle files instead of root files (default=False)",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Run with verbose logging.",
@@ -166,7 +173,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
         df["event_weight"] = np.ones(df.shape[0])
 
     # apply systematics and weights
-    if options.isMC == 1:
+    if options.isMC:
 
         # 1) pileup weights
         puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
@@ -176,7 +183,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             df, syst, puweights, puweights_up, puweights_down
         )
         df["event_weight"] *= pu
-
+        
         # 2) PS weights
         if "PSWeight" in syst and syst in df.keys():
             df["event_weight"] *= df[syst]
@@ -337,39 +344,49 @@ def main():
             [
                 "W_SUEP_BV",
                 fill_utils.balancing_var,
-                ["W_pt_from_MET", "SUEP_pt_HighestPT"],
+                ["W_pt", "SUEP_pt_HighestPT"],
             ],
             [
                 "W_jet1_BV",
                 fill_utils.balancing_var,
-                ["W_pt_from_MET", "jet1_pt"],
+                ["W_pt", "jet1_pt"],
             ],
             [
                 "ak4SUEP1_SUEP_BV",
                 fill_utils.balancing_var,
-                ["ak4jet1_inSUEPcluster_pt", "SUEP_pt_HighestPT"],
+                ["ak4jet1_inSUEPcluster_pt_HighestPT", "SUEP_pt_HighestPT"],
             ],
             [
                 "W_SUEP_vBV",
                 fill_utils.vector_balancing_var,
                 [
-                    "W_phi_from_MET",
+                    "W_phi",
                     "SUEP_phi_HighestPT",
-                    "W_pt_from_MET",
+                    "W_pt",
+                    "SUEP_pt_HighestPT",
+                ],
+            ],
+            [
+                "W_SUEP_vBV2",
+                fill_utils.vector_balancing_var2,
+                [
+                    "W_phi",
+                    "SUEP_phi_HighestPT",
+                    "W_pt",
                     "SUEP_pt_HighestPT",
                 ],
             ],
             [
                 "W_jet1_vBV",
                 fill_utils.vector_balancing_var,
-                ["W_phi_from_MET", "jet1_phi", "W_pt_from_MET", "jet1_pt"],
+                ["W_phi", "jet1_phi", "W_pt", "jet1_pt"],
             ],
             [
                 "deltaPhi_SUEP_W",
                 fill_utils.deltaPhi_x_y,
                 [
                     "SUEP_phi_HighestPT",
-                    "W_phi_from_MET",
+                    "W_phi",
                 ],
             ],
             [
@@ -438,12 +455,12 @@ def main():
             [
                 "nak4jets_outsideSUEP",
                 lambda x, y: (x - y),
-                ["ngood_ak4jets", "ak4jets_inSUEPcluster_n"],
+                ["ngood_ak4jets", "ak4jets_inSUEPcluster_n_HighestPT"],
             ],
             [
                 "nonSUEP_S1",
                 lambda x, y: 1.5 * (x + y),
-                ["nonSUEP_eig0", "nonSUEP_eig1"],
+                ["nonSUEP_eig0_HighestPT", "nonSUEP_eig1_HighestPT"],
             ],
             [
                 "ntracks_outsideSUEP",
@@ -458,50 +475,152 @@ def main():
             [
                 "SUEP_nconst_minus_otherAK15_maxConst",
                 lambda x, y: (x - y),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst"],
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
             ],
             [
                 "jetsInSameHemisphere",
                 lambda x, y: ((x == 1) | (y < 1.5)),
                 ["ngood_ak4jets", "maxDeltaPhiJets"],
             ],
+            [  
+                "deltaPhi_genSUEP_SUEP",
+                fill_utils.deltaPhi_x_y,
+                ["SUEP_genPhi", "SUEP_phi_HighestPT"],
+            ],
+            [
+                "deltaR_genSUEP_SUEP",
+                fill_utils.deltaR,
+                ["SUEP_genEta", "SUEP_eta_HighestPT", "SUEP_genPhi", "SUEP_phi_HighestPT"],
+            ],
+            [
+                "percent_darkphis_inTracker",
+                lambda x, y: x/y,
+                ["n_darkphis_inTracker", "n_darkphis"]
+            ],
+            [
+                "percent_tracks_dPhiW0p2",
+                lambda x, y: x/y,
+                ["ntracks_dPhiW0p2", "ntracks"]
+            ],
+            [
+                "SUEPMostNumerous",
+                lambda x, y: x > y,
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"]
+            ],
+            [
+                "MaxConstAK15_phi",
+                lambda x_nconst, y_nconst, x_phi, y_phi: np.where(x_nconst > y_nconst, x_phi, y_phi),
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT", "SUEP_phi_HighestPT", "otherAK15_maxConst_phi_HighestPT"]
+            ],
+            [
+                "MaxConstAK15_eta",
+                lambda x_nconst, y_nconst, x_eta, y_eta: np.where(x_nconst > y_nconst, x_eta, y_eta),
+                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT", "SUEP_eta_HighestPT", "otherAK15_maxConst_eta_HighestPT"]
+            ],
+            [
+                "deltaPhi_SUEPgen_MaxConstAK15",
+                fill_utils.deltaPhi_x_y,
+                ["SUEP_genPhi", "MaxConstAK15_phi"]
+            ],
+            [
+                "deltaR_SUEPgen_MaxConstAK15",
+                fill_utils.deltaR,
+                ["SUEP_genEta", "MaxConstAK15_eta", "SUEP_genPhi", "MaxConstAK15_phi"]
+            ],
+            [
+                "highestPTtrack_pt_norm",
+                lambda x, y: x/y,
+                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"]
+            ],
+            [
+                "highestPTtrack_pt_norm2",
+                lambda x, y: x/y,
+                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_avg_HighestPT"]
+            ],
+            [
+                "isMuon",
+                lambda x: abs(x) == 13,
+                ["lepton_flavor"]
+            ],
+            [
+                "isElectron",
+                lambda x: abs(x) == 11,
+                ["lepton_flavor"]
+            ]
         ]
+        if options.isMC:
+            new_variables_WH += [
+                [
+                    "deltaPhi_W_genW",
+                    fill_utils.deltaPhi_x_y,
+                    ["genW_phi", "W_phi"]
+                ],
+                [
+                    "deltaPt_W_genW",
+                    lambda x, y: x - y,
+                    ["genW_pt", "W_pt"]
+                ],
+            ]
         config = {
             "SR": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
+                "SR": [["SUEP_S1_HighestPT", ">=", 0.3], ["SUEP_nconst_HighestPT", ">=", 50]],
                 "selections": [
                     "MET_pt > 30",
-                    "W_pt_from_MET > 40",
-                    "W_mT_from_MET < 130",
-                    "W_mT_from_MET > 30",
+                    "W_pt > 40",
+                    "W_mt < 130",
+                    "W_mt > 30",
                     "bjetSel == 1",
                     "deltaPhi_SUEP_W > 1.5",
                     "deltaPhi_SUEP_MET > 1.5",
                     "deltaPhi_lepton_SUEP > 1.5",
-                    "ngood_ak4jets >= 1",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
                     "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
                     "W_SUEP_BV < 2",
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
                 ],
                 "new_variables": new_variables_WH,
             },
+            "CRWJ": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [["SUEP_S1_HighestPT", ">=", 0.3], ["SUEP_nconst_HighestPT", ">=", 50]],
+                "selections": [
+                    "MET_pt > 30",
+                    "W_pt > 40",
+                    "W_mt < 130",
+                    "W_mt > 30",
+                    "bjetSel == 1",
+                    "deltaPhi_SUEP_W > 1.5",
+                    "deltaPhi_SUEP_MET > 1.5",
+                    "deltaPhi_lepton_SUEP > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 50",
+                ],
+                "new_variables": new_variables_WH,
+            },
             "CRTT": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
+                "SR": [["SUEP_S1_HighestPT", ">=", 0.3], ["SUEP_nconst_HighestPT", ">=", 40]],
                 "selections": [
                     "MET_pt > 30",
-                    "W_pt_from_MET > 40",
-                    "W_mT_from_MET < 130",
-                    "W_mT_from_MET > 30",
+                    "W_pt > 40",
+                    "W_mt < 130",
+                    "W_mt > 30",
                     "bjetSel == 0",
                     "deltaPhi_SUEP_W > 1.5",
                     "deltaPhi_SUEP_MET > 1.5",
                     "deltaPhi_lepton_SUEP > 1.5",
-                    "ngood_ak4jets >= 1",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
                     "W_SUEP_BV < 2",
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 50",
                 ],
                 "new_variables": new_variables_WH,
             },
@@ -541,7 +660,25 @@ def main():
                     "yvar": "SUEP_nconst_CL",
                     "yvar_regions": [30, 50, 70, 1000],
                     "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
-                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0], "SUEP_nconst_CL > 30", "SUEP_S1_CL > 0.3"],
+                    "new_variables": [
+                        [
+                            "SUEP_ISR_deltaPhi_CL",
+                            lambda x, y: abs(x - y),
+                            ["SUEP_phi_CL", "ISR_phi_CL"],
+                        ]
+                    ],
+                },
+                "Cluster70Eta": {
+                    "input_method": "CL",
+                    "method_var": "SUEP_S1_CL",
+                    "xvar": "SUEP_S1_CL",
+                    "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+                    "yvar": "SUEP_nconst_CL",
+                    "yvar_regions": [30, 50, 70, 1000],
+                    "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+                    "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0], 
+                                   "SUEP_nconst_CL > 30", "SUEP_S1_CL > 0.3", "SUEP_eta_CL > -1.0", "SUEP_eta_CL < 1.0"],
                     "new_variables": [
                         [
                             "SUEP_ISR_deltaPhi_CL",
@@ -807,7 +944,7 @@ def main():
         lumi = plot_utils.getLumi(options.era, options.scouting)
         logging.debug(f"Found lumi: {lumi}.")
 
-        if isSignal:  
+        if isSignal:
             normalization = 1 / total_gensumweight
         else:
             normalization = xsection * lumi / total_gensumweight
@@ -826,7 +963,7 @@ def main():
         "era": options.era,
         "sample": sample,
         "xsec": float(xsection),
-        "gensumweight": int(total_gensumweight),
+        "gensumweight": float(total_gensumweight),
         "lumi": float(lumi),
         "nfiles": ntotal,
         "nfailed": nfailed,
@@ -840,18 +977,24 @@ def main():
 
     ### Write output #################################################################################################
 
-    # write histograms and metadata to a root file
-    outFile = options.saveDir + "/" + sample + "_" + options.output + ".root"
-    logging.info("Saving outputs to " + outFile)
-    with uproot.recreate(outFile) as froot:
-        # write out metadata
-        for k, m in metadata.items():
-            froot[f"metadata/{k}"] = str(m)
+    # write histograms and metadata to a root or pkl file
+    outFile = options.saveDir + "/" + sample + "_" + options.output
+    if options.pkl:
+        outFile += ".pkl"
+        logging.info("Saving outputs to " + outFile)
+        with open(outFile, "wb") as f:
+            pickle.dump({"metadata": metadata, "hists": output}, f)
+    else:
+        outFile += ".root"
+        logging.info("Saving outputs to " + outFile)
+        with uproot.recreate(outFile) as froot:
+            # write out metadata
+            for k, m in metadata.items():
+                froot[f"metadata/{k}"] = str(m)
 
-        # write out histograms
-        for h, hist in output.items():
-            froot[h] = hist
-
+            # write out histograms
+            for h, hist in output.items():
+                froot[h] = hist
 
 if __name__ == "__main__":
     main()

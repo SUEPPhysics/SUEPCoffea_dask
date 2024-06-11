@@ -40,7 +40,7 @@ slurm_script_template = """#!/bin/bash
 #SBATCH --error={log_dir}{sample}.err
 #SBATCH --time={time}
 #SBATCH --mem={memory}
-#SBATCH --partition=submit
+#SBATCH --partition=submit,submit-gpu
 
 source ~/.bashrc
 export X509_USER_PROXY=/home/submit/{user}/{proxy}
@@ -125,12 +125,13 @@ elif general_options.code == "merge":
 options = parser.parse_args()
 
 # logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 # Found it necessary to run on a space with enough disk space
 work_dir_base = "/work/submit/{}/dummy_directory{}".format(
     getpass.getuser(), np.random.randint(0, 10000)
 )
+logging.info("Copying ../../SUEPCoffea_dask to " + work_dir_base)
 os.system(f"mkdir {work_dir_base}")
 os.system(f"cp -a ../../SUEPCoffea_dask {work_dir_base}/.")
 logging.info("Working in " + work_dir_base)
@@ -149,7 +150,7 @@ if options.method == "slurm":
         memory = "12GB"
         time = "02:00:00"
     elif options.code == "merge":
-        memory = "16GB"
+        memory = "32GB"
         time = "12:00:00"
 elif options.method == "multithread":
     pool = Pool(
@@ -198,7 +199,7 @@ for i, sample in enumerate(samples):
         )
 
     elif options.code == "plot":
-        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --predictSR={predictSR} --saveDir={saveDir} --channel={channel} --maxFiles={maxFiles}".format(
+        cmd = "python make_hists.py --sample={sample} --tag={tag} --redirector={redirector} --dataDirLocal={dataDirLocal} --dataDirXRootD={dataDirXRootD} --output={output_tag} --xrootd={xrootd} --weights={weights} --isMC={isMC} --era={era} --scouting={scouting} --merged={merged} --doInf={doInf} --doABCD={doABCD} --doSyst={doSyst} --blind={blind} --saveDir={saveDir} --channel={channel} --maxFiles={maxFiles} --pkl={pkl}".format(
             sample=sample,
             tag=options.tag,
             output_tag=options.output,
@@ -212,13 +213,13 @@ for i, sample in enumerate(samples):
             doABCD=options.doABCD,
             doSyst=options.doSyst,
             blind=options.blind,
-            predictSR=options.predictSR,
             saveDir=options.saveDir,
             channel=options.channel,
             maxFiles=options.maxFiles,
             dataDirLocal=options.dataDirLocal,
             dataDirXRootD=options.dataDirXRootD,
             redirector=options.redirector,
+            pkl=options.pkl
         )
 
     # execute the command with singularity
@@ -273,7 +274,7 @@ if options.method == "slurm" and len(job_ids) > 0:
 #SBATCH --error={log_dir}cleanup_job.err
 #SBATCH --time=02:00:00
 #SBATCH --mem=100MB
-#SBATCH --partition=submit
+#SBATCH --partition=submit,submit-gpu
 
 while true; do
     all_finished=true
