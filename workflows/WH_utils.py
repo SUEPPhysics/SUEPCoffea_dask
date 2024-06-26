@@ -238,7 +238,7 @@ def getLooseLeptons(events):
 
     cutLooseMuons = (
         (events.Muon.looseId)
-        & (events.Muon.pt >= 35)
+        & (events.Muon.pt >= 30)
         & (abs(events.Muon.dxy) <= 0.02)
         & (abs(events.Muon.dz) <= 0.1)
         & (events.Muon.pfIsoId >= 2)
@@ -246,7 +246,7 @@ def getLooseLeptons(events):
     )
     cutLooseElectrons = (
         (events.Electron.cutBased >= 2)
-        & (events.Electron.pt >= 30)
+        & (events.Electron.pt >= 35)
         & (events.Electron.mvaFall17V2Iso_WP90)
         & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
         & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
