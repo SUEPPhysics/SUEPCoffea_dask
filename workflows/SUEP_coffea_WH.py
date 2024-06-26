@@ -829,17 +829,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = events[leptonSelection] # apply selection to events
         
         tightLeptons = tightLeptons[leptonSelection]
-        if len(tightLeptons[0]) !=0:
-            self.lepton = tightLeptons[:, 0]
 
-        _, _, looseLeptons = WH_utils.getLooseLeptons(events) # gets number of tight leptons
+        _, _, looseLeptons = WH_utils.getLooseLeptons(events) # gets number of loose leptons
 
-        leptonSelection2 = ak.num(looseLeptons) == 1 # selection on number of tight leptons
+        leptonSelection2 = ak.num(looseLeptons) == 1 # selection on number of loose leptons
         events = events[leptonSelection2] # apply selection to events
 
         looseLeptons = looseLeptons[leptonSelection2]
-        if len(looseLeptons[0]) !=0:
-            self.lepton = looseLeptons[:, 0] # pick first row
+        self.lepton = looseLeptons[:, 0]
 
         output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
 
