@@ -408,9 +408,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["PV_npvs"] = events.PV.npvs
         output["vars"]["PV_npvsGood"] = events.PV.npvsGood
 
-        if self.isMC:
-            output["vars"]["LHE_Vpt"] = events.LHE.Vpt
-            output["vars"]["LHE_HT"] = events.LHE.HT
+        # if self.isMC:
+        #     output["vars"]["LHE_Vpt"] = events.LHE.Vpt
+        #     output["vars"]["LHE_HT"] = events.LHE.HT
 
         # select out ak4jets
         uncorrected_ak4jets = WH_utils.getAK4Jets(events.Jet, isMC=self.isMC)
@@ -822,13 +822,25 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Define the lepton objects and apply single lepton selection.
         #####################################################################################
 
-        _, _, tightLeptons = WH_utils.getTightLeptons(events)
+        _, _, tightLeptons = WH_utils.getTightLeptons(events) # gets number of tight leptons
 
         # require exactly one tight lepton
-        leptonSelection = ak.num(tightLeptons) == 1
-        events = events[leptonSelection]
+        leptonSelection = ak.num(tightLeptons) != 1 # selection on number of tight leptons
+        events = events[leptonSelection] # apply selection to events
+        
         tightLeptons = tightLeptons[leptonSelection]
-        self.lepton = tightLeptons[:, 0]
+        if len(tightLeptons[0]) !=0:
+            self.lepton = tightLeptons[:, 0]
+
+        _, _, looseLeptons = WH_utils.getLooseLeptons(events) # gets number of tight leptons
+
+        leptonSelection2 = ak.num(looseLeptons) == 1 # selection on number of tight leptons
+        events = events[leptonSelection2] # apply selection to events
+
+        looseLeptons = looseLeptons[leptonSelection2]
+        if len(looseLeptons[0]) !=0:
+            self.lepton = looseLeptons[:, 0] # pick first row
+
         output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
