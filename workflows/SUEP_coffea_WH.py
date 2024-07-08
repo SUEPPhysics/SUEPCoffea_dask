@@ -514,10 +514,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )[:, 0]
 
         # save MET
-        self.MET = WH_utils.make_MET_4v(events.MET)
+        self.MET = WH_utils.make_MET_4v(met_c)
 
         # saving kinematic variables for the deltaphi(min(jet,MET)) jet
-        self.jets_jec.deltaPhiMET = WH_utils.MET_delta_phi(self.jets_jec, events.MET)
+        self.jets_jec.deltaPhiMET = WH_utils.MET_delta_phi(self.jets_jec, self.MET)
         sorted_deltaphiMET_jets = self.jets_jec[
             ak.argsort(self.jets_jec.deltaPhiMET, axis=1, ascending=True)
         ]
@@ -558,9 +558,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["RawMET_sumEt"] = events.RawMET.sumEt
         output["vars"]["RawPuppiMET_pt"] = events.RawPuppiMET.pt
         output["vars"]["RawPuppiMET_phi"] = events.RawPuppiMET.phi
+        """
+        output["vars"]["MET_JEC_phi"] = met_c.phi
         output["vars"]["MET_JEC_pt"] = met_c.pt
         output["vars"]["MET_JEC_sumEt"] = met_c.sumEt
-        """
+        
 
         # corrections on MET
         if self.isMC and self.do_syst:
@@ -683,12 +685,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )[:, i]
 
         # saving W information
-        self.W = WH_utils.make_Wt_4v(self.lepton, events.MET)
+        self.W = WH_utils.make_Wt_4v(self.lepton, self.MET)
         self.W_PuppiMET = WH_utils.make_Wt_4v(self.lepton, events.PuppiMET)
         self.W_CaloMET = WH_utils.make_Wt_4v(self.lepton, events.CaloMET)
         output["vars"]["W_pt"] = self.W.pt
         output["vars"]["W_phi"] = self.W.phi
-        output["vars"]["W_mt"] = WH_utils.calc_W_mt(self.lepton, events.MET)
+        output["vars"]["W_mt"] = WH_utils.calc_W_mt(self.lepton, self.MET)
         output["vars"]["W_pt_PuppiMET"] = self.W_PuppiMET.pt
         output["vars"]["W_phi_PuppiMET"] = self.W_PuppiMET.phi
         output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(
