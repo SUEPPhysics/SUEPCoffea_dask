@@ -13,12 +13,12 @@ def load_jets(self, events):
         vals_jet0["pt_gen"] = ak.values_astype(
             ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
         )
-        vals_jet0["rho"] = events.rho
+        vals_jet0["event_rho"] = events.rho
     else:
         vals_jet0 = events.Jet
         vals_jet0["pt_raw"] = events.Jet.pt
         vals_jet0["mass_raw"] = events.Jet.mass
-        vals_jet0["rho"] = events.rho
+        vals_jet0["event_rho"] = events.rho
         vals_jet0["pt_gen"] = ak.values_astype(
             ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
         )
@@ -27,6 +27,13 @@ def load_jets(self, events):
 
 
 def apply_jecs(self, Sample, events, prefix=""):
+    """
+    Apply jet corrections to the jets in the events.
+    Returns the corrected jets and MET.
+    Follow the reccomendations: https://cms-jerc.web.cern.ch/Recommendations/ 
+    An example implentation in coffea: https://gitlab.cern.ch/gagarwal/ttbardileptonic/-/blob/master/jmeCorrections.py?ref_type=heads
+    """
+
     # Find the Collection we want to look at
     if int(self.isMC):
         if str(self.era) == "2016":
@@ -94,102 +101,78 @@ def apply_jecs(self, Sample, events, prefix=""):
         )
 
     # Start working here
-    jec_path = prefix + "data/jetmet/JEC/" + jecdir + "/"
-    jer_path = prefix + "data/jetmet/JER/" + jerdir + "/"
+    jec_path = prefix + "data/jetmet/JEC/" + jecdir + "/" + jecdir
+    jer_path = prefix + "data/jetmet/JER/" + jerdir + "/" + jerdir
 
     # Defined the weight sets we want to use
     ext_ak4 = extractor()
     if self.isMC:
         ext_ak4.add_weight_sets(
-            [  # change to correct files
-                "* * "
-                + jec_path
-                + jecdir
-                + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
-                #'* * ' + jec_path + jecdir +"_L1RC_AK4PFchs.jec.txt", #needs area
-                #'* * ' + jec_path + jecdir +"_L2L3Residual_AK4PFchs.jec.txt",
-                #'* * ' + jec_path + jecdir +"_L2Residual_AK4PFchs.jec.txt",
-                "* * " + jec_path + jecdir + "_L2Relative_AK4PFchs.jec.txt",
-                "* * "
-                + jec_path
-                + jecdir
-                + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
-                "* * " + jec_path + jecdir + "_Uncertainty_AK4PFchs.junc.txt",
-                "* * " + jer_path + jerdir + "_PtResolution_AK4PFchs.jr.txt",
-                "* * " + jer_path + jerdir + "_SF_AK4PFchs.jersf.txt",
+            [ 
+                "* * " + jec_path + "_L1FastJet_AK4PFchs.jec.txt",  
+                "* * " + jec_path + "_L2Relative_AK4PFchs.jec.txt",
+                "* * " + jec_path + "_L3Absolute_AK4PFchs.jec.txt", 
+                "* * " + jec_path + "_UncertaintySources_AK4PFchs.junc.txt",
+                "* * " + jec_path + "_Uncertainty_AK4PFchs.junc.txt",
+                "* * " + jer_path + "_PtResolution_AK4PFchs.jr.txt",
+                "* * " + jer_path + "_SF_AK4PFchs.jersf.txt",
             ]
         )
     else:
         ext_ak4.add_weight_sets(
-            [  # change to correct files
-                "* * "
-                + jec_path
-                + jecdir
-                + "_L1FastJet_AK4PFchs.jec.txt",  # looks to be 0,
-                "* * " + jec_path + jecdir + "_L1RC_AK4PFchs.jec.txt",  # needs area
-                "* * " + jec_path + jecdir + "_L2Relative_AK4PFchs.jec.txt",
-                "* * "
-                + jec_path
-                + jecdir
-                + "_L3Absolute_AK4PFchs.jec.txt",  # looks to be 1, no change
-                "* * " + jec_path + jecdir + "_L2L3Residual_AK4PFchs.jec.txt",
-                "* * " + jec_path + jecdir + "_L2Residual_AK4PFchs.jec.txt",
+            [  
+                "* * " + jec_path + "_L1FastJet_AK4PFchs.jec.txt", 
+                "* * " + jec_path + "_L3Absolute_AK4PFchs.jec.txt",  
+                "* * " + jec_path + "_L2Relative_AK4PFchs.jec.txt",
+                "* * " + jec_path + "_L2L3Residual_AK4PFchs.jec.txt",
             ]
         )
 
     ext_ak4.finalize()
     evaluator_ak4 = ext_ak4.make_evaluator()
 
-    # WARNING
-    # Make sure the acorrections are applied in the right order:
-    # https://twiki.cern.ch/twiki/bin/view/CMS/IntroToJEC#Mandatory_Jet_Energy_Corrections
-    if self.isMC:
+    if int(self.isMC):
         jec_stack_names_ak4 = [
             jecdir + "_L1FastJet_AK4PFchs",
-            # jecdir + "_L1RC_AK4PFchs",
-            # jecdir + "_L2L3Residual_AK4PFchs",
-            # jecdir + "_L2Residual_AK4PFchs",
             jecdir + "_L2Relative_AK4PFchs",
             jecdir + "_L3Absolute_AK4PFchs",
+            jecdir + "_Uncertainty_AK4PFchs",
             jerdir + "_PtResolution_AK4PFchs",
             jerdir + "_SF_AK4PFchs",
-            jecdir + "_Uncertainty_AK4PFchs",
         ]
     else:
         jec_stack_names_ak4 = [
             jecdir + "_L1FastJet_AK4PFchs",
-            jecdir + "_L1RC_AK4PFchs",
-            jecdir + "_L2Relative_AK4PFchs",
             jecdir + "_L3Absolute_AK4PFchs",
+            jecdir + "_L2Relative_AK4PFchs",
             jecdir + "_L2L3Residual_AK4PFchs",
-            jecdir + "_L2Residual_AK4PFchs",
         ]
 
     jec_inputs_ak4 = {name: evaluator_ak4[name] for name in jec_stack_names_ak4}
     jec_stack_ak4 = JECStack(jec_inputs_ak4)
 
     # Prepare the jets from the events
-    if self.scouting == 1:
+    if int(self.scouting) == 1:
         jets = load_jets(self, events)
     else:
         jets = events.Jet
         jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
         jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
-        if self.isMC:
+        if int(self.isMC):
             jets["pt_gen"] = ak.values_astype(
                 ak.fill_none(jets.matched_gen.pt, 0), np.float32
             )
-        jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+        jets["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
     # Create the map (for both MC and data)
     name_map = jec_stack_ak4.blank_name_map
     name_map["JetPt"] = "pt"
     name_map["JetMass"] = "mass"
     name_map["JetEta"] = "eta"
     name_map["JetA"] = "area"
-    name_map["Rho"] = "rho"
+    name_map["Rho"] = "event_rho"
     name_map["massRaw"] = "mass_raw"
     name_map["ptRaw"] = "pt_raw"
-    if self.isMC:
+    if int(self.isMC):
         name_map["ptGenJet"] = "pt_gen"
 
     # create and return the corrected jet collection
