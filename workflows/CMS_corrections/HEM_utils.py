@@ -1,6 +1,4 @@
 import awkward as ak
-import numpy as np
-
 
 def jetHEMFilter(self, jets, runs):
     """
@@ -15,5 +13,16 @@ def jetHEMFilter(self, jets, runs):
         )
         & (runs > 319077)
     ) | ((jets.pt > 0) & (runs <= 319077))
-    eventHEMCut = ak.sum(jetHEMCut == False, axis=1) == 0
+    eventHEMCut = ak.sum(jetHEMCut == False, axis=-1) == 0
     return jetHEMCut, eventHEMCut
+
+
+def METHEMFilter(self, MET, runs):
+    """
+    Due to the HEM issue in year 2018, we veto events with the MET in the region -3<eta<-1.3 and -1.57<phi<-0.87, to remove fake MET.
+    """
+    eventHEMCut = (
+        (MET.phi <= -1.57)
+        | (MET.phi >= -0.87)
+    ) & (runs > 319077)
+    return eventHEMCut
