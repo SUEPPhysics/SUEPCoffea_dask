@@ -46,6 +46,7 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
                 "jetId": Jets.jetId,
                 "hadronFlavour": Jets.hadronFlavour,
                 "qgl": Jets.qgl,
+                "area": Jets.area,
             },
             with_name="Momentum4D",
         )
@@ -59,6 +60,8 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
                 "btag": Jets.btagDeepFlavB,
                 "jetId": Jets.jetId,
                 "qgl": Jets.qgl,
+                "area": Jets.area,
+                "raw_factor": Jets.rawFactor,
             },
             with_name="Momentum4D",
         )
@@ -418,7 +421,10 @@ def triggerSelection(
         if output:
             output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
         return events
-
+    elif era == "2016":
+        triggerElectron = (
+            events.HLT.Ele27_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+        )
     else:
         triggerElectron = (
             events.HLT.Ele32_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
