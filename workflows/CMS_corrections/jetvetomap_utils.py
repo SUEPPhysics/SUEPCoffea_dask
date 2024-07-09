@@ -2,20 +2,21 @@ import numpy as np
 import awkward as ak
 import correctionlib
 
-def JetVetoMap(jets, era: str, prefix: str = "./"):
+def JetVetoMap(jets, era: str):
     """
     Calculate the jet veto map to the jets. Events are selected only if they have no jets in the vetoed region.
     Following reccomendation from JERC: https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution
     """
 
     # these json files are from the JERC group, found in link above
-    fname = prefix + "data/JetVetoMaps/jetvetomaps_" + era + ".json"
-    hname = {
-        "2016apv": "Summer19UL16_V1",
-        "2016"   : "Summer19UL16_V1",
-        "2017"   : "Summer19UL17_V1",
-        "2018"   : "Summer19UL18_V1"
+    era_tags = {
+        "2016apv": "2016preVFP_UL",
+        "2016"   : "2016postVFP_UL",
+        "2017"   : "2017_UL",
+        "2018"   : "2018_UL"
     }
+    era_tag = era_tags[era]
+    fname = f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{era_tag}/jetvetomaps.json.gz"
 
     # load the correction set
     evaluator = correctionlib.CorrectionSet.from_file(fname)
@@ -24,6 +25,12 @@ def JetVetoMap(jets, era: str, prefix: str = "./"):
     etaflat, phiflat, counts = ak.flatten(jets.eta), ak.flatten(jets.phi), ak.num(jets.eta)
 
     # apply the correction and recreate the awkward array shape
+    hname = {
+        "2016apv": "Summer19UL16_V1",
+        "2016"   : "Summer19UL16_V1",
+        "2017"   : "Summer19UL17_V1",
+        "2018"   : "Summer19UL18_V1"
+    }
     weight = evaluator[hname[era]].evaluate('jetvetomap', etaflat, phiflat)
     weight_ak = ak.unflatten(
         np.array(weight),
