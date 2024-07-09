@@ -408,12 +408,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["PV_npvs"] = events.PV.npvs
         output["vars"]["PV_npvsGood"] = events.PV.npvsGood
 
-        if self.isMC:
-            output["vars"]["LHE_Vpt"] = events.LHE.Vpt
-            output["vars"]["LHE_HT"] = events.LHE.HT
-
         # select out ak4jets
-        uncorrected_ak4jets = WH_utils.getAK4Jets(events.Jet, isMC=self.isMC)
+        uncorrected_ak4jets = WH_utils.getAK4Jets(events.Jet, self.lepton, isMC=self.isMC)
         jets_c, met_c = apply_jecs(
             self,
             Sample=self.sample,
@@ -427,6 +423,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # ht
         output["vars"]["ht"] = ak.sum(uncorrected_ak4jets.pt, axis=-1).to_list()
+        output["vars"]["nuncorrected_ak4jets"] = ak.num(uncorrected_ak4jets).to_list()
+
         output["vars"]["ht_JEC"] = ak.sum(self.jets_jec.pt, axis=-1).to_list()
         if self.isMC and self.do_syst:
             jets_jec_JERUp = WH_utils.getAK4Jets(
@@ -544,25 +542,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["MET_pt"] = events.MET.pt
         output["vars"]["MET_phi"] = events.MET.phi
         output["vars"]["MET_sumEt"] = events.MET.sumEt
-
-        # deprecated
-        """
-        output["vars"]["ChsMET_pt"] = events.ChsMET.pt
-        output["vars"]["ChsMET_phi"] = events.ChsMET.phi
-        output["vars"]["ChsMET_sumEt"] = events.ChsMET.sumEt
-        output["vars"]["TkMET_pt"] = events.TkMET.pt
-        output["vars"]["TkMET_phi"] = events.TkMET.phi
-        output["vars"]["TkMET_sumEt"] = events.TkMET.sumEt
-        output["vars"]["RawMET_pt"] = events.RawMET.pt
-        output["vars"]["RawMET_phi"] = events.RawMET.phi
-        output["vars"]["RawMET_sumEt"] = events.RawMET.sumEt
-        output["vars"]["RawPuppiMET_pt"] = events.RawPuppiMET.pt
-        output["vars"]["RawPuppiMET_phi"] = events.RawPuppiMET.phi
-        """
-        output["vars"]["MET_JEC_phi"] = met_c.phi
-        output["vars"]["MET_JEC_pt"] = met_c.pt
-        output["vars"]["MET_JEC_sumEt"] = met_c.sumEt
-        
+        output["vars"]["MET_JEC_phi"] = self.MET.phi
+        output["vars"]["MET_JEC_pt"] = self.MET.pt
 
         # corrections on MET
         if self.isMC and self.do_syst:
