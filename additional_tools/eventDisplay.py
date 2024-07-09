@@ -144,6 +144,7 @@ def getGenParticles(tree):
         },
         with_name="Momentum4D",
     )
+    genParticles = genParticles[genParticles.pt > 1]
     return genParticles
 
 
@@ -210,8 +211,37 @@ def getMET(tree):
     )
     return MET
 
+def getJets(tree, lepton=None):
+    Jets_awk = ak.zip(
+        {
+            "pt": get_branch(tree, "Jet_pt"),
+            "eta": get_branch(tree, "Jet_eta"),
+            "phi": get_branch(tree, "Jet_phi"),
+            "mass": get_branch(tree, "Jet_mass"),
+            "btag": get_branch(tree, "Jet_btagDeepFlavB"),
+            "jetId": get_branch(tree, "Jet_jetId"),
+            "qgl": get_branch(tree, "Jet_qgl"),
+        },
+        with_name="Momentum4D",
+    )
+    # jet pt cut, eta cut, and minimum separation from lepton
+    jet_awk_Cut = (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4)
+    # and minimum separation from lepton
+    if lepton is not None:
+        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton[:, 0]) >= 0.4)
+    Jets_correct = Jets_awk[jet_awk_Cut]
 
-def classifyGenParticles(genParticles):
+    return Jets_correct
+
+def getScalarParticle(genParticles):
+    genParticles_PdgId = genParticles.pdgId
+    genParticles_Status = genParticles.status
+    scalarParticle = genParticles[
+        (genParticles_PdgId == 25) & (genParticles_Status == 62)
+    ]
+    return scalarParticle
+
+def classifyGenParticles_ggF(genParticles):
     genParticles_ParentId = genParticles.genPartIdxMother
     genParticles_PdgId = genParticles.pdgId
     genParticles_Status = genParticles.status
@@ -276,6 +306,64 @@ def classifyGenParticles(genParticles):
         scalarParticle,
     )
 
+def classifyGenParticles_WH(genParticles):
+    genParticles_ParentId = genParticles.genPartIdxMother
+    genParticles_PdgId = genParticles.pdgId
+    genParticles_Status = genParticles.status
+
+    # The last copy of the scalar mediator
+    scalarParticle = genParticles[
+        (genParticles_PdgId == 25) & (genParticles_Status == 62)
+    ]
+
+    bQuarkIds = np.arange(len(genParticles_PdgId))[(abs(genParticles_PdgId) == 5)]
+    fromBQuark = [id in bQuarkIds for id in genParticles_ParentId]
+
+    # Define mask arrays to select the desired particles
+    finalParticles = (genParticles.pt > 1) # & (genParticles_Status == 1) 
+ 
+    genParticles_e = genParticles[
+        finalParticles & (abs(genParticles_PdgId) == 11)
+    ]
+    genParticles_mu = genParticles[
+        finalParticles & (abs(genParticles_PdgId) == 13)
+    ]
+    genParticles_nu = genParticles[
+        finalParticles & ((abs(genParticles_PdgId) == 14) | (abs(genParticles_PdgId) == 16) | (abs(genParticles_PdgId) == 18))
+    ]
+    genParticles_gamma = genParticles[
+        finalParticles & (abs(genParticles_PdgId) == 22)
+    ]
+    genParticles_pi = genParticles[
+        finalParticles & (abs(genParticles_PdgId) == 211)
+    ]
+    genParticles_hadron = genParticles[
+        finalParticles & (abs(genParticles_PdgId) > 100)
+    ]
+    genParticles_W = genParticles[
+        finalParticles & (abs(genParticles_PdgId) == 24)
+    ]
+    genParticles_top = genParticles[
+        finalParticles & ((abs(genParticles_PdgId) == 6) | (abs(genParticles_PdgId) == 8))
+    ]
+    other_genParticles = genParticles[
+       finalParticles & ((abs(genParticles_PdgId) != 11) & (abs(genParticles_PdgId) != 13) & (abs(genParticles_PdgId) != 14) & (abs(genParticles_PdgId) != 16) & 
+       (abs(genParticles_PdgId) != 18) & (abs(genParticles_PdgId) != 22) & (abs(genParticles_PdgId) != 211) & (abs(genParticles_PdgId) <= 100) &
+         (abs(genParticles_PdgId) != 24) & (abs(genParticles_PdgId) != 6) & (abs(genParticles_PdgId) != 8))
+    ]
+    return (
+        genParticles_e,
+        genParticles_mu,
+        genParticles_nu,
+        genParticles_gamma,
+        genParticles_pi,
+        genParticles_hadron,
+        genParticles_top,
+        genParticles_W,
+        other_genParticles,
+        scalarParticle,
+    )
+
 
 def drawJetCone(ax, jet_eta, jet_phi, R=1.5, color="red"):
     phis, etas = get_dr_ring(R, jet_phi, jet_eta)
@@ -315,6 +403,13 @@ def scale(particles, scalar, method=2):
         e_normed = 2500.0 * energies / e_max
         return e_normed
 
+def getNormParticle(genParticles):
+    scalarParticle = getScalarParticle(genParticles)
+    if len(scalarParticle) == 0:
+        finalParticles = genParticles[(genParticles.status == 1) & (genParticles.pt > 1)]
+        return finalParticles[ak.argmax(finalParticles.pt)]
+    else:
+        return scalarParticle[0]
 
 # Main plotting function
 def plot(
@@ -325,189 +420,61 @@ def plot(
     MET,
     jetsAK15,
     jetsAK15_tracks,
+    this_jetsAK4,
+    channel,
     boost=False,
     ax=None,
     params=None,
     showGen=False,
     showPFCands=True,
     showRingOfFire=True,
-    showOfflineCandidates=False,
-    showWHCandidate=False,
+    showSUEPCandidate=False,
     showLeptons=True,
+    showAK4=True,
     showMET=True,
+    showLegend=True
 ):
-    (
-        fromScalarParticles_e,
-        fromScalarParticles_mu,
-        fromScalarParticles_gamma,
-        fromScalarParticles_pi,
-        fromScalarParticles_hadron,
-        isrParticles_e,
-        isrParticles_mu,
-        isrParticles_gamma,
-        isrParticles_pi,
-        isrParticles_hadron,
-        scalarParticle,
-    ) = classifyGenParticles(genParticles)
-
-    # Boost everything to scalar's rest frame
-    if boost:
-        boost_SUEP = ak.zip(
-            {
-                "px": scalarParticle.px * -1,
-                "py": scalarParticle.py * -1,
-                "pz": scalarParticle.pz * -1,
-                "mass": scalarParticle.mass,
-            },
-            with_name="Momentum4D",
-        )
-
-        tracks = tracks.boost_p4(boost_SUEP)
-        fromScalarParticles_e = fromScalarParticles_e.boost_p4(boost_SUEP)
-        fromScalarParticles_mu = fromScalarParticles_mu.boost_p4(boost_SUEP)
-        fromScalarParticles_gamma = fromScalarParticles_gamma.boost_p4(boost_SUEP)
-        fromScalarParticles_pi = fromScalarParticles_pi.boost_p4(boost_SUEP)
-        fromScalarParticles_hadron = fromScalarParticles_hadron.boost_p4(boost_SUEP)
-        isrParticles_e = isrParticles_e.boost_p4(boost_SUEP)
-        isrParticles_mu = isrParticles_mu.boost_p4(boost_SUEP)
-        isrParticles_gamma = isrParticles_gamma.boost_p4(boost_SUEP)
-        isrParticles_pi = isrParticles_pi.boost_p4(boost_SUEP)
-        isrParticles_hadron = isrParticles_hadron.boost_p4(boost_SUEP)
-        jetsAK15 = jetsAK15.boost_p4(boost_SUEP)
-        jetsAK15_tracks = jetsAK15_tracks.boost_p4(boost_SUEP)
-        scalarParticle = scalarParticle.boost_p4(boost_SUEP)
-        leptons = leptons.boost_p4(boost_SUEP)
-        MET = MET.boost_p4(boost_SUEP)[0]
-
     if ax is None:
-        fig = plt.figure(figsize=(8, 8))
+        fig = plt.figure(figsize=(12, 8))
         ax = fig.addsubplot()
 
-    # Plot parameters
-    ax.set_xlim(-pi, pi)
-    ax.set_ylim(-4, 4)
-    ax.set_xlabel(r"$\phi$", fontsize=18)
-    ax.set_ylabel(r"$\eta$", fontsize=18)
-    ax.tick_params(axis="both", which="major", labelsize=12)
+    normParticle = getNormParticle(genParticles)
 
-    # Add scatters to figure
-    if showGen:  # gen particles
-        ax.scatter(
-            fromScalarParticles_e.phi,
-            fromScalarParticles_e.eta,
-            s=scale(fromScalarParticles_e, scalarParticle),
-            c="xkcd:light blue",
-            marker="o",
-        )
-        ax.scatter(
-            fromScalarParticles_mu.phi,
-            fromScalarParticles_mu.eta,
-            s=scale(fromScalarParticles_mu, scalarParticle),
-            c="xkcd:light blue",
-            marker="v",
-        )
-        ax.scatter(
-            fromScalarParticles_gamma.phi,
-            fromScalarParticles_gamma.eta,
-            s=scale(fromScalarParticles_gamma, scalarParticle),
-            c="xkcd:light blue",
-            marker="s",
-        )
-        ax.scatter(
-            fromScalarParticles_pi.phi,
-            fromScalarParticles_pi.eta,
-            s=scale(fromScalarParticles_pi, scalarParticle),
-            c="xkcd:light blue",
-            marker="P",
-        )
-        ax.scatter(
-            fromScalarParticles_hadron.phi,
-            fromScalarParticles_hadron.eta,
-            s=scale(fromScalarParticles_hadron, scalarParticle),
-            c="xkcd:light blue",
-            marker="*",
-        )
-        ax.scatter(
-            isrParticles_e.phi,
-            isrParticles_e.eta,
-            s=scale(isrParticles_e, scalarParticle),
-            c="xkcd:magenta",
-            marker="o",
-        )
-        ax.scatter(
-            isrParticles_mu.phi,
-            isrParticles_mu.eta,
-            s=scale(isrParticles_mu, scalarParticle),
-            c="xkcd:magenta",
-            marker="v",
-        )
-        ax.scatter(
-            isrParticles_gamma.phi,
-            isrParticles_gamma.eta,
-            s=scale(isrParticles_gamma, scalarParticle),
-            c="xkcd:magenta",
-            marker="s",
-        )
-        ax.scatter(
-            isrParticles_pi.phi,
-            isrParticles_pi.eta,
-            s=scale(isrParticles_pi, scalarParticle),
-            c="xkcd:magenta",
-            marker="P",
-        )
-        ax.scatter(
-            isrParticles_hadron.phi,
-            isrParticles_hadron.eta,
-            s=scale(isrParticles_hadron, scalarParticle),
-            c="xkcd:magenta",
-            marker="*",
-        )
-
-    if showPFCands:  # plot PFCands
-        ax.scatter(
-            tracks.phi,
-            tracks.eta,
-            s=scale(tracks, scalarParticle),
-            c="xkcd:gray",
-            marker="o",
-        )
-
-    if showMET:
-        phi_center = MET.phi
-        width = MET.pt / scalarParticle[0].energy
-        rectangle = plt.Rectangle(
-            (phi_center - width / 2, -4),
-            width=width,
-            height=8,
-            alpha=0.5,
-            color="darkorange",
-        )
-        ax.add_patch(rectangle)
-
-    if showLeptons:
-        ax.scatter(
-            leptons.phi,
-            leptons.eta,
-            s=scale(leptons, scalarParticle),
-            marker="o",
-            color="darkcyan",
-        )
+    if showGen:
+        if channel == 'ggF':
+            (
+                fromScalarParticles_e,
+                fromScalarParticles_mu,
+                fromScalarParticles_gamma,
+                fromScalarParticles_pi,
+                fromScalarParticles_hadron,
+                isrParticles_e,
+                isrParticles_mu,
+                isrParticles_gamma,
+                isrParticles_pi,
+                isrParticles_hadron,
+                scalarParticle,
+            ) = classifyGenParticles_ggF(genParticles)
+        elif channel == 'WH':
+            (
+                fromScalarParticles_e,
+                fromScalarParticles_mu,
+                fromScalarParticles_nu,
+                fromScalarParticles_gamma,
+                fromScalarParticles_pi,
+                fromScalarParticles_hadron,
+                fromScalarParticles_top,
+                fromScalarParticles_W,
+                other_genParticles,
+                scalarParticle,
+            ) = classifyGenParticles_WH(genParticles)
 
     if not boost:
         # Add jet info to the plot
         for jet in jetsAK15:
             ax = drawJetCone(ax, jet.eta, jet.phi, R=1.5, color="xkcd:green")
 
-        # Add the scalar mediator to the plot
-        ax.scatter(
-            scalarParticle.phi,
-            scalarParticle.eta,
-            s=scale(scalarParticle, scalarParticle),
-            marker="x",
-            color="xkcd:red",
-        )
-
-    if showWHCandidate:
+    if showSUEPCandidate and channel=='WH':
         highpt_jet = ak.argsort(jetsAK15.pt, axis=0, ascending=False, stable=True)
         jets_pTsorted = jetsAK15[highpt_jet]
         clusters_pTsorted = jetsAK15_tracks[highpt_jet]
@@ -519,7 +486,7 @@ def plot(
             ax.scatter(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
-                s=scale(SUEP_cluster_tracks, scalarParticle),
+                s=scale(SUEP_cluster_tracks, normParticle),
                 c="xkcd:red",
                 marker="o",
             )
@@ -527,7 +494,7 @@ def plot(
         else:  # draw SUEP and ISR ak15 candidates
             ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
 
-    if showOfflineCandidates:
+    if showSUEPCandidate and channel=='ggF':
         _, _, topTwoJets = SUEP_utils.getTopTwoJets(
             None,
             ak.ones_like(jetsAK15),
@@ -545,14 +512,14 @@ def plot(
             ax.scatter(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
-                s=scale(SUEP_cluster_tracks, scalarParticle),
+                s=scale(SUEP_cluster_tracks, normParticle),
                 c="xkcd:red",
                 marker="o",
             )
             ax.scatter(
                 ISR_cluster_tracks.phi,
                 ISR_cluster_tracks.eta,
-                s=scale(ISR_cluster_tracks, scalarParticle),
+                s=scale(ISR_cluster_tracks, normParticle),
                 c="xkcd:blue",
                 marker="o",
             )
@@ -560,6 +527,192 @@ def plot(
         else:  # draw SUEP and ISR ak15 candidates
             ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
             ax = drawJetCone(ax, ISR_cand.eta, ISR_cand.phi, color="xkcd:blue")
+
+    # show AK4jets
+    if showAK4:
+        for jet in this_jetsAK4:
+            ax = drawJetCone(ax, jet.eta, jet.phi, R=0.4, color="xkcd:orange")
+
+    # Boost everything to scalar's rest frame
+    if boost:
+        boost_SUEP = ak.zip(
+            {
+                "px": SUEP_cand.px * -1,
+                "py": SUEP_cand.py * -1,
+                "pz": SUEP_cand.pz * -1,
+                "mass": SUEP_cand.mass,
+            },
+            with_name="Momentum4D",
+        )
+
+        tracks = tracks.boost_p4(boost_SUEP)
+        if showGen:
+            fromScalarParticles_e = fromScalarParticles_e.boost_p4(boost_SUEP)
+            fromScalarParticles_mu = fromScalarParticles_mu.boost_p4(boost_SUEP)
+            fromScalarParticles_gamma = fromScalarParticles_gamma.boost_p4(boost_SUEP)
+            fromScalarParticles_pi = fromScalarParticles_pi.boost_p4(boost_SUEP)
+            fromScalarParticles_hadron = fromScalarParticles_hadron.boost_p4(boost_SUEP)
+            if channel == 'ggF':
+                isrParticles_e = isrParticles_e.boost_p4(boost_SUEP)
+                isrParticles_mu = isrParticles_mu.boost_p4(boost_SUEP)
+                isrParticles_gamma = isrParticles_gamma.boost_p4(boost_SUEP)
+                isrParticles_pi = isrParticles_pi.boost_p4(boost_SUEP)
+                isrParticles_hadron = isrParticles_hadron.boost_p4(boost_SUEP)
+        jetsAK15 = jetsAK15.boost_p4(boost_SUEP)
+        jetsAK15_tracks = jetsAK15_tracks.boost_p4(boost_SUEP)
+        scalarParticle = scalarParticle.boost_p4(boost_SUEP)
+        leptons = leptons.boost_p4(boost_SUEP)
+        MET = MET.boost_p4(boost_SUEP)
+
+    # Plot parameters
+    ax.set_xlim(-pi, pi)
+    ax.set_ylim(-4, 4)
+    ax.set_xlabel(r"$\phi$", fontsize=18)
+    ax.set_ylabel(r"$\eta$", fontsize=18)
+    ax.tick_params(axis="both", which="major", labelsize=12)
+
+    # Add scatters to figure
+    if showGen:  # gen particles
+        ax.scatter(
+            fromScalarParticles_e.phi,
+            fromScalarParticles_e.eta,
+            s=scale(fromScalarParticles_e, normParticle),
+            c="xkcd:light blue",
+            marker="^",
+        )
+        ax.scatter(
+            fromScalarParticles_mu.phi,
+            fromScalarParticles_mu.eta,
+            s=scale(fromScalarParticles_mu, normParticle),
+            c="xkcd:light blue",
+            marker="v",
+        )
+        ax.scatter(
+            fromScalarParticles_nu.phi,
+            fromScalarParticles_nu.eta,
+            s=scale(fromScalarParticles_nu, normParticle),
+            c="xkcd:light blue",
+            marker="1",
+        )
+        ax.scatter(
+            fromScalarParticles_gamma.phi,
+            fromScalarParticles_gamma.eta,
+            s=scale(fromScalarParticles_gamma, normParticle),
+            c="xkcd:light blue",
+            marker="s",
+        )
+        ax.scatter(
+            fromScalarParticles_pi.phi,
+            fromScalarParticles_pi.eta,
+            s=scale(fromScalarParticles_pi, normParticle),
+            c="xkcd:light blue",
+            marker="P",
+        )
+        ax.scatter(
+            fromScalarParticles_hadron.phi,
+            fromScalarParticles_hadron.eta,
+            s=scale(fromScalarParticles_hadron, normParticle),
+            c="xkcd:light blue",
+            marker="*",
+        )
+        ax.scatter(
+            fromScalarParticles_top.phi,
+            fromScalarParticles_top.eta,
+            s=scale(fromScalarParticles_top, normParticle),
+            c="xkcd:light blue",
+            marker='$t$'
+        )
+        ax.scatter(
+            fromScalarParticles_W.phi,
+            fromScalarParticles_W.eta,
+            s=scale(fromScalarParticles_W, normParticle),
+            c="xkcd:light blue",
+            marker='$W$'
+        )
+        ax.scatter(
+            other_genParticles.phi,
+            other_genParticles.eta,
+            s=scale(other_genParticles, normParticle),
+            c="xkcd:light blue",
+            marker='o',
+        )
+        if channel == 'ggF':
+            ax.scatter(
+                isrParticles_e.phi,
+                isrParticles_e.eta,
+                s=scale(isrParticles_e, normParticle),
+                c="xkcd:magenta",
+                marker="o",
+            )
+            ax.scatter(
+                isrParticles_mu.phi,
+                isrParticles_mu.eta,
+                s=scale(isrParticles_mu, normParticle),
+                c="xkcd:magenta",
+                marker="v",
+            )
+            ax.scatter(
+                isrParticles_gamma.phi,
+                isrParticles_gamma.eta,
+                s=scale(isrParticles_gamma, normParticle),
+                c="xkcd:magenta",
+                marker="s",
+            )
+            ax.scatter(
+                isrParticles_pi.phi,
+                isrParticles_pi.eta,
+                s=scale(isrParticles_pi, normParticle),
+                c="xkcd:magenta",
+                marker="P",
+            )
+            ax.scatter(
+                isrParticles_hadron.phi,
+                isrParticles_hadron.eta,
+                s=scale(isrParticles_hadron, normParticle),
+                c="xkcd:magenta",
+                marker="*",
+            )
+
+    if showPFCands:  # plot PFCands
+        ax.scatter(
+            tracks.phi,
+            tracks.eta,
+            s=scale(tracks, normParticle),
+            c="xkcd:gray",
+            marker="o",
+        )
+
+    if showMET:
+        phi_center = MET.phi
+        width = MET.pt / normParticle.energy
+        rectangle = plt.Rectangle(
+            (phi_center - width / 2, -4),
+            width=width,
+            height=8,
+            alpha=0.5,
+            color="darkorange",
+        )
+        ax.add_patch(rectangle)
+
+    if showLeptons:
+        ax.scatter(
+            leptons.phi,
+            leptons.eta,
+            s=scale(leptons, normParticle),
+            marker="o",
+            color="darkcyan",
+        )
+
+    if not boost:
+        # Add the scalar mediator to the plot
+        ax.scatter(
+            scalarParticle.phi,
+            scalarParticle.eta,
+            s=scale(scalarParticle, normParticle),
+            marker="x",
+            color="xkcd:red",
+        )
+
 
     if showRingOfFire:
         # draw two straight dashed lines, adjacent to the edges of the ring, that wrap around in phi
@@ -581,11 +734,15 @@ def plot(
         )
 
     # Legend 1 is particle type
-    line1 = ax.scatter([-100], [-100], label="$e$", marker="o", c="xkcd:black")
+    line1 = ax.scatter([-100], [-100], label="$e$", marker="^", c="xkcd:black")
     line2 = ax.scatter([-100], [-100], label=r"$\mu$", marker="v", c="xkcd:black")
     line3 = ax.scatter([-100], [-100], label=r"$\gamma$", marker="s", c="xkcd:black")
     line4 = ax.scatter([-100], [-100], label=r"$\pi$", marker="P", c="xkcd:black")
-    line5 = ax.scatter([-100], [-100], label="other hadron", marker="*", c="xkcd:black")
+    line5 = ax.scatter([-100], [-100], label="Hadrons", marker="*", c="xkcd:black")
+    line11 = ax.scatter([-100], [-100], label=r"$\nu$", marker="1", c="xkcd:black")
+    line12 = ax.scatter([-100], [-100], label="W", marker="$W$", c="xkcd:black")
+    line13 = ax.scatter([-100], [-100], label="top", marker="$t$", c="xkcd:black")
+    line14 = ax.scatter([-100], [-100], label="other gen particle", marker="o", c="xkcd:black")
     line6 = ax.scatter(
         [-100],
         [-100],
@@ -599,12 +756,20 @@ def plot(
     line8 = ax.scatter(
         [-100],
         [-100],
-        label="Other AK15 jets" if showOfflineCandidates else "AK15 Jets",
+        label="Other AK15 jets" if showSUEPCandidate and channel=='ggF'else "AK15 Jets",
         marker="o",
         facecolors="none",
         edgecolors="xkcd:green",
     )
-    if showOfflineCandidates or showWHCandidate:
+    line15 = ax.scatter(
+        [-100],
+        [-100],
+        label="AK4 jets",
+        marker="o",
+        facecolors="none",
+        edgecolors="xkcd:orange",
+    )
+    if showSUEPCandidate:
         line9 = ax.scatter(
             [-100],
             [-100],
@@ -613,7 +778,7 @@ def plot(
             linestyle="--",
             edgecolors="xkcd:red",
         )
-    if showOfflineCandidates:
+    if showSUEPCandidate and channel == 'ggF':
         line10 = ax.scatter(
             [-100],
             [-100],
@@ -622,51 +787,55 @@ def plot(
             linestyle="--",
             edgecolors="xkcd:blue",
         )
-    light_blue_patch = mpatches.Patch(color="xkcd:light blue", label="from scalar")
-    magenta_patch = mpatches.Patch(color="xkcd:magenta", label="not from scalar")
-    gray_patch = mpatches.Patch(color="xkcd:gray", label="Tracks")
-    red_patch = mpatches.Patch(color="xkcd:red", label="SUEP Candidate tracks")
-    blue_patch = mpatches.Patch(color="xkcd:blue", label="ISR Candidate tracks")
-    bloodorange_patch = mpatches.Patch(
-        color="darkorange", label="MET\n($p_T$ = " + str(round(MET.pt)) + " GeV)"
-    )
-    if showLeptons and len(leptons) == 1:
-        darkcyan_patch = mpatches.Patch(
-            color="darkcyan",
-            label="Lepton\n($p_T$ = " + str(round(leptons[0].pt)) + " GeV)",
-        )
-    elif showLeptons and len(leptons) > 1:
-        darkcyan_patch = mpatches.Patch(color="darkcyan", label="Lepton")
-    if showGen:
-        handles = [line1, line2, line3, line4, line5, light_blue_patch, magenta_patch]
-    else:
-        handles = [gray_patch]
-    if not boost:  # add AK15, scalar mediator
-        handles.append(line6)
-    if showOfflineCandidates and len(jetsAK15) > 2 and not boost:
-        handles.append(line8)
-    if showWHCandidate and len(jetsAK15) > 1 and not boost:
-        handles.append(line8)
-    if showRingOfFire and boost:
-        handles.append(line7)
-    if showWHCandidate:
-        if not boost:
-            handles.append(line9)
-        else:
-            handles.append(red_patch)
-    if showOfflineCandidates:
-        if not boost:
-            handles.append(line9)
-            handles.append(line10)
-        else:
-            handles.append(red_patch)
-            handles.append(blue_patch)
-    if showMET:
-        handles.append(bloodorange_patch)
-    if showLeptons:
-        handles.append(darkcyan_patch)
 
-    ax.legend(handles=handles, loc="upper right", fontsize=10)
+    if showLegend:
+        light_blue_patch = mpatches.Patch(color="xkcd:light blue", label="from scalar")
+        magenta_patch = mpatches.Patch(color="xkcd:magenta", label="not from scalar")
+        gray_patch = mpatches.Patch(color="xkcd:gray", label="Tracks")
+        red_patch = mpatches.Patch(color="xkcd:red", label="SUEP Candidate tracks")
+        blue_patch = mpatches.Patch(color="xkcd:blue", label="ISR Candidate tracks")
+        bloodorange_patch = mpatches.Patch(
+            color="darkorange", label="MET\n($p_T$ = " + str(round(MET.pt)) + " GeV)"
+        )
+        if showLeptons and len(leptons) == 1:
+            darkcyan_patch = mpatches.Patch(
+                color="darkcyan",
+                label="Lepton\n($p_T$ = " + str(round(leptons[0].pt)) + " GeV)",
+            )
+        elif showLeptons and len(leptons) > 1:
+            darkcyan_patch = mpatches.Patch(color="darkcyan", label="Lepton")
+        if showGen:
+            handles = [line1, line2, line11, line3, line4, line5, line12, line13, line14, light_blue_patch, magenta_patch]
+        else:
+            handles = [gray_patch]
+        if not boost and len(scalarParticle.phi) > 0:  # add AK15, scalar mediator
+            handles.append(line6)
+        if showSUEPCandidate and channel == 'ggF' and len(jetsAK15) > 2 and not boost:
+            handles.append(line8)
+        if showSUEPCandidate and channel == 'WH' and len(jetsAK15) > 1 and not boost:
+            handles.append(line8)
+        if showRingOfFire and boost:
+            handles.append(line7)
+        if showSUEPCandidate and channel == 'WH':
+            if not boost:
+                handles.append(line9)
+            else:
+                handles.append(red_patch)
+        if showSUEPCandidate and channel == 'ggF':
+            if not boost:
+                handles.append(line9)
+                handles.append(line10)
+            else:
+                handles.append(red_patch)
+                handles.append(blue_patch)
+        if showAK4:
+            handles.append(line15)
+        if showMET:
+            handles.append(bloodorange_patch)
+        if showLeptons:
+            handles.append(darkcyan_patch)
+
+        ax.legend(handles=handles, loc=(1.01,0), fontsize=10)
 
     # build a rectangle in axes coords
     left, width = 0.0, 1.0
@@ -686,7 +855,7 @@ def plot(
     ax.text(
         left + 0.02,
         bottom + 0.01,
-        "Scalar Mediator Frame" if boost else "Lab Frame",
+        "SUEP Candidate Frame" if boost else "Lab Frame",
         horizontalalignment="left",
         verticalalignment="bottom",
         transform=ax.transAxes,
@@ -718,7 +887,7 @@ def main():
         "-o", "--output", type=str, default=".", help="Output directory"
     )
     parser.add_argument(
-        "-m", "--max", default=None, help="Max number of events to process"
+        "-m", "--max", default=None, type=int, help="Max number of events to process"
     )
     parser.add_argument(
         "-b",
@@ -743,14 +912,9 @@ def main():
     parser.add_argument("-MET", "--MET", action="store_true", help="Show MET")
     parser.add_argument("-p", "--pfcands", action="store_true", help="Show PFCands")
     parser.add_argument(
-        "--offlineCandidates",
+        "--showSUEPCandidate",
         action="store_true",
-        help="Show SUEP and ISR candidates as per offline analysis definition.",
-    )
-    parser.add_argument(
-        "--WHCandidate",
-        action="store_true",
-        help="Show SUEP and ISR candidates as per WH analysis definition.",
+        help="Show SUEP candidate (defined via the --channel).",
     )
     parser.add_argument(
         "-c",
@@ -772,6 +936,7 @@ def main():
 
     # get input file
     rootfile = args.input
+    
     fin = uproot.open(rootfile)
     tree = fin["Events"]
 
@@ -802,6 +967,7 @@ def main():
     jetsAK15, jetsAK15_tracks = SUEP_utils.FastJetReclustering(
         tracks, 1.5, jetsAK15_pTmin
     )
+    jetsAK4 = getJets(tree)
 
     # call the plotting function for each event
     for i in range(0, len(tracks)):
@@ -817,10 +983,11 @@ def main():
         this_MET = MET[i]
         this_jetsAK15 = jetsAK15[i]
         this_jetsAK15_tracks = jetsAK15_tracks[i]
+        this_jetsAK4 = jetsAK4[i]
 
         # show boosted and unboosted
         if args.boost:
-            fig = plt.figure(figsize=(12, 7))
+            fig = plt.figure(figsize=(15, 7))
             ax1, ax2 = fig.subplots(1, 2)
             hep.cms.label(llabel="Simulation Preliminary", data=False, ax=ax1)
             hep.cms.label(llabel="Simulation Preliminary", data=False, ax=ax2)
@@ -832,16 +999,18 @@ def main():
                 this_MET,
                 this_jetsAK15,
                 this_jetsAK15_tracks,
+                this_jetsAK4,
+                channel=args.channel,
                 boost=False,
                 ax=ax1,
-                showOfflineCandidates=args.offlineCandidates,
-                showWHCandidate=args.WHCandidate,
+                showSUEPCandidate=args.showSUEPCandidate,
                 params=params,
                 showRingOfFire=args.ring,
                 showGen=args.gen,
                 showPFCands=args.pfcands,
                 showLeptons=args.leptons,
                 showMET=args.MET,
+                showLegend=False
             )
             plot(
                 i,
@@ -851,10 +1020,11 @@ def main():
                 this_MET,
                 this_jetsAK15,
                 this_jetsAK15_tracks,
+                this_jetsAK4,
+                channel=args.channel,
                 boost=True,
                 ax=ax2,
-                showOfflineCandidates=args.offlineCandidates,
-                showWHCandidate=args.WHCandidate,
+                showSUEPCandidate=args.showSUEPCandidate,
                 params=params,
                 showRingOfFire=args.ring,
                 showGen=args.gen,
@@ -865,7 +1035,7 @@ def main():
 
         # show boosted only
         elif args.boostOnly:
-            fig = plt.figure(figsize=(6, 7))
+            fig = plt.figure(figsize=(9, 7))
             ax1 = fig.subplots(1)
             hep.cms.label(llabel="Preliminary", data=False, ax=ax1)
             plot(
@@ -876,9 +1046,10 @@ def main():
                 this_MET,
                 this_jetsAK15,
                 this_jetsAK15_tracks,
+                this_jetsAK4,
+                channel=args.channel,
                 boost=True,
-                showOfflineCandidates=args.offlineCandidates,
-                showWHCandidate=args.WHCandidate,
+                showSUEPCandidate=args.offlineCandidates,
                 ax=ax1,
                 params=params,
                 showRingOfFire=args.ring,
@@ -890,7 +1061,7 @@ def main():
 
         # show unboosted only
         else:
-            fig = plt.figure(figsize=(6, 7))
+            fig = plt.figure(figsize=(9, 7))
             ax1 = fig.subplots(1)
             hep.cms.label(llabel="Preliminary", data=False, ax=ax1)
             plot(
@@ -901,9 +1072,10 @@ def main():
                 this_MET,
                 this_jetsAK15,
                 this_jetsAK15_tracks,
+                this_jetsAK4,
+                channel=args.channel,
                 boost=False,
-                showOfflineCandidates=args.offlineCandidates,
-                showWHCandidate=args.WHCandidate,
+                showSUEPCandidate=args.showSUEPCandidate,
                 ax=ax1,
                 params=params,
                 showRingOfFire=args.ring,
@@ -916,28 +1088,34 @@ def main():
         if not os.path.exists(args.output):
             os.makedirs(args.output)
 
+        fig.tight_layout()
+
         # save the figure
         if params:
             fig.savefig(
                 args.output
                 + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}_Run{:d}_Lumi{:d}.pdf".format(
                     *params, eventNumbers[i], runNumbers[i], luminosityBlocks[i]
-                )
+                ),
+                bbox_inches="tight",
             )
             fig.savefig(
                 args.output
                 + "/mS-{:.2f}_mPhi-{:.2f}_T-{:.2f}_decay-{:s}_Event{:d}_Run{:d}_Lumi{:d}.png".format(
                     *params, eventNumbers[i], runNumbers[i], luminosityBlocks[i]
-                )
+                ),
+                bbox_inches="tight",
             )
         else:
             fig.savefig(
                 args.output
-                + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.pdf"
+                + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.pdf",
+                bbox_inches="tight",
             )
             fig.savefig(
                 args.output
-                + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png"
+                + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png",
+                bbox_inches="tight",
             )
 
         plt.close(fig)
