@@ -1,11 +1,13 @@
 import logging
 import math
 import os
+import sys
 import pickle
 import shutil
 import subprocess
 import sys
 from collections import defaultdict
+import gc
 
 import boost_histogram as bh
 import hist
@@ -459,6 +461,9 @@ def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dic
             except KeyError:
                 print(f"WARNING: could not find histogram {plot} in sample {sample}.")
 
+    del plotsToAdd
+    gc.collect()
+
     return plots
 
 
@@ -528,14 +533,17 @@ def loader(
     """
     output = {}
     hists, cutflows = {}, {}
+    nFailed = 0
     for infile_name in infile_names:
         if verbose:
             print("Loading", infile_name)
 
         if not os.path.isfile(infile_name):
             print("WARNING:", infile_name, "doesn't exist")
+            nFailed += 1
             continue
         elif ".root" not in infile_name and ".pkl" not in infile_name:
+            nFailed += 1
             continue
 
         file_hists, file_metadata = openHistFile(infile_name)
@@ -601,9 +609,14 @@ def loader(
             output[s].update(hists.get(s, {}))
             output[s].update(cutflows.get(s, {}))
 
+        del file_hists, file_metadata, samplesToAdd
+        gc.collect()
+
         if verbose:
             print("Finished loading sample")
 
+    if nFailed:
+        print(f"WARNING: {nFailed} files failed to load")
     print("Finished loading all files")
     return output
 
@@ -656,15 +669,16 @@ def check_proxy(time_min=100):
     it with 140 hours.
     """
     home_base = os.environ["HOME"]
-    proxy_base = f"x509up_u{os.getuid()}"
-    proxy_copy = os.path.join(home_base, proxy_base)
+    proxy_name = f"x509up_u{os.getuid()}"
+    proxy = os.path.join(home_base, proxy_name)
+    os.environ["X509_USER_PROXY"] = proxy
     regenerate_proxy = False
-    if not os.path.isfile(proxy_copy):
+    if not os.path.isfile(proxy):
         logging.warning("--- proxy file does not exist")
         regenerate_proxy = True
     else:
         lifetime = subprocess.check_output(
-            ["voms-proxy-info", "--file", proxy_copy, "--timeleft"]
+            ["voms-proxy-info", "--file", proxy, "--timeleft"]
         )
         lifetime = float(lifetime)
         lifetime = lifetime / (60 * 60)
@@ -675,13 +689,12 @@ def check_proxy(time_min=100):
     if regenerate_proxy:
         redone_proxy = False
         while not redone_proxy:
-            status = os.system("voms-proxy-init -voms cms --hours=140")
+            status = os.system(f"voms-proxy-init -voms cms --hours=140")
             lifetime = 140
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
-        shutil.copyfile(os.environ["X509_USER_PROXY"] + proxy_base, proxy_copy)
 
-    return lifetime
+    return proxy, lifetime
 
 
 def apply_binwise_scaling(h_in, bins, scales, dim="x"):
@@ -716,7 +729,6 @@ def apply_binwise_scaling(h_in, bins, scales, dim="x"):
     return h
 
 
-# function to load files from pickle
 def openpickle(infile_name):
     _plots = {}
     _metadata = {}
@@ -724,23 +736,26 @@ def openpickle(infile_name):
         while True:
             try:
                 input = pickle.load(openfile)
-                _plots.update(input["hists"])
-                _metadata.update(input["metadata"])
+                _plots.update(input["hists"].copy())
+                _metadata.update(input["metadata"].copy())
             except EOFError:
                 break
+    del input
+    gc.collect()
     return _plots, _metadata
 
 
 def openroot(infile_name):
     _plots = {}
     _metadata = {}
-    _infile = uproot.open(infile_name)
-    for k in _infile.keys():
-        if "metadata" == k.split(";")[0]:
-            for kk in _infile[k].keys():
-                _metadata[kk.split(";")[0]] = _infile[k][kk].title()
-        elif "metadata" not in k:
-            _plots[k.split(";")[0]] = _infile[k].to_hist()
+    with uproot.open(infile_name) as _infile:
+        for k in _infile.keys():
+            if "metadata" == k.split(";")[0]:
+                for kk in _infile[k].keys():
+                    _metadata[kk.split(";")[0]] = _infile[k][kk].title()
+            elif "metadata" not in k:
+                _plots[k.split(";")[0]] = _infile[k].to_hist()
+    gc.collect()
     return _plots, _metadata
 
 
