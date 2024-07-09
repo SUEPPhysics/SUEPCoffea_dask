@@ -270,7 +270,7 @@
     "signal": 0
   },
   "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v2+MINIAODSIM": {
-    "kr": 0.98753,
+    "kr": 1,
     "br": 1,
     "xsec": 66680.0,
     "signal": 0
