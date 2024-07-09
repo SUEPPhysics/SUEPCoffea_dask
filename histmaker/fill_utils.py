@@ -75,6 +75,22 @@ def get_git_info(path="."):
     return commit, diff
 
 
+def write_git_info(path="."):
+    """
+    Write the current commit and git diff to a file.
+    """
+    import datetime
+    commit, diff = get_git_info()
+    current_datetime = datetime.datetime.now()
+    formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+    ofile = os.path.join(path, f"gitinfo_{formatted_datetime}.txt")
+    with open(ofile, "w") as gitinfo:
+        gitinfo.write("Commit: \n" + commit + "\n")
+        gitinfo.write("Diff: \n" + diff + "\n")
+        gitinfo.close()
+    return ofile
+
+
 def isSampleSignal(sample: str, year: str, path: str = "../data/") -> bool:
     """
     Check the xsections json database to see if a sample is signal or not.
@@ -312,7 +328,10 @@ def prepare_DataFrame(
                 output[n1HistName] = output[histName].copy()
 
             # apply all but the ith selection
-            mask = ~df[config["method_var"]].isnull()
+            if config.get("method_var"):
+                mask = ~df[config["method_var"]].isnull()
+            else:
+                mask = np.ones(df.shape[0], dtype=bool)
             for j, jsel in enumerate(config["selections"]):
                 if j == i:
                     continue
