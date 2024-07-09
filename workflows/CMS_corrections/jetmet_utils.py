@@ -159,9 +159,8 @@ def apply_jecs(self, Sample, events, prefix=""):
         jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
         jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
         if int(self.isMC):
-            jets["pt_gen"] = ak.values_astype(
-                ak.fill_none(jets.matched_gen.pt, 0), np.float32
-            )
+            jets["matched_gen_0p2"] = jets.nearest(events.GenJet, threshold=0.2)
+            jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen_0p2.pt, 0), np.float32)
         jets["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
     # Create the map (for both MC and data)
     name_map = jec_stack_ak4.blank_name_map

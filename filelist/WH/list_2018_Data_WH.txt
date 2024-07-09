@@ -1,7 +1,3 @@
-/store/user/paus/nanosu/A02/DoubleMuon+Run2018A-UL2018_MiniAODv2-v1+MINIAOD
-/store/user/paus/nanosu/A02/DoubleMuon+Run2018B-UL2018_MiniAODv2-v1+MINIAOD
-/store/user/paus/nanosu/A02/DoubleMuon+Run2018C-UL2018_MiniAODv2-v1+MINIAOD
-/store/user/paus/nanosu/A02/DoubleMuon+Run2018D-UL2018_MiniAODv2-v1+MINIAOD
 /store/user/paus/nanosu/A02/EGamma+Run2018A-UL2018_MiniAODv2-v1+MINIAOD
 /store/user/paus/nanosu/A02/EGamma+Run2018B-UL2018_MiniAODv2-v1+MINIAOD
 /store/user/paus/nanosu/A02/EGamma+Run2018C-UL2018_MiniAODv2-v1+MINIAOD
