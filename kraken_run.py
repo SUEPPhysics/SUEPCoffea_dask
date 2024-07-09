@@ -5,10 +5,9 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import time
 
-from histmaker.fill_utils import get_git_info
+from histmaker.fill_utils import write_git_info
 from plotting.plot_utils import check_proxy
 
 script_TEMPLATE = """#!/bin/bash
@@ -37,12 +36,15 @@ echo "xrdcp $2 $3.root"
 xrdcp $2 $3.root
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
+echo "voms-proxy-info"
+voms-proxy-info
+
 echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root"
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}"
-xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}
+echo "xrdcp {outfile}.{file_ext} {outdir}/$3.{file_ext}"
+xrdcp {outfile}.{file_ext} {outdir}/$3.{file_ext}
 
 {extras}
 
@@ -86,6 +88,10 @@ queue jobid, fileid from {jobdir}/inputfiles.dat
 
 
 def main():
+
+    username = getpass.getuser()
+    workdir = os.getcwd()
+
     parser = argparse.ArgumentParser(description="Famous Submitter")
     parser.add_argument(
         "-i",
@@ -108,9 +114,6 @@ def main():
         "-doSyst", "--doSyst", type=int, default=1, help="Apply systematics."
     )
     parser.add_argument(
-        "-p", "--private", type=int, default=0, help="Private SUEP samples."
-    )
-    parser.add_argument(
         "-cutflow", "--cutflow", type=int, default=0, help="Cutflow analyzer."
     )
     parser.add_argument("-q", "--queue", type=str, default="espresso", help="")
@@ -124,7 +127,6 @@ def main():
     parser.add_argument(
         "-m", "--maxFiles", type=int, default=-1, help="maximum number of files"
     )
-    parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
     parser.add_argument(
         "--channel",
         type=str,
@@ -143,6 +145,12 @@ def main():
         default=1,
         help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the MIT T2 with xrootd requests.",
     )
+    parser.add_argument(
+        "-o", "--output", type=str, default=f"root://submit50.mit.edu//cms/store/user/{username}/SUEP/", help="Output condor directory. The samples fill be found under root://redirector//your/path/tag/sample."
+    )
+    parser.add_argument(
+        "-l", "--logs", type=str, default=f"/work/submit/{username}/SUEP/logs/", help="Local path where to store the condor logs. The logs for each sample will be stored in /path/tag/sample."
+    )
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     options = parser.parse_args()
 
@@ -151,30 +159,9 @@ def main():
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-
-    # script parameters
-    username = getpass.getuser()
-    outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
-    if os.path.isdir("/data/submit/cms/store/user/" + username):
-        outdir = "/data/submit/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
-        outdir_condor = "/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
-    elif os.path.isdir("/data/submit/" + username):
-        outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
-        outdir_condor = "/" + username + "/SUEP/{tag}/{sample}/"
-    else:
-        logging.error(
-            "Cannot access /data/submit/$USER or /data/submit/cms/store/user/$USER!"
-        )
-        sys.exit()
-    workdir = os.getcwd()
-    logdir = "/work/submit/" + username + "/SUEP/logs/"
-    default_input_redirector = "root://xrootd.cmsaf.mit.edu/"
-    output_redirector = "root://submit50.mit.edu/"
-    proxy_base = f"x509up_u{os.getuid()}"
-    home_base = os.environ["HOME"]
-
+    
     # define which file you want to run, the output file name and extension that it produces
-    # these will be transferred back to outdir/outdir_condor
+    # these will be transferred back to the output directory
     if options.channel == "ggF":
         if options.scout == 1:
             condor_file = "condor_Scouting.py"
@@ -198,12 +185,10 @@ def main():
         file_ext = "hdf5"
 
     # Making sure that the proxy is good
-    lifetime = check_proxy(time_min=100)
+    proxy, lifetime = check_proxy(time_min=100)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
-    proxy_copy = os.path.join(home_base, proxy_base)
 
     missing_samples = []
-
     with open(options.input) as stream:
         for iSample, sample_path in enumerate(stream.read().split("\n")):
             # skip commented out or incorrect sample paths
@@ -229,12 +214,12 @@ def main():
                 sample_input_redirector = "root://" + sample_path.split("//")[1] + "/"
                 sample_path = sample_path.replace(sample_input_redirector, "")
             else:
-                sample_input_redirector = default_input_redirector
+                sample_input_redirector = "root://xrootd.cmsaf.mit.edu/"
 
             logging.info("-- sample : " + sample_name)
 
-            # set up the jobs directory
-            jobs_dir = "/".join([logdir, options.tag, sample_name])
+            # set up the logs directory
+            jobs_dir = "/".join([options.logs, options.tag, sample_name])
             if os.path.isdir(jobs_dir):
                 if not options.force:
                     logging.error(" " + jobs_dir + " already exists !")
@@ -271,17 +256,19 @@ def main():
                     infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
                 infiles.close()
-            fin_outdir = outdir.format(tag=options.tag, sample=sample_name)
-            fin_outdir_condor = outdir_condor.format(
-                tag=options.tag, sample=sample_name
-            )
-            os.system(f"mkdir -p {fin_outdir}")
+            
+            # create the output directory for this sample
+            fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
+            _sample_path = '/' + fin_outdir_condor.split("//")[-1]
+            _tokens = options.output.split("//")
+            _redirector = _tokens[0] + '//' + _tokens[1] + '//'
+            os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 extras = ""
                 script = script_TEMPLATE.format(
-                    proxy=proxy_base,
+                    proxy=proxy.split("/")[-1],
                     ismc=options.isMC,
                     era=options.era,
                     doSyst=options.doSyst,
@@ -291,7 +278,6 @@ def main():
                     condor_file=condor_file,
                     outfile=outfile,
                     file_ext=file_ext,
-                    redirector=output_redirector,
                     extras=extras,
                 )
                 scriptfile.write(script)
@@ -305,32 +291,26 @@ def main():
                             workdir + "/" + condor_file,
                             workdir + "/workflows",
                             workdir + "/data",
-                            proxy_copy,
+                            proxy,
                         ]
                     ),
                     # just_file=just_file,
                     jobdir=jobs_dir,
-                    proxy=proxy_base,
+                    proxy=proxy.split("/")[-1],
                     queue=options.queue,
                     user=username,
                 )
                 condorfile.write(condor)
                 condorfile.close()
 
-            # write the git info to a file in the output directory where the ntuples will be stored
-            commit, diff = get_git_info()
-            current_datetime = datetime.datetime.now()
-            formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-            with open(
-                os.path.join(fin_outdir, f"gitinfo_{formatted_datetime}.txt"), "w"
-            ) as gitinfo:
-                gitinfo.write("Commit: \n" + commit + "\n")
-                gitinfo.write("Diff: \n" + diff + "\n")
-                gitinfo.close()
-
             # don't submit if it's a dryrun
             if options.dryrun:
                 continue
+
+            # write the git info to a file in the output directory where the ntuples will be stored
+            gitfile = write_git_info()
+            os.system(f"xrdcp -s {gitfile} {fin_outdir_condor}/{gitfile}")
+            os.system(f"rm {gitfile}")
 
             # wait before submitting the next sample
             if iSample != 0 and options.wait > 0:
