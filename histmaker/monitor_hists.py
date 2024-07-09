@@ -20,6 +20,7 @@ def check_samples(filelist, tag, path, countCheck=False):
         samples = f.read().splitlines()
 
     for sample in tqdm(samples):
+        sample = sample.split("/")[-1]
         root_file = f"{path}/{sample}_{tag}.root"
         if not os.path.exists(root_file):
             missing_samples.append(sample)

@@ -164,7 +164,7 @@ with open(options.input) as f:
 
 # Making sure that the proxy is good
 if options.code == "merge" or options.xrootd:
-    lifetime = check_proxy(time_min=10)
+    _, lifetime = check_proxy(time_min=10)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 # Loop over samples
