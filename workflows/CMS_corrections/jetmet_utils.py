@@ -35,7 +35,7 @@ vector.register_awkward()
 #     return vals_jet0
 
 
-def makeJECStack(Sample, isMC, era, prefix=""):
+def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix : str = ""):
     """
     Define the set of weights to use for JECs and JERs based on sample, isMC, and era.
     """
@@ -142,9 +142,12 @@ def makeJECStack(Sample, isMC, era, prefix=""):
             jecdir + "_L2Relative_AK4PFchs",
             jecdir + "_L3Absolute_AK4PFchs",
             jecdir + "_Uncertainty_AK4PFchs",
-            # jerdir + "_PtResolution_AK4PFchs", # TODO: do we apply JERS when calculating MET?
-            # jerdir + "_SF_AK4PFchs",
         ]
+        if jer:
+            jec_stack_names_ak4 += [
+                jerdir + "_PtResolution_AK4PFchs",
+                jerdir + "_SF_AK4PFchs",
+            ]
     else:
         jec_stack_names_ak4 = [
             jecdir + "_L1FastJet_AK4PFchs",
@@ -157,9 +160,9 @@ def makeJECStack(Sample, isMC, era, prefix=""):
     return JECStack(jec_inputs_ak4)
 
 
-def getCorrectedJetsFactory(Sample, isMC, era):
+def getCorrectedJetsFactory(Sample, isMC, era, jer=False):
 
-    jec_stack_ak4 = makeJECStack(Sample, isMC, era)
+    jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer)
         
     name_map = jec_stack_ak4.blank_name_map
     name_map["JetPt"] = "pt"
@@ -198,19 +201,14 @@ def getCorrectedMETFactory(Sample, isMC, era):
 
     return CorrectedMETFactory(name_map)
 
-
 def prepareJetsForFactory(isMC, events, jets):
 
-    #jets["pt_raw"] = (1 - jets["rawFactor"]) * (1 - jets["muonSubtrFactor"]) * jets["pt"]
     jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
     jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
     if int(isMC):
         jets["matched_gen_0p2"] = jets.nearest(events.GenJet, threshold=0.2)
         jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen_0p2.pt, 0), np.float32)
     jets["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-
-    # TODO: any explicit lepton subtraction to be done?
-    # muon_pt = jets["pt"] * (1 - jets["rawFactor"]) * jets["muonSubtrFactor"]
 
     return jets #, muon_pt
 
@@ -226,9 +224,6 @@ def getJetsForMET(events):
     """
     These are the jets that are used to calculate the MET, not the ones for your analysis.
     """
-    # TODO Do we need to use CorrT1METJet?
-    # TODO are our selections correct? (Do we need to do pt(1-muonSubtrFactor) > 15?)
-    # TODO Do we need to do lepton subtraction?
     jets = events.Jet
     jets = jets[(
         (jets.pt * ( 1 - jets.muonSubtrFactor ) > 15) &
@@ -258,21 +253,28 @@ def getCorrT1METJetForMET(events, isMC):
 
     CorrT1METJet = events.CorrT1METJet
 
-    CorrT1METJet["pt_raw"] = CorrT1METJet["rawPt"]
-    CorrT1METJet["pt"] = CorrT1METJet["rawPt"]
-    CorrT1METJet["mass_raw"] = CorrT1METJet["rawPt"] * 0
-    CorrT1METJet["rawFactor"] = CorrT1METJet["rawPt"] * 0
-    CorrT1METJet["mass"] = CorrT1METJet["rawPt"] * 0
+    CorrT1METJet["pt"] = CorrT1METJet.rawPt
+    CorrT1METJet["pt_raw"] = CorrT1METJet.rawPt
+    CorrT1METJet["mass"] = 0 * CorrT1METJet.rawPt
+    CorrT1METJet["mass_raw"] = 0 * CorrT1METJet.rawPt
+    CorrT1METJet["raw_factor"] = 0 * CorrT1METJet.rawPt
+
+    CorrT1METJet["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, CorrT1METJet.pt)[0]
+    
+    CorrT1METJet = CorrT1METJet[
+        (CorrT1METJet.pt * (1 - CorrT1METJet["muonSubtrFactor"]) > 15)
+    ]
+
+    CorrT1METJet_p4 = ak.zip({
+        "pt": CorrT1METJet.pt,
+        "eta": CorrT1METJet.eta,
+        "phi": CorrT1METJet.phi,
+        "mass": CorrT1METJet.mass,
+    }, with_name="Momentum4D")
+
     if int(isMC):
-        #CorrT1METJet["matched_gen_0p2"] = CorrT1METJet.nearest(events.GenJet, threshold=0.2)
 
         # veto any jets that are in deltaR < 0.4 with any PF muon
-        CorrT1METJet_p4 = ak.zip({
-            "pt": CorrT1METJet.pt,
-            "eta": CorrT1METJet.eta,
-            "phi": CorrT1METJet.phi,
-            "mass": CorrT1METJet.mass,
-        }, with_name="Momentum4D")
         genJet_4p = ak.zip({
             "pt": events.GenJet.pt,
             "eta": events.GenJet.eta,
@@ -280,28 +282,15 @@ def getCorrT1METJetForMET(events, isMC):
             "mass": events.GenJet.mass,
         }, with_name="Momentum4D")
         product = ak.cartesian({"jet": CorrT1METJet_p4, "genJet": genJet_4p}, nested=True)
-        genJet_4p = genJet_4p[product.jet.deltaR(product.genJet) < 0.2]
-        CorrT1METJet["matched_gen_0p2"] = genJet_4p[ak.argmin(product.jet.deltaR(product.genJet), axis=-1)].pt
-
-        CorrT1METJet["pt_gen"] = ak.values_astype(ak.fill_none(CorrT1METJet.matched_gen_0p2.pt, 0), np.float32)
-    CorrT1METJet["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, CorrT1METJet.pt_raw)[0]
-
-    CorrT1METJet = CorrT1METJet[(
-        (CorrT1METJet.pt * ( 1 - CorrT1METJet.muonSubtrFactor ) > 15)
-    )]
+        minDeltaRJetGenJet = ak.argmin(product.genJet.deltaR(product.jet), axis=-1)
+        CorrT1METJet["pt_gen"] = ak.where(minDeltaRJetGenJet < 0.2, genJet_4p[minDeltaRJetGenJet].pt, 0)
 
     # veto any CorrT1METJet that are in deltaR < 0.4 with any PF muon
-    CorrT1METJet_p4 = ak.zip({
-        "pt": CorrT1METJet.pt,
-        "eta": CorrT1METJet.eta,
-        "phi": CorrT1METJet.phi,
-        "mass": CorrT1METJet.mass,
-    }, with_name="Momentum4D")
     muons_4p = ak.zip({
         "pt": events.Muon.pt,
         "eta": events.Muon.eta,
         "phi": events.Muon.phi,
-        "mass": events.Muon.mass,
+        "mass": events.Muon.mass
     }, with_name="Momentum4D")
     product = ak.cartesian({"jet": CorrT1METJet_p4, "muon": muons_4p}, nested=True)
     CorrT1METJet = CorrT1METJet[ak.all(product.jet.deltaR(product.muon) >= 0.4, axis=-1)]
@@ -310,19 +299,27 @@ def getCorrT1METJetForMET(events, isMC):
 
 def getCorrectedMET(sample, isMC, era, events):
 
+    raise Exception("This is not working yet. Please do not use it.")
+
     met_factory = getCorrectedMETFactory(sample, isMC, era)
     met = prepareMETForFactory(events.MET)
     jec_cache = cachetools.Cache(np.inf)
+
     jets_forMET = getJetsForMET(events)
-    jets_forMET = prepareJetsForFactory(isMC, events, jets_forMET)
     CorrT1METJet_forMET = getCorrT1METJetForMET(events, isMC)
-    alljets_forMET = ak.concatenate([jets_forMET, CorrT1METJet_forMET], axis=1)
-    corrected_jets_forMET = applyJECStoJets(sample, isMC, era, events, alljets_forMET) 
-    return met_factory.build(met, corrected_jets_forMET, lazy_cache=jec_cache)
 
-def applyJECStoJets(sample, isMC, era, events, jets):
+    corrected_jets_forMET = applyJECStoJets(sample, isMC, era, events, jets_forMET) 
 
-    jet_factory = getCorrectedJetsFactory(sample, isMC, era)
+    alljets_forMET = ak.concatenate([corrected_jets_forMET, CorrT1METJet_forMET], axis=1)
+    
+    alljets_forMET["pt"] = (1 - alljets_forMET["muonSubtrFactor"]) * alljets_forMET["pt"] 
+    alljets_forMET["pt_raw"] = (1 - alljets_forMET["muonSubtrFactor"]) * alljets_forMET["pt_raw"]
+    
+    return met_factory.build(met, alljets_forMET, lazy_cache=jec_cache)
+
+def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False):
+
+    jet_factory = getCorrectedJetsFactory(sample, isMC, era, jer=jer)
     jec_cache = cachetools.Cache(np.inf)
     jets = prepareJetsForFactory(isMC, events, jets)
     jets_corrected = jet_factory.build(jets, lazy_cache=jec_cache)
