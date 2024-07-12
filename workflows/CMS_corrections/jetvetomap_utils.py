@@ -23,6 +23,8 @@ def JetVetoMap(jets, era: str):
 
     # correctionlib doesn't support awkward arrays, so we have to flatten them out
     etaflat, phiflat, counts = ak.flatten(jets.eta), ak.flatten(jets.phi), ak.num(jets.eta)
+    phiflat = np.clip(np.array(phiflat), -3.1415, 3.1415)
+    etaflat = np.clip(np.array(etaflat), -4.7, 4.7)
 
     # apply the correction and recreate the awkward array shape
     hname = {
