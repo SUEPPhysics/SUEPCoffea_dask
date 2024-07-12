@@ -23,7 +23,7 @@ import workflows.WH_utils as WH_utils
 from workflows.CMS_corrections.btag_utils import btagcuts, doBTagWeights, getBTagEffs
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter, METHEMFilter
-from workflows.CMS_corrections.jetmet_utils import apply_jecs
+from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
@@ -86,7 +86,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             "trackspt_dPhiW0p2" + out_label,
             ak.sum(tracks.pt[deltaPhi_tracks_W < 0.2], axis=1),
         )
-        deltaPhi_tracks_MET = np.abs(tracks.deltaphi(events.WH_MET_jec))
+        deltaPhi_tracks_MET = np.abs(tracks.deltaphi(events.WH_MET))
         output["vars"].loc(
             indices,
             "ntracks_dPhiMET0p2" + out_label,
@@ -492,7 +492,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )[:, 0]
 
         # saving kinematic variables for the deltaphi(min(jet,MET)) jet
-        events.WH_jets_jec.deltaPhiMET = WH_utils.MET_delta_phi(events.WH_jets_jec, events.WH_MET_jec)
+        events.WH_jets_jec.deltaPhiMET = WH_utils.MET_delta_phi(events.WH_jets_jec, events.WH_MET)
         sorted_deltaphiMET_jets = events.WH_jets_jec[
             ak.argsort(events.WH_jets_jec.deltaPhiMET, axis=1, ascending=True)
         ]
@@ -519,9 +519,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["MET_pt"] = events.MET.pt
         output["vars"]["MET_phi"] = events.MET.phi
         output["vars"]["MET_sumEt"] = events.MET.sumEt
-        output["vars"]["MET_JEC_pt"] = events.WH_MET_jec.pt
-        output["vars"]["MET_JEC_phi"] = events.WH_MET_jec.phi
-        output["vars"]["MET_JEC_sumEt"] = events.WH_MET_jec.sumEt
+        output["vars"]["MET_JEC_pt"] = events.WH_MET.pt
+        output["vars"]["MET_JEC_phi"] = events.WH_MET.phi
+        output["vars"]["MET_JEC_sumEt"] = events.WH_MET.sumEt
 
         # corrections on MET
         if self.isMC and self.do_syst:
@@ -534,27 +534,27 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
             output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
-            output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET_jec.JER.up.pt
-            output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET_jec.JER.up.pt
-            output["vars"]["MET_JEC_pt_JES_up"] = events.WH_MET_jec.JES_jes.up.pt
-            output["vars"]["MET_JEC_pt_JES_down"] = events.WH_MET_jec.JES_jes.down.pt
+            output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET.JER.up.pt
+            output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET.JER.up.pt
+            output["vars"]["MET_JEC_pt_JES_up"] = events.WH_MET.JES_jes.up.pt
+            output["vars"]["MET_JEC_pt_JES_down"] = events.WH_MET.JES_jes.down.pt
             output["vars"][
                 "MET_JEC_pt_UnclusteredEnergy_up"
-            ] = events.WH_MET_jec.MET_UnclusteredEnergy.up.pt
+            ] = events.WH_MET.MET_UnclusteredEnergy.up.pt
             output["vars"][
                 "MET_JEC_pt_UnclusteredEnergy_down"
-            ] = events.WH_MET_jec.MET_UnclusteredEnergy.down.pt
-            output["vars"]["MET_JEC_phi"] = events.WH_MET_jec.phi
-            output["vars"]["MET_JEC_phi_JER_up"] = events.WH_MET_jec.JER.up.phi
-            output["vars"]["MET_JEC_phi_JER_down"] = events.WH_MET_jec.JER.down.phi
-            output["vars"]["MET_JEC_phi_JES_up"] = events.WH_MET_jec.JES_jes.up.phi
-            output["vars"]["MET_JEC_phi_JES_down"] = events.WH_MET_jec.JES_jes.down.phi
+            ] = events.WH_MET.MET_UnclusteredEnergy.down.pt
+            output["vars"]["MET_JEC_phi"] = events.WH_MET.phi
+            output["vars"]["MET_JEC_phi_JER_up"] = events.WH_MET.JER.up.phi
+            output["vars"]["MET_JEC_phi_JER_down"] = events.WH_MET.JER.down.phi
+            output["vars"]["MET_JEC_phi_JES_up"] = events.WH_MET.JES_jes.up.phi
+            output["vars"]["MET_JEC_phi_JES_down"] = events.WH_MET.JES_jes.down.phi
             output["vars"][
                 "MET_JEC_phi_UnclusteredEnergy_up"
-            ] = events.WH_MET_jec.MET_UnclusteredEnergy.up.phi
+            ] = events.WH_MET.MET_UnclusteredEnergy.up.phi
             output["vars"][
                 "MET_JEC_phi_UnclusteredEnergy_down"
-            ] = events.WH_MET_jec.MET_UnclusteredEnergy.down.phi
+            ] = events.WH_MET.MET_UnclusteredEnergy.down.phi
 
         if self.isMC:
             output["vars"]["Pileup_nTrueInt"] = events.Pileup.nTrueInt
@@ -641,12 +641,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )[:, i]
 
         # saving W information
-        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET_jec), "WH_W")
-        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.PuppiMET), "WH_W_PuppiMET") # this is JEC-uncorrected?
-        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.CaloMET), "WH_W_CaloMET") # this is JEC-uncorrected?
+        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
+        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.PuppiMET), "WH_W_PuppiMET")
+        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.CaloMET), "WH_W_CaloMET")
         output["vars"]["W_pt"] = events.WH_W.pt
         output["vars"]["W_phi"] = events.WH_W.phi
-        output["vars"]["W_mt"] = WH_utils.calc_W_mt(events.WH_lepton, events.WH_MET_jec)
+        output["vars"]["W_mt"] = WH_utils.calc_W_mt(events.WH_lepton, events.WH_MET)
         output["vars"]["W_pt_PuppiMET"] = events.WH_W_PuppiMET.pt
         output["vars"]["W_phi_PuppiMET"] = events.WH_W_PuppiMET.phi
         output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(
@@ -793,17 +793,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # ---- Jets and MET
         # Grab corrected ak4jets and MET, apply HEM filter, and require at least one ak4jet.
         #####################################################################################
-
-        jets_factory, MET_c = apply_jecs(
-            self,
-            Sample=self.sample,
-            events=events,
-            prefix="",
-        )
-        jets_jec = WH_utils.getAK4Jets(jets_factory, events.WH_lepton, self.isMC)
-        events = ak.with_field(events, jets_factory, "WH_jets_factory")
+    
+        jets_factory = applyJECStoJets(self.sample, self.isMC, self.era, events, events.Jet, jer=self.isMC)       
+        jets_jec = WH_utils.getAK4Jets(events, events.WH_lepton, self.isMC)
         events = ak.with_field(events, jets_jec, "WH_jets_jec")
-        events = ak.with_field(events, MET_c, "WH_MET_jec")
+        events = ak.with_field(events, jets_factory, "WH_jets_factory")
+
+        events = ak.with_field(events, events.PuppiMET, "WH_MET")
 
         # TODO do we apply HEMcut to all jets or to the events?
         # _, eventJetHEMCut = jetHEMFilter(self, jets_jec, events.run) 
@@ -817,7 +813,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # output["cutflow_electronHEMcut" + out_label] += ak.sum(events.genWeight)
 
         # TODO do we want this?
-        # eventMETHEMCut = METHEMFilter(self, MET_c, events.run)    
+        # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)    
         # events = events[eventMETHEMCut]
         # output["cutflow_METHEMcut" + out_label] += ak.sum(events.genWeight)
 
