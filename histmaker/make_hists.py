@@ -582,6 +582,16 @@ def main():
                 ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
             ]
         config = {
+            "RAW": {
+                "input_method": "HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
+                "selections": [
+                ],
+                "new_variables": new_variables_WH,
+            },
             # "SR": {
             #     "input_method": "HighestPT",
             #     "method_var": "SUEP_nconst_HighestPT",
@@ -629,32 +639,32 @@ def main():
                 ],
                 "new_variables": new_variables_WH,
             },
-            "CRWJe": {
-                "input_method": "HighestPT",
-                "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.3],
-                    ["SUEP_nconst_HighestPT", ">=", 40],
-                ],
-                "selections": [
-                    "isElectron == 1",
-                    "run > 319077",
-                    "MET_JEC_pt > 30",
-                    "W_pt > 40",
-                    "W_mt < 130",
-                    "W_mt > 30",
-                    "bjetSel == 1",
-                    "deltaPhi_SUEP_W > 1.5",
-                    "deltaPhi_SUEP_MET > 1.5",
-                    "deltaPhi_lepton_SUEP > 1.5",
-                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                    "W_SUEP_BV < 2",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    "SUEP_S1_HighestPT < 0.3",
-                    "SUEP_nconst_HighestPT < 40",
-                ],
-                "new_variables": new_variables_WH,
-            },
+            # "CRWJe": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "isElectron == 1",
+            #         "run > 319077",
+            #         "MET_JEC_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 1",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #     ],
+            #     "new_variables": new_variables_WH,
+            # },
             # "CRTT": {
             #     "input_method": "HighestPT",
             #     "method_var": "SUEP_nconst_HighestPT",

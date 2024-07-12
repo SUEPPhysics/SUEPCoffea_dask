@@ -661,13 +661,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"CaloMET_sumEt_{label}",
             #     label="CaloMET sumEt",
             # ).Weight(),
-            # f"PuppiMET_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1000,
-            #     name=f"PuppiMET_pt_{label}",
-            #     label="PuppiMET $p_T$",
-            # ).Weight(),
+            f"PuppiMET_pt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"PuppiMET_pt_{label}",
+                label="PuppiMET $p_T$",
+            ).Weight(),
             #            '''f"PuppiMET_pt_JER_up_{label}": Hist.new.Reg(
             #                100,
             #                0,
@@ -1276,13 +1276,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"W_mt_CaloMET_{label}",
             #     label=r" $W^{\mathrm{CaloMET}} m_T$ [GeV]",
             # ).Weight(),
-            # f"W_mt_PuppiMET_{label}": Hist.new.Reg(
-            #     201,
-            #     0,
-            #     200,
-            #     name=f"W_mt_PuppiMET_{label}",
-            #     label=r" $W^{\mathrm{PuppiMET}} m_T$ [GeV]",
-            # ).Weight(),
+            f"W_mt_PuppiMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_mt_PuppiMET_{label}",
+                label=r" $W^{\mathrm{PuppiMET}} m_T$ [GeV]",
+            ).Weight(),
             f"W_mt_{label}": Hist.new.Reg(
                 200,
                 0,
@@ -1304,13 +1304,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"LHE_Vpt_{label}",
                 label=r"$p^{\mathrm{LHE}}_T$ [GeV]",
             ).Weight(),
-            # f"W_pt_PuppiMET_{label}": Hist.new.Reg(
-            #     500,
-            #     0,
-            #     500,
-            #     name=f"W_pt_PuppiMET_{label}",
-            #     label=r"$W^{\mathrm{PuppiMET}}$ $p_T$ [GeV]",
-            # ).Weight(),
+            f"W_pt_PuppiMET_{label}": Hist.new.Reg(
+                500,
+                0,
+                500,
+                name=f"W_pt_PuppiMET_{label}",
+                label=r"$W^{\mathrm{PuppiMET}}$ $p_T$ [GeV]",
+            ).Weight(),
             # f"genW_phi_{label}": Hist.new.Reg(
             #     60,
             #     -3.2,
