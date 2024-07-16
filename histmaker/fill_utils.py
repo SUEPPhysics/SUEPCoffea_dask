@@ -5,14 +5,14 @@ import subprocess
 import sys
 from collections import defaultdict
 from copy import deepcopy
-
 import awkward as ak
 import numpy as np
 import pandas as pd
 import vector
+import h5py
+import hist
 
-
-def h5load(ifile: str, label: str):
+def h5LoadDf(ifile: str, label: str = "vars"):
     """
     Load a pandas DataFrame from a HDF5 file, including metadata.
     Nota bene: metadata is unstable, we have found that using pandas==1.4.1 and pytables==3.7.0 works.
@@ -31,15 +31,65 @@ def h5load(ifile: str, label: str):
         logging.warning("Some error occurred", ifile)
         return 0, 0
 
+def h5LoadHist(ifile: str, label: str = "hists"):
+    """
+    Load a histogram from a HDF5 file.
+    """
+    histograms = {}
+    with h5py.File(ifile, 'r') as hdf5_file:
+
+        # Check if the 'hists' group exists
+        if 'hists' in hdf5_file:
+            hist_collection = hdf5_file['hists']
+        else:
+            return {}
+
+        # Iterate through each subgroup under 'hists'
+        for hist_name in hist_collection:
+            hist_group = hist_collection[hist_name]
+            
+            # Read attributes
+            name = hist_group.attrs.get('name', hist_name)
+            
+           # read axes info
+            axes = []
+            i = 0
+            while f"axis{i}_name" in hist_group:
+                axis_name = hist_group[f"axis{i}_name"][()].decode('utf-8')
+                axis_edges = hist_group[f"axis{i}_edges"][:]
+                axes.append(hist.axis.Variable(axis_edges, name=axis_name))
+                i += 1
+            
+            # Read values and variances
+            values = hist_group['values'][:]
+            variances = hist_group['variances'][:]
+
+            print(axes)
+            print(values.shape)
+            
+            # Create hist.Hist object and fill it
+            h = hist.Hist(
+                *axes,
+                storage='Weight',
+                name=name
+            )
+            h[...] = np.stack([values, variances], axis=-1)
+            
+            # Store in dictionary
+            histograms[name] = h
+
+    return histograms
+    
 
 def open_ntuple(
     ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False
 ):
     """
     Open a ntuple, either locally or on xrootd.
+
     """
     if not xrootd and "root://" not in ifile:
-        return h5load(ifile, "vars")
+        file = ifile
     else:
         if "root://" in ifile:
             xrd_file = ifile
@@ -47,7 +97,9 @@ def open_ntuple(
             xrd_file = redirector + ifile
         just_file = ifile.split("/")[-1].split(".")[0]
         os.system(f"xrdcp -s {xrd_file} {just_file}.hdf5")
-        return h5load(just_file + ".hdf5", "vars")
+        file = just_file + ".hdf5"
+
+    return h5LoadDf(file, "vars"), h5LoadHist(file, "hists")
 
 
 def close_ntuple(ifile: str) -> None:
@@ -408,8 +460,8 @@ def fill_ND_distributions(df, output, label_out, input_method):
                 variables[ivar] = var
         if skip:
             continue
-
-        output[key].fill(*[df[var] for var in variables], weight=df["event_weight"])
+            
+        fill_histogram(output[key], *[df[var] for var in variables], weight=df["event_weight"])
 
 
 def auto_fill(
@@ -433,7 +485,7 @@ def auto_fill(
         key for key in df.keys() if key + "_" + label_out in list(output.keys())
     ]
     for plot in event_plot_labels:
-        output[plot + "_" + label_out].fill(df[plot], weight=df["event_weight"])
+        fill_histogram(output[plot + "_" + label_out], df[plot], weight=df["event_weight"])
 
     # 1b. fill method variables
     method_plot_labels = [
@@ -443,9 +495,7 @@ def auto_fill(
         and key.endswith(input_method)
     ]
     for plot in method_plot_labels:
-        output[plot.replace(input_method, label_out)].fill(
-            df[plot], weight=df["event_weight"]
-        )
+        fill_histogram(output[plot.replace(input_method, label_out)], df[plot], weight=df["event_weight"])
 
     # 2. fill some ND distributions
     fill_ND_distributions(df, output, label_out, input_method)
@@ -501,9 +551,7 @@ def auto_fill(
                 for plot in event_plot_labels:
                     if r + plot + "_" + label_out not in list(output.keys()):
                         continue
-                    output[r + plot + "_" + label_out].fill(
-                        df_r[plot], weight=df_r["event_weight"]
-                    )
+                    fill_histogram(output[r + plot + "_" + label_out], df_r[plot], weight=df_r["event_weight"])
 
                 # 3b. fill method variables
                 for plot in method_plot_labels:
@@ -511,11 +559,39 @@ def auto_fill(
                         output.keys()
                     ):
                         continue
-                    output[r + plot.replace(input_method, label_out)].fill(
-                        df_r[plot], weight=df_r["event_weight"]
-                    )
+                    fill_histogram(output[r + plot.replace(input_method, label_out)], df_r[plot], weight=df_r["event_weight"])
 
                 iRegion += 1
+
+
+def fill_histogram(hist, payload, weight):
+    """
+    Fill in a histogram with a payload.
+    Supports payloads that are pd.Series or lists of pd.Series.
+    If the type of the pd.Series is a list, it will be flattened before filling.
+    """
+    if type(payload) in (list, tuple):
+        final_payload = []
+        for p in payload:
+            if type(p) is pd.Series:
+                if type(p[0]) is list:
+                    p = flatten(p)
+                final_payload.append(p)
+            else:
+                raise Exception("Payload is not a pd.Series")
+        hist.fill(*final_payload, weight=weight)
+    elif type(payload) is pd.Series:
+        if type(payload[0]) is list:
+            payload = flatten(payload)
+        hist.fill(payload, weight=weight)
+    else:
+        raise Exception("Payload is not a pd.Series")
+
+def flatten(l):
+    """
+    Flatten a list of lists.
+    """
+    return [item for sublist in l for item in sublist]
 
 
 def apply_normalization(plots: dict, norm: float) -> dict:
