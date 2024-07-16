@@ -5,7 +5,16 @@ import correctionlib
 import numpy as np
 
 
-def doBTagWeights(events, jetsPre, era, wp="L", do_syst=False):
+def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: bool = False) -> dict:
+    """
+    Compute btagging weights for a given jet collection.
+    We support working points (wps): 'L', 'M', 'T', 'TL', 'LT',
+    where the last two are the same, and represent a combination of Tight and Loose WPs.
+    """
+    if wps not in ('T', 'L', 'M', 'TL', 'LT'):
+        raise ValueError(f"Invalid WP: {wp}")
+
+    # some jet pre selection
     jetsPre = jetsPre[jetsPre.pt >= 30]
     jets, njets = ak.flatten(jetsPre), np.array(ak.num(jetsPre))
     hadronFlavourLightAsB = np.array(
@@ -14,6 +23,10 @@ def doBTagWeights(events, jetsPre, era, wp="L", do_syst=False):
     hadronFlavourBCAsLight = np.array(
         np.where(jets.hadronFlavour != 0, 0, jets.hadronFlavour)
     )
+    flattened_pt = np.array(jets.pt)
+    flattened_eta = np.array(np.abs(jets.eta))
+
+    # grab the correct weights based on the era
     if era == 2015:
         btagfile = "data/BTagUL16APV/btagging.json.gz"
         btagfileL = "data/BTagUL16/btagging.json.gz"
@@ -28,176 +41,217 @@ def doBTagWeights(events, jetsPre, era, wp="L", do_syst=False):
         btagfileL = btagfile
     corrector = correctionlib.CorrectionSet.from_file(btagfile)
     correctorL = correctionlib.CorrectionSet.from_file(btagfileL)
+
+    # calculate SFs for each WP, variation
     SF = {}
-    flattened_pt = np.array(jets.pt)
-    flattened_eta = np.array(np.abs(jets.eta))
-    SF["central"] = corrector["deepJet_comb"].evaluate(
-        "central", wp, hadronFlavourLightAsB, flattened_eta, flattened_pt
-    )  # SF per jet, later argument is dummy as will be overwritten next
-    SF["central"] = np.where(
-        abs(jets.hadronFlavour) == 0,
-        correctorL["deepJet_incl"].evaluate(
-            "central", wp, hadronFlavourBCAsLight, flattened_eta, flattened_pt
-        ),
-        SF["central"],
-    )
-    if do_syst:
-        SF["HFcorrelated_Up"] = np.where(
-            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-            corrector["deepJet_comb"].evaluate(
-                "up_correlated", wp, hadronFlavourLightAsB, flattened_eta, flattened_pt
-            ),
-            SF["central"],
-        )
-        SF["HFcorrelated_Dn"] = np.where(
-            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-            corrector["deepJet_comb"].evaluate(
-                "down_correlated",
-                wp,
-                hadronFlavourLightAsB,
-                flattened_eta,
-                flattened_pt,
-            ),
-            SF["central"],
-        )
-        SF["HFuncorrelated_Up"] = np.where(
-            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-            corrector["deepJet_comb"].evaluate(
-                "up_uncorrelated",
-                wp,
-                hadronFlavourLightAsB,
-                flattened_eta,
-                flattened_pt,
-            ),
-            SF["central"],
-        )
-        SF["HFuncorrelated_Dn"] = np.where(
-            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-            corrector["deepJet_comb"].evaluate(
-                "down_uncorrelated",
-                wp,
-                hadronFlavourLightAsB,
-                flattened_eta,
-                flattened_pt,
-            ),
-            SF["central"],
-        )
-        SF["LFcorrelated_Up"] = np.where(
+    for wp in wps:
+        SF[wp] = {}
+        SF[wp]["central"] = corrector["deepJet_comb"].evaluate(
+            "central", wp, hadronFlavourLightAsB, flattened_eta, flattened_pt
+        )  # SF per jet, later argument is dummy as will be overwritten next
+        SF[wp]["central"] = np.where(
             abs(jets.hadronFlavour) == 0,
             correctorL["deepJet_incl"].evaluate(
-                "up_correlated", wp, hadronFlavourBCAsLight, flattened_eta, flattened_pt
+                "central", wp, hadronFlavourBCAsLight, flattened_eta, flattened_pt
             ),
-            SF["central"],
+            SF[wp]["central"],
         )
-        SF["LFcorrelated_Dn"] = np.where(
-            abs(jets.hadronFlavour) == 0,
-            correctorL["deepJet_incl"].evaluate(
-                "down_correlated",
-                wp,
-                hadronFlavourBCAsLight,
-                flattened_eta,
-                flattened_pt,
-            ),
-            SF["central"],
-        )
-        SF["LFuncorrelated_Up"] = np.where(
-            abs(jets.hadronFlavour) == 0,
-            correctorL["deepJet_incl"].evaluate(
-                "up_uncorrelated",
-                wp,
-                hadronFlavourBCAsLight,
-                flattened_eta,
-                flattened_pt,
-            ),
-            SF["central"],
-        )
-        SF["LFuncorrelated_Dn"] = np.where(
-            abs(jets.hadronFlavour) == 0,
-            correctorL["deepJet_incl"].evaluate(
-                "down_uncorrelated",
-                wp,
-                hadronFlavourBCAsLight,
-                flattened_eta,
-                flattened_pt,
-            ),
-            SF["central"],
-        )
-    effs = getBTagEffs(events, jets, era, wp)
-    wps = {"L": "Loose", "M": "Medium", "T": "Tight"}  # For safe conversion
+        if do_syst:
+            SF[wp]["HFcorrelated_Up"] = np.where(
+                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+                corrector["deepJet_comb"].evaluate(
+                    "up_correlated", wp, hadronFlavourLightAsB, flattened_eta, flattened_pt
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["HFcorrelated_Dn"] = np.where(
+                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+                corrector["deepJet_comb"].evaluate(
+                    "down_correlated",
+                    wp,
+                    hadronFlavourLightAsB,
+                    flattened_eta,
+                    flattened_pt,
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["HFuncorrelated_Up"] = np.where(
+                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+                corrector["deepJet_comb"].evaluate(
+                    "up_uncorrelated",
+                    wp,
+                    hadronFlavourLightAsB,
+                    flattened_eta,
+                    flattened_pt,
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["HFuncorrelated_Dn"] = np.where(
+                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+                corrector["deepJet_comb"].evaluate(
+                    "down_uncorrelated",
+                    wp,
+                    hadronFlavourLightAsB,
+                    flattened_eta,
+                    flattened_pt,
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["LFcorrelated_Up"] = np.where(
+                abs(jets.hadronFlavour) == 0,
+                correctorL["deepJet_incl"].evaluate(
+                    "up_correlated", wp, hadronFlavourBCAsLight, flattened_eta, flattened_pt
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["LFcorrelated_Dn"] = np.where(
+                abs(jets.hadronFlavour) == 0,
+                correctorL["deepJet_incl"].evaluate(
+                    "down_correlated",
+                    wp,
+                    hadronFlavourBCAsLight,
+                    flattened_eta,
+                    flattened_pt,
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["LFuncorrelated_Up"] = np.where(
+                abs(jets.hadronFlavour) == 0,
+                correctorL["deepJet_incl"].evaluate(
+                    "up_uncorrelated",
+                    wp,
+                    hadronFlavourBCAsLight,
+                    flattened_eta,
+                    flattened_pt,
+                ),
+                SF[wp]["central"],
+            )
+            SF[wp]["LFuncorrelated_Dn"] = np.where(
+                abs(jets.hadronFlavour) == 0,
+                correctorL["deepJet_incl"].evaluate(
+                    "down_uncorrelated",
+                    wp,
+                    hadronFlavourBCAsLight,
+                    flattened_eta,
+                    flattened_pt,
+                ),
+                SF[wp]["central"],
+            )
+
+    # these are the efficiencies computed for each analysis and WP
+    effs = {wp: getBTagEffs(jets, era, wp, channel) for wp in wps}
+    for wp in effs:
+        effs[wp] = ak.unflatten(effs[wp], njets)
+
+    wps_name = {"L": "Loose", "M": "Medium", "T": "Tight"}  # For safe conversion
     weights = {}
-    effs = ak.unflatten(effs, njets)
-    for key in SF:
-        SF[key] = ak.unflatten(SF[key], njets)
-    for (
-        syst_var
-    ) in (
-        SF.keys()
-    ):  # Method (1.a) here: https://twiki.cern.ch/twiki/bin/view/CMS/BTagSFMethods
-        mceff = ak.prod(
-            np.where(jetsPre.btag >= btagcuts(wps[wp], era), effs, 1 - effs), axis=1
-        )
-        dataeff = ak.prod(
-            np.where(
-                jetsPre.btag >= btagcuts(wps[wp], era),
-                SF[syst_var] * effs,
-                1 - SF[syst_var] * effs,
-            ),
-            axis=1,
-        )
-        weights[syst_var] = dataeff / mceff
+    for wp in SF.keys():
+        for syst in SF[wp].keys():
+            SF[wp][syst] = ak.unflatten(SF[wp][syst], njets)
+
+    # single WP: tight, loose, or medium
+    if wps in ('T', 'L', 'M'):
+        for (
+            syst_var
+        ) in (
+            SF[wps].keys()
+        ):  # Method (1.a) here: https://twiki.cern.ch/twiki/bin/view/CMS/BTagSFMethods
+            mceff = ak.prod(
+                np.where(jetsPre.btag >= btagcuts(wps_name[wps], era), effs[wps], 1 - effs[wps]), axis=1
+            )
+            dataeff = ak.prod(
+                np.where(
+                    jetsPre.btag >= btagcuts(wps_name[wps], era),
+                    SF[wps][syst_var] * effs[wps],
+                    1 - SF[wps][syst_var] * effs[wps],
+                ),
+                axis=1,
+            )
+            weights[syst_var] = dataeff / mceff
+    
+    # combination of two WPs: TL or LT (same thing)
+    elif wps in ('TL', 'LT'):
+        for (
+            syst_var
+        ) in (
+            SF.keys()
+        ): # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#Extension_to_multiple_operating 
+            term1 = np.where(jetsPre.btag >= btagcuts(wps_name['T'], era), effs['T'], 1)
+            term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), effs['L'] - effs['T'], 1)
+            term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - effs['L'], 1)
+            mceff = ak.prod(term1 * term2 * term3, axis=1)
+
+            term1 = np.where(jetsPre.btag >= btagcuts(wps_name['T'], era), SF['T'][syst_var] * effs['T'], 1)
+            term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), SF['L'][syst_var] * effs['L'], 1)
+            term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - SF['L'][syst_var] * effs['L'], 1)
+            dataeff = ak.prod(term1 * term2 * term3, axis=1)
+
+            weights[syst_var] = dataeff / mceff
 
     return weights
 
 
-def getBTagEffs(events, jets, era, wp="L"):
-    if wp != "L":
-        print("Warning, efficiencies are computed for the Loose WP only!")
+def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh") -> dict:
+    """
+    Get the efficiencies of b-tagging for a given jet collection,
+    binned in jet pt and abs(eta), for a given analysis (channel),
+    and for a given WP.
+    """
     if era == 2015:
-        btagfile = "data/BTagUL16APV/eff.pickle"
+        btagfile = f"data/BTagUL16APV/{channel}_eff.pickle"
     if era == 2016:
-        btagfile = "data/BTagUL16/eff.pickle"
+        btagfile = f"data/BTagUL16/{channel}_eff.pickle"
     if era == 2017:
-        btagfile = "data/BTagUL17/eff.pickle"
+        btagfile = f"data/BTagUL17/{channel}_eff.pickle"
     if era == 2018:
-        btagfile = "data/BTagUL18/eff.pickle"
+        btagfile = f"data/BTagUL18/{channel}_eff.pickle"
+
     bfile = open(btagfile, "rb")
     effsLoad = pickle.load(bfile)
-    effs = effsLoad["L"](jets.pt, np.abs(jets.eta))
+
+    effs = effsLoad[wp](jets.pt, np.abs(jets.eta))
     effs = np.where(
         abs(jets.hadronFlavour) == 4, effsLoad["C"](jets.pt, np.abs(jets.eta)), effs
     )
     effs = np.where(
         abs(jets.hadronFlavour) == 5, effsLoad["B"](jets.pt, np.abs(jets.eta)), effs
     )
+
     return effs
+    
 
-
-def btagcuts(WP, era):
+def btagcuts(WP: str, era: int) -> float:
     if era == 2015:  # 2016APV
         if WP == "Loose":
             return 0.0480
-        if WP == "Medium":
+        elif WP == "Medium":
             return 0.2489
-        if WP == "Tight":
+        elif WP == "Tight":
             return 0.6377
-    if era == 2016:
+        raise ValueError(f"Invalid WP: {WP}")
+    elif era == 2016:
         if WP == "Loose":
             return 0.0508
-        if WP == "Medium":
+        elif WP == "Medium":
             return 0.2598
-        if WP == "Tight":
+        elif WP == "Tight":
             return 0.6502
-    if era == 2017:
+        raise ValueError(f"Invalid WP: {WP}")
+    elif era == 2017:
         if WP == "Loose":
             return 0.0532
-        if WP == "Medium":
+        elif WP == "Medium":
             return 0.3040
-        if WP == "Tight":
+        elif WP == "Tight":
             return 0.7476
-    if era == 2018:
+        raise ValueError(f"Invalid WP: {WP}")
+    elif era == 2018:
         if WP == "Loose":
             return 0.0490
-        if WP == "Medium":
+        elif WP == "Medium":
             return 0.2783
-        if WP == "Tight":
+        elif WP == "Tight":
             return 0.7100
+        raise ValueError(f"Invalid WP: {WP}")
+    else:
+        raise ValueError(f"Invalid era: {era}")
