@@ -25,6 +25,7 @@ from tqdm import tqdm
 sys.path.append("..")
 import fill_utils
 import hist_defs
+import var_defs
 from CMS_corrections import (
     GNN_syst,
     higgs_reweight,
@@ -32,7 +33,6 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
-
 import plotting.plot_utils as plot_utils
 
 
@@ -190,15 +190,15 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             df["event_weight"] *= df[syst]
 
         # 3) prefire weights
-        if options.era == "2016" or options.era == "2017":
+        if (options.era == "2016" or options.era == "2017") and options.scouting != 1:
             if "prefire" in syst and syst in df.keys():
                 df["event_weight"] *= df[syst]
             else:
                 df["event_weight"] *= df["prefire_nom"]
 
+        # 4) TriggerSF weights
         if options.channel == "ggF":
             if options.scouting != 1:
-                # 2) TriggerSF weights
                 (
                     trig_bins,
                     trig_weights,
@@ -214,53 +214,40 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
                     trig_weights_down,
                 )
                 df["event_weight"] *= trigSF
-
             else:
-                # 2) TriggerSF weights
                 trigSF = triggerSF.get_scout_trigSF_weight(
                     np.array(df["ht"]).astype(int), syst, options.era
                 )
                 df["event_weight"] *= trigSF
 
-                # 4) prefire weights
-                # no prefire weights for scouting
+        # 5) Higgs_pt weights
+        if "mS125" in metadata["sample"]:
+            (
+                higgs_bins,
+                higgs_weights,
+                higgs_weights_up,
+                higgs_weights_down,
+            ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
+            higgs_weight = higgs_reweight.get_higgs_weight(
+                df,
+                syst,
+                higgs_bins,
+                higgs_weights,
+                higgs_weights_up,
+                higgs_weights_down,
+            )
+            df["event_weight"] *= higgs_weight
 
-            # 5) Higgs_pt weights
-            if "mS125" in metadata["sample"]:
-                (
-                    higgs_bins,
-                    higgs_weights,
-                    higgs_weights_up,
-                    higgs_weights_down,
-                ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
-                higgs_weight = higgs_reweight.get_higgs_weight(
-                    df,
-                    syst,
-                    higgs_bins,
-                    higgs_weights,
-                    higgs_weights_up,
-                    higgs_weights_down,
-                )
-                df["event_weight"] *= higgs_weight
+        # 6) track killing
+        if "track_down" in syst:
+            # update configuration to cut on track_down variables
+            config = fill_utils.get_track_killing_config(config)
 
-            # 6) track killing
-            if "track_down" in syst:
-                # update configuration to cut on track_down variables
-                config = fill_utils.get_track_killing_config(config)
-
-            # 7) jet energy corrections
-            if any([j in syst for j in ["JER", "JES"]]):
-                # update configuration to cut on jet energy correction variables
-                config = fill_utils.get_jet_correction_config(config, syst)
-
-        elif options.channel == "WH":
-            pass
-            # FILL IN
-            # should we keep these separate or try to, as much as possible, use the same code for systematics for both channels?
-            # which systematics are applied and which aren't should be defined outside IMO, as is now
-            # and in here we should just apply them as much as possible in the same way
-            # with flags for the differences
-
+        # 7) jet energy corrections
+        if any([j in syst for j in ["JER", "JES"]]):
+            # update configuration to cut on jet energy correction variables
+            config = fill_utils.get_jet_correction_config(config, syst)
+            
     # scaling weights
     # N.B.: these are just an optional, arbitrary scaling of weights you're passing in
     if options.weights is not None and options.weights != "None":
@@ -282,6 +269,9 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
 
         # initialize new hists for this output tag, if we haven't already
         hist_defs.initialize_histograms(output, label_out, options, config_out)
+
+        # initialize new variables for this output tag, if we haven't already
+        var_defs.initialize_new_variables(label_out, options, config_out)
 
         # prepare the DataFrame for plotting: blind, selections, new variables
         df_plot = fill_utils.prepare_DataFrame(
@@ -305,6 +295,18 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
                 print(
                     f"{int(row['event'])}, {int(row['run'])}, {int(row['luminosityBlock'])}"
                 )
+
+        # 8) b-tag weights. These have different values for each event selection
+        if options.channel == 'WH':
+            if 'btag' in syst.lower():
+                btag_weights = syst
+            else:
+                btag_weights = 'bTagWeight_nominal'
+            btag_weights += "_" + label_out
+            if btag_weights not in df.keys():
+                logging.wrning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
+            else:
+                df['event_weight'] *= df[btag_weights]
 
         # auto fill all histograms
         fill_utils.auto_fill(
@@ -336,251 +338,6 @@ def main():
     """
 
     if options.channel == "WH":
-        new_variables_WH = [
-            [
-                "bjetSel",
-                lambda x, y: ((x == 0) & (y < 2)),
-                ["nBTight", "nBLoose"],
-            ],
-            [
-                "W_SUEP_BV",
-                fill_utils.balancing_var,
-                ["W_pt", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "W_jet1_BV",
-                fill_utils.balancing_var,
-                ["W_pt", "jet1_pt"],
-            ],
-            [
-                "ak4SUEP1_SUEP_BV",
-                fill_utils.balancing_var,
-                ["ak4jet1_inSUEPcluster_pt_HighestPT", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "W_SUEP_vBV",
-                fill_utils.vector_balancing_var,
-                [
-                    "W_phi",
-                    "SUEP_phi_HighestPT",
-                    "W_pt",
-                    "SUEP_pt_HighestPT",
-                ],
-            ],
-            [
-                "W_SUEP_vBV2",
-                fill_utils.vector_balancing_var2,
-                [
-                    "W_phi",
-                    "SUEP_phi_HighestPT",
-                    "W_pt",
-                    "SUEP_pt_HighestPT",
-                ],
-            ],
-            [
-                "W_jet1_vBV",
-                fill_utils.vector_balancing_var,
-                ["W_phi", "jet1_phi", "W_pt", "jet1_pt"],
-            ],
-            [
-                "deltaPhi_SUEP_W",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "W_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_MET",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "MET_JEC_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_METUnc",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "MET_phi",
-                ],
-            ],
-            [
-                "deltaPhi_lepton_MET",
-                fill_utils.deltaPhi_x_y,
-                ["lepton_phi", "MET_JEC_phi"],
-            ],
-            [
-                "deltaPhi_lepton_SUEP",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "lepton_phi",
-                    "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_minDeltaPhiMETJet_SUEP",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "minDeltaPhiMETJet_phi",
-                    "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_minDeltaPhiMETJet_MET",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "minDeltaPhiMETJet_phi",
-                    "MET_JEC_phi",
-                ],
-            ],
-            [
-                "deltaPhi_minDeltaPhiMETJet_METUnc",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "minDeltaPhiMETJet_phi",
-                    "MET_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_jet1",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "jet1_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_bjet",
-                fill_utils.deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "bjet_phi",
-                ],
-            ],
-            [
-                "deltaPhi_jet1_bjet",
-                fill_utils.deltaPhi_x_y,
-                ["jet1_phi", "bjet_phi"],
-            ],
-            [
-                "deltaPhi_lepton_bjet",
-                fill_utils.deltaPhi_x_y,
-                ["lepton_phi", "bjet_phi"],
-            ],
-            [
-                "nak4jets_outsideSUEP",
-                lambda x, y: (x - y),
-                ["ngood_ak4jets", "ak4jets_inSUEPcluster_n_HighestPT"],
-            ],
-            [
-                "nonSUEP_S1",
-                lambda x, y: 1.5 * (x + y),
-                ["nonSUEP_eig0_HighestPT", "nonSUEP_eig1_HighestPT"],
-            ],
-            [
-                "ntracks_outsideSUEP",
-                lambda x, y: (x - y),
-                ["ntracks", "SUEP_nconst_HighestPT"],
-            ],
-            [
-                "BV_highestSUEPTrack_SUEP",
-                fill_utils.balancing_var,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "SUEP_nconst_minus_otherAK15_maxConst",
-                lambda x, y: (x - y),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
-            ],
-            [
-                "jetsInSameHemisphere",
-                lambda x, y: ((x == 1) | (y < 1.5)),
-                ["ngood_ak4jets", "maxDeltaPhiJets"],
-            ],
-            [
-                "deltaPhi_genSUEP_SUEP",
-                fill_utils.deltaPhi_x_y,
-                ["SUEP_genPhi", "SUEP_phi_HighestPT"],
-            ],
-            [
-                "deltaR_genSUEP_SUEP",
-                fill_utils.deltaR,
-                [
-                    "SUEP_genEta",
-                    "SUEP_eta_HighestPT",
-                    "SUEP_genPhi",
-                    "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "percent_darkphis_inTracker",
-                lambda x, y: x / y,
-                ["n_darkphis_inTracker", "n_darkphis"],
-            ],
-            [
-                "percent_tracks_dPhiW0p2",
-                lambda x, y: x / y,
-                ["ntracks_dPhiW0p2", "ntracks"],
-            ],
-            [
-                "SUEPMostNumerous",
-                lambda x, y: x > y,
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
-            ],
-            [
-                "MaxConstAK15_phi",
-                lambda x_nconst, y_nconst, x_phi, y_phi: np.where(
-                    x_nconst > y_nconst, x_phi, y_phi
-                ),
-                [
-                    "SUEP_nconst_HighestPT",
-                    "otherAK15_maxConst_nconst_HighestPT",
-                    "SUEP_phi_HighestPT",
-                    "otherAK15_maxConst_phi_HighestPT",
-                ],
-            ],
-            [
-                "MaxConstAK15_eta",
-                lambda x_nconst, y_nconst, x_eta, y_eta: np.where(
-                    x_nconst > y_nconst, x_eta, y_eta
-                ),
-                [
-                    "SUEP_nconst_HighestPT",
-                    "otherAK15_maxConst_nconst_HighestPT",
-                    "SUEP_eta_HighestPT",
-                    "otherAK15_maxConst_eta_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_SUEPgen_MaxConstAK15",
-                fill_utils.deltaPhi_x_y,
-                ["SUEP_genPhi", "MaxConstAK15_phi"],
-            ],
-            [
-                "deltaR_SUEPgen_MaxConstAK15",
-                fill_utils.deltaR,
-                ["SUEP_genEta", "MaxConstAK15_eta", "SUEP_genPhi", "MaxConstAK15_phi"],
-            ],
-            [
-                "highestPTtrack_pt_norm",
-                lambda x, y: x / y,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "highestPTtrack_pt_norm2",
-                lambda x, y: x / y,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_avg_HighestPT"],
-            ],
-            ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
-            ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
-        ]
-        if options.isMC:
-            new_variables_WH += [
-                ["deltaPhi_W_genW", fill_utils.deltaPhi_x_y, ["genW_phi", "W_phi"]],
-                ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
-            ]
         config = {
             "RAW": {
                 "input_method": "HighestPT",
@@ -590,7 +347,6 @@ def main():
                 ],
                 "selections": [
                 ],
-                "new_variables": new_variables_WH,
             },
             # "SR": {
             #     "input_method": "HighestPT",
@@ -613,7 +369,6 @@ def main():
             #         "W_SUEP_BV < 2",
             #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
             #     ],
-            #     "new_variables": new_variables_WH,
             # },
             "CRWJ": {
                 "input_method": "HighestPT",
@@ -637,7 +392,6 @@ def main():
                     "SUEP_S1_HighestPT < 0.3",
                     "SUEP_nconst_HighestPT < 40",
                 ],
-                "new_variables": new_variables_WH,
             },
             # "CRWJe": {
             #     "input_method": "HighestPT",
@@ -663,7 +417,6 @@ def main():
             #         "SUEP_S1_HighestPT < 0.3",
             #         "SUEP_nconst_HighestPT < 40",
             #     ],
-            #     "new_variables": new_variables_WH,
             # },
             # "CRTT": {
             #     "input_method": "HighestPT",
@@ -687,7 +440,6 @@ def main():
             #         "SUEP_S1_HighestPT < 0.3",
             #         "SUEP_nconst_HighestPT < 40",
             #     ],
-            #     "new_variables": new_variables_WH,
             # },
         }
 
@@ -730,13 +482,6 @@ def main():
                         ["ntracks", ">", 0],
                         "SUEP_nconst_CL > 30",
                         "SUEP_S1_CL > 0.3",
-                    ],
-                    "new_variables": [
-                        [
-                            "SUEP_ISR_deltaPhi_CL",
-                            lambda x, y: abs(x - y),
-                            ["SUEP_phi_CL", "ISR_phi_CL"],
-                        ]
                     ],
                 },
                 "ClusterInverted": {
@@ -842,7 +587,7 @@ def main():
     sample = options.sample
     for ifile in tqdm(files):
         # get the file
-        df, metadata = fill_utils.open_ntuple(
+        df, metadata, ntuple_hists = fill_utils.open_ntuple(
             ifile, redirector=options.redirector, xrootd=options.xrootd
         )
         logging.debug(f"Opened file {ifile}")
@@ -886,6 +631,13 @@ def main():
                         cutflow[k] = v
                     else:
                         cutflow[k] += v
+
+        # update the ntuple histograms
+        for hist_name, hist in ntuple_hists.items():
+            if hist_name in output:
+                output[hist_name] += hist
+            else:
+                output[hist_name] = hist
 
         # check if any events passed the selections
         if "empty" in list(df.keys()):
