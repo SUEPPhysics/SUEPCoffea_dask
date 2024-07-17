@@ -11,28 +11,7 @@ import numpy as np
 from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 from coffea.lookup_tools import extractor
 import vector
-vector.register_awkward()
-
-
-# def load_jets(self, events):
-#     if (isMC == 1) and ("2016" in era):
-#         vals_jet0 = events.OffJet
-#         vals_jet0["pt_raw"] = events.OffJet.pt
-#         vals_jet0["mass_raw"] = events.OffJet.mass
-#         vals_jet0["pt_gen"] = ak.values_astype(
-#             ak.without_parameters(ak.zeros_like(events.OffJet.pt)), np.float32
-#         )
-#         vals_jet0["event_rho"] = events.rho
-#     else:
-#         vals_jet0 = events.Jet
-#         vals_jet0["pt_raw"] = events.Jet.pt
-#         vals_jet0["mass_raw"] = events.Jet.mass
-#         vals_jet0["event_rho"] = events.rho
-#         vals_jet0["pt_gen"] = ak.values_astype(
-#             ak.without_parameters(ak.zeros_like(events.Jet.pt)), np.float32
-#         )
-
-#     return vals_jet0
+vector.register_awkward()    
 
 
 def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix : str = ""):
@@ -160,9 +139,9 @@ def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix : s
     return JECStack(jec_inputs_ak4)
 
 
-def getCorrectedJetsFactory(Sample, isMC, era, jer=False):
+def getCorrectedJetsFactory(Sample, isMC, era, jer=False, prefix=""):
 
-    jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer)
+    jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer, prefix=prefix)
         
     name_map = jec_stack_ak4.blank_name_map
     name_map["JetPt"] = "pt"
@@ -210,7 +189,18 @@ def prepareJetsForFactory(isMC, events, jets):
         jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen_0p2.pt, 0), np.float32)
     jets["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
 
-    return jets #, muon_pt
+    return jets
+
+def prepareScoutingJetsForFactory(isMC: int, era: str, events, jets):
+
+    jets["pt_raw"] = jets.pt
+    jets["mass_raw"] = jets.mass
+    jets["pt_gen"] = ak.values_astype(
+        ak.without_parameters(ak.zeros_like(jets.pt)), np.float32
+    )
+    jets["event_rho"] = events.rho
+    
+    return jets
 
 def prepareMETForFactory(MET):
 
@@ -317,10 +307,23 @@ def getCorrectedMET(sample, isMC, era, events):
     
     return met_factory.build(met, alljets_forMET, lazy_cache=jec_cache)
 
-def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False):
+def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False, scouting: bool = False, prefix: str = ""):
 
-    jet_factory = getCorrectedJetsFactory(sample, isMC, era, jer=jer)
+    jet_factory = getCorrectedJetsFactory(sample, isMC, era, jer=jer, prefix=prefix)
     jec_cache = cachetools.Cache(np.inf)
-    jets = prepareJetsForFactory(isMC, events, jets)
+    if scouting: jets = prepareScoutingJetsForFactory(isMC, era, events, jets)
+    else: jets = prepareJetsForFactory(isMC, events, jets)
     jets_corrected = jet_factory.build(jets, lazy_cache=jec_cache)
     return jets_corrected
+
+def getJECCorrectedAK4Jets(sample, isMC, era, events, jer: bool = False, scouting: bool = False, prefix: str = ""):
+
+    if scouting:
+        if (isMC == 1) and (era == "2016"):
+            jets = events.OffJet
+        else:
+            jets = events.Jet
+    else:
+        jets = events.Jet
+
+    return applyJECStoJets(sample, isMC, era, events, jets, jer=jer, scouting=scouting, prefix=prefix)

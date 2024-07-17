@@ -20,7 +20,7 @@ import workflows.ZH_utils as ZH_utils
 # Importing CMS corrections
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
-from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
+from workflows.CMS_corrections.jetmet_utils import getJECCorrectedAK4Jets
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import (
@@ -378,7 +378,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.accum:
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
-        jets_c = applyJECStoJets(sample=self.sample, isMC=self.isMC, era=self.era, events=events, jets=events.Jet, jer=self.isMC)
+        jets_c = getJECCorrectedAK4Jets(self.sample, self.isMC, self.era, events, jer = self.isMC, scouting = self.scouting, prefix=prefix)
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
         jets_c = jets_c[jet_HEM_Cut]
         jets_jec = self.jet_awkward(jets_c)
