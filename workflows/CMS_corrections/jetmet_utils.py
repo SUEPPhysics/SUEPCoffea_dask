@@ -195,6 +195,7 @@ def prepareJetsForFactory(isMC, events, jets):
 
     return jets
 
+
 def prepareScoutingJetsForFactory(isMC: int, era: str, events, jets):
 
     jets["pt_raw"] = jets.pt
@@ -205,6 +206,7 @@ def prepareScoutingJetsForFactory(isMC: int, era: str, events, jets):
     jets["event_rho"] = events.rho
 
     return jets
+
 
 def prepareMETForFactory(MET):
 
@@ -345,16 +347,37 @@ def getCorrectedMET(sample, isMC, era, events):
 
     return met_factory.build(met, alljets_forMET, lazy_cache=jec_cache)
 
-def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False, scouting: bool = False, prefix: str = ""):
+
+def applyJECStoJets(
+    sample,
+    isMC,
+    era,
+    events,
+    jets,
+    jer: bool = False,
+    scouting: bool = False,
+    prefix: str = "",
+):
 
     jet_factory = getCorrectedJetsFactory(sample, isMC, era, jer=jer, prefix=prefix)
     jec_cache = cachetools.Cache(np.inf)
-    if scouting: jets = prepareScoutingJetsForFactory(isMC, era, events, jets)
-    else: jets = prepareJetsForFactory(isMC, events, jets)
+    if scouting:
+        jets = prepareScoutingJetsForFactory(isMC, era, events, jets)
+    else:
+        jets = prepareJetsForFactory(isMC, events, jets)
     jets_corrected = jet_factory.build(jets, lazy_cache=jec_cache)
     return jets_corrected
 
-def getJECCorrectedAK4Jets(sample, isMC, era, events, jer: bool = False, scouting: bool = False, prefix: str = ""):
+
+def getJECCorrectedAK4Jets(
+    sample,
+    isMC,
+    era,
+    events,
+    jer: bool = False,
+    scouting: bool = False,
+    prefix: str = "",
+):
 
     if scouting:
         if (isMC == 1) and (era == "2016"):
@@ -364,4 +387,6 @@ def getJECCorrectedAK4Jets(sample, isMC, era, events, jer: bool = False, scoutin
     else:
         jets = events.Jet
 
-    return applyJECStoJets(sample, isMC, era, events, jets, jer=jer, scouting=scouting, prefix=prefix)
+    return applyJECStoJets(
+        sample, isMC, era, events, jets, jer=jer, scouting=scouting, prefix=prefix
+    )
