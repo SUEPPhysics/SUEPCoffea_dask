@@ -142,13 +142,8 @@ def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix: st
 
 def getCorrectedJetsFactory(Sample, isMC, era, jer=False, prefix=""):
 
-<<<<<<< HEAD
     jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer, prefix=prefix)
-        
-=======
-    jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer)
 
->>>>>>> 886f2baaa805375e09bb5489a67ce8fee246cd31
     name_map = jec_stack_ak4.blank_name_map
     name_map["JetPt"] = "pt"
     name_map["JetMass"] = "mass"
@@ -198,7 +193,6 @@ def prepareJetsForFactory(isMC, events, jets):
         )
     jets["event_rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
 
-<<<<<<< HEAD
     return jets
 
 def prepareScoutingJetsForFactory(isMC: int, era: str, events, jets):
@@ -211,10 +205,6 @@ def prepareScoutingJetsForFactory(isMC: int, era: str, events, jets):
     jets["event_rho"] = events.rho
     
     return jets
-=======
-    return jets  # , muon_pt
-
->>>>>>> 886f2baaa805375e09bb5489a67ce8fee246cd31
 
 def prepareMETForFactory(MET):
 
@@ -355,12 +345,7 @@ def getCorrectedMET(sample, isMC, era, events):
 
     return met_factory.build(met, alljets_forMET, lazy_cache=jec_cache)
 
-<<<<<<< HEAD
 def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False, scouting: bool = False, prefix: str = ""):
-=======
-
-def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False):
->>>>>>> 886f2baaa805375e09bb5489a67ce8fee246cd31
 
     jet_factory = getCorrectedJetsFactory(sample, isMC, era, jer=jer, prefix=prefix)
     jec_cache = cachetools.Cache(np.inf)
@@ -368,7 +353,6 @@ def applyJECStoJets(sample, isMC, era, events, jets, jer: bool = False):
     else: jets = prepareJetsForFactory(isMC, events, jets)
     jets_corrected = jet_factory.build(jets, lazy_cache=jec_cache)
     return jets_corrected
-<<<<<<< HEAD
 
 def getJECCorrectedAK4Jets(sample, isMC, era, events, jer: bool = False, scouting: bool = False, prefix: str = ""):
 
@@ -381,5 +365,3 @@ def getJECCorrectedAK4Jets(sample, isMC, era, events, jer: bool = False, scoutin
         jets = events.Jet
 
     return applyJECStoJets(sample, isMC, era, events, jets, jer=jer, scouting=scouting, prefix=prefix)
-=======
->>>>>>> 886f2baaa805375e09bb5489a67ce8fee246cd31
