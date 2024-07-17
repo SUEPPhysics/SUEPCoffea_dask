@@ -409,7 +409,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["PV_npvsGood"] = events.PV.npvsGood
 
         # select out ak4jets
-        uncorrected_ak4jets = WH_utils.getAK4Jets(events.Jet, self.lepton, isMC=self.isMC)
+        uncorrected_ak4jets = WH_utils.getAK4Jets(
+            events.Jet, self.lepton, isMC=self.isMC
+        )
         jets_c, met_c = apply_jecs(
             self,
             Sample=self.sample,
