@@ -378,7 +378,15 @@ class SUEP_cluster(processor.ProcessorABC):
         if self.accum:
             if "dask" in self.accum:
                 prefix = "dask-worker-space/"
-        jets_c = getJECCorrectedAK4Jets(self.sample, self.isMC, self.era, events, jer = self.isMC, scouting = self.scouting, prefix=prefix)
+        jets_c = getJECCorrectedAK4Jets(
+            self.sample,
+            self.isMC,
+            self.era,
+            events,
+            jer=self.isMC,
+            scouting=self.scouting,
+            prefix=prefix,
+        )
         jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
         jets_c = jets_c[jet_HEM_Cut]
         jets_jec = self.jet_awkward(jets_c)

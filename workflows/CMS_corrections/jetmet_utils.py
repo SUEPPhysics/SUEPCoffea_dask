@@ -11,8 +11,8 @@ import numpy as np
 import vector
 from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 from coffea.lookup_tools import extractor
-import vector
-vector.register_awkward()    
+
+vector.register_awkward()
 
 
 def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix: str = ""):
@@ -144,7 +144,7 @@ def getCorrectedJetsFactory(Sample, isMC, era, jer=False, prefix=""):
 
 <<<<<<< HEAD
     jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer, prefix=prefix)
-        
+
 =======
     jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer)
 
@@ -209,7 +209,7 @@ def prepareScoutingJetsForFactory(isMC: int, era: str, events, jets):
         ak.without_parameters(ak.zeros_like(jets.pt)), np.float32
     )
     jets["event_rho"] = events.rho
-    
+
     return jets
 =======
     return jets  # , muon_pt
