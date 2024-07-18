@@ -86,7 +86,6 @@ def open_ntuple(
 ):
     """
     Open a ntuple, either locally or on xrootd.
-
     """
     if not xrootd and "root://" not in ifile:
         file = ifile
@@ -99,7 +98,7 @@ def open_ntuple(
         os.system(f"xrdcp -s {xrd_file} {just_file}.hdf5")
         file = just_file + ".hdf5"
 
-    return h5LoadDf(file, "vars"), h5LoadHist(file, "hists")
+    return *h5LoadDf(file, "vars"), h5LoadHist(file, "hists")
 
 
 def close_ntuple(ifile: str) -> None:
@@ -177,7 +176,7 @@ def getXSection(
     return xsection
 
 
-def format_selection(selection: str, df: pd.DataFrame) -> list:
+def format_selection(selection: str, df: pd.DataFrame = None) -> list:
     """
     Format a selection string into a list of the form [attribute, operator, value].
     Converts value to a float, if needed.
@@ -188,7 +187,7 @@ def format_selection(selection: str, df: pd.DataFrame) -> list:
         type(selection) is str
     ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
         selection = selection.split(" ")
-    if (
+    if (type(df) is not None) and (
         selection[0] not in df.keys()
     ):  # error out if variable doesn't exist in the DataFrame
         raise Exception(
@@ -461,7 +460,7 @@ def fill_ND_distributions(df, output, label_out, input_method):
         if skip:
             continue
             
-        fill_histogram(output[key], *[df[var] for var in variables], weight=df["event_weight"])
+        fill_histogram(output[key], [df[var] for var in variables], weight=df["event_weight"])
 
 
 def auto_fill(
@@ -568,24 +567,25 @@ def fill_histogram(hist, payload, weight):
     """
     Fill in a histogram with a payload.
     Supports payloads that are pd.Series or lists of pd.Series.
-    If the type of the pd.Series is a list, it will be flattened before filling.
+    If the type of each item in the pd.Series is a list, it will be flattened before filling.
     """
     if type(payload) in (list, tuple):
         final_payload = []
         for p in payload:
             if type(p) is pd.Series:
-                if type(p[0]) is list:
+                if type(p.iloc[0]) is list:
                     p = flatten(p)
                 final_payload.append(p)
             else:
                 raise Exception("Payload is not a pd.Series")
         hist.fill(*final_payload, weight=weight)
     elif type(payload) is pd.Series:
-        if type(payload[0]) is list:
+        if type(payload.iloc[0]) is list:
             payload = flatten(payload)
         hist.fill(payload, weight=weight)
     else:
-        raise Exception("Payload is not a pd.Series")
+        raise Exception("Payload is not a pd.Series, nor a list of pd.Series")
+
 
 def flatten(l):
     """
@@ -620,15 +620,11 @@ def get_track_killing_config(config: dict) -> dict:
                 new_config[label_out_new]["SR"][iSel][0] += "_track_down"
         if "selections" in new_config[label_out_new].keys():
             for iSel in range(len(new_config[label_out_new]["selections"])):
-                if type(new_config[label_out_new]["selections"][iSel]) is str:
-                    new_config[label_out_new]["selections"][iSel] = new_config[
-                        label_out_new
-                    ]["selections"][iSel].split(" ")
-                if new_config[label_out_new]["selections"][iSel][0] in [
-                    "ht",
-                    "ngood_ak4jets",
-                    "ht_JEC",
-                ]:
+                iSel = format_selection(iSel)
+                # only convert the variable name if it's part of the method. The other variables won't change
+                # e.g. SUEP_nconst_HighestPT changes to SUEP_nconst_HighestPT_track_down
+                # but ht doesn't change to ht_track_down
+                if config[label_out]["input_method"] not in new_config[label_out_new]["selections"][iSel][0]:
                     continue
                 new_config[label_out_new]["selections"][iSel][0] += "_track_down"
         if "new_variables" in new_config[label_out_new].keys():
@@ -636,7 +632,8 @@ def get_track_killing_config(config: dict) -> dict:
                 vars = new_config[label_out_new]["new_variables"][iVar][2]
                 new_vars = []
                 for var in vars:
-                    if var in ["ht", "ngood_ak4jets", "ht_JEC"]:
+                    # same as with the selections, only variables that are part of the method change
+                    if config[label_out]["input_method"] not in var:
                         continue
                     new_vars.append(var + "_track_down")
 
