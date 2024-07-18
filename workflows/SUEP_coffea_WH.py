@@ -69,13 +69,15 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # cut on tracks from the selected lepton.
         #####################################################################################
 
-        tracks, _ = WH_utils.getTracks(events, lepton=events.WH_lepton, leptonIsolation=0.4)
+        tracks, pfcands, lost_tracks = WH_utils.getTracks(events, lepton=events.WH_lepton, leptonIsolation=0.4)
         if self.isMC and "track_down" in out_label:
             tracks = track_killing(self, tracks)
         events = ak.with_field(events, tracks, "WH_tracks")
 
         # save tracks variables
         output["vars"].loc(indices, "ntracks" + out_label, ak.num(events.WH_tracks).to_list())
+        output["vars"].loc(indices, "npfcands" + out_label, ak.num(pfcands).to_list())
+        output["vars"].loc(indices, "nlosttracks" + out_label, ak.num(lost_tracks).to_list())
         deltaPhi_tracks_W = np.abs(events.WH_tracks.deltaphi(events.WH_W))
         output["vars"].loc(
             indices,
@@ -535,11 +537,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["MET_pt"] = events.MET.pt
         output["vars"]["MET_phi"] = events.MET.phi
         output["vars"]["MET_sumEt"] = events.MET.sumEt
-        output["vars"]["MET_JEC_pt"] = events.WH_MET.pt
-        output["vars"]["MET_JEC_phi"] = events.WH_MET.phi
-        output["vars"]["MET_JEC_sumEt"] = events.WH_MET.sumEt
+        output["vars"]["MET_significance"] = events.MET.significance
+        output["vars"]["WH_MET_pt"] = events.WH_MET.pt
+        output["vars"]["WH_MET_phi"] = events.WH_MET.phi
+        output["vars"]["WH_MET_sumEt"] = events.WH_MET.sumEt
 
-        # corrections on MET
+        # systematic variations
         if self.isMC and self.do_syst:
 
             output["vars"]["PuppiMET_pt_JER_up"] = events.PuppiMET.ptJERUp
@@ -572,6 +575,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "MET_JEC_phi_UnclusteredEnergy_down"
             ] = events.WH_MET.MET_UnclusteredEnergy.down.phi
 
+        # event weights
         if self.isMC:
             output["vars"]["Pileup_nTrueInt"] = events.Pileup.nTrueInt
             psweights = GetPSWeights(self, events)  # Parton Shower weights
@@ -621,6 +625,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["SUEP_genPhi"] = SUEP_genPhi
         output["vars"]["n_darkphis"] = ak.num(darkphis, axis=-1)
         output["vars"]["n_darkphis_inTracker"] = ak.num(cleaned_darkphis, axis=-1)
+        
         # saving tight lepton kinematics
         output["vars"]["lepton_pt"] = events.WH_lepton.pt
         output["vars"]["lepton_eta"] = events.WH_lepton.eta

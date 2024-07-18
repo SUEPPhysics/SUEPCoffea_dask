@@ -170,8 +170,12 @@ def getTracks(events, lepton=None, leptonIsolation=None):
     if leptonIsolation:
         # Sorting out the tracks that overlap with the lepton
         tracks = tracks[(tracks.deltaR(lepton) >= leptonIsolation)]
+        Cleaned_cands = Cleaned_cands[(Cleaned_cands.deltaR(lepton) >= leptonIsolation)]
+        Lost_Tracks_cands = Lost_Tracks_cands[
+            (Lost_Tracks_cands.deltaR(lepton) >= leptonIsolation)
+        ]
 
-    return tracks, Cleaned_cands
+    return tracks, Cleaned_cands, Lost_Tracks_cands
 
 
 def getLeptons(events):
