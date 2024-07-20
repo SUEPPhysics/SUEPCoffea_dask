@@ -43,8 +43,8 @@ echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root
 
 #echo "----- transferring output to scratch :"
-echo "xrdcp {outfile}.{file_ext} {outdir}/$3.{file_ext}"
-xrdcp {outfile}.{file_ext} {outdir}/$3.{file_ext}
+echo "xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}"
+xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
 
 {extras}
 

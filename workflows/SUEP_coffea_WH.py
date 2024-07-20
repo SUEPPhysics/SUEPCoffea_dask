@@ -453,20 +453,21 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             (events.WH_jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
         )[:]
         # store jet information (jet pt, eta, hadronFlavor, btag) in histogram for bjet eff calculation
-        btag_category = ak.where(
-            (events.WH_jets_jec.btag < btagcuts("Loose", era_int)),
-            0,
-            ak.where(
-                events.WH_jets_jec.btag < btagcuts("Tight", era_int),
-                1,
-                2
+        if self.isMC:
+            btag_category = ak.where(
+              (events.WH_jets_jec.btag < btagcuts("Loose", era_int)),
+                0,
+                ak.where(
+                    events.WH_jets_jec.btag < btagcuts("Tight", era_int),
+                    1,
+                    2
+                )
             )
-        )
-        maxnjets = ak.max(ak.num(events.WH_jets_jec, axis=1))
-        output["vars"]["jets_btag_category"] = ak.fill_none(ak.pad_none(btag_category, maxnjets, axis=1, clip=True), -999)[:,:].to_list()
-        output["vars"]["jets_pt"] = ak.fill_none(ak.pad_none(events.WH_jets_jec.pt,  maxnjets, axis=1, clip=True), 0.)[:,:].to_list()
-        output["vars"]["jets_eta"] =ak.fill_none(ak.pad_none(events.WH_jets_jec.eta, maxnjets, axis=1, clip=True), -999)[:,:].to_list()
-        output["vars"]["jets_hadronFlavor"] = ak.fill_none(ak.pad_none(events.WH_jets_jec.hadronFlavour, maxnjets, axis=1, clip=True), -1)[:,:].to_list()
+            maxnjets = ak.max(ak.num(events.WH_jets_jec, axis=1))
+            output["vars"]["jets_btag_category"] = ak.fill_none(ak.pad_none(btag_category, maxnjets, axis=1, clip=True), -999)[:,:].to_list()
+            output["vars"]["jets_pt"] = ak.fill_none(ak.pad_none(events.WH_jets_jec.pt,  maxnjets, axis=1, clip=True), 0.)[:,:].to_list()
+            output["vars"]["jets_eta"] =ak.fill_none(ak.pad_none(events.WH_jets_jec.eta, maxnjets, axis=1, clip=True), -999)[:,:].to_list()
+            output["vars"]["jets_hadronFlavor"] = ak.fill_none(ak.pad_none(events.WH_jets_jec.hadronFlavour, maxnjets, axis=1, clip=True), -1)[:,:].to_list()
 
         # saving kinematic variables for three leading pT jets
         highpt_jet = ak.argsort(events.WH_jets_jec.pt, axis=1, ascending=False, stable=True)
@@ -538,6 +539,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["MET_phi"] = events.MET.phi
         output["vars"]["MET_sumEt"] = events.MET.sumEt
         output["vars"]["MET_significance"] = events.MET.significance
+        output["vars"]["MET_covXX"] = events.MET.covXX
+        output["vars"]["MET_covXY"] = events.MET.covXY
+        output["vars"]["MET_covYY"] = events.MET.covYY
+        output["vars"]["MET_sumPtUnclustered"] = events.MET.sumPtUnclustered
         output["vars"]["WH_MET_pt"] = events.WH_MET.pt
         output["vars"]["WH_MET_phi"] = events.WH_MET.phi
         output["vars"]["WH_MET_sumEt"] = events.WH_MET.sumEt
@@ -553,27 +558,27 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
             output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
-            output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET.JER.up.pt
-            output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET.JER.up.pt
-            output["vars"]["MET_JEC_pt_JES_up"] = events.WH_MET.JES_jes.up.pt
-            output["vars"]["MET_JEC_pt_JES_down"] = events.WH_MET.JES_jes.down.pt
-            output["vars"][
-                "MET_JEC_pt_UnclusteredEnergy_up"
-            ] = events.WH_MET.MET_UnclusteredEnergy.up.pt
-            output["vars"][
-                "MET_JEC_pt_UnclusteredEnergy_down"
-            ] = events.WH_MET.MET_UnclusteredEnergy.down.pt
-            output["vars"]["MET_JEC_phi"] = events.WH_MET.phi
-            output["vars"]["MET_JEC_phi_JER_up"] = events.WH_MET.JER.up.phi
-            output["vars"]["MET_JEC_phi_JER_down"] = events.WH_MET.JER.down.phi
-            output["vars"]["MET_JEC_phi_JES_up"] = events.WH_MET.JES_jes.up.phi
-            output["vars"]["MET_JEC_phi_JES_down"] = events.WH_MET.JES_jes.down.phi
-            output["vars"][
-                "MET_JEC_phi_UnclusteredEnergy_up"
-            ] = events.WH_MET.MET_UnclusteredEnergy.up.phi
-            output["vars"][
-                "MET_JEC_phi_UnclusteredEnergy_down"
-            ] = events.WH_MET.MET_UnclusteredEnergy.down.phi
+            #output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET.JER.up.pt
+            #output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET.JER.up.pt
+            #output["vars"]["MET_JEC_pt_JES_up"] = events.WH_MET.JES_jes.up.pt
+            #output["vars"]["MET_JEC_pt_JES_down"] = events.WH_MET.JES_jes.down.pt
+            #output["vars"][
+            #    "MET_JEC_pt_UnclusteredEnergy_up"
+            #] = events.WH_MET.MET_UnclusteredEnergy.up.pt
+            #output["vars"][
+            #    "MET_JEC_pt_UnclusteredEnergy_down"
+            #] = events.WH_MET.MET_UnclusteredEnergy.down.pt
+            #output["vars"]["MET_JEC_phi"] = events.WH_MET.phi
+            #output["vars"]["MET_JEC_phi_JER_up"] = events.WH_MET.JER.up.phi
+            #output["vars"]["MET_JEC_phi_JER_down"] = events.WH_MET.JER.down.phi
+            #output["vars"]["MET_JEC_phi_JES_up"] = events.WH_MET.JES_jes.up.phi
+            #output["vars"]["MET_JEC_phi_JES_down"] = events.WH_MET.JES_jes.down.phi
+            #output["vars"][
+            #    "MET_JEC_phi_UnclusteredEnergy_up"
+            #] = events.WH_MET.MET_UnclusteredEnergy.up.phi
+            #output["vars"][
+            #    "MET_JEC_phi_UnclusteredEnergy_down"
+            #] = events.WH_MET.MET_UnclusteredEnergy.down.phi
 
         # event weights
         if self.isMC:
