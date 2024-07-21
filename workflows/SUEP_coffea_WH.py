@@ -596,8 +596,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 bTagWeights = doBTagWeights(
                     events.WH_jets_jec, era_int, wps="TL", channel="wh_"+metaCR, do_syst=self.do_syst
                 )  
-                for var in bTagWeights:
-                    output["vars"]["bTagWeight_" + var + "_" + metaCR] = bTagWeights
+                for var in bTagWeights.keys():
+                    output["vars"]["bTagWeight_" + var + "_" + metaCR] = bTagWeights[var]
 
             prefireweights = GetPrefireWeights(self, events)  # Prefire weights
             output["vars"]["prefire_nom"] = prefireweights[0]
@@ -884,7 +884,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             out_label=out_label,
         )
 
-        return output
+        return events, output
 
     def process(self, events):
         dataset = events.metadata["dataset"]
@@ -921,7 +921,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             events = ak.with_field(events, genWeight, "genWeight")
 
         # run the analysis
-        output = self.analysis(events, output)
+        events, output = self.analysis(events, output)
 
         # run the analysis with the track systematics applied
         if self.isMC and self.do_syst:
@@ -968,7 +968,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     ),
                 }
             )
-            output = self.analysis(events, output, out_label="_track_down")
+            #output = self.analysis(events, output, out_label="_track_down")
+            indices = np.arange(0, len(events))
+            self.HighestPTMethod(
+                indices,
+                events,
+                output=output,
+                out_label="_track_down",
+            )
 
         return {dataset: output}
 

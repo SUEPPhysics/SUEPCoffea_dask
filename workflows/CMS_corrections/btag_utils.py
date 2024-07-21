@@ -174,7 +174,7 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
         for (
             syst_var
         ) in (
-            SF.keys()
+            SF['L'].keys()
         ): # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#Extension_to_multiple_operating 
             term1 = np.where(jetsPre.btag >= btagcuts(wps_name['T'], era), effs['T'], 1)
             term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), effs['L'] - effs['T'], 1)
@@ -209,12 +209,12 @@ def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh") -> dict:
     bfile = open(btagfile, "rb")
     effsLoad = pickle.load(bfile)
 
-    effs = effsLoad[wp](jets.pt, np.abs(jets.eta))
+    effs = effsLoad[wp]["L"](jets.pt, np.abs(jets.eta))
     effs = np.where(
-        abs(jets.hadronFlavour) == 4, effsLoad["C"](jets.pt, np.abs(jets.eta)), effs
+        abs(jets.hadronFlavour) == 4, effsLoad[wp]["C"](jets.pt, np.abs(jets.eta)), effs
     )
     effs = np.where(
-        abs(jets.hadronFlavour) == 5, effsLoad["B"](jets.pt, np.abs(jets.eta)), effs
+        abs(jets.hadronFlavour) == 5, effsLoad[wp]["B"](jets.pt, np.abs(jets.eta)), effs
     )
 
     return effs
