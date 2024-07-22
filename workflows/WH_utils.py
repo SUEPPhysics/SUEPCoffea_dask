@@ -1,7 +1,8 @@
 import awkward as ak
 import numpy as np
 import vector
-
+from workflows.CMS_corrections.HEM_utils import jetHEMFilter
+from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 
 def getGenModel(events):
     """
@@ -30,7 +31,7 @@ def getGenModel(events):
     return genModels
 
 
-def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
+def getAK4Jets(Jets, runs, lepton=None, isMC: bool = 1):
     """
     Create awkward array of jets. Applies basic selections.
     Returns: awkward array of dimensions (events x jets x 4 momentum)
@@ -72,6 +73,10 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
     # and minimum separation from lepton
     if lepton is not None:
         jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton) >= 0.4)
+    # and HEM filter
+    jetHEMCut, _ = jetHEMFilter(None, Jets, runs) 
+    jet_awk_Cut = jet_awk_Cut & jetHEMCut
+
     Jets_correct = Jets_awk[jet_awk_Cut]
 
     return Jets_correct
@@ -519,6 +524,34 @@ def qualityFiltersSelection(events, era: str):
             & (events.Flag.eeBadScFilter)
         )
     return events[cutAnyFilter]
+
+
+def oneTightLeptonSelection(events):
+
+    _, _, tightLeptons = getTightLeptons(events)
+
+    # require exactly one tight lepton
+    leptonSelection = ak.num(tightLeptons) == 1
+    events = events[leptonSelection]
+    tightLeptons = tightLeptons[leptonSelection]
+    events = ak.with_field(events, tightLeptons[:, 0], "WH_lepton")
+
+    return events 
+
+
+def formJets(events, sample, isMC, era):
+    jets_factory = applyJECStoJets(sample, isMC, era, events, events.Jet, jer=isMC)       
+    jets_jec = getAK4Jets(jets_factory, events.run, events.WH_lepton, isMC)
+    events = ak.with_field(events, jets_jec, "WH_jets_jec")
+    events = ak.with_field(events, jets_factory, "WH_jets_factory")
+
+    return events
+
+
+def formMETandW(events):
+    events = ak.with_field(events, events.PuppiMET, "WH_MET")
+    events = ak.with_field(events, make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
+    return events
 
 
 def make_MET_4v(MET):

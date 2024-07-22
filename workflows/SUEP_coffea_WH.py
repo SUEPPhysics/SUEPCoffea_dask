@@ -24,7 +24,6 @@ import workflows.WH_utils as WH_utils
 from workflows.CMS_corrections.btag_utils import btagcuts, doBTagWeights, getBTagEffs
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter, METHEMFilter
-from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
@@ -412,16 +411,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["ht_JEC"] = ak.sum(events.WH_jets_jec.pt, axis=-1).to_list()
         if self.isMC and self.do_syst:
             jets_jec_JERUp = WH_utils.getAK4Jets(
-                events.WH_jets_factory["JER"].up, events.WH_lepton, self.isMC
+                events.WH_jets_factory["JER"].up, events.run, events.WH_lepton, self.isMC
             )
             jets_jec_JERDown = WH_utils.getAK4Jets(
-                events.WH_jets_factory["JER"].down, events.WH_lepton, self.isMC
+                events.WH_jets_factory["JER"].down, events.run, events.WH_lepton, self.isMC
             )
             jets_jec_JESUp = WH_utils.getAK4Jets(
-                events.WH_jets_factory["JES_jes"].up, events.WH_lepton, self.isMC
+                events.WH_jets_factory["JES_jes"].up, events.run, events.WH_lepton, self.isMC
             )
             jets_jec_JESDown = WH_utils.getAK4Jets(
-                events.WH_jets_factory["JES_jes"].down, events.WH_lepton, self.isMC
+                events.WH_jets_factory["JES_jes"].down, events.run, events.WH_lepton, self.isMC
             )
 
             output["vars"]["ht_JEC" + "_JER_up"] = ak.sum(
@@ -669,7 +668,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )[:, i]
 
         # saving W information
-        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
         events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.PuppiMET), "WH_W_PuppiMET")
         events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.CaloMET), "WH_W_CaloMET")
         output["vars"]["W_pt"] = events.WH_W.pt
@@ -798,7 +796,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events passed basic event selection. Saving empty outputs.")
+            print("No events pass basic event selection.")
             return output
 
         #####################################################################################
@@ -806,14 +804,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Define the lepton objects and apply single lepton selection.
         #####################################################################################
 
-        _, _, tightLeptons = WH_utils.getTightLeptons(events)
-
-        # require exactly one tight lepton
-        leptonSelection = ak.num(tightLeptons) == 1
-        events = events[leptonSelection]
-        tightLeptons = tightLeptons[leptonSelection]
-        events = ak.with_field(events, tightLeptons[:, 0], "WH_lepton")
+        events = WH_utils.oneTightLeptonSelection(events)
         output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
+
+        # TODO do we apply an electron filter here too?
+        # _, eventEleHEMCut = jetHEMFilter(self, events.WH_lepton, events.run)
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
@@ -824,37 +819,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # ---- Jets and MET
         # Grab corrected ak4jets and MET, apply HEM filter, and require at least one ak4jet.
         #####################################################################################
-    
-        jets_factory = applyJECStoJets(self.sample, self.isMC, self.era, events, events.Jet, jer=self.isMC)       
-        jets_jec = WH_utils.getAK4Jets(jets_factory, events.WH_lepton, self.isMC)
-        events = ak.with_field(events, jets_jec, "WH_jets_jec")
-        events = ak.with_field(events, jets_factory, "WH_jets_factory")
 
-        events = ak.with_field(events, events.PuppiMET, "WH_MET")
+        events = WH_utils.formJets(events, self.sample, self.isMC, self.era)
+        events = events[ak.num(events.WH_jets_jec) > 0]
+        output["cutflow_oneAK4jet" + out_label] += ak.sum(events.genWeight)
 
-        # TODO do we apply HEMcut to all jets or to the events?
-        # jetHEMCut, eventJetHEMCut = jetHEMFilter(self, jets_jec, events.run) 
-        # events = events[eventJetHEMCut]
-        # output["cutflow_jetHEMcut" + out_label] += ak.sum(events.genWeight)
+        # TODO do we apply HEMcut to all jets (currently done in getAK4jets) or to the events?
 
-        # TODO do we apply an electron filter here too?
-        # _, eventEleHEMCut = jetHEMFilter(self, events.WH_lepton, events.run)
-        # eventEleHEMCut = eventEleHEMCut | (abs(events.WH_lepton.pdgID) == 13)
-        # events = events[eventEleHEMCut]
-        # output["cutflow_electronHEMcut" + out_label] += ak.sum(events.genWeight)
+        # TODO do we want this? (if so, should go in getAK4jets? or before we give the jets to the JEC corrector?)
+        # _, eventJetVetoCut = JetVetoMap(events.WH_jets_jec, self.era)
+
+        events = WH_utils.formMETandW(events)
 
         # TODO do we want this?
         # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)    
-        # events = events[eventMETHEMCut]
-        # output["cutflow_METHEMcut" + out_label] += ak.sum(events.genWeight)
-
-        # TODO do we want this?
-        # _, eventJetVetoCut = JetVetoMap(events.WH_jets_jec, self.era)
-        # events = events[eventJetVetoCut]
-        # output["cutflow_JetVetoMap" + out_label] += ak.sum(events.genWeight)
-
-        events = events[ak.num(events.WH_jets_jec) > 0]
-        output["cutflow_oneAK4jet" + out_label] += ak.sum(events.genWeight)
 
         #####################################################################################
         # ---- Store event level information
