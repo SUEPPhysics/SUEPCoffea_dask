@@ -19,8 +19,8 @@ def pileup_weight(era):
             "../data/pileup/PileupHistogram-UL2016-100bins_withVar.root"
         )
     else:
-        print(
-            "no pileup weights because no year was selected for function pileup_weight"
+        raise Exception(
+            "No pileup weights because no year was selected for function pileup_weight"
         )
 
     hist_MC = f_MC["pu_mc"].to_numpy()
