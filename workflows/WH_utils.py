@@ -344,7 +344,7 @@ def getPhotons(events, isMC: bool = 1):
         (events.Photon.mvaID_WP90)
         & (abs(events.Photon.eta) <= 2.5)
         & (events.Photon.electronVeto)
-        & (events.Photon.pt >= 15)
+        & (events.Photon.pt >= 30)
     )
 
     photons = photons[cutPhotons]
@@ -461,6 +461,37 @@ def triggerSelection(
     return events
 
 
+def getGammaTriggerBits(events, era: str):
+    """
+    Form the photon trigger bits.
+    """
+
+    if era == '2018':
+        gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon110EB_TightID_TightIso)*2 + (events.HLT.Photon100EB_TightID_TightIso)*4 + (events.HLT.Photon120_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*32 + (events.HLT.Photon30_HoverELoose)*64 + (events.HLT.Photon20_HoverELoose)*128
+    elif era == '2017':
+        gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon165_R9Id90_HE10_IsoM)*2 + (events.HLT.Photon120_R9Id90_HE10_IsoM)*4 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon30_HoverELoose)*32 + (events.HLT.Photon20_HoverELoose)*64  
+    elif era == '2016' or era == '2016apv':
+        gammaTriggerBits = (events.HLT.Photon175) + (events.HLT.Photon165_HE10)*2 + (events.HLT.Photon165_R9Id90_HE10_IsoM)*4 + (events.HLT.Photon90_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*32 + (events.HLT.Photon36_R9Id90_HE10_IsoM)*64 + (events.HLT.Photon30_R9Id90_HE10_IsoM)*128 + (events.HLT.Photon22_R9Id90_HE10_IsoM)*256
+    else:
+        raise ValueError(f"Invalid era: {era}")
+    
+    return gammaTriggerBits
+
+
+def gammaTriggerSelection(events, era: str):
+    """
+    Applies the gamma trigger selection to the events.
+    Also saves the gamma trigger bits in the events.
+    """
+
+    gammaTriggerBits = getGammaTriggerBits(events, era)
+    events = ak.with_field(events, gammaTriggerBits, "WH_gammaTriggerBits")
+
+    events = events[(gammaTriggerBits > 0)]
+    
+    return events
+
+
 def orthogonalitySelection(events):
     """
     This function is used to impose orthogonality between the ZH, offline, and WH selections.
@@ -537,6 +568,19 @@ def oneTightLeptonSelection(events):
     events = ak.with_field(events, tightLeptons[:, 0], "WH_lepton")
 
     return events 
+
+
+def onePhotonSelection(events):
+
+    photons = getPhotons(events)
+
+    # require exactly one photon
+    photonSelection = ak.num(photons) == 1
+    events = events[photonSelection]
+    photons = photons[photonSelection]
+    events = ak.with_field(events, photons[:, 0], "WH_photon")
+
+    return events
 
 
 def formJets(events, sample, isMC, era):

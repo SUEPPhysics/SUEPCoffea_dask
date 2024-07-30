@@ -187,12 +187,9 @@ def format_selection(selection: str, df: pd.DataFrame = None) -> list:
         type(selection) is str
     ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
         selection = selection.split(" ")
-    if (type(df) is not None) and (
-        selection[0] not in df.keys()
-    ):  # error out if variable doesn't exist in the DataFrame
-        raise Exception(
-            f"Trying to apply a cut on a variable {selection[0]} that does not exist in the DataFrame"
-        )
+    if (df is not None) :
+        if selection[0] not in df.keys():  # error out if variable doesn't exist in the DataFrame
+            raise Exception(f"Trying to apply a cut on a variable {selection[0]} that does not exist in the DataFrame")
     if type(selection[2]) is str and is_number(selection[2]):
         selection[2] = float(
             selection[2]
@@ -329,6 +326,15 @@ def prepare_DataFrame(
         # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
 
+    # TODO temporary
+    if 'SUEP_S1_HighestPT' not in df.columns:
+        df['SUEP_S1_HighestPT'] = np.zeros(df.shape[0])
+    if 'SUEP_nconst_HighestPT' not in df.columns:
+        df['SUEP_nconst_HighestPT'] = np.zeros(df.shape[0])
+    # TODO temporaray: set to 0 values that are nan
+    df['SUEP_S1_HighestPT'] = df['SUEP_S1_HighestPT'].fillna(0)
+    df['SUEP_nconst_HighestPT'] = df['SUEP_nconst_HighestPT'].fillna(0)
+
     # 2. blind
     if blind and not isMC:
         df = blind_DataFrame(df, label_out, config["SR"])
@@ -430,7 +436,7 @@ def make_new_variable(
     return df
 
 
-def fill_ND_distributions(df, output, label_out, input_method):
+def fill_ND_distributions(df, output, label_out, input_method: str = ""):
     """
     Fill all N>1 dimensional histograms.
     To do, we expect that they are named as follows:
@@ -452,7 +458,7 @@ def fill_ND_distributions(df, output, label_out, input_method):
         # if the input method is not in the variable name, add it
         skip = False
         for ivar, var in enumerate(variables):
-            if var not in df_keys:
+            if var not in df_keys and type(input_method) is str:
                 var += "_" + input_method
                 if var not in df_keys:
                     skip = True
@@ -471,7 +477,7 @@ def auto_fill(
     isMC: bool = False,
     do_abcd: bool = False,
 ) -> None:
-    input_method = config["input_method"]
+    input_method = config.get("input_method", None)
 
     #####################################################################################
     # ---- Fill Histograms
@@ -480,6 +486,7 @@ def auto_fill(
 
     # 1. fill the distributions as they are saved in the dataframes
     # 1a. fill event wide variables
+    # e.g. 'ht' in the dataframe will be filled in the histogram 'ht_<label_out>'
     event_plot_labels = [
         key for key in df.keys() if key + "_" + label_out in list(output.keys())
     ]
@@ -487,17 +494,20 @@ def auto_fill(
         fill_histogram(output[plot + "_" + label_out], df[plot], weight=df["event_weight"])
 
     # 1b. fill method variables
-    method_plot_labels = [
-        key
-        for key in df.keys()
-        if key.replace(input_method, label_out) in list(output.keys())
-        and key.endswith(input_method)
-    ]
-    for plot in method_plot_labels:
-        fill_histogram(output[plot.replace(input_method, label_out)], df[plot], weight=df["event_weight"])
+    # e.g. 'SUEP_nconst_<input_method>' in the dataframe will be filled in the histogram 'SUEP_nconst_<label_out>'
+    if input_method:
+        method_plot_labels = [
+            key
+            for key in df.keys()
+            if key.replace(input_method, label_out) in list(output.keys())
+            and key.endswith(input_method)
+        ]
+        method_plot_labels = list(set(method_plot_labels) - set(event_plot_labels))
+        for plot in method_plot_labels:
+            fill_histogram(output[plot.replace(input_method, label_out)], df[plot], weight=df["event_weight"])
 
     # 2. fill some ND distributions
-    fill_ND_distributions(df, output, label_out, input_method)
+    fill_ND_distributions(df, output, label_out, input_method=input_method if input_method else "")
 
     # 3. divide the dfs by region
     if do_abcd:
@@ -567,12 +577,15 @@ def fill_histogram(hist, payload, weight):
     """
     Fill in a histogram with a payload.
     Supports payloads that are pd.Series or lists of pd.Series.
+    Each pd.Series will fill one axis of the histogram, in the same order they are passed.
     If the type of each item in the pd.Series is a list, it will be flattened before filling.
     """
     if type(payload) in (list, tuple):
         final_payload = []
         for p in payload:
             if type(p) is pd.Series:
+                if len(p) == 0:
+                    raise Exception(f"Payload {p} for hist {hist} is an empty pd.Series.")
                 if type(p.iloc[0]) is list:
                     p = flatten(p)
                 final_payload.append(p)
@@ -580,6 +593,8 @@ def fill_histogram(hist, payload, weight):
                 raise Exception("Payload is not a pd.Series")
         hist.fill(*final_payload, weight=weight)
     elif type(payload) is pd.Series:
+        if len(payload) == 0: 
+            return
         if type(payload.iloc[0]) is list:
             payload = flatten(payload)
         hist.fill(payload, weight=weight)
@@ -620,7 +635,7 @@ def get_track_killing_config(config: dict) -> dict:
                 new_config[label_out_new]["SR"][iSel][0] += "_track_down"
         if "selections" in new_config[label_out_new].keys():
             for iSel in range(len(new_config[label_out_new]["selections"])):
-                iSel = format_selection(iSel)
+                new_config[label_out_new]["selections"][iSel] = format_selection(new_config[label_out_new]["selections"][iSel])
                 # only convert the variable name if it's part of the method. The other variables won't change
                 # e.g. SUEP_nconst_HighestPT changes to SUEP_nconst_HighestPT_track_down
                 # but ht doesn't change to ht_track_down
@@ -678,7 +693,7 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
             make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False)
             & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False)
         )
-    ]
+    ].copy()
     return df
 
 

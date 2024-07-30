@@ -91,7 +91,7 @@ def initialize_new_variables(label: str, options, config: dict) -> list:
             [
                 "deltaPhi_lepton_MET",
                 fill_utils.deltaPhi_x_y,
-                ["lepton_phi", "MET_JEC_phi"],
+                ["lepton_phi", "WH_MET_phi"],
             ],
             [
                 "deltaPhi_lepton_SUEP",
@@ -114,7 +114,7 @@ def initialize_new_variables(label: str, options, config: dict) -> list:
                 fill_utils.deltaPhi_x_y,
                 [
                     "minDeltaPhiMETJet_phi",
-                    "MET_JEC_phi",
+                    "WH_MET_phi",
                 ],
             ],
             [

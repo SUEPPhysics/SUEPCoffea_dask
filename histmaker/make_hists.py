@@ -106,7 +106,7 @@ def makeParser(parser=None):
         "--doSyst",
         type=int,
         default=0,
-        help="Run systematic up and down variations in additional to the nominal.",
+        help="Run systematic up and down variations in addition to the nominal.",
     )
     parser.add_argument(
         "--blind", type=int, default=1, help="Blind the data (default=True)"
@@ -184,6 +184,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             df, syst, puweights, puweights_up, puweights_down
         )
         df["event_weight"] *= pu
+        df['pileup_weight'] = pu
 
         # 2) PS weights
         if "PSWeight" in syst and syst in df.keys():
@@ -267,6 +268,8 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
         if len(syst) > 0:
             label_out = label_out + "_" + syst
 
+        logging.debug(f"\tUsing configuration {label_out}.")
+
         # initialize new hists for this output tag, if we haven't already
         hist_defs.initialize_histograms(output, label_out, options, config_out)
 
@@ -285,7 +288,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
         )
 
         # if there are no events left after selections, no need to fill histograms
-        if df_plot is None:
+        if (df_plot is None) or (df_plot.shape[0] == 0):
             continue
 
         # print out events that pass the selections, if requested
@@ -297,14 +300,14 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
                 )
 
         # 8) b-tag weights. These have different values for each event selection
-        if options.channel == 'WH':
+        if options.channel == 'WH' and options.isMC:
             if 'btag' in syst.lower():
                 btag_weights = syst
             else:
                 btag_weights = 'bTagWeight_nominal'
             btag_weights += "_" + label_out
             if btag_weights not in df.keys():
-                logging.wrning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
+                logging.warning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
             else:
                 df['event_weight'] *= df[btag_weights]
 
@@ -339,13 +342,26 @@ def main():
 
     if options.channel == "WH":
         config = {
-            "RAW": {
-                "input_method": "HighestPT",
+            "NOAK15": {
                 "SR": [
                     ["SUEP_S1_HighestPT", ">=", 0.3],
                     ["SUEP_nconst_HighestPT", ">=", 40],
                 ],
                 "selections": [
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 40",
+                ],
+            },
+            "RAW": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
+                "selections": [
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 40",
                 ],
             },
             # "SR": {
@@ -378,7 +394,7 @@ def main():
                     ["SUEP_nconst_HighestPT", ">=", 40],
                 ],
                 "selections": [
-                    "MET_JEC_pt > 30",
+                    "WH_MET_pt > 30",
                     "W_pt > 40",
                     "W_mt < 130",
                     "W_mt > 30",
@@ -393,54 +409,77 @@ def main():
                     "SUEP_nconst_HighestPT < 40",
                 ],
             },
-            # "CRWJe": {
-            #     "input_method": "HighestPT",
-            #     "method_var": "SUEP_nconst_HighestPT",
-            #     "SR": [
-            #         ["SUEP_S1_HighestPT", ">=", 0.3],
-            #         ["SUEP_nconst_HighestPT", ">=", 40],
-            #     ],
-            #     "selections": [
-            #         "isElectron == 1",
-            #         "run > 319077",
-            #         "MET_JEC_pt > 30",
-            #         "W_pt > 40",
-            #         "W_mt < 130",
-            #         "W_mt > 30",
-            #         "bjetSel == 1",
-            #         "deltaPhi_SUEP_W > 1.5",
-            #         "deltaPhi_SUEP_MET > 1.5",
-            #         "deltaPhi_lepton_SUEP > 1.5",
-            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #         "W_SUEP_BV < 2",
-            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-            #         "SUEP_S1_HighestPT < 0.3",
-            #         "SUEP_nconst_HighestPT < 40",
-            #     ],
-            # },
-            # "CRTT": {
-            #     "input_method": "HighestPT",
-            #     "method_var": "SUEP_nconst_HighestPT",
-            #     "SR": [
-            #         ["SUEP_S1_HighestPT", ">=", 0.3],
-            #         ["SUEP_nconst_HighestPT", ">=", 40],
-            #     ],
-            #     "selections": [
-            #         "MET_JEC_pt > 30",
-            #         "W_pt > 40",
-            #         "W_mt < 130",
-            #         "W_mt > 30",
-            #         "bjetSel == 0",
-            #         "deltaPhi_SUEP_W > 1.5",
-            #         "deltaPhi_SUEP_MET > 1.5",
-            #         "deltaPhi_lepton_SUEP > 1.5",
-            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #         "W_SUEP_BV < 2",
-            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-            #         "SUEP_S1_HighestPT < 0.3",
-            #         "SUEP_nconst_HighestPT < 40",
-            #     ],
-            # },
+            "CRWJe": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
+                "selections": [
+                    "WH_MET_pt > 30",
+                    "W_pt > 40",
+                    "W_mt < 130",
+                    "W_mt > 30",
+                    "bjetSel == 1",
+                    "deltaPhi_SUEP_W > 1.5",
+                    "deltaPhi_SUEP_MET > 1.5",
+                    "deltaPhi_lepton_SUEP > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 40",
+                    "isElectron == 1"
+                ],
+            },
+            "CRWJmu": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
+                "selections": [
+                    "WH_MET_pt > 30",
+                    "W_pt > 40",
+                    "W_mt < 130",
+                    "W_mt > 30",
+                    "bjetSel == 1",
+                    "deltaPhi_SUEP_W > 1.5",
+                    "deltaPhi_SUEP_MET > 1.5",
+                    "deltaPhi_lepton_SUEP > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 40",
+                    "isMuon == 1"
+                ],
+            },
+            "CRTT": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.3],
+                    ["SUEP_nconst_HighestPT", ">=", 40],
+                ],
+                "selections": [
+                    "WH_MET_pt > 30",
+                    "W_pt > 40",
+                    "W_mt < 130",
+                    "W_mt > 30",
+                    "bjetSel == 0",
+                    "deltaPhi_SUEP_W > 1.5",
+                    "deltaPhi_SUEP_MET > 1.5",
+                    "deltaPhi_lepton_SUEP > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT < 0.3",
+                    "SUEP_nconst_HighestPT < 40",
+                ],
+            },
         }
 
     if options.channel == "ggF":

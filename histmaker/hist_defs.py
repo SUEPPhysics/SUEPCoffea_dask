@@ -130,7 +130,7 @@ def init_hists_cluster(output, label, regions_list=[""]):
                         label="HT JEC JES down",
                     ).Weight(),
                     f"ntracks_{label}": Hist.new.Reg(
-                        101,
+                        500,
                         0,
                         500,
                         name=f"ntracks_{label}",
@@ -498,6 +498,27 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"ntracks_{label}",
                 label=r"$n^{\mathrm{event}}_{\mathrm{tracks}}$",
             ).Weight(),
+            f"pileup_weight_{label}": Hist.new.Reg(
+                100,
+                0,
+                2,
+                name=f"pileup_weight_{label}",
+                label="Pileup Weight",
+            ).Weight(),
+            f"npfcands_{label}": Hist.new.Reg(
+                500,
+                0,
+                500,
+                name=f"npfcands_{label}",
+                label=r"$n^{\mathrm{event}}_{\mathrm{pfcands}}$",
+            ).Weight(),
+            f"nlosttracks_{label}": Hist.new.Reg(
+                500,
+                0,
+                500,
+                name=f"nlosttracks_{label}",
+                label=r"$n^{\mathrm{event}}_{\mathrm{lost tracks}}$",
+            ).Weight(),
             f"ngood_fastjets_{label}": Hist.new.Reg(
                 10,
                 0,
@@ -771,13 +792,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #                name=f"PuppiMET_pt_JES_down{label}",
             #                label="PuppiMET $p_T$",
             #            ).Weight(),'''
-            # f"PuppiMET_phi_{label}": Hist.new.Reg(
-            #     100,
-            #     -4,
-            #     4,
-            #     name=f"PuppiMET_phi_{label}",
-            #     label=r"PuppiMET $\phi$",
-            # ).Weight(),
+            f"PuppiMET_phi_{label}": Hist.new.Reg(
+                100,
+                -4,
+                4,
+                name=f"PuppiMET_phi_{label}",
+                label=r"PuppiMET $\phi$",
+            ).Weight(),
             #            f"PuppiMET_phi_JER_up_{label}": Hist.new.Reg(
             #                100,
             #                -4,
@@ -826,6 +847,20 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 3,
                 name=f"MET_phi_{label}",
                 label=r"$\phi^{\mathrm{PFMET}}_T$ [GeV]",
+            ).Weight(),
+            f"WH_MET_pt_{label}": Hist.new.Reg(
+                1000,
+                0,
+                1000,
+                name=f"WH_MET_JEC_pt_{label}",
+                label=r"$p^{\mathrm{WH MET}}_T$ [GeV]",
+            ).Weight(),
+            f"WH_MET_phi_{label}": Hist.new.Reg(
+                100,
+                -3,
+                3,
+                name=f"WH_MET_phi_{label}",
+                label=r"$\phi^{\mathrm{WH MET}}_T$ [GeV]",
             ).Weight(),
             f"MET_JEC_pt_{label}": Hist.new.Reg(
                 1000,
@@ -1484,13 +1519,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"deltaPhi_minDeltaPhiMETJet_lepton_{label}",
             #     label=r"$\Delta\phi$($\mathrm{jet}^{\mathrm{closest~to~MET}}$, $\ell$)",
             # ).Weight(),
-            # f"deltaPhi_minDeltaPhiMETJet_MET_{label}": Hist.new.Reg(
-            #     60,
-            #     0,
-            #     3.2,
-            #     name=f"deltaPhi_minDeltaPhiMETJet_MET_{label}",
-            #     label=r"$\Delta\phi$($\mathrm{jet}^{\mathrm{closest~to~MET}}$, MET)",
-            # ).Weight(),
+            f"deltaPhi_minDeltaPhiMETJet_MET_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"deltaPhi_minDeltaPhiMETJet_MET_{label}",
+                label=r"$\Delta\phi$($\mathrm{jet}^{\mathrm{closest~to~MET}}$, MET)",
+            ).Weight(),
             # f"deltaPhi_minDeltaPhiMETJet_METUnc_{label}": Hist.new.Reg(
             #     60,
             #     0,
