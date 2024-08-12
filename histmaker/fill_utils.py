@@ -79,31 +79,35 @@ def h5LoadHist(ifile: str, label: str = "hists"):
     
 
 def open_ntuple(
-    ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False
+    ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False, xrootd_tmp_path: str = "/tmp/"
 ):
     """
     Open a ntuple, either locally or on xrootd.
     """
     if not xrootd and "root://" not in ifile:
-        file = ifile
+        local_file = ifile
     else:
         if "root://" in ifile:
             xrd_file = ifile
         else:
             xrd_file = redirector + ifile
         just_file = ifile.split("/")[-1].split(".")[0]
-        os.system(f"xrdcp -s {xrd_file} {just_file}.hdf5")
-        file = just_file + ".hdf5"
+        local_file = f"{xrootd_tmp_path}{just_file}.hdf5"
+        os.system(f"xrdcp -s {xrd_file} {local_file}")
+        logging.debug(f"Copied {xrd_file} to {local_file}")
 
-    return *h5LoadDf(file, "vars"), h5LoadHist(file, "hists")
+    logging.debug(f"Opening {local_file}")
+    return *h5LoadDf(local_file, "vars"), h5LoadHist(local_file, "hists")
 
 
-def close_ntuple(ifile: str) -> None:
+def close_ntuple(file: str, xrootd_tmp_path: str = "/tmp/") -> None:
     """
     Delete the ntuple after it has been copied over via xrootd (see open_ntuple).
     """
-    just_file = ifile.split("/")[-1].split(".")[0]
-    os.system(f"rm {just_file}.hdf5")
+    just_file = file.split("/")[-1].split(".")[0]
+    local_file = f"{xrootd_tmp_path}{just_file}.hdf5"
+    os.system(f"rm {local_file}")
+    logging.debug(f"Deleted {local_file}")
 
 
 def get_git_info(path="."):
@@ -579,14 +583,16 @@ def fill_histogram(hist, payload, weight):
     If the type of each item in the pd.Series is a list, it will be flattened before filling.
     """
     if type(payload) in (list, tuple):
+        isWeightFlattened = False
         final_payload = []
         for p in payload:
             if type(p) is pd.Series:
                 if len(p) == 0:
                     raise Exception(f"Payload {p} for hist {hist} is an empty pd.Series.")
                 if type(p.iloc[0]) is list:
-                    if len(weight) == len(p): # flatten weights in case of multiple entries per event, needs to be done once per histogram
+                    if not isWeightFlattened: # flatten weights in case of multiple entries per event, needs to be done once per histogram
                         weight = [weight.iloc[iEvent] for iEvent in range(len(weight)) for iObject in range(len(p.iloc[iEvent]))]
+                        isWeightFlattened = True
                     p = flatten(p)
                 final_payload.append(p)
             else:

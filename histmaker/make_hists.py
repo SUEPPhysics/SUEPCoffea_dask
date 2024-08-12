@@ -630,8 +630,8 @@ def main():
         df, metadata, ntuple_hists = fill_utils.open_ntuple(
             ifile, redirector=options.redirector, xrootd=options.xrootd
         )
-        logging.debug(f"Opened file {ifile}")
         if options.printEvents:
+            # in the case we are interested in the run, lumi, event numbers, we also need to know the file they're from
             print(f"Opened file {ifile}")
 
         # check if file is corrupted
@@ -747,7 +747,6 @@ def main():
 
         # remove file at the end of loop
         if options.xrootd:
-            logging.debug(f"Removing file {ifile}")
             fill_utils.close_ntuple(ifile)
 
     if nfailed > 0:
