@@ -29,6 +29,7 @@ from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
+from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -94,7 +95,7 @@ class SUEP_cluster_WH_gamma(processor.ProcessorABC):
         # Define the lepton objects and apply single lepton selection.
         #####################################################################################
 
-        events = WH_utils.onePhotonSelection(events)
+        events = WH_utils.onePhotonSelection(events, self.isMC)
         output["cutflow_onePhoton" + out_label] += ak.sum(events.genWeight)
 
         # TODO do we apply an electron filter here too?
@@ -110,7 +111,10 @@ class SUEP_cluster_WH_gamma(processor.ProcessorABC):
         # Grab corrected ak4jets and MET, apply HEM filter, and require at least one ak4jet.
         #####################################################################################
 
-        events = WH_utils.formJets(events, self.sample, self.isMC, self.era)
+        jets_factory = applyJECStoJets(self.sample, self.isMC, self.era, events, events.Jet, jer=self.isMC)  
+        jets_jec = WH_utils.getAK4Jets(jets_factory, events.run, iso=events.WH_gamma, isMC=self.isMC)
+        events = ak.with_field(events, jets_factory, "WH_jets_factory")
+        events = ak.with_field(events, jets_jec, "WH_jets_jec")
         events = events[ak.num(events.WH_jets_jec) > 0]
         output["cutflow_oneAK4jet" + out_label] += ak.sum(events.genWeight)
 
@@ -119,7 +123,7 @@ class SUEP_cluster_WH_gamma(processor.ProcessorABC):
         # TODO do we want this? (if so, should go in getAK4jets? or before we give the jets to the JEC corrector?)
         # _, eventJetVetoCut = JetVetoMap(events.WH_jets_jec, self.era)
 
-        # events = WH_utils.formMETandW(events)
+        events = ak.with_field(events, events.MET, "WH_MET")
 
         # TODO do we want this?
         # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)    
@@ -131,6 +135,7 @@ class SUEP_cluster_WH_gamma(processor.ProcessorABC):
         # these only need to be saved once, as they shouldn't change even with track killing
         if out_label == "":
             events = SUEP_cluster_WH.storeEventVars(
+                self,
                 events,
                 output=output,
             )
@@ -146,6 +151,7 @@ class SUEP_cluster_WH_gamma(processor.ProcessorABC):
         indices = np.arange(0, len(events))
 
         SUEP_cluster_WH.HighestPTMethod(
+            self,
             indices,
             events,
             output=output,
@@ -239,6 +245,7 @@ class SUEP_cluster_WH_gamma(processor.ProcessorABC):
             #output = self.analysis(events, output, out_label="_track_down")
             indices = np.arange(0, len(events))
             SUEP_cluster_WH.HighestPTMethod(
+                self,
                 indices,
                 events,
                 output=output,

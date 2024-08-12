@@ -2,7 +2,6 @@ import awkward as ak
 import numpy as np
 import vector
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
-from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 
 def getGenModel(events):
     """
@@ -31,7 +30,7 @@ def getGenModel(events):
     return genModels
 
 
-def getAK4Jets(Jets, runs, lepton=None, isMC: bool = 1):
+def getAK4Jets(Jets, runs, iso=None, isMC: bool = 1):
     """
     Create awkward array of jets. Applies basic selections.
     Returns: awkward array of dimensions (events x jets x 4 momentum)
@@ -70,9 +69,9 @@ def getAK4Jets(Jets, runs, lepton=None, isMC: bool = 1):
     jet_awk_Cut = (
         (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4) & (0 < (Jets_awk.jetId & 0b010))
     )
-    # and minimum separation from lepton
-    if lepton is not None:
-        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton) >= 0.4)
+    # and minimum separation from some object (e.g. lepton)
+    if iso is not None:
+        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(iso) >= 0.4)
     # and HEM filter
     jetHEMCut, _ = jetHEMFilter(None, Jets, runs) 
     jet_awk_Cut = jet_awk_Cut & jetHEMCut
@@ -123,7 +122,7 @@ def getGenDarkPseudoscalars(events):
     return darkPseudoscalarParticles
 
 
-def getTracks(events, lepton=None, leptonIsolation=None):
+def getTracks(events, iso_object=None, isolation_deltaR=0):
     Cands = ak.zip(
         {
             "pt": events.PFCands.trkPt,
@@ -172,12 +171,12 @@ def getTracks(events, lepton=None, leptonIsolation=None):
     # dimensions of tracks = events x tracks in event x 4 momenta
     tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
 
-    if leptonIsolation:
-        # Sorting out the tracks that overlap with the lepton
-        tracks = tracks[(tracks.deltaR(lepton) >= leptonIsolation)]
-        Cleaned_cands = Cleaned_cands[(Cleaned_cands.deltaR(lepton) >= leptonIsolation)]
+    if isolation_deltaR > 0:
+        # Sorting out the tracks that overlap with some object
+        tracks = tracks[(tracks.deltaR(iso_object) >= isolation_deltaR)]
+        Cleaned_cands = Cleaned_cands[(Cleaned_cands.deltaR(iso_object) >= isolation_deltaR)]
         Lost_Tracks_cands = Lost_Tracks_cands[
-            (Lost_Tracks_cands.deltaR(lepton) >= leptonIsolation)
+            (Lost_Tracks_cands.deltaR(iso_object) >= isolation_deltaR)
         ]
 
     return tracks, Cleaned_cands, Lost_Tracks_cands
@@ -570,31 +569,16 @@ def oneTightLeptonSelection(events):
     return events 
 
 
-def onePhotonSelection(events):
+def onePhotonSelection(events, isMC: bool = 1):
 
-    photons = getPhotons(events)
+    photons = getPhotons(events, isMC=isMC)
 
     # require exactly one photon
     photonSelection = ak.num(photons) == 1
     events = events[photonSelection]
     photons = photons[photonSelection]
-    events = ak.with_field(events, photons[:, 0], "WH_photon")
+    events = ak.with_field(events, photons[:, 0], "WH_gamma")
 
-    return events
-
-
-def formJets(events, sample, isMC, era):
-    jets_factory = applyJECStoJets(sample, isMC, era, events, events.Jet, jer=isMC)       
-    jets_jec = getAK4Jets(jets_factory, events.run, events.WH_lepton, isMC)
-    events = ak.with_field(events, jets_jec, "WH_jets_jec")
-    events = ak.with_field(events, jets_factory, "WH_jets_factory")
-
-    return events
-
-
-def formMETandW(events):
-    events = ak.with_field(events, events.PuppiMET, "WH_MET")
-    events = ak.with_field(events, make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
     return events
 
 
