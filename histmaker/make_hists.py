@@ -343,6 +343,7 @@ def main():
     if options.channel == "WH":
         config = {
             "NOAK15": {
+                "input_method": "HighestPT",
                 "SR": [
                     ["SUEP_S1_HighestPT", ">=", 0.3],
                     ["SUEP_nconst_HighestPT", ">=", 40],
@@ -837,6 +838,11 @@ def main():
 
             # write out histograms
             for h, hist in output.items():
+                if len(hist.axes) > 3:
+                    logging.warning(
+                        f"Skipping {h} because it has more than 3 axes. This is not supported by .root files."
+                    )
+                    continue
                 froot[h] = hist
 
 
