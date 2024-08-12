@@ -569,6 +569,23 @@ def oneTightLeptonSelection(events):
     return events 
 
 
+def CRQCDSelection(events):
+    """
+    Defines the Control Region for QCD.
+    No tight leptons (orthogonal to SR), and exactly one loose lepton.
+    """
+
+    _, _, tightLeptons = getTightLeptons(events)
+    events = events[(ak.num(tightLeptons) == 0)]
+
+    _, _, looseLeptons = getLooseLeptons(events)
+    events = events[(ak.num(looseLeptons) == 1)] 
+
+    events = ak.with_field(events, looseLeptons[:,0], "WH_lepton")
+
+    return events
+
+
 def onePhotonSelection(events, isMC: bool = 1):
 
     photons = getPhotons(events, isMC=isMC)

@@ -54,11 +54,14 @@ class pandas_accumulator(AccumulatorABC):
         self._value[key] = value
 
     def __getitem__(self, key):
-        if not isinstance(key, str):
-            raise ValueError("Column name must be a string not %r." % type(key))
-        if key not in self._value.keys():
-            raise KeyError(f"Key {key} does not exist in accumulator")
-        return self._value[key]
+        if not isinstance(key, str) and not isinstance(key, list) and not isinstance(key, pd.Series):
+            raise ValueError("Value must be a string/list/pd.Series not %r." % type(key))
+        if isinstance(key, str):
+            if key not in self._value.keys():
+                raise KeyError(f"Key {key} does not exist in accumulator")
+            return self._value[key]
+        elif isinstance(key, list) or isinstance(key, pd.Series):
+            return pandas_accumulator(self._value[key])
 
     @property
     def value(self):

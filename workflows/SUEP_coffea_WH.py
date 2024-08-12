@@ -46,6 +46,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         do_syst: bool,
         flag: bool,
         output_location=None,
+        CRQCD:bool=False,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -54,6 +55,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.sample = sample
         self.output_location = output_location
         self.scouting = 0
+        self.CRQCD = CRQCD
 
     def HighestPTMethod(
         self,
@@ -813,7 +815,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Define the lepton objects and apply single lepton selection.
         #####################################################################################
 
-        events = WH_utils.oneTightLeptonSelection(events)
+        if not self.CRQCD: events = WH_utils.oneTightLeptonSelection(events)
+        else: events = WH_utils.CRQCDSelection(events)
         output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
 
         # TODO do we apply an electron filter here too?
@@ -874,6 +877,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output=output,
             out_label=out_label,
         )
+
+        if self.CRQCD:
+            # TODO: this should be its own flag, and work for track_down too, and should be put BEFORE, so that we don't waste time calculating things for events we don't use
+            events = events[~(output["vars"]["SUEP_nconst_HighestPT"].isnull())]
+            output["vars"] = output["vars"][~(output["vars"]["SUEP_nconst_HighestPT"].isnull())]
 
         return events, output
 
