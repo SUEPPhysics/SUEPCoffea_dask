@@ -1596,7 +1596,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"deltaPhi_lepton_SUEP_{label}",
                 label=r"$\Delta\phi$($\ell$, SUEP)",
             ).Weight(),
-            r"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category+{label}": Hist.new
+            f"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category_{label}": Hist.new
                 .Variable([0, 30, 50, 70, 100, 140, 200, 300, 600, 1000], name="jets_pt")
                 .Variable([0, 1.44, 2.5], name="jets_eta")
                 .IntCategory([0, 4, 5], name="jets_hadronFlavor")

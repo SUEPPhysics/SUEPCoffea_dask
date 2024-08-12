@@ -63,9 +63,6 @@ def h5LoadHist(ifile: str, label: str = "hists"):
             # Read values and variances
             values = hist_group['values'][:]
             variances = hist_group['variances'][:]
-
-            print(axes)
-            print(values.shape)
             
             # Create hist.Hist object and fill it
             h = hist.Hist(
@@ -331,6 +328,7 @@ def prepare_DataFrame(
         df['SUEP_S1_HighestPT'] = np.zeros(df.shape[0])
     if 'SUEP_nconst_HighestPT' not in df.columns:
         df['SUEP_nconst_HighestPT'] = np.zeros(df.shape[0])
+
     # TODO temporaray: set to 0 values that are nan
     df['SUEP_S1_HighestPT'] = df['SUEP_S1_HighestPT'].fillna(0)
     df['SUEP_nconst_HighestPT'] = df['SUEP_nconst_HighestPT'].fillna(0)
@@ -587,6 +585,8 @@ def fill_histogram(hist, payload, weight):
                 if len(p) == 0:
                     raise Exception(f"Payload {p} for hist {hist} is an empty pd.Series.")
                 if type(p.iloc[0]) is list:
+                    if len(weight) == len(p): # flatten weights in case of multiple entries per event, needs to be done once per histogram
+                        weight = [weight.iloc[iEvent] for iEvent in range(len(weight)) for iObject in range(len(p.iloc[iEvent]))]
                     p = flatten(p)
                 final_payload.append(p)
             else:
@@ -594,7 +594,7 @@ def fill_histogram(hist, payload, weight):
         hist.fill(*final_payload, weight=weight)
     elif type(payload) is pd.Series:
         if len(payload) == 0: 
-            return
+            raise Exception(f"Payload {p} for hist {hist} is an empty pd.Series.")
         if type(payload.iloc[0]) is list:
             payload = flatten(payload)
         hist.fill(payload, weight=weight)

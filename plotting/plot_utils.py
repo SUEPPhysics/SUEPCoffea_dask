@@ -563,9 +563,9 @@ def loader(
             lumi, era = findLumiAndEra(year, auto_lumi, infile_name, scouting)
             norm *= lumi
             if verbose:
-                print("Applying lumi", lumi)
+                print("\tApplying lumi", lumi)
         if verbose:
-            print("Found era", era)
+            print("\tFound era", era)
 
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
@@ -573,24 +573,24 @@ def loader(
             if int(file_metadata["signal"]):
                 xsec = float(file_metadata["xsec"])
                 if verbose:
-                    print("Applying xsec", xsec)
-                    print("Applying lumi", lumi)
+                    print("\tApplying xsec", xsec)
+                    print("\tApplying lumi", lumi)
                 norm *= xsec * lumi
         elif "SUEP" in infile_name.split("/")[-1]:
             # for older histograms, we didn't have metadata, so we need to find xsec via string manipulation
             sample_name = infile_name.split("/")[-1].split("13TeV")[0] + "13TeV-pythia8"
             xsec = fill_utils.getXSection(sample_name, year=era)
             if verbose:
-                print("Applying xsec", xsec)
+                print("\tApplying xsec", xsec)
             norm *= xsec
 
         # get the sample name and the bin name
         # e.g. for QCD_Pt_15to30_.. the sample is QCD_Pt and the bin is QCD_Pt_15to30
         sample, bin = getSampleNameAndBin(infile_name)
         if verbose:
-            print("Found sample", sample)
+            print("\tFound sample", sample)
             if by_bin:
-                print("Found bin", bin)
+                print("\tFound bin", bin)
 
         samplesToAdd = [sample]
         if by_bin and (bin is not None) and (bin != sample):
@@ -613,7 +613,7 @@ def loader(
         gc.collect()
 
         if verbose:
-            print("Finished loading sample")
+            print("\tFinished loading sample")
 
     if nFailed:
         print(f"WARNING: {nFailed} files failed to load")
