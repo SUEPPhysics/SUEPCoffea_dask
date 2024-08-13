@@ -542,7 +542,7 @@ def qualityFiltersSelection(events, era: str):
             & (events.Flag.eeBadScFilter)
             & (events.Flag.ecalBadCalibFilter)
         )
-    if era == "2016" or era == "2016apv":
+    elif era == "2016" or era == "2016apv":
         cutAnyFilter = (
             (events.Flag.goodVertices)
             & (events.Flag.globalSuperTightHalo2016Filter)
@@ -553,6 +553,8 @@ def qualityFiltersSelection(events, era: str):
             & (events.Flag.BadPFMuonDzFilter)
             & (events.Flag.eeBadScFilter)
         )
+    else:
+        raise ValueError(f"Invalid era: {era}")
     return events[cutAnyFilter]
 
 
@@ -580,6 +582,7 @@ def CRQCDSelection(events):
 
     _, _, looseLeptons = getLooseLeptons(events)
     events = events[(ak.num(looseLeptons) == 1)] 
+    looseLeptons = looseLeptons[(ak.num(looseLeptons) == 1)]
 
     events = ak.with_field(events, looseLeptons[:,0], "WH_lepton")
 
