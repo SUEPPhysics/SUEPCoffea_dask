@@ -167,7 +167,7 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
                 ),
                 axis=1,
             )
-            weights[syst_var] = dataeff / mceff
+            weights[syst_var] = np.where(mceff > 0, dataeff / mceff, 1)
     
     # combination of two WPs: TL or LT (same thing)
     elif wps in ('TL', 'LT'):
@@ -186,7 +186,7 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - SF['L'][syst_var] * effs['L'], 1)
             dataeff = ak.prod(term1 * term2 * term3, axis=1)
 
-            weights[syst_var] = dataeff / mceff
+            weights[syst_var] = np.where(mceff > 1, dataeff / mceff, 1)
 
     return weights
 

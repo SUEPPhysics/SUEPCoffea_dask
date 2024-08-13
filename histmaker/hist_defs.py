@@ -835,7 +835,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     label="PuppiMET sumEt",
             # ).Weight(),
             f"MET_pt_{label}": Hist.new.Reg(
-                1000,
+                100,
                 0,
                 1000,
                 name=f"MET_JEC_pt_{label}",
@@ -849,7 +849,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 label=r"$\phi^{\mathrm{PFMET}}_T$ [GeV]",
             ).Weight(),
             f"WH_MET_pt_{label}": Hist.new.Reg(
-                1000,
+                100,
                 0,
                 1000,
                 name=f"WH_MET_JEC_pt_{label}",
@@ -863,7 +863,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 label=r"$\phi^{\mathrm{WH MET}}_T$ [GeV]",
             ).Weight(),
             f"MET_JEC_pt_{label}": Hist.new.Reg(
-                1000,
+                100,
                 0,
                 1000,
                 name=f"MET_JEC_pt_{label}",

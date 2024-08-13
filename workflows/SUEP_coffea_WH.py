@@ -48,6 +48,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output_location=None,
         CRQCD:bool=False,
         VRGJ:bool=False,
+        dropNonMethodEvents:bool=False,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -58,6 +59,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.scouting = 0
         self.CRQCD = CRQCD
         self.VRGJ = VRGJ
+        self.dropNonMethodEvents = dropNonMethodEvents
 
     def HighestPTMethod(
         self,
@@ -820,6 +822,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
         # ---- Lepton selection
         # Define the lepton objects and apply single lepton selection.
+        # (For gamma+jets CR, apply photon selection.)
         #####################################################################################
 
         if not self.CRQCD and not self.VRGJ: 
@@ -841,8 +844,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             return output
 
         #####################################################################################
-        # ---- Jets and MET
-        # Grab corrected ak4jets and MET, apply HEM filter, and require at least one ak4jet.
+        # ---- Jets
+        # Grab corrected ak4jets, apply HEM filter, and require at least one ak4jet.
         #####################################################################################
 
         jets_factory = applyJECStoJets(self.sample, self.isMC, self.era, events, events.Jet, jer=self.isMC)  
@@ -856,6 +859,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # TODO do we want this? (if so, should go in getAK4jets? or before we give the jets to the JEC corrector?)
         # _, eventJetVetoCut = JetVetoMap(events.WH_jets_jec, self.era)
+
+        #####################################################################################
+        # ---- MET and W
+        # Form the MET and W objects.
+        #####################################################################################
 
         events = ak.with_field(events, events.MET, "WH_MET")
         if not self.VRGJ:
@@ -891,11 +899,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output=output,
             out_label=out_label,
         )
-
-        if self.CRQCD:
-            # TODO: this should be its own flag, and work for track_down too, and should be put BEFORE, so that we don't waste time calculating things for events we don't use
-            events = events[~(output["vars"]["SUEP_nconst_HighestPT"].isnull())]
-            output["vars"] = output["vars"][~(output["vars"]["SUEP_nconst_HighestPT"].isnull())]
 
         return events, output
 
@@ -995,6 +998,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output=output,
                 out_label="_track_down",
             )
+
+        if self.dropNonMethodEvents:
+            # this is not very efficient, as we are processing a lot of events that we drop
+            # it also assumes that we have SUEP_nconst for each method
+            methods = [column.split("SUEP_nconst_")[-1] for column in output["vars"].columns if "SUEP_nconst_" in column]
+            selection = np.any([~output["vars"]["SUEP_nconst_" + method].isnull() for method in methods], axis=0)
+            events = events[selection]
+            output["vars"] = output["vars"][selection]
 
         return {dataset: output}
 

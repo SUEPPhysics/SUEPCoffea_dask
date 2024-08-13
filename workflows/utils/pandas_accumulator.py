@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from coffea.processor.accumulator import AccumulatorABC
 
 
@@ -54,13 +55,13 @@ class pandas_accumulator(AccumulatorABC):
         self._value[key] = value
 
     def __getitem__(self, key):
-        if not isinstance(key, str) and not isinstance(key, list) and not isinstance(key, pd.Series):
-            raise ValueError("Value must be a string/list/pd.Series not %r." % type(key))
+        if not isinstance(key, (str, list, pd.Series, np.ndarray)):
+            raise ValueError("Value must be a string/list/pd.Series/np.array not %r." % type(key))
         if isinstance(key, str):
             if key not in self._value.keys():
                 raise KeyError(f"Key {key} does not exist in accumulator")
             return self._value[key]
-        elif isinstance(key, list) or isinstance(key, pd.Series):
+        elif isinstance(key, (list, pd.Series, np.ndarray)):
             return pandas_accumulator(self._value[key])
 
     @property
@@ -69,3 +70,7 @@ class pandas_accumulator(AccumulatorABC):
         Returns a numpy array where the first dimension is the column dimension
         """
         return self._value
+    
+    @property
+    def columns(self):
+        return self._value.columns
