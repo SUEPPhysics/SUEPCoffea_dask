@@ -7,7 +7,7 @@ import hist
 from coffea import processor
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea_WH_gamma
+from workflows import SUEP_coffea_WH
 from workflows.utils import pandas_utils
 from workflows.utils import output_utils
 
@@ -76,13 +76,14 @@ def main():
     modules_era = []
 
     modules_era.append(
-        SUEP_coffea_WH_gamma.SUEP_cluster_WH_gamma(
+        SUEP_coffea_WH.SUEP_cluster_WH(
             isMC=options.isMC,
             era=str(options.era),
             do_syst=options.doSyst,
             sample=options.dataset,
             flag=False,
             output_location=options.output_location,
+            VRGJ=True, # gamma+jets VR
         )
     )
 

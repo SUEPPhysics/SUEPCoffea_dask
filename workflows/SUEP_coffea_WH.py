@@ -47,6 +47,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         flag: bool,
         output_location=None,
         CRQCD:bool=False,
+        VRGJ:bool=False,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -56,6 +57,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.output_location = output_location
         self.scouting = 0
         self.CRQCD = CRQCD
+        self.VRGJ = VRGJ
 
     def HighestPTMethod(
         self,
@@ -73,7 +75,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         tracks, pfcands, lost_tracks = WH_utils.getTracks(
             events,
-            iso_object=events.WH_lepton if 'WH_lepton' in events.fields else events.WH_gamma,
+            iso_object=events.WH_lepton if not self.VRGJ else events.WH_gamma,
             isolation_deltaR=0.4
         )
         if self.isMC and "track_down" in out_label:
@@ -794,9 +796,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = WH_utils.genSelection(events, self.sample)
         output["cutflow_genCuts" + out_label] += ak.sum(events.genWeight)
 
-        events = WH_utils.triggerSelection(
-            events, self.sample, self.era, self.isMC, output, out_label
-        )
+        if not self.VRGJ:
+            events = WH_utils.triggerSelection(
+                events, self.sample, self.era, self.isMC, output, out_label
+            )
+        else:
+            events = WH_utils.gammaTriggerSelection(
+                events, self.era
+            )
         output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
 
         events = WH_utils.qualityFiltersSelection(events, self.era)
@@ -815,16 +822,22 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Define the lepton objects and apply single lepton selection.
         #####################################################################################
 
-        if not self.CRQCD: events = WH_utils.oneTightLeptonSelection(events)
-        else: events = WH_utils.CRQCDSelection(events)
-        output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
+        if not self.CRQCD and not self.VRGJ: 
+            events = WH_utils.oneTightLeptonSelection(events)
+            output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
+        elif self.VRGJ:
+            events = WH_utils.onePhotonSelection(events, self.isMC)
+            output["cutflow_onePhoton" + out_label] += ak.sum(events.genWeight)
+        elif self.CRQCD: 
+            events = WH_utils.CRQCDSelection(events)
+            output["cutflow_oneLooseLepton" + out_label] += ak.sum(events.genWeight)
 
         # TODO do we apply an electron filter here too?
         # _, eventEleHEMCut = jetHEMFilter(self, events.WH_lepton, events.run)
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events pass oneLepton.")
+            print("No events pass one lepton / photon.")
             return output
 
         #####################################################################################
@@ -833,7 +846,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         jets_factory = applyJECStoJets(self.sample, self.isMC, self.era, events, events.Jet, jer=self.isMC)  
-        jets_jec = WH_utils.getAK4Jets(jets_factory, events.run, events.WH_lepton, self.isMC)
+        jets_jec = WH_utils.getAK4Jets(jets_factory, events.run, iso=events.WH_lepton if not self.VRGJ else events.WH_gamma, isMC=self.isMC)
         events = ak.with_field(events, jets_factory, "WH_jets_factory")
         events = ak.with_field(events, jets_jec, "WH_jets_jec")
         events = events[ak.num(events.WH_jets_jec) > 0]
@@ -845,7 +858,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # _, eventJetVetoCut = JetVetoMap(events.WH_jets_jec, self.era)
 
         events = ak.with_field(events, events.MET, "WH_MET")
-        events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
+        if not self.VRGJ:
+            events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
 
         # TODO do we want this?
         # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)    
@@ -899,7 +913,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_triggerEGamma": processor.value_accumulator(float, 0),
                 "cutflow_allTriggers": processor.value_accumulator(float, 0),
                 "cutflow_orthogonality": processor.value_accumulator(float, 0),
-                "cutflow_oneLepton": processor.value_accumulator(float, 0),
+                "cutflow_oneTightLepton": processor.value_accumulator(float, 0),
+                "cutflow_oneLooseLepton": processor.value_accumulator(float, 0),
+                "cutflow_onePhoton": processor.value_accumulator(float, 0),
                 "cutflow_qualityFilters": processor.value_accumulator(float, 0),
                 "cutflow_jetHEMcut": processor.value_accumulator(float, 0),
                 "cutflow_electronHEMcut": processor.value_accumulator(float, 0),
@@ -946,9 +962,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     "cutflow_orthogonality_track_down": processor.value_accumulator(
                         float, 0
                     ),
-                    "cutflow_oneLepton_track_down": processor.value_accumulator(
+                    "cutflow_oneTightLepton_track_down": processor.value_accumulator(
                         float, 0
                     ),
+                    "cutflow_oneLooseLepton_track_down": processor.value_accumulator(
+                        float, 0
+                    ),
+                    "cutflow_onePhoton_track_down": processor.value_accumulator(float, 0),
                     "cutflow_qualityFilters_track_down": processor.value_accumulator(
                         float, 0
                     ),
@@ -967,7 +987,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     ),
                 }
             )
-            #output = self.analysis(events, output, out_label="_track_down")
+
             indices = np.arange(0, len(events))
             self.HighestPTMethod(
                 indices,
