@@ -83,6 +83,7 @@ def main():
             sample=options.dataset,
             flag=False,
             output_location=options.output_location,
+            dropNonMethodEvents=True
         )
     )
 

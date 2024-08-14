@@ -865,9 +865,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # Form the MET and W objects.
         #####################################################################################
 
-        events = ak.with_field(events, events.MET, "WH_MET")
+        events = ak.with_field(events, events.PuppiMET, "WH_MET")
         if not self.VRGJ:
             events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
+
+        events = events[events.WH_MET.pt > 20]
+        output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
 
         # TODO do we want this?
         # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)    
@@ -924,6 +927,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_electronHEMcut": processor.value_accumulator(float, 0),
                 "cutflow_METHEMcut": processor.value_accumulator(float, 0),
                 "cutflow_JetVetoMap": processor.value_accumulator(float, 0),
+                "cutflow_MET20": processor.value_accumulator(float, 0),
                 "cutflow_oneAK4jet": processor.value_accumulator(float, 0),
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
@@ -979,6 +983,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     "cutflow_electronHEMcut_track_down": processor.value_accumulator(float, 0),
                     "cutflow_METHEMcut_track_down": processor.value_accumulator(float, 0),
                     "cutflow_JetVetoMap_track_down": processor.value_accumulator(float, 0),
+                    "cutflow_MET20_track_down": processor.value_accumulator(float, 0),
                     "cutflow_oneAK4jet_track_down": processor.value_accumulator(
                         float, 0
                     ),
