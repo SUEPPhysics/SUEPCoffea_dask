@@ -1,0 +1,11 @@
+{
+    "SUEP_mS125_mPhi1p4_T0p35_modehadronic": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/GluGluToSUEP_T0p35_TuneCP5_13TeV_pythia8/skim_1.root"
+    ], 
+    "SUEP_mS125_mPhi8_T32_modehadronic": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8/skim_1.root"
+    ], 
+    "SUEP_mS125_mPhi2_T2_modehadronic": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/GluGluToSUEP_T2p00_TuneCP5_13TeV_pythia8/skim_1.root"
+    ]
+}

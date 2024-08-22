@@ -23,34 +23,124 @@
   "SUEP-m750-darkPhoHad+RunIIAutumn18": [
     "root://cmseos.fnal.gov//store/user/chpapage/SUEP_signal_private/SUEP-m750-darkPhoHad+RunIIAutumn18-private+MINIAODSIM.root"
   ],
-  "SUEP_mMed-125_mDark-2_temp-8_decay-darkPhoHad": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-2_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1.4_temp-0.35_decay-darkPhoHad": [
+    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1.4_temp-0.35_decay-darkPhoHad_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-2_temp-8_decay-darkPho": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-2_temp-8_decay-darkPho_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1.4_temp-0.7_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1.4_temp-0.7_decay-darkPhoHad_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-4_temp-16_decay-darkPhoHad": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-4_temp-16_decay-darkPhoHad_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1.4_temp-1.4_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1.4_temp-1.4_decay-darkPhoHad_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-4_temp-16_decay-darkPho": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-4_temp-16_decay-darkPho_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1.4_temp-2.8_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1.4_temp-2.8_decay-darkPhoHad_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-8_temp-16_decay-darkPhoHad": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-16_decay-darkPhoHad_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1.4_temp-5.6_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1.4_temp-5.6_decay-darkPhoHad_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-8_temp-16_decay-darkPho": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-16_decay-darkPho_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1_temp-0.25_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1_temp-0.25_decay-darkPho_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-8_temp-32_decay-darkPhoHad": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-32_decay-darkPhoHad_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1_temp-0.5_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1_temp-0.5_decay-darkPho_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-8_temp-32_decay-darkPho": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-32_decay-darkPho_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1_temp-1_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1_temp-1_decay-darkPho_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-8_temp-8_decay-darkPhoHad": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1_temp-2_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1_temp-2_decay-darkPho_13TeV-pythia8.root"
   ],
-  "SUEP_mMed-125_mDark-8_temp-8_decay-darkPho": [
-    "root://cmseos.fnal.gov//store/user/chpapage/SUEP_high_temp/2018/NANOAOD_merged/step_NANOAOD_mMed-125_mDark-8_temp-8_decay-darkPho_13TeV-pythia8.root"
+  "SUEP_ggH-channel_mMed-125_mDark-1_temp-4_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-1_temp-4_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-0.5_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-0.5_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-0.5_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-0.5_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-1_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-1_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-1_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-1_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-2_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-2_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-2_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-2_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-4_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-4_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-4_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-4_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-8_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-2_temp-8_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-2_temp-8_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-16_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-16_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-16_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-16_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-1_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-1_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-1_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-1_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-2_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-2_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-2_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-2_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-4_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-4_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-4_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-4_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-8_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-4_temp-8_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-4_temp-8_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-16_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-16_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-16_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-16_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-2_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-2_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-2_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-2_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-32_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-32_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-32_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-32_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-4_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-4_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-4_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-4_decay-darkPho_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-8_decay-darkPhoHad": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-8_decay-darkPhoHad_13TeV-pythia8.root"
+  ],
+  "SUEP_ggH-channel_mMed-125_mDark-8_temp-8_decay-darkPho": [
+      "root://cmseos.fnal.gov//store/user/chpapage/SUEP_low_temp/2018/NANOAOD_merged/step_NANOAOD_ggH-channel_mMed-125_mDark-8_temp-8_decay-darkPho_13TeV-pythia8.root"
   ]
 }

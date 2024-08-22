@@ -104,6 +104,7 @@ def get_main_parser():
             "SUEP_DYstudy",
             "SUEP_combine",
             "SUEP_SR_extrapolation",
+            "SUEP_kinematics",
         ],
         help="Which processor to run",
         required=True,
@@ -235,6 +236,7 @@ def get_main_parser():
     parser.add_argument("--debug", action="store_true", help="Turn debugging on")
     parser.add_argument("--verbose", action="store_true", help="Turn verbose on")
     parser.add_argument("--check_hlt", action="store_true", help="Check HLT paths")
+    parser.add_argument("--gen_sum_file", type=str, help="Gen sum weight file. Overrides the count from the jobs.")
     return parser
 
 
@@ -743,7 +745,7 @@ def setupSUEP_combine(args, sample_dict):
 
     instance = SUEP_cluster(
         isMC=args.isMC,
-        era=int(args.era),
+        era=args.era,
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
@@ -767,7 +769,30 @@ def setupSUEP_SR_extrapolation(args, sample_dict):
 
     instance = SUEP_cluster(
         isMC=args.isMC,
-        era=int(args.era),
+        era=args.era,
+        do_syst=args.doSyst,
+        syst_var="",
+        sample=sample_dict,
+        weight_syst=False,
+        flag=False,
+        output_location=os.getcwd(),
+        accum=args.executor,
+        trigger=args.trigger,
+        blind=(not args.isMC),
+        debug=args.debug,
+    )
+    return instance
+
+
+def setupSUEP_kinematics(args, sample_dict):
+    """
+    Setup the SUEP workflow
+    """
+    from workflows.SUEP_coffea_kinematics import SUEP_cluster
+
+    instance = SUEP_cluster(
+        isMC=args.isMC,
+        era=args.era,
         do_syst=args.doSyst,
         syst_var="",
         sample=sample_dict,
@@ -882,6 +907,7 @@ if __name__ == "__main__":
         print(hlt)
         sys.exit(0)
 
+
     # Load workflow
     if args.workflow == "SUEP":
         processor_instance = setupSUEP(args, sample_dict)
@@ -909,6 +935,8 @@ if __name__ == "__main__":
         processor_instance = setupSUEP_combine(args, sample_dict)
     elif args.workflow == "SUEP_SR_extrapolation":
         processor_instance = setupSUEP_SR_extrapolation(args, sample_dict)
+    elif args.workflow == "SUEP_kinematics":
+        processor_instance = setupSUEP_kinematics(args, sample_dict)
     else:
         raise NotImplementedError
 
@@ -921,7 +949,15 @@ if __name__ == "__main__":
     output = execute(args, processor_instance, sample_dict, env_extra, condor_extra)
 
     # Calculate the gen sum weight for skimmed samples
-    if args.skimmed:
+    # Or load gen sum weight dict
+    if args.gen_sum_file:
+        with open(args.gen_sum_file, "r") as f:
+            weights = json.load(f)
+        print(
+            "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
+        )
+        pretty.pprint(weights)
+    elif args.skimmed:
         weights = getWeights(sample_dict)
         print(
             "You are using skimmed data! I was able to retrieve the following gensum weights:\n"
@@ -931,8 +967,11 @@ if __name__ == "__main__":
     # Save the output
     for sample in sample_dict:
         if args.skimmed:
+            weight = weights[sample]
+            if not isinstance(weight, int):
+                weight = weight.value
             saveOutput(
-                args, processor_instance, output[sample], sample, weights[sample].value
+                args, processor_instance, output[sample], sample, weight
             )
         else:
             saveOutput(

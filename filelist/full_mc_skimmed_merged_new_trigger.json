@@ -103,6 +103,50 @@
         "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_8.root",
         "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_9.root"
     ],
+    "TTToHadronic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToHadronic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_1.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToHadronic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_2.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToHadronic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_3.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToHadronic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_4.root"
+    ],
+    "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_1.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_10.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_11.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_12.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_13.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_14.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_15.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_16.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_17.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_2.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_3.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_4.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_5.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_6.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_7.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_8.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_9.root"
+    ],
+    "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_1.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_10.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_11.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_12.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_13.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_14.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_15.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_16.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_17.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_2.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_3.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_4.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_5.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_6.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_7.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_8.root",
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1+NANOAODSIM/skim_9.root"
+    ],
     "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM": [
         "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_skims_merged/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/skim_1.root"
     ],

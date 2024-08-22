@@ -465,24 +465,24 @@ def FastJetReclustering(tracks, r, min_pt):
     return ak_inclusive_jets, ak_inclusive_cluster
 
 
-def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster):
+def getTopTwoJets(self, events_, tracks, muons_, ak_inclusive_jets, ak_inclusive_cluster):
     # order the reclustered jets by pT (will take top 2 for ISR removal method)
-    # make sure there are at least 2 entries in the array
-    ak_inclusive_jets = ak.pad_none(ak_inclusive_jets, 2, axis=1)
-    ak_inclusive_cluster = ak.pad_none(ak_inclusive_cluster, 2, axis=1)
     highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)
     jets_pTsorted = ak_inclusive_jets[highpt_jet]
     clusters_pTsorted = ak_inclusive_cluster[highpt_jet]
 
-    # at least 2 tracks in SUEP
-    singletrackCut = ak.num(clusters_pTsorted[:, 0]) > 1
+    # at least 2 tracks in SUEP and ISR
+    singletrackCut = (ak.num(clusters_pTsorted[:, 0]) > 1) & (
+        ak.num(clusters_pTsorted[:, 1]) > 1
+    )
     jets_pTsorted = jets_pTsorted[singletrackCut]
     clusters_pTsorted = clusters_pTsorted[singletrackCut]
     tracks = tracks[singletrackCut]
-    indices = indices[singletrackCut]
+    muons_ = muons_[singletrackCut]
+    events_ = events_[singletrackCut]
 
     # number of constituents per jet, sorted by pT
-    nconst_pTsorted = ak.fill_none(ak.num(clusters_pTsorted, axis=-1), 0)
+    nconst_pTsorted = ak.num(clusters_pTsorted, axis=-1)
 
     # Top 2 pT jets. If jet1 has fewer tracks than jet2 then swap
     SUEP_cand = ak.where(
@@ -490,7 +490,6 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
         jets_pTsorted[:, 0],
         jets_pTsorted[:, 1],
     )
-    SUEP_cand = ak.where(ak.is_none(SUEP_cand), jets_pTsorted[:, 0], SUEP_cand)
     ISR_cand = ak.where(
         nconst_pTsorted[:, 1] > nconst_pTsorted[:, 0],
         jets_pTsorted[:, 0],
@@ -501,9 +500,6 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
         clusters_pTsorted[:, 0],
         clusters_pTsorted[:, 1],
     )
-    SUEP_cluster_tracks = ak.where(
-        ak.is_none(SUEP_cluster_tracks), clusters_pTsorted[:, 0], SUEP_cluster_tracks
-    )
     ISR_cluster_tracks = ak.where(
         nconst_pTsorted[:, 1] > nconst_pTsorted[:, 0],
         clusters_pTsorted[:, 0],
@@ -511,8 +507,7 @@ def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster
     )
 
     return (
-        tracks,
-        indices,
+        events_, tracks, muons_,
         (SUEP_cand, ISR_cand, SUEP_cluster_tracks, ISR_cluster_tracks),
     )
 

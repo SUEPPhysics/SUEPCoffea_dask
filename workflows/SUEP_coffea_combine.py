@@ -27,7 +27,7 @@ class SUEP_cluster(processor.ProcessorABC):
     def __init__(
         self,
         isMC: int,
-        era: int,
+        era: str,
         sample: str,
         do_syst: bool,
         syst_var: str,
@@ -44,7 +44,7 @@ class SUEP_cluster(processor.ProcessorABC):
         self.output_location = output_location
         self.do_syst = do_syst
         self.gensumweight = 1.0
-        self.era = int(era)
+        self.era = era
         self.isMC = bool(isMC)
         self.sample = sample
         self.syst_var, self.syst_suffix = (
@@ -61,29 +61,46 @@ class SUEP_cluster(processor.ProcessorABC):
     def eventSelection(self, events):
         """
         Applies trigger, returns events.
-        Default is PFHT triggers. Can use selection variable for customization.
         """
-        if self.trigger == "TripleMu":
-            trigger = (events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1) | (events.HLT.TripleMu_10_5_5_DZ == 1)
-            # trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
-            # if self.era == 2016:
-            #     trigger = events.HLT.TripleMu_5_3_3 == 1
-            # elif self.era == 2017:
-            #     trigger = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
-            # elif self.era == 2018:
-            #     if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
-            #         trigger = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
-            #     else:
-            #         if self.isMC:
-            #             raise ValueError(
-            #                 "This 2018 file seems to have the 2017 trigger names"
-            #             )
-            #         trigger = ak.zeros_like(events.HLT.ZeroBias)
-            # else:
-            #     raise ValueError("Invalid era")
-            events = events[trigger]
+        trigger1 = ak.ones_like(events)
+        trigger2 = ak.ones_like(events)
+        trigger3 = ak.ones_like(events)
+        if self.era in ["2016", "2016APV"]:
+            if "TripleMu_5_3_3" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3 == 1
+            if "TripleMu_5_3_3_DZ_Mass3p8" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_5_3_3_DZ_Mass3p8 == 1
+        elif self.era == "2017":
+            if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_10_5_5_DZ == 1
+        elif self.era in ["2018"]:
+            if "TripleMu_5_3_3_Mass3p8to60_DZ" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8to60_DZ == 1
+            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
+                trigger3 = events.HLT.TripleMu_10_5_5_DZ == 1
+        elif self.era in ["2022", "2023"]:
+            if "TripleMu_5_3_3_Mass3p8_DZ" in events.HLT.fields:
+                trigger1 = events.HLT.TripleMu_5_3_3_Mass3p8_DZ == 1
+            if "TripleMu_10_5_5_DZ" in events.HLT.fields:
+                trigger2 = events.HLT.TripleMu_10_5_5_DZ == 1
         else:
-            raise ValueError("Invalid trigger path")
+            raise ValueError("Invalid era")
+        trigger = trigger1 | trigger2 | trigger3
+        events = events[trigger]
+        return events
+
+    def applyCorrections(self, events):
+        """
+        Applies all corrections to the event weights:
+            1) PU weights
+            2) L1Prefire weights
+            3) Trigger scale factors
+        """
+
         return events
 
     def ht(self, events):
@@ -167,7 +184,7 @@ class SUEP_cluster(processor.ProcessorABC):
 
         # These arrays need to be broadcasted to the per muon dims from per event dims
         nMuons = ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0])
-        nMuons = ak.where(nMuons > 7, 7, nMuons)
+        nMuons = ak.where(nMuons > 9, 9, nMuons)
         weights = np.ones(len(events))
         muons_genPartFlav = ak.flatten(ak.zeros_like(muons.pt, dtype=int))
         nMuons_ndf = np.zeros(len(events))
@@ -189,7 +206,7 @@ class SUEP_cluster(processor.ProcessorABC):
         output[dataset]["histograms"]["ht"].fill(
             ak.where(HT >= 2000, 1999, HT),
             nMuons_ndf,
-            ak.where(ak.num(muons) > 7, 7, ak.num(muons)),
+            ak.where(ak.num(muons) > 9, 9, ak.num(muons)),
             weight=weights,
         )
         output[dataset]["histograms"]["av_muon_pt"].fill(
@@ -244,6 +261,7 @@ class SUEP_cluster(processor.ProcessorABC):
         if not self.isMC:
             events = applyGoldenJSON(self, events)
 
+        # Apply HLT paths
         events = self.eventSelection(events)
 
         # Apply HT selection for WJets stiching
@@ -252,9 +270,12 @@ class SUEP_cluster(processor.ProcessorABC):
         elif "WJetsToLNu_TuneCP5" in dataset:
             events = events[self.ht(events) < 70]
 
+        # Get the event weights and all the corrections
         weights = np.ones(len(events))
+        corrections = np.ones(len(events))
         if self.isMC:
             weights = events.genWeight
+            corrections = self.corrections(events)
 
         # Fill the cutflow columns for trigger
         output[dataset]["cutflow"].fill(
@@ -288,7 +309,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 transform=hist.axis.transform.log,
             )
             .Regular(8, 0, 8, name="nMuon_ndf", label="nMuon_ndf")
-            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Regular(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
             "av_muon_pt": hist.Hist.new.Regular(
                 30,
@@ -299,7 +320,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 transform=hist.axis.transform.log,
             )
             .Regular(8, 0, 8, name="nMuon_ndf", label="nMuon_ndf")
-            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Regular(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
             "muon_pt": hist.Hist.new.Regular(
                 30,
@@ -313,7 +334,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
             )
             .Regular(8, 0, 8, name="nMuon_ndf", label="nMuon_ndf")
-            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Regular(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
             "muon_eta": hist.Hist.new.Regular(
                 20,
@@ -326,7 +347,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 [0, 1, 3, 4, 5, 15], name="Muon_genPartFlav", label="Muon_genPartFlav"
             )
             .Regular(8, 0, 8, name="nMuon_ndf", label="nMuon_ndf")
-            .Regular(8, 0, 8, name="nMuon", label="nMuon")
+            .Regular(10, 0, 10, name="nMuon", label="nMuon")
             .Weight(),
         }
         output = {

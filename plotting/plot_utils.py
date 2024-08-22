@@ -143,6 +143,8 @@ sample_names = {
     "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8+": "DYLowMass_LO",
     "TTJets": "TTJets",
     "TTTo2L2Nu": "TTTo2L2Nu",
+    "TTToSemiLeptonic": "TTToSemiLeptonic",
+    "TTToHadronic": "TTToHadronic",
     "ttZJets": "ttZJets",
     "WWTo": "WW_all",
     "WZTo": "WZ_all",

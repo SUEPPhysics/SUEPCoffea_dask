@@ -1,0 +1,61 @@
+{
+    "QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root"
+    ], 
+    "QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root"
+    ], 
+    "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_3.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_4.root"
+    ], 
+    "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_3.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_4.root"
+    ], 
+    "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_3.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_4.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_5.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_6.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_7.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_8.root"
+    ], 
+    "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_3.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_4.root"
+    ], 
+    "QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_3.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_4.root"
+    ], 
+    "QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root"
+    ], 
+    "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root"
+    ], 
+    "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root"
+    ], 
+    "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root"
+    ],
+    "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_1.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_2.root", 
+        "root://cmseos.fnal.gov///store/user/chpapage/SUEPNano_Jul2024_merged/QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8/skim_3.root"
+    ]
+}

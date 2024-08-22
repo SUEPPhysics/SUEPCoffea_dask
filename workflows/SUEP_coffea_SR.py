@@ -103,18 +103,36 @@ class SUEP_cluster(processor.ProcessorABC):
         Requires at least nMuons with mediumId, pt, dxy, dz, and eta cuts.
         """
         muons = events.Muon
+        events, muons = events[ak.num(muons) > 0], muons[ak.num(muons) > 0]
+        electrons = events.Electron
         clean_muons = (
             (events.Muon.mediumId)
             & (events.Muon.pt > 3)
             & (abs(events.Muon.eta) < 2.4)
-            & (abs(events.Muon.dz) < 0.2)
+            & (abs(events.Muon.dxy) <= 0.02) 
+            & (abs(events.Muon.dz) <= 0.1)
         )
-        prompt_muons = (abs(events.Muon.dxy) <= 0.02) & (abs(events.Muon.dz) <= 0.1)
-        muons = muons[clean_muons & prompt_muons]
-        select_by_muons_high = ak.num(muons, axis=-1) > 4
+        clean_electrons = (
+            (events.Electron.mvaFall17V2noIso_WPL)
+            & (events.Electron.pt > 3)
+            & (
+                abs(events.Electron.dxy)
+                < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479)
+            )
+            & (
+                abs(events.Electron.dz)
+                < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479)
+            )
+            & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+            & (abs(events.Electron.eta) < 2.5)
+        )
+        muons = muons[clean_muons]
+        electrons = electrons[clean_electrons]
+        select_by_muons_high = ak.num(muons, axis=-1) >= 6
         events = events[select_by_muons_high]
         muons = muons[select_by_muons_high]
-        return events, muons
+        electrons = electrons[select_by_muons_high]
+        return events, electrons, muons
 
     def fill_cutflow(self, events, muons, output):
         dataset = events.metadata["dataset"]
@@ -302,7 +320,7 @@ class SUEP_cluster(processor.ProcessorABC):
         )
 
         # fill the histograms
-        events, muons = self.muon_filter(events)
+        events, electrons, muons = self.muon_filter(events)
 
         # Fill the cutflow columns for nMuon>4, nMuon>=6, nMuon>=6 && inter_iso > 1.0
         self.fill_cutflow(events, muons, output)

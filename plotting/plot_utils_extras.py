@@ -354,6 +354,7 @@ def plot_stack(
         slc = slice(None)
     hists = []
     hist_bkg_total = None
+    print(f"Cut (internally): {cut}")
     for bkg in bkg_list:
         if cut is None:
             h_temp = plots[bkg][lbl_plot].project(lbl_axis)[slc]
@@ -385,6 +386,9 @@ def plot_stack(
                 slice(cut[axis_i].start, cut[axis_i].stop) if override_slice else slc
             )
             h_temp = plots[sig][lbl_plot][tuple(cut)]
+        # for i in range(len(h_temp.values())):
+        #     if h_temp[i].value < 1:
+        #         h_temp[i] = hist.accumulators.WeightedSum(0, 0)
         max_value = max(max_value, h_temp.values().max())
         hists_sig.append(h_temp.copy())
 
@@ -392,9 +396,15 @@ def plot_stack(
     if ylim is None:
         ylim = (0, max_value * 1.8)
         if ylog:
-            ylim = (1e-4, max_value * 1e6)
+            ylim = (1e-2, max_value * 1e6)
 
     # Plot the stacked histogram
+    # for b, h_b in zip(bkg_list, hists):
+    #     print(
+    #         b.replace("_2018", ""),
+    #         np.round(h_b.values(), 2), 
+    #         # np.round(h_b.variances(), 2)
+    #     )
     hep.histplot(
         hists,
         label=[b.replace("_2018", "") for b in bkg_list],
@@ -403,6 +413,7 @@ def plot_stack(
         ec="black",
         lw=2,
         ax=ax,
+        #sort="l",
         zorder=1,
     )
 
@@ -412,9 +423,9 @@ def plot_stack(
     x_hatch = np.vstack(
         (hist_bkg_total.axes[0].edges[:-1], hist_bkg_total.axes[0].edges[1:])
     ).reshape((-1,), order="F")
-    y_hatch1 = np.vstack((hist_bkg_total.values(), hist_bkg_total.values())).reshape(
-        (-1,), order="F"
-    )
+    y_hatch1 = np.vstack(
+        (hist_bkg_total.values(), hist_bkg_total.values())
+    ).reshape((-1,), order="F")
     y_hatch1_unc = np.vstack(
         (np.sqrt(hist_bkg_total.variances()), np.sqrt(hist_bkg_total.variances()))
     ).reshape((-1,), order="F")
@@ -435,14 +446,20 @@ def plot_stack(
     if len(sig_list) > 0:
         hep.histplot(
             hists_sig,
+            yerr = [np.sqrt(h.variances()) for h in hists_sig],
             label=[
                 sig.replace("_2018", "")
+                .replace("GluGluToSUEP_", "")
                 .replace("SUEP-", "")
                 .replace("SUEP_", "")
                 .replace("mMed", "mS")
                 .replace("mDark", "mD")
                 .replace("temp", "T")
                 .replace("decay-", "")
+                .replace("ggH-channel_","")
+                .replace(".000", "")
+                .replace("_13TeV", "")
+                .replace("mode", "")
                 for sig in sig_list
             ],
             lw=3,
