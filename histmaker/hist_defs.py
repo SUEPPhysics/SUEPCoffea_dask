@@ -3,9 +3,9 @@ from hist import Hist
 
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
     # don't recreate histograms if called multiple times with the same output label
-    if label in output["labels"]:
+    if label in output.get("labels", []):
         return output
-    else:
+    elif "labels" in output.keys():
         output["labels"].append(label)
 
     regions_list = [""]
@@ -492,18 +492,11 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 label=r"$p^{\mathrm{SUEP}}_T$ [GeV]",
             ).Weight(),
             f"ntracks_{label}": Hist.new.Reg(
-                10,
+                100,
                 0,
                 100,
                 name=f"ntracks_{label}",
                 label=r"$n^{\mathrm{event}}_{\mathrm{tracks}}$",
-            ).Weight(),
-            f"pileup_weight_{label}": Hist.new.Reg(
-                100,
-                0,
-                2,
-                name=f"pileup_weight_{label}",
-                label="Pileup Weight",
             ).Weight(),
             f"npfcands_{label}": Hist.new.Reg(
                 500,
@@ -762,42 +755,14 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 1000,
                 name=f"PuppiMET_pt_{label}",
-                label="PuppiMET $p_T$",
+                label=r"$p^{\mathrm{Puppi MET}}_T$ [GeV]",
             ).Weight(),
-            #            '''f"PuppiMET_pt_JER_up_{label}": Hist.new.Reg(
-            #                100,
-            #                0,
-            #                1000,
-            #                name=f"PuppiMET_pt_JER_up_{label}",
-            #                label="PuppiMET $p_T$",
-            #            ).Weight(),
-            #            f"PuppiMET_pt_JER_down_{label}": Hist.new.Reg(
-            #                100,
-            #                0,
-            #                1000,
-            #                name=f"PuppiMET_pt_JER_down_{label}",
-            #                label="PuppiMET $p_T$",
-            #            ).Weight(),
-            #            f"PuppiMET_pt_JES_up_{label}": Hist.new.Reg(
-            #                100,
-            #                0,
-            #                1000,
-            #                name=f"PuppiMET_pt_JES_up{label}",
-            #                label="PuppiMET $p_T$",
-            #            ).Weight(),
-            #            f"PuppiMET_pt_JES_down_{label}": Hist.new.Reg(
-            #                100,
-            #                0,
-            #                1000,
-            #                name=f"PuppiMET_pt_JES_down{label}",
-            #                label="PuppiMET $p_T$",
-            #            ).Weight(),'''
             f"PuppiMET_phi_{label}": Hist.new.Reg(
                 100,
                 -4,
                 4,
                 name=f"PuppiMET_phi_{label}",
-                label=r"PuppiMET $\phi$",
+                label=r"$\phi^{\mathrm{PuppiMET}}$",
             ).Weight(),
             #            f"PuppiMET_phi_JER_up_{label}": Hist.new.Reg(
             #                100,
@@ -846,13 +811,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 -3,
                 3,
                 name=f"MET_phi_{label}",
-                label=r"$\phi^{\mathrm{PFMET}}_T$ [GeV]",
+                label=r"$\phi^{\mathrm{PFMET}}$ [GeV]",
             ).Weight(),
             f"WH_MET_pt_{label}": Hist.new.Reg(
-                100,
+                200,
                 0,
                 1000,
-                name=f"WH_MET_JEC_pt_{label}",
+                name=f"WH_MET_pt_{label}",
                 label=r"$p^{\mathrm{WH MET}}_T$ [GeV]",
             ).Weight(),
             f"WH_MET_phi_{label}": Hist.new.Reg(
@@ -860,7 +825,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 -3,
                 3,
                 name=f"WH_MET_phi_{label}",
-                label=r"$\phi^{\mathrm{WH MET}}_T$ [GeV]",
+                label=r"$\phi^{\mathrm{WH MET}}$ [GeV]",
             ).Weight(),
             f"MET_JEC_pt_{label}": Hist.new.Reg(
                 100,
@@ -869,27 +834,27 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"MET_JEC_pt_{label}",
                 label=r"$p^{\mathrm{PFMET}}_T$ [GeV]",
             ).Weight(),
-            # f"nBLoose_{label}": Hist.new.Reg(
-            #     20,
-            #     0,
-            #     20,
-            #     name=f"nBLoose_{label}",
-            #     label="# loose cut b jets",
-            # ).Weight(),
+            f"nBLoose_{label}": Hist.new.Reg(
+                20,
+                0,
+                20,
+                name=f"nBLoose_{label}",
+                label="$n_{\mathrm{Loose~B-jets}$",
+            ).Weight(),
             # f"nBMedium_{label}": Hist.new.Reg(
             #     20,
             #     0,
             #     20,
             #     name=f"nBMedium_{label}",
-            #     label="# medium cut b jets",
+            #     label="$n_{\mathrm{Medium~B-jets}$",
             # ).Weight(),
-            # f"nBTight_{label}": Hist.new.Reg(
-            #     20,
-            #     0,
-            #     20,
-            #     name=f"nBTight_{label}",
-            #     label="# tight cut b jets",
-            # ).Weight(),
+            f"nBTight_{label}": Hist.new.Reg(
+                20,
+                0,
+                20,
+                name=f"nBTight_{label}",
+                label="$n_{\mathrm{Tight~B-jets}$",
+            ).Weight(),
             # f"nBLoose_noLepIso_{label}": Hist.new.Reg(
             #     20,
             #     0,
@@ -1002,6 +967,12 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"jet3_qgl_{label}",
             #     label="3rd leading jet qgl",
             # ).Weight(),
+            f"bjetSel_{label}": Hist.new.Int(
+                0,
+                2,
+                name=f"bjetSel_{label}",
+                label="b-jet selection",
+            ).Weight(),
             # f"bjet_pt_{label}": Hist.new.Reg(
             #     1000,
             #     0,
@@ -1037,13 +1008,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"bjet_btag_{label}",
             #     label="highest btag jet btag value",
             # ).Weight(),
-            # f"ak4jets_inSUEPcluster_n_{label}": Hist.new.Reg(
-            #     20,
-            #     0,
-            #     20,
-            #     name=f"ak4jets_inSUEPcluster_n_{label}",
-            #     label="# ak4jets in SUEP cluster",
-            # ).Weight(),
+            f"ak4jets_inSUEPcluster_n_{label}": Hist.new.Reg(
+                20,
+                0,
+                20,
+                name=f"ak4jets_inSUEPcluster_n_{label}",
+                label="# ak4jets in SUEP cluster",
+            ).Weight(),
             # f"ak4jets_inSUEPcluster_pt_{label}": Hist.new.Reg(
             #     100,
             #     0,
@@ -1072,13 +1043,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"ak4jet2_inSUEPcluster_pt_{label}",
             #     label="ak4jet2 in SUEP cluster $p_T$",
             # ).Weight(),
-            f"nak4jets_outsideSUEP_{label}": Hist.new.Reg(
-                20,
-                0,
-                20,
-                name=f"nak4jets_outsideSUEP_n_{label}",
-                label="# AK4 jets outside SUEP AK15 cluster",
-            ).Weight(),
+            # f"nak4jets_outsideSUEP_{label}": Hist.new.Reg(
+            #     20,
+            #     0,
+            #     20,
+            #     name=f"nak4jets_outsideSUEP_n_{label}",
+            #     label="# AK4 jets outside SUEP AK15 cluster",
+            # ).Weight(),
             # f"cosThetaCS_{label}": Hist.new.Reg(
             #     100,
             #     -1,
@@ -1205,13 +1176,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"lepton_IDMVA_{label}",
             #     label=r"$\ell$ IDMVA",
             # ).Weight(),
-            # f"lepton_iso_{label}": Hist.new.Reg(
-            #     50,
-            #     0,
-            #     1,
-            #     name=f"lepton_iso_{label}",
-            #     label=r"$\ell$ iso",
-            # ).Weight(),
+            f"lepton_iso_{label}": Hist.new.Reg(
+                50,
+                0,
+                1,
+                name=f"lepton_iso_{label}",
+                label=r"$\ell$ iso",
+            ).Weight(),
             # f"lepton_miniIso_{label}": Hist.new.Reg(
             #     50,
             #     0,
@@ -1365,13 +1336,6 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"W_SUEP_vBV_{label}",
             #     label="($\\vec{p}_T^W + \\vec{p}_T^{SUEP}$)/$|\\vec{p}_T^{SUEP}|$",
             # ).Weight(),
-            # f"W_SUEP_vBV2_{label}": Hist.new.Reg(
-            #     1000,
-            #     -1,
-            #     1000,
-            #     name=f"W_SUEP_vBV2_{label}",
-            #     label="($\\vec{p}_T^W + \\vec{p}_T^{SUEP}$)$",
-            # ).Weight(),
             # f"W_jet1_vBV_{label}": Hist.new.Reg(
             #     100,
             #     -1,
@@ -1392,6 +1356,20 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 200,
                 name=f"W_mt_PuppiMET_{label}",
                 label=r" $W^{\mathrm{PuppiMET}} m_T$ [GeV]",
+            ).Weight(),
+            f"new_W_mt_PuppiMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"new_W_mt_PuppiMET_{label}",
+                label=r" $W^{\mathrm{PuppiMET}} m_T$ [GeV]",
+            ).Weight(),
+            f"new_W_mt_PFMET_{label}": Hist.new.Reg(
+                201,
+                0,
+                200,
+                name=f"W_mt_PFMET_{label}",
+                label=r" $W^{\mathrm{PFET}} m_T$ [GeV]",
             ).Weight(),
             f"W_mt_{label}": Hist.new.Reg(
                 200,
@@ -1420,6 +1398,20 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 500,
                 name=f"W_pt_PuppiMET_{label}",
                 label=r"$W^{\mathrm{PuppiMET}}$ $p_T$ [GeV]",
+            ).Weight(),
+            f"new_W_pt_PuppiMET_{label}": Hist.new.Reg(
+                500,
+                0,
+                500,
+                name=f"new_W_pt_PuppiMET_{label}",
+                label=r"$W^{\mathrm{PuppiMET}}$ $p_T$ [GeV]",
+            ).Weight(),
+            f"new_W_pt_PFMET_{label}": Hist.new.Reg(
+                500,
+                0,
+                500,
+                name=f"new_W_pt_PFMET_{label}",
+                label=r"$W^{\mathrm{PFMET}}$ $p_T$ [GeV]",
             ).Weight(),
             # f"genW_phi_{label}": Hist.new.Reg(
             #     60,
@@ -1463,13 +1455,27 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"W_phi_PuppiMET_{label}",
             #     label=r"$W^{\mathrm{PuppiMET}}$ $\phi$",
             # ).Weight(),
-            # f"W_phi{label}": Hist.new.Reg(
-            #     60,
-            #     -3.2,
-            #     3.2,
-            #     name=f"W_phi{label}",
-            #     label=r"$W^{\mathrm{PFMET}}$ $\phi$",
-            # ).Weight(),
+            f"W_phi_{label}": Hist.new.Reg(
+                60,
+                -3.2,
+                3.2,
+                name=f"W_phi_{label}",
+                label=r"$\phi_W$",
+            ).Weight(),
+            f"new_W_phi_PuppiMET_{label}": Hist.new.Reg(
+                60,
+                -3.2,
+                3.2,
+                name=f"new_W_phi_PuppiMET_{label}",
+                label=r"$W^{\mathrm{PuppiMET}}$ $\phi$",
+            ).Weight(),
+            f"new_W_phi_PFMET_{label}": Hist.new.Reg(
+                60,
+                -3.2,
+                3.2,
+                name=f"new_W_phi_PFMET_{label}",
+                label=r"$W^{\mathrm{PFMET}}$ $\phi$",
+            ).Weight(),
             # f"topMass_{label}": Hist.new.Reg(
             #     100,
             #     0,
@@ -1561,25 +1567,25 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"deltaPhi_SUEP_CaloMET_{label}",
             #     label=r"$\Delta\phi$(MET, CaloMET)",
             # ).Weight(),
-            # f"deltaPhi_SUEP_PuppiMET_{label}": Hist.new.Reg(
-            #     60,
-            #     0,
-            #     3.2,
-            #     name=f"deltaPhi_SUEP_PuppiMET_{label}",
-            #     label=r"$\Delta\phi$(SUEP, PuppiMET)",
-            # ).Weight(),
             f"deltaPhi_SUEP_MET_{label}": Hist.new.Reg(
                 60,
                 0,
                 3.2,
                 name=f"deltaPhi_SUEP_MET_{label}",
-                label=r"$\Delta\phi$(SUEP, PFMET)",
+                label=r"$\Delta\phi$(SUEP, MET)",
             ).Weight(),
-            f"deltaPhi_SUEP_METUnc_{label}": Hist.new.Reg(
+            f"deltaPhi_SUEP_PuppiMET_{label}": Hist.new.Reg(
                 60,
                 0,
                 3.2,
-                name=f"deltaPhi_SUEP_METUnc_{label}",
+                name=f"deltaPhi_SUEP_PuppiMET_{label}",
+                label=r"$\Delta\phi$(SUEP, PuppiMET)",
+            ).Weight(),
+            f"deltaPhi_SUEP_PFMET_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"deltaPhi_SUEP_PFMET_{label}",
                 label=r"$\Delta\phi$(SUEP, PFMET)",
             ).Weight(),
             f"deltaPhi_SUEP_W_{label}": Hist.new.Reg(
@@ -1588,6 +1594,20 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 3.2,
                 name=f"deltaPhi_SUEP_W_{label}",
                 label=r"$\Delta\phi$(SUEP, W)",
+            ).Weight(),
+            f"deltaPhi_SUEP_W_PFMET_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"deltaPhi_SUEP_W_PFMET_{label}",
+                label=r"$\Delta\phi$(SUEP, W PFMET)",
+            ).Weight(),
+            f"deltaPhi_SUEP_W_PuppiMET_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"deltaPhi_SUEP_W_PuppiMET_{label}",
+                label=r"$\Delta\phi$(SUEP, W PuppiMET)",
             ).Weight(),
             f"deltaPhi_lepton_SUEP_{label}": Hist.new.Reg(
                 60,
@@ -2032,6 +2052,36 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             # )
             # .Weight(),
+            f"2D_lepton_pt_vs_ngood_fastjets_{label}": Hist.new.Reg(
+                1000,
+                0,
+                1000,
+                name=f"lepton_pt_{label}",
+                label="Lepton $p_T$",
+            )
+            .Reg(
+                10,
+                0,
+                10,
+                name=f"ngood_fastjets_{label}",
+                label="$n_{AK15}$",
+            )
+            .Weight(),
+            f"2D_ntracks_vs_ngood_fastjets_{label}": Hist.new.Reg(
+                100,
+                0,
+                100,
+                name=f"ntracks_{label}",
+                label="$n_{\mathrm{tracks}}$",
+            )
+            .Reg(
+                10,
+                0,
+                10,
+                name=f"ngood_fastjets_{label}",
+                label="$n_{AK15}$",
+            )
+            .Weight(),
             # f"2D_SUEP_genEta_vs_deltaR_genSUEP_SUEP_{label}": Hist.new.Reg(
             #     100,
             #     -5,

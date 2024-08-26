@@ -169,9 +169,11 @@ for i, sample in enumerate(samples):
     logging.info(f"Processing sample {i+1}/{len(samples)}: {sample}")
 
     # skip if the output file already exists, unless you --force
+    if hasattr(options, 'pkl') and options.pkl: filetype = "pkl"
+    else: filetype = "root"
     if options.code == "plot" and (
         os.path.isfile(
-            f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.root"
+            f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.{filetype}"
         )
         and not options.force
     ):

@@ -83,7 +83,9 @@ def main():
             sample=options.dataset,
             flag=False,
             output_location=options.output_location,
-            CRQCD=True,
+            CRQCD=True, # this runs as CRQCD!
+            dropNonMethodEvents=True,
+            storeJetsInfo=False,
         )
     )
 

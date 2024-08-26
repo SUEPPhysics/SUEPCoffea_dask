@@ -976,7 +976,10 @@ def plot_ratio(
         ax1.plot([0, 0], color="gray", label="Systematics")
 
     # set labels, legend
-    ax1.set_ylabel("Events", y=1, ha="right")
+    if density:
+        ax1.set_ylabel("Normalized Events", y=1, ha="right")
+    else:
+        ax1.set_ylabel("Events", y=1, ha="right")
     if labels != [None] * len(hlist):  # manually re-order legend to follow the labels
         leg_handles, leg_labels = ax1.get_legend_handles_labels()
         leg_handles = [leg_handles[leg_labels.index(l)] for l in labels]

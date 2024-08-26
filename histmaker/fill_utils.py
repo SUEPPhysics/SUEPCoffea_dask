@@ -370,7 +370,9 @@ def prepare_DataFrame(
             # if the histogram is already initialized for this variable, make the N-1 histogram
             histName = isel[0] + "_" + label_out
             if histName not in output.keys():
-                continue
+                histName = isel[0].replace(config.get("input_method"), label_out)
+                if histName not in output.keys():
+                    continue
 
             n1HistName = (
                 isel[0]
@@ -505,6 +507,7 @@ def auto_fill(
             and key.endswith(input_method)
         ]
         method_plot_labels = list(set(method_plot_labels) - set(event_plot_labels))
+
         for plot in method_plot_labels:
             fill_histogram(output[plot.replace(input_method, label_out)], df[plot], weight=df["event_weight"])
 
@@ -544,6 +547,11 @@ def auto_fill(
                     ].shape[0]
                     == 0
                 )
+
+                # skip if empty
+                if df_r.shape[0] == 0:
+                    iRegion += 1
+                    continue
 
                 # double check blinding
                 if (
@@ -600,7 +608,7 @@ def fill_histogram(hist, payload, weight):
         hist.fill(*final_payload, weight=weight)
     elif type(payload) is pd.Series:
         if len(payload) == 0: 
-            raise Exception(f"Payload {p} for hist {hist} is an empty pd.Series.")
+            raise Exception(f"Payload {payload} for hist {hist} is an empty pd.Series.")
         if type(payload.iloc[0]) is list:
             payload = flatten(payload)
         hist.fill(payload, weight=weight)
@@ -662,16 +670,18 @@ def get_track_killing_config(config: dict) -> dict:
 
 
 def get_jet_correction_config(config: dict, jet_correction: str) -> dict:
-    new_config = {}
     for label_out, _config_out in config.items():
-        label_out_new = label_out
-        new_config[label_out_new] = deepcopy(config[label_out])
-        for iSel in range(len(new_config[label_out_new]["selections"])):
-            if "ht" == new_config[label_out_new]["selections"][iSel][0]:
-                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
-            elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
-                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
-    return new_config
+        label_out_new = label_out + "_" + jet_correction
+        temp_config = deepcopy(config[label_out])
+        found = False
+        for iSel in range(len(temp_config[label_out_new]["selections"])):
+            temp_config[label_out_new]["selections"][iSel] = format_selection(temp_config[label_out_new]["selections"][iSel])
+            if temp_config[label_out_new]["selections"][iSel][0] in ['ht', 'ht_JEC']:
+                temp_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
+                found = True
+        if found:
+            config[label_out_new] = temp_config
+    return config
 
 
 def read_in_weights(fweights):
@@ -763,7 +773,7 @@ def balancing_var(xpt, ypt):
     return var
 
 
-def vector_balancing_var(xphi, yphi, xpt, ypt):
+def calc_vector_sum(xphi, yphi, xpt, ypt):
 
     # cast inputs to numpy arrays
     xpt = np.array(xpt)
@@ -774,10 +784,42 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    vector_sum_pt = (x_v + y_v).pt
+    return x_v + y_v
+
+
+def calc_vector_sum_pt(xphi, yphi, xpt, ypt):
+
+    vector_sum = calc_vector_sum(xphi, yphi, xpt, ypt)
+    vector_sum_pt = vector_sum.pt
 
     if type(vector_sum_pt) is ak.highlevel.Array:
         vector_sum_pt = vector_sum_pt.to_numpy()
+
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    vector_sum_pt[xpt < 0] = -999
+    vector_sum_pt[ypt < 0] = -999
+
+    return vector_sum_pt
+
+
+def calc_vector_sum_phi(xphi, yphi, xpt, ypt):
+
+    vector_sum = calc_vector_sum(xphi, yphi, xpt, ypt)
+    vector_sum_phi = vector_sum.phi
+
+    if type(vector_sum_phi) is ak.highlevel.Array:
+        vector_sum_phi = vector_sum_phi.to_numpy()
+
+    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
+    vector_sum_phi[xpt < 0] = -999
+    vector_sum_phi[ypt < 0] = -999
+
+    return vector_sum_phi
+
+
+def vector_balancing_var(xphi, yphi, xpt, ypt):
+
+    vector_sum_pt = calc_vector_sum_pt(xphi, yphi, xpt, ypt)
 
     var = np.where(ypt > 0, vector_sum_pt / ypt, np.ones(len(xpt)) * -999)
 
@@ -787,8 +829,7 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
 
     return var
 
-
-def vector_balancing_var2(xphi, yphi, xpt, ypt):
+def calc_mt(xphi, yphi, xpt, ypt):
 
     # cast inputs to numpy arrays
     xpt = np.array(xpt)
@@ -799,15 +840,4 @@ def vector_balancing_var2(xphi, yphi, xpt, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    vector_sum_pt = (x_v + y_v).pt
-
-    if type(vector_sum_pt) is ak.highlevel.Array:
-        vector_sum_pt = vector_sum_pt.to_numpy()
-
-    var = np.where(ypt > 0, vector_sum_pt, np.ones(len(xpt)) * -999)
-
-    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    var[xpt < 0] = -999
-    var[ypt < 0] = -999
-
-    return var
+    return np.sqrt(2 * xpt * ypt * (1 - np.cos(x_v.deltaphi(y_v))))

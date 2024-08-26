@@ -157,7 +157,7 @@ def getTracks(events, iso_object=None, isolation_deltaR=0):
     )
     cut = (
         (events.lostTracks.fromPV > 1)
-        & (events.lostTracks.pt >= 0.1)
+        & (events.lostTracks.pt >= 1)
         & (abs(events.lostTracks.eta) <= 2.5)
         & (abs(events.lostTracks.dz) < 0.05)
         & (abs(events.lostTracks.d0) < 0.05)
@@ -230,6 +230,7 @@ def getLeptons(events):
             "dz": events.Electron.dz,
             "charge": events.Electron.pdgId / (-11),
             "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
+            "pfIsoId": -1,
         },
         with_name="Momentum4D",
     )
@@ -243,9 +244,10 @@ def getLooseLeptons(events):
     """
     These leptons follow EXACTLY the ZH definitions, so that we can impose
     orthogonality between the ZH, offline, and WH selections.
+    WARNING: DO NOT CHANGE THIS
     """
 
-    muons, electrons, leptons = getLeptons(events)
+    muons, electrons, _ = getLeptons(events)
 
     cutLooseMuons = (
         (events.Muon.looseId)
@@ -294,6 +296,27 @@ def getTightLeptons(events):
 
     return tightMuons, tightElectrons, tightLeptons
 
+
+def getLooseNotTightLeptons(events):
+
+    looseMuons, looseElectrons, _ = getLooseLeptons(events)
+
+    cutTightMuons = (
+        (looseMuons.tightId)
+        & (looseMuons.pfIsoId >= 5)  # PFIsoVeryTight, aka PF rel iso < 0.1
+        & (abs(looseMuons.dz) <= 0.05)
+        & (looseMuons.pt >= 30)
+    )
+    cutTightElectrons = (looseElectrons.mvaFall17V2Iso_WP80) & (looseElectrons.pt >= 35)
+
+    looseNotTightMuons = looseMuons[~cutTightMuons]
+    looseNotTightElectrons = looseElectrons[~cutTightElectrons]
+    looseNotTightLeptons = ak.concatenate(
+        [looseNotTightMuons, looseNotTightElectrons], axis=1
+    )
+
+    return looseNotTightMuons, looseNotTightElectrons, looseNotTightLeptons
+    
 
 def getPhotons(events, isMC: bool = 1):
     """
@@ -566,6 +589,9 @@ def oneTightLeptonSelection(events):
     leptonSelection = ak.num(tightLeptons) == 1
     events = events[leptonSelection]
     tightLeptons = tightLeptons[leptonSelection]
+
+    if 'WH_lepton' in events.fields:
+        raise Exception("WH_lepton already in events.")
     events = ak.with_field(events, tightLeptons[:, 0], "WH_lepton")
 
     return events 
@@ -574,17 +600,45 @@ def oneTightLeptonSelection(events):
 def CRQCDSelection(events):
     """
     Defines the Control Region for QCD.
-    No tight leptons (orthogonal to SR), and exactly one loose lepton.
+    No tight leptons (orthogonal to SR), and exactly one loose lepton,
+    with same pT requirement that we impose on the tight lepton.
     """
 
+    # orthogonality to SR
     _, _, tightLeptons = getTightLeptons(events)
     events = events[(ak.num(tightLeptons) == 0)]
 
-    _, _, looseLeptons = getLooseLeptons(events)
-    events = events[(ak.num(looseLeptons) == 1)] 
-    looseLeptons = looseLeptons[(ak.num(looseLeptons) == 1)]
+    # for muons, we take all the 'tightMuon' selection, except for the isolation id
+    looseMuons, _, _ = getLooseLeptons(events)
+    cutAlmostTightMuons = (
+        (looseMuons.tightId)
+        & (abs(looseMuons.dz) <= 0.05)
+        & (looseMuons.pt >= 30)
+    )
+    almostTightMuons = looseMuons[cutAlmostTightMuons]
 
-    events = ak.with_field(events, looseLeptons[:,0], "WH_lepton")
+    # for electrons, we go looser than the 'looseElectron' in the isolation by using WPL
+    _, electrons, _ = getLeptons(events)
+    cutAlmostLooseElectrons = (
+        (events.Electron.cutBased >= 2)
+        & (events.Electron.pt >= 35)
+        & (events.Electron.mvaFall17V2Iso_WPL)
+        & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
+        & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
+        & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+        & (abs(events.Electron.eta) < 2.5)
+    )
+    almostLooseElectrons = electrons[cutAlmostLooseElectrons]
+
+    # require exactly one lepton
+    CRQCDleptons = ak.concatenate([almostTightMuons, almostLooseElectrons], axis=1)
+    oneLeptonSelection = ak.num(CRQCDleptons) == 1
+    events = events[oneLeptonSelection]
+    CRQCDleptons = CRQCDleptons[oneLeptonSelection]
+
+    if 'WH_lepton' in events.fields:
+        raise Exception("WH_lepton already in events.")
+    events = ak.with_field(events, CRQCDleptons[:,0], "WH_lepton")
 
     return events
 

@@ -2,10 +2,8 @@ import json
 import logging
 import sys
 
-import hist
-
 sys.path.append("../../")
-import plotting.plot_utils
+from plotting import plot_utils
 
 
 def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
@@ -56,7 +54,7 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
             if not plot.endswith(out_label):
                 continue
 
-            if model in plot and "2D" not in plot:
+            if model in plot and len(plot.axes) < 2:
                 GNN_syst_plots[plot + "_GNNsyst_down"] = (
                     plot_utils.apply_binwise_scaling(
                         plots[plot].copy(), bins, [1 - s for s in scales]

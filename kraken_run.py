@@ -132,7 +132,7 @@ def main():
         type=str,
         required=True,
         help="Channel to run.",
-        choices=["ggF", "WH"],
+        choices=["ggF", "WH", "WH-CRQCD", "WH-VRGJ"],
     )
     parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
     parser.add_argument(
@@ -183,7 +183,15 @@ def main():
         condor_file = "condor_SUEP_WH.py"
         outfile = "out"
         file_ext = "hdf5"
-
+    elif options.channel == "WH-CRQCD":
+        condor_file = "condor_SUEP_WH_CRQCD.py"
+        outfile = "out"
+        file_ext = "hdf5"
+    elif options.channel == "WH-VRGJ":
+        condor_file = "condor_SUEP_WH_VRGJ.py"
+        outfile = "out"
+        file_ext = "hdf5"
+        
     # Making sure that the proxy is good
     proxy, lifetime = check_proxy(time_min=100)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")

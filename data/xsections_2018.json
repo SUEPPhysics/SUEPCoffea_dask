@@ -403,7 +403,7 @@
   },
   "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 66680.0,
     "signal": 0
   },
@@ -571,25 +571,25 @@
   },
   "WJetsToLNu_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 733.1,
     "signal": 0
   },
   "WJetsToLNu_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 27.92,
     "signal": 0
   },
   "WJetsToLNu_Pt-400To600_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 3.547,
     "signal": 0
   },
   "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 0.5371,
     "signal": 0
   },

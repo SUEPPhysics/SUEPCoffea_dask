@@ -3,35 +3,29 @@ import hist
 import numpy as np
 
 
-def generate_up_histograms(output_labels, plots):
+def generate_up_histograms(plots):
     """
-    Given a output labels corresponding to different methods,
-    and a plots dictionary (plots), loops through all the plots to find the
+    Given a hists dictionary (plots), loops through all the plots to find the
     track_down and nominal variations, and adds a new histogram with an 'up'
     symmetric variation.
 
     Inputs:
-        output_labels: list of strings, output labels.
         plots: dictionary of Hist histograms
     Outputs:
         updated plots dictionary
     """
-    sys = "track_up"
-    for label_out in output_labels:
-        if "track_down" in label_out:
-            continue
 
-        new_output = {}
-        for hist_name in plots.keys():
-            if not hist_name.endswith("_track_down"):
-                continue
-            hDown = plots[hist_name].copy()
-            if len(hDown.axes) > 2: # make_up_symmetric_variation() does not support higher dimensional histograms yet
-                continue
-            hNom = plots[hist_name.replace("_track_down", "")].copy()
-            hUp = make_up_symmetric_variation(hNom, hDown)
-            new_output.update({hist_name.replace("_track_down", "_track_up"): hUp})
-        output = new_output | plots
+    new_output = {}
+    for hist_name in plots.keys():
+        if not hist_name.endswith("_track_down"):
+            continue
+        hDown = plots[hist_name].copy()
+        if len(hDown.axes) > 2: # make_up_symmetric_variation() does not support higher dimensional histograms yet
+            continue
+        hNom = plots[hist_name.replace("_track_down", "")].copy()
+        hUp = make_up_symmetric_variation(hNom, hDown)
+        new_output.update({hist_name.replace("_track_down", "_track_up"): hUp})
+    output = new_output | plots
 
     return output
 

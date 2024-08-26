@@ -1,11 +1,11 @@
 import pickle
-
+import os
 import awkward as ak
 import correctionlib
 import numpy as np
 
 
-def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: bool = False) -> dict:
+def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: bool = False, base_dir: str = '.') -> dict:
     """
     Compute btagging weights for a given jet collection.
     We support working points (wps): 'L', 'M', 'T', 'TL', 'LT',
@@ -27,17 +27,17 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
     flattened_eta = np.array(np.abs(jets.eta))
 
     # grab the correct weights based on the era
-    if era == 2015:
-        btagfile = "data/BTagUL16APV/btagging.json.gz"
-        btagfileL = "data/BTagUL16/btagging.json.gz"
+    if era == 2015: # 2016apv ... 
+        btagfile = os.path.join(base_dir,"data/BTagUL16APV/btagging.json.gz")
+        btagfileL = os.path.join(base_dir, "data/BTagUL16/btagging.json.gz")
     if era == 2016:
-        btagfile = "data/BTagUL16/btagging.json.gz"
+        btagfile = os.path.join(base_dir, "data/BTagUL16/btagging.json.gz")
         btagfileL = btagfile
     if era == 2017:
-        btagfile = "data/BTagUL17/btagging.json.gz"
+        btagfile = os.path.join(base_dir, "data/BTagUL17/btagging.json.gz")
         btagfileL = btagfile
     if era == 2018:
-        btagfile = "data/BTagUL18/btagging.json.gz"
+        btagfile = os.path.join(base_dir, "data/BTagUL18/btagging.json.gz")
         btagfileL = btagfile
     corrector = correctionlib.CorrectionSet.from_file(btagfile)
     correctorL = correctionlib.CorrectionSet.from_file(btagfileL)
@@ -139,7 +139,7 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             )
 
     # these are the efficiencies computed for each analysis and WP
-    effs = {wp: getBTagEffs(jets, era, wp, channel) for wp in wps}
+    effs = {wp: getBTagEffs(jets, era, wp, channel, base_dir) for wp in wps}
     for wp in effs:
         effs[wp] = ak.unflatten(effs[wp], njets)
 
@@ -186,35 +186,40 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - SF['L'][syst_var] * effs['L'], 1)
             dataeff = ak.prod(term1 * term2 * term3, axis=1)
 
-            weights[syst_var] = np.where(mceff > 1, dataeff / mceff, 1)
+            weights[syst_var] = np.where(mceff > 0, dataeff / mceff, 1)
 
     return weights
 
 
-def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh") -> dict:
+def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh", base_dir: str = '.') -> dict:
     """
     Get the efficiencies of b-tagging for a given jet collection,
     binned in jet pt and abs(eta), for a given analysis (channel),
     and for a given WP.
     """
-    if era == 2015:
-        btagfile = f"data/BTagUL16APV/{channel}_eff.pickle"
+    if era == 2015: # 2016apv ...
+        btagfile = os.path.join(base_dir, f"data/BTagUL16APV/{channel}_eff.pickle")
     if era == 2016:
-        btagfile = f"data/BTagUL16/{channel}_eff.pickle"
+        btagfile = os.path.join(base_dir, f"data/BTagUL16/{channel}_eff.pickle")
     if era == 2017:
-        btagfile = f"data/BTagUL17/{channel}_eff.pickle"
+        btagfile = os.path.join(base_dir, f"data/BTagUL17/{channel}_eff.pickle")
     if era == 2018:
-        btagfile = f"data/BTagUL18/{channel}_eff.pickle"
+        btagfile = os.path.join(base_dir, f"data/BTagUL18/{channel}_eff.pickle")
 
     bfile = open(btagfile, "rb")
-    effsLoad = pickle.load(bfile)
+    effsHists = pickle.load(bfile)
 
-    effs = effsLoad[wp]["L"](jets.pt, np.abs(jets.eta))
+    if sorted(list(effsHists.keys())) == ['B', 'C', 'L']:
+        effsHist = effsHists
+    else:
+        effsHist = effsHists[wp]            
+
+    effs = effsHist["L"](jets.pt, np.abs(jets.eta))
     effs = np.where(
-        abs(jets.hadronFlavour) == 4, effsLoad[wp]["C"](jets.pt, np.abs(jets.eta)), effs
+        abs(jets.hadronFlavour) == 4, effsHist["C"](jets.pt, np.abs(jets.eta)), effs
     )
     effs = np.where(
-        abs(jets.hadronFlavour) == 5, effsLoad[wp]["B"](jets.pt, np.abs(jets.eta)), effs
+        abs(jets.hadronFlavour) == 5, effsHist["B"](jets.pt, np.abs(jets.eta)), effs
     )
 
     return effs

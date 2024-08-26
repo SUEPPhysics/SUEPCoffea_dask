@@ -49,6 +49,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         CRQCD:bool=False,
         VRGJ:bool=False,
         dropNonMethodEvents:bool=False,
+        storeJetsInfo:bool=False,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -60,14 +61,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.CRQCD = CRQCD
         self.VRGJ = VRGJ
         self.dropNonMethodEvents = dropNonMethodEvents
+        self.storeJetsInfo = storeJetsInfo # for the b-tag efficiencies
 
     def HighestPTMethod(
         self,
-        indices,
         events,
         output,
         out_label=None,
     ):
+
+        # indices of events, used to keep track which events pass selections for each method
+        # and only fill those rows of the DataFrame (e.g. track killing).
+        # from now on, if any cuts are applied, the indices should be updated, and the df
+        # should be filled with the updated indices.
+        indices = np.arange(0, len(events))
 
         #####################################################################################
         # ---- Track selection
@@ -118,7 +125,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events pass clusterCut.")
+            print("\n\nNo events pass clusterCut.\n\n")
             return
 
         # choose highest pT jet
@@ -138,7 +145,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events pass singleTrackCut.")
+            print("\n\nNo events pass singleTrackCut.\n\n")
             return
 
         ######################################################################################
@@ -204,12 +211,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ak4jets_inSUEPcluster = events.WH_jets_jec[dR_ak4_SUEP < 1.5]
         output["vars"].loc(
             indices,
-            "ak4jets_inSUEPcluster_n_HighestPT",
+            "ak4jets_inSUEPcluster_n_HighestPT" + out_label,
             ak.num(ak4jets_inSUEPcluster, axis=1),
         )
         output["vars"].loc(
             indices,
-            "ak4jets_inSUEPcluster_pt_HighestPT",
+            "ak4jets_inSUEPcluster_pt_HighestPT" + out_label,
             ak.sum(ak4jets_inSUEPcluster.pt, axis=1),
         )
         ak4jets_inSUEPcluster_ptargsort = ak.argsort(
@@ -221,7 +228,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         for i in range(2):
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_pt_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_pt_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True
@@ -231,7 +238,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_phi_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_phi_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True
@@ -241,7 +248,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_eta_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_eta_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True
@@ -251,7 +258,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_mass_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_mass_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.mass, i + 1, axis=1, clip=True
@@ -259,102 +266,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     -999,
                 )[:, i],
             )
-
-        # leading ak4jet tracks
-        leadingAK4_phi = ak.fill_none(
-            ak.pad_none(ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True),
-            -999,
-        )[:, 0]
-        leadingAK4_eta = ak.fill_none(
-            ak.pad_none(ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True),
-            -999,
-        )[:, 0]
-        dR_tracks_leadingAK4 = events.WH_tracks.deltaR(
-            ak.zip(
-                {
-                    "phi": leadingAK4_phi,
-                    "eta": leadingAK4_eta,
-                    "pt": ak.ones_like(leadingAK4_eta),
-                },
-                with_name="Momentum4D",
-            )
-        )
-        leadingAK4_tracks = events.WH_tracks[dR_tracks_leadingAK4 < 0.4]
-        output["vars"].loc(
-            indices,
-            "leadingAK4_inSUEPcluster_ntracks_HighestPT",
-            ak.num(leadingAK4_tracks, axis=1),
-        )
-        output["vars"].loc(
-            indices,
-            "leadingAK4_inSUEPcluster_scalarpt_HighestPT",
-            ak.sum(leadingAK4_tracks.pt, axis=-1),
-        )
-        output["vars"].loc(
-            indices,
-            "leadingAK4_inSUEPcluster_vectorpt_HighestPT",
-            (
-                ak.sum(leadingAK4_tracks.px, axis=-1) ** 2
-                + ak.sum(leadingAK4_tracks.py, axis=-1) ** 2
-            )
-            ** 0.5,
-        )
-
-        # jets outside of the SUEP cluster
-        output["vars"].loc(
-            indices,
-            "minDeltaR_ak4jets_outsideSUEPcluster_HighestPT",
-            ak.fill_none(ak.min(np.abs(dR_ak4_SUEP[dR_ak4_SUEP > 1.5]), axis=1), -999),
-        )
-        output["vars"].loc(
-            indices,
-            "maxDeltaR_ak4jets_outsideSUEPcluster_HighestPT",
-            ak.fill_none(ak.max(np.abs(dR_ak4_SUEP[dR_ak4_SUEP > 1.5]), axis=1), -999),
-        )
-
-        # select tracks outside the AK15 SUEP cluster
-        tracks_outside_SUEP = events.WH_tracks[events.WH_tracks.deltaR(events.WH_SUEP_cand) > 1.5]
-        twoTracksOutsideSUEP = ak.num(tracks_outside_SUEP) > 1
-        tracks_outside_SUEP = tracks_outside_SUEP[twoTracksOutsideSUEP]
-        nonSUEP_eigs = SUEP_utils.sphericity(tracks_outside_SUEP, 1.0)
-        output["vars"].loc(
-            indices[twoTracksOutsideSUEP], "nonSUEP_eig0_HighestPT", nonSUEP_eigs[:, 0]
-        )
-        output["vars"].loc(
-            indices[twoTracksOutsideSUEP], "nonSUEP_eig1_HighestPT", nonSUEP_eigs[:, 1]
-        )
-        output["vars"].loc(
-            indices[twoTracksOutsideSUEP], "nonSUEP_eig2_HighestPT", nonSUEP_eigs[:, 2]
-        )
-
-        # other AK15 jets info
-        output["vars"].loc(
-            indices, "otherAK15_pt_HighestPT", ak.sum(events.WH_other_AK15.pt, axis=1)
-        )
-        other_AK15_nconst = ak.num(events.WH_other_AK15_constituents, axis=-1)
-        mostNumerousAK15 = events.WH_other_AK15[
-            ak.argmax(other_AK15_nconst, axis=-1, keepdims=True)
-        ]
-        output["vars"].loc(
-            indices,
-            "otherAK15_maxConst_pt_HighestPT",
-            mostNumerousAK15.pt.to_numpy(allow_missing=True),
-        )
-        output["vars"].loc(
-            indices,
-            "otherAK15_maxConst_eta_HighestPT",
-            mostNumerousAK15.eta.to_numpy(allow_missing=True),
-        )
-        output["vars"].loc(
-            indices,
-            "otherAK15_maxConst_phi_HighestPT",
-            mostNumerousAK15.phi.to_numpy(allow_missing=True),
-        )
-        output["vars"].loc(
-            indices,
-            "otherAK15_maxConst_nconst_HighestPT",
-            ak.max(other_AK15_nconst, axis=-1).to_numpy(allow_missing=True),
-        )
 
         # WH system
         if 'WH_W' in events.fields:
@@ -404,6 +315,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["ngood_ak4jets"] = ak.num(events.WH_jets_jec).to_list()
         output["vars"]["ht_JEC"] = ak.sum(events.WH_jets_jec.pt, axis=-1).to_list()
 
+        # uncorrected jets
+        ak4jets = WH_utils.getAK4Jets(events.Jet, events.run, iso=events.WH_lepton if not self.VRGJ else events.WH_gamma, isMC=self.isMC)
+        output["vars"]["n_ak4jets"] = ak.num(ak4jets).to_list()
+        output["vars"]["ht"] = ak.sum(ak4jets.pt, axis=-1).to_list()
+
+        # gen variables
+        if 'LHE' in events.fields:
+            if 'Vpt' in events.LHE.fields:
+                output["vars"]["LHE_Vpt"] = events.LHE.Vpt
+
         # saving number of bjets for different definitions (higher or lower requirements on b-likeliness) - see btag_utils.py
         # btag function requests eras as integers (used again for btag weights)
         if self.era == "2016apv":
@@ -420,7 +341,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             (events.WH_jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
         )[:]
         # store jet information (jet pt, eta, hadronFlavor, btag) in histogram for bjet eff calculation
-        if self.isMC:
+        if self.isMC and self.storeJetsInfo:
             btag_category = ak.where(
               (events.WH_jets_jec.btag < btagcuts("Loose", era_int)),
                 0,
@@ -477,7 +398,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ak.pad_none(jets_pTsorted.btag, 1, axis=1, clip=True), -999
         )[:, 0]
 
-        # saving kinematic variables for the deltaphi(min(jet,MET)) jet
+        # saving kinematic variables for the deltaphi(min(jet,WH MET)) jet
         jets_deltaPhiMET = WH_utils.MET_delta_phi(events.WH_jets_jec, events.WH_MET)
         sorted_deltaphiMET_jets = events.WH_jets_jec[
             ak.argsort(jets_deltaPhiMET, axis=1, ascending=True)
@@ -525,7 +446,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
             output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
-            # TODO CorrectedMETFactory is broken!
+            # TODO CorrectedMETFactory is broken! The following cannot be trusted!
             #output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET.JER.up.pt
             #output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET.JER.up.pt
             #output["vars"]["MET_JEC_pt_JES_up"] = events.WH_MET.JES_jes.up.pt
@@ -560,7 +481,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             else:
                 output["vars"]["PSWeight"] = psweights
 
-            for metaCR in ["sr", "crtt", "crwj"]:
+            for metaCR in ["sr", "crwj", "crtt"]:
                 bTagWeights = doBTagWeights(
                     events.WH_jets_jec, era_int, wps="TL", channel="wh_"+metaCR, do_syst=self.do_syst
                 )  
@@ -613,6 +534,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["lepton_miniIso"] = events.WH_lepton.miniIso
             output["vars"]["lepton_dxy"] = events.WH_lepton.dxy
             output["vars"]["lepton_dz"] = events.WH_lepton.dz
+            output["vars"]["lepton_pfIsoId"] = events.WH_lepton.pfIsoId
 
             # saving min, max delta R, phi, eta between any jet and the tight lepton
             jet_lepton_combinations_deltaR = np.abs(events.WH_jets_jec.deltaR(events.WH_lepton))
@@ -642,24 +564,27 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["nLooseLeptons"] = ak.num(looseLeptons).to_list()
         output["vars"]["nLooseMuons"] = ak.num(looseMuons).to_list()
         output["vars"]["nLooseElectrons"] = ak.num(looseElectrons).to_list()
-        highpt_leptons = ak.argsort(
-            looseLeptons.pt, axis=1, ascending=False, stable=True
+        
+        # loose not tight leptons
+        _, _, looseNotTightLeptons = WH_utils.getLooseNotTightLeptons(events)
+        highpt_looseNotTightLeptons = ak.argsort(
+            looseNotTightLeptons.pt, axis=1, ascending=False, stable=True
         )
-        looseLeptons_pTsorted = looseLeptons[highpt_leptons]
+        looseNotTightLeptons_pTsorted = looseNotTightLeptons[highpt_looseNotTightLeptons]
         for i in range(3):
-            output["vars"]["looseLepton" + str(i + 1) + "_pt"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.pt, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_pt"] = ak.fill_none(
+                ak.pad_none(looseNotTightLeptons_pTsorted.pt, i + 1, axis=1, clip=True), -999
             )[:, i]
-            output["vars"]["looseLepton" + str(i + 1) + "_phi"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.phi, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_phi"] = ak.fill_none(
+                ak.pad_none(looseNotTightLeptons_pTsorted.phi, i + 1, axis=1, clip=True), -999
             )[:, i]
-            output["vars"]["looseLepton" + str(i + 1) + "_eta"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.eta, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_eta"] = ak.fill_none(
+                ak.pad_none(looseNotTightLeptons_pTsorted.eta, i + 1, axis=1, clip=True), -999
             )[:, i]
-            output["vars"]["looseLepton" + str(i + 1) + "_flavor"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.pdgID, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_flavor"] = ak.fill_none(
+                ak.pad_none(looseNotTightLeptons_pTsorted.pdgID, i + 1, axis=1, clip=True), -999
             )[:, i]
-
+        
         # saving W information
         if 'WH_W' in events.fields:
             events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.PuppiMET), "WH_W_PuppiMET")
@@ -740,12 +665,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 ak.max(jet_photon_combinations_deltaEta, axis=-1), -999
             )
 
-            # saving min delta phi between any jet and the photon
-            jet_photon_deltaPhi = np.abs(events.WH_jets_jec.deltaphi(events.WH_gamma))
-            output["vars"]["minDeltaPhiJetPhoton"] = ak.fill_none(
-                ak.min(jet_photon_deltaPhi, axis=-1), -999
-            )
-
         # saving min, max delta R, phi, eta between jets
         jet_combinations = ak.combinations(
             events.WH_jets_jec, 2, fields=["jet1", "jet2"], axis=-1
@@ -795,7 +714,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             events = applyGoldenJSON(self, events)
         output["cutflow_goldenJSON" + out_label] += ak.sum(events.genWeight)
 
-        events = WH_utils.genSelection(events, self.sample)
+        # temporarily disabled for studies of w+jets data/MC
+        # events = WH_utils.genSelection(events, self.sample)
         output["cutflow_genCuts" + out_label] += ak.sum(events.genWeight)
 
         if not self.VRGJ:
@@ -816,8 +736,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events pass basic event selection.")
-            return output
+            print("\n\nNo events pass basic event selection.\n\n")
+            return events, output
 
         #####################################################################################
         # ---- Lepton selection
@@ -840,8 +760,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events pass one lepton / photon.")
-            return output
+            print("\n\nNo events pass one lepton / photon.\n\n")
+            return events, output
 
         #####################################################################################
         # ---- Jets
@@ -890,14 +810,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # ---- SUEP definition and analysis
         #####################################################################################
 
-        # indices of events, used to keep track which events pass selections for each method
-        # and only fill those rows of the DataFrame (e.g. track killing).
-        # from now on, if any cuts are applied, the indices should be updated, and the df
-        # should be filled with the updated indices.
-        indices = np.arange(0, len(events))
-
         self.HighestPTMethod(
-            indices,
             events,
             output=output,
             out_label=out_label,
@@ -996,15 +909,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 }
             )
 
-            indices = np.arange(0, len(events))
-            self.HighestPTMethod(
-                indices,
-                events,
-                output=output,
-                out_label="_track_down",
-            )
+            if len(events) > 0:
+                self.HighestPTMethod(
+                    events,
+                    output=output,
+                    out_label="_track_down",
+                )
 
-        if self.dropNonMethodEvents:
+        if self.dropNonMethodEvents and len(events) > 0:
             # this is not very efficient, as we are processing a lot of events that we drop
             # it also assumes that we have SUEP_nconst for each method
             methods = [column.split("SUEP_nconst_")[-1] for column in output["vars"].columns if "SUEP_nconst_" in column]
