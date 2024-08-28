@@ -49,13 +49,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         self.config = kwargs.get("config", {})
         self.hists = kwargs.get("hists", {})
 
-        logging.basicConfig(level=logging.ERROR) # TODO quiet dask_distributed and dask_joqueue, this doesn't seem to work
+        logging.basicConfig(level=logging.ERROR) 
         self.logger = logging.getLogger(self.__class__.__name__) # logging for this class only
         self.logger.setLevel(level=logging.INFO)
         if self.options.verbose:
             self.logger.setLevel(logging.DEBUG)
-            #TODO debug
-            #pass
 
     def get_options(self, options: dict) -> SimpleNamespace:
         """
@@ -291,7 +289,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 # write out histograms
                 for h, hist in histograms.items():
                     if len(hist.axes) > 3:
-                        # TODO debug
                         self.logger.warning(
                            f"Skipping {h} because it has more than 3 axes. This is not supported by .root files."
                         )
@@ -393,6 +390,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             df:pd.DataFrame, variation:str, options: SimpleNamespace, config_out:dict, config_tag:str,
             histograms:dict, cutflow:dict = {}, metadata:dict = {}
         ):
+        # TODO move this to fill_utils?
 
         df_plot = df.copy()
 
@@ -447,8 +445,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
     @staticmethod
     def apply_event_weights(df: pd.DataFrame, variation: str, options: SimpleNamespace, sample: str = '', config_tag: str = '') -> pd.DataFrame:
-
-        # TODO move this to fill_utils??
+        # TODO move this to fill_utils?
 
         # apply event weights
         if options.isMC:

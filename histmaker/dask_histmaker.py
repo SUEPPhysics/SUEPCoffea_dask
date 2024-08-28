@@ -12,8 +12,6 @@ from dask_jobqueue import SLURMCluster
 from coffea.processor.accumulator import AccumulatorABC
 from coffea.processor import value_accumulator, dict_accumulator
 
-# TODO debug
-logging.basicConfig(level=logging.DEBUG)
 
 class BaseDaskHistMaker():
     """
