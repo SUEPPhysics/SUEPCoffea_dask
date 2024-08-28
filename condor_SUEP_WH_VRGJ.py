@@ -83,7 +83,9 @@ def main():
             sample=options.dataset,
             flag=False,
             output_location=options.output_location,
-            VRGJ=True, # gamma+jets VR
+            VRGJ=True, # this runs as gamma+jets VR!
+            dropNonMethodEvents=True,
+            storeJetsInfo=False,
         )
     )
 
