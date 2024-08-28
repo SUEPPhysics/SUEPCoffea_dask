@@ -112,7 +112,7 @@ def test_ntuplemaker(run, config):
             sys.exit()
 
         # delete output and log files if everything was successful
-        # os.system("rm " + output_file)
+        os.system("rm " + output_file)
         os.system("rm " + run + ".out")
         os.system("rm " + run + ".err")
 

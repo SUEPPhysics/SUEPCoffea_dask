@@ -697,6 +697,17 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ak.max(jet_combinations_deltaEta, axis=-1), -999
         )
 
+        # store tau information
+        WH_utils.storeTausInfo(events, output)
+
+        # store Z information for DY
+        if self.isMC and 'DYJetsToLL' in self.sample:
+            WH_utils.storeGenZAndDaughtersInfo(events, output)
+
+        # store W information for W+jets
+        if self.isMC and 'WJets' in self.sample:
+            WH_utils.storeGenWInfo(events, output)
+
         return events
     
 

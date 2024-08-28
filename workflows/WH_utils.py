@@ -724,6 +724,62 @@ def calc_W_mt(lepton, MET):
     )
     return _W_mt
 
+def getTaus(events):
+
+    # see https://twiki.cern.ch/twiki/bin/view/CMS/TauIDRecommendationForRun2
+    taus = events.Tau
+    tau_selection = (
+        (taus.pt > 20) &
+        (abs(taus.eta) < 2.3) &
+        (abs(taus.dz) < 0.2) &
+        (taus.idAntiMu >= 1) &
+        ((taus.idDeepTau2017v2p1VSe >= 8) | (taus.idDeepTau2017v2p1VSmu >= 2) | (taus.idDeepTau2017v2p1VSjet >= 8)) &
+        (taus.decayMode != 5) & (taus.decayMode != 6)
+    )
+    return taus[tau_selection]
+
+def storeTausInfo(events, output, sample: str = ''):
+
+    taus = getTaus(events)
+    output["vars"]['nTaus'] = ak.num(taus, axis=1).to_numpy().astype(np.int8)
+
+    if 'DYJetsToLL' in sample:
+        # this is for a particular study on DY, could be dropped in future
+        for i in range(2):
+            output["vars"][f"tau{i}_pt"] = ak.fill_none(ak.pad_none(taus.pt, i+1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+            output["vars"][f"tau{i}_eta"] = ak.fill_none(ak.pad_none(taus.eta, i+1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+            output["vars"][f"tau{i}_phi"] = ak.fill_none(ak.pad_none(taus.phi, i+1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+
+def storeGenWInfo(events, output):
+
+    ws = events.GenPart[(abs(events.GenPart.pdgId) == 24) & (events.GenPart.statusFlags & (1 << 13) > 0)]
+    output["vars"][f"genW_pt"] = ak.fill_none(ak.pad_none(ws.pt, 1, axis=1, clip=True)[:,0], -999).to_numpy().astype(np.float16)
+    output["vars"][f"genW_eta"] = ak.fill_none(ak.pad_none(ws.eta, 1, axis=1, clip=True)[:,0], -999).to_numpy().astype(np.float16)
+    output["vars"][f"genW_phi"] = ak.fill_none(ak.pad_none(ws.phi, 1, axis=1, clip=True)[:,0], -999).to_numpy().astype(np.float16)
+
+def storeGenZAndDaughtersInfo(events, output):
+
+    z_idx = ak.local_index(events.GenPart, axis=1)[(abs(events.GenPart.pdgId) == 23) & (events.GenPart.statusFlags & (1 << 13) > 0)]
+    zs = events.GenPart[z_idx]
+    z_idx = ak.fill_none(
+                ak.pad_none(
+                    z_idx, 1, axis=1, clip=True
+                ),
+                -999,
+            )[:,0]
+    daughters = events.GenPart[events.GenPart.genPartIdxMother == z_idx]
+
+    output["vars"][f"genZ_pt"] = ak.fill_none(ak.pad_none(zs.pt, 1, axis=1, clip=True)[:,0], -999).to_numpy().astype(np.float16)
+    output["vars"][f"genZ_eta"] = ak.fill_none(ak.pad_none(zs.eta, 1, axis=1, clip=True)[:,0], -999).to_numpy().astype(np.float16)
+    output["vars"][f"genZ_phi"] = ak.fill_none(ak.pad_none(zs.phi, 1, axis=1, clip=True)[:,0], -999).to_numpy().astype(np.float16)
+    
+    for i in range(2):
+        print(ak.fill_none(ak.pad_none(daughters.pt, i+1, axis=1, clip=True)[:,i], -999).to_numpy())
+        output["vars"][f"genZ_daughter{i}_pt"] = ak.fill_none(ak.pad_none(daughters.pt, i+1, axis=1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+        output["vars"][f"genZ_daughter{i}_eta"] = ak.fill_none(ak.pad_none(daughters.eta, i+1, axis=1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+        output["vars"][f"genZ_daughter{i}_phi"] = ak.fill_none(ak.pad_none(daughters.phi, i+1, axis=1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+        output["vars"][f"genZ_daughter{i}_pdgId"] = ak.fill_none(ak.pad_none(daughters.pdgId, i+1, axis=1, clip=True)[:,i], -999).to_numpy().astype(np.float16)
+
 
 ##########################################################################################################################
 # The following functions are deprecated, but kept around for they might be useful in the future.
