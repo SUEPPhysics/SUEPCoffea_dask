@@ -1,22 +1,23 @@
+"""
+Author: Luca Lavezzo
+Date: August 2024
+"""
+
 import logging
 import os
 import pickle
 import subprocess
 import sys
 import uproot
-import dask
 import copy
-import socket
 import json
 import numpy as np
 import pandas as pd
 from dask import delayed
-from typing import Optional, List, Tuple
+from typing import List
 from types import SimpleNamespace
-from dask.distributed import Client, LocalCluster, as_completed, Future
-from dask_jobqueue import SLURMCluster
-from coffea.processor.accumulator import AccumulatorABC
-from coffea.processor import value_accumulator, dict_accumulator
+from dask.distributed import Client, Future
+from coffea.processor import value_accumulator
 
 sys.path.append("..")
 import fill_utils
@@ -34,16 +35,34 @@ from dask_histmaker import BaseDaskHistMaker
 
 
 class SUEPDaskHistMaker(BaseDaskHistMaker):
+    """
+    Dask HistMaker for SUEP analyses.
+    Processes hdf5 ntuples containing event information and produces histograms.
+    See histmaker/README.md for more information.
+    """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, options: dict, **kwargs) -> None:
 
         super().__init__(**kwargs)
 
+        self.options = self.get_options(options)
+        self.config = kwargs.get("config", {})
+        self.hists = kwargs.get("hists", {})
+
+        logging.basicConfig(level=logging.ERROR) # TODO quiet dask_distributed and dask_joqueue, this doesn't seem to work
+        self.logger = logging.getLogger(self.__class__.__name__) # logging for this class only
+        self.logger.setLevel(level=logging.INFO)
+        if self.options.verbose:
+            self.logger.setLevel(logging.DEBUG)
+            #TODO debug
+            #pass
+
+    def get_options(self, options: dict) -> SimpleNamespace:
+        """
+        Initialize options for processing.
+        """
+
         self.default_options = {
-            'isMC': 0,
-            'channel': 'WH',
-            'era': '2018',
-            'tag': 'WH_7_20',
             'output': 'daskHistMaker',
             'doSyst': 0,
             'verbose': 0,
@@ -63,19 +82,14 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             'blind': 1,
             'redirector': 'root://submit50.mit.edu/',
         }
+        self.mandatory_options = ['era', 'tag', 'channel', 'isMC']
         self.options = self.default_options
-        self.options.update(kwargs.get("options", {}))
-        self.options = SimpleNamespace(**self.options)
-        self.config = kwargs.get("config", {})
-        self.hists = kwargs.get("hists", {})
-
-        logging.basicConfig(level=logging.ERROR) # TODO quiet dask_distributed and dask_joqueue, this doesn't seem to work
-        self.logger = logging.getLogger(self.__class__.__name__) # logging for this class only
-        self.logger.setLevel(level=logging.INFO)
-        if self.options.verbose:
-            self.logger.setLevel(logging.DEBUG)
-            #TODO debug
-            #pass
+        self.options.update(options)
+        for opt in self.mandatory_options:
+            if opt not in self.options:
+                raise ValueError(f"Missing mandatory option {opt}.")
+            
+        return SimpleNamespace(**self.options)
 
     def preprocess_sample(self, sample: str) -> None:
         """
@@ -115,7 +129,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         histograms = output.get("hists", {})
         cutflow = output.get("cutflow", {})
-        gensumweight = output.get("gensumweight", 0)
+        gensumweight = output.get("gensumweight", value_accumulator(float, 0)).value
 
         metadata = {
             "ntuple_tag": self.options.tag,
@@ -125,7 +139,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "sample": sample,
             "signal": (self.options.isMC) and (fill_utils.isSampleSignal(sample, self.options.era)),
             "xsec": 1,
-            "gensumweight": gensumweight.value,
+            "gensumweight": gensumweight,
             "lumi": 1,
             "nfailed": output["_processing_metadata"].get("nfailed", value_accumulator(float, 0)).value,
             "nsuccess": output["_processing_metadata"].get("nsuccess", value_accumulator(float, 0)).value   
@@ -324,7 +338,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         # update the gensumweight
         if options.isMC:
             logging.debug(f"\tFound gensumweight {ntuple_metadata['gensumweight']} in ntuple.")
-            output["gensumweight"] = ntuple_metadata["gensumweight"]
+            output["gensumweight"] += ntuple_metadata["gensumweight"]
 
         # update the cutflows
         if ntuple_metadata != 0 and any(["cutflow" in k for k in ntuple_metadata.keys()]):
@@ -525,14 +539,16 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
     
 if __name__ == "__main__":
 
+    # example usage
+
     options = {
-        'isMC': 0,
+        'isMC': 1,
         'channel': 'WH',
         'era': '2018',
         'tag': 'WH_7_20',
         'output': 'testDaskHistMaker',
         'doSyst': 0,
-        'verbose': 1,
+        'verbose': 0,
         'xrootd': 0,
         'saveDir': '/ceph/submit/data/user/l/lavezzo/SUEP/outputs/',
         'logDir': '/work/submit/lavezzo/SUEP/logs/',
@@ -572,7 +588,6 @@ if __name__ == "__main__":
                 "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
                 "SUEP_S1_HighestPT < 0.3",
                 "SUEP_nconst_HighestPT < 40",
-                "lepton_pt > 100"
             ],
             "syst":  [
                 "puweights_up",
@@ -584,19 +599,17 @@ if __name__ == "__main__":
     for output_method in config.keys():
         var_defs.initialize_new_variables(output_method, SimpleNamespace(**options), config[output_method])
         hist_defs.initialize_histograms(hists, output_method, SimpleNamespace(**options), config[output_method])
-        for syst in config[output_method].get("syst", []):
-            if any([j in syst for j in ["JER", "JES"]]):
-                config = fill_utils.get_jet_correction_config(config, syst)
-    config = fill_utils.get_track_killing_config(config)
+        if options.get("doSyst", False):
+            for syst in config[output_method].get("syst", []):
+                if any([j in syst for j in ["JER", "JES"]]):
+                    config = fill_utils.get_jet_correction_config(config, syst)
+    if options.get("doSyst", False): config = fill_utils.get_track_killing_config(config)
     
     
     histmaker = SUEPDaskHistMaker(config=config, options=options, hists=hists)
     client = histmaker.setupLocalClient(10)
     #client = histmaker.setupSlurmClient(n_workers=100, min_workers=2, max_workers=200)
     histmaker.run(client, [
-        'SingleMuon+Run2018A-UL2018_MiniAODv2-v3+MINIAOD',
-        'SingleMuon+Run2018B-UL2018_MiniAODv2-v2+MINIAOD' ,
-        'SingleMuon+Run2018C-UL2018_MiniAODv2-v2+MINIAOD',
-        'SingleMuon+Run2018D-UL2018_MiniAODv2-v3+MINIAOD'
+        "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
     ])
     client.close()

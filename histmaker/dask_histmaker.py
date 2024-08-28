@@ -1,57 +1,30 @@
 """
-Automatic histogram maker from the ntuples.
-This script can make histograms for either a particular file, or a whole directory/sample of files (files here are intended as the ntuple hdf5 files).
-It will fill all histograms that are part of the output dictionary (initialized in hist_defs.py), if it finds a matching variable in the ntuple dataframe.
-(If doing an ABCD method, it will also fill each variable for each region.)
-It can apply selections, blind, apply corrections and systematics, do ABCD method, make cutflows, and more.
-The output histograms, cutflows, and metadata will be saved in a .root file.
-
-e.g.
-python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
+Author: Luca Lavezzo
+Date: August 2024
 """
 
 import logging
 import os
-import pickle
-import subprocess
-import sys
-import uproot
-import dask
-import copy
 import socket
-import json
-import numpy as np
-import pandas as pd
-from dask import delayed
-from typing import Optional, List, Tuple
-from types import SimpleNamespace
+from typing import List
 from dask.distributed import Client, LocalCluster, as_completed, Future
 from dask_jobqueue import SLURMCluster
 from coffea.processor.accumulator import AccumulatorABC
 from coffea.processor import value_accumulator, dict_accumulator
 
-sys.path.append("..")
-import fill_utils
-import hist_defs
-import var_defs
-from CMS_corrections import (
-    GNN_syst,
-    higgs_reweight,
-    pileup_weight,
-    track_killing,
-    triggerSF,
-)
-import plotting.plot_utils as plot_utils
-
 # TODO debug
 logging.basicConfig(level=logging.DEBUG)
 
 class BaseDaskHistMaker():
+    """
+    A base class for making histograms with dask, a la coffea processor.
+    The user is expected to write preprocess_sample, process_sample, and postprocess_sample methods.
+    :preprocess_sample: does not return anything, but is used to prepare the sample for processing.
+    :process_sample: returns a list of dask futures to be executed. Each of which generates an output that is merged together: coffea processors or dictionaries of objects that can be added (floats, histograms, etc.)
+    :postprocess_sample: processes the output from the futures and returns the final output.
+    """
 
     def __init__(self, **kwargs) -> None:
-
-        # TODO debug
-        # pass
 
         self.logger = kwargs.get("logger", logging.getLogger(self.__class__.__name__))
         self.logger.setLevel(logging.INFO)
