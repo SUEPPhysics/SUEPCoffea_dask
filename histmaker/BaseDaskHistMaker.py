@@ -111,10 +111,14 @@ class BaseDaskHistMaker():
         for sample in samples:
             output[sample] = {}
             output[sample]["_processing_metadata"] = dict_accumulator({})
-            output[sample]["_processing_metadata"]["nfailed"] = value_accumulator(float, 0)
-            output[sample]["_processing_metadata"]["nsuccess"] = value_accumulator(float, 0)
+            output[sample]["_processing_metadata"]["status"] = ""
+            output[sample]["_processing_metadata"]["n_processed"] = value_accumulator(float, 0)
+            output[sample]["_processing_metadata"]["n_success"] = value_accumulator(float, 0)
+            output[sample]["_processing_metadata"]["n_failed"] = value_accumulator(float, 0)
 
         for future in as_completed(futures):
+
+            output[sample]["_processing_metadata"]["n_processed"] += 1
 
             sample = future._sample
 
@@ -147,18 +151,53 @@ class BaseDaskHistMaker():
                     else:
                         raise Exception(f"Type {type(value)} not supported for output.")                
 
-                output[sample]["_processing_metadata"]["nsuccess"] += 1
+                output[sample]["_processing_metadata"]["n_success"] += 1
 
             except Exception as e:
 
                 self.logger.error(f"Failed to merge output: {e}")
-                output[sample]["_processing_metadata"]["nfailed"] += 1
+                output[sample]["_processing_metadata"]["n_failed"] += 1
                 continue
 
-        for sample in output.keys():
-            output[sample] = self.postprocess_sample(sample, output[sample])
+        for sample in list(output.keys()):
+            try:
+                output[sample].update(self.postprocess_sample(sample, output[sample]))
+                output[sample]["_processing_metadata"]["status"] = "success"
+            except Exception as e:
+                self.logger.error(f"Failed to postprocess sample {sample}: {e}")
+                output[sample]["_processing_metadata"]["status"] = "failed"
+                continue
+
+        self.print_summary(output)
 
         return output
+    
+    def print_summary(self, output: dict) -> None:
+        
+        _tot_futures_results = {}
+
+        self.logger.info("Run Summary:")
+        for sample in output.keys():
+            self.logger.info(f"Sample: {sample}")
+            self.logger.info(f"\tStatus: {output[sample]['_processing_metadata']['status']}")
+            for key, value in output[sample]['_processing_metadata'].items():
+                if key.startswith("n_"):
+                    status = key.split("_")[1]
+                    self.logger.info(f"\t{status}: {value.value}")
+                    if status not in _tot_futures_results.keys():
+                        _tot_futures_results[status] = 0
+                    _tot_futures_results[status] += value.value
+
+        self.logger.info("")
+        
+        for status, value in _tot_futures_results.items():
+            self.logger.info(f"Total futures {status}: {value}")
+
+        self.logger.info("")
+
+        self.logger.info(f"Total samples processed: {len(output.keys())}")
+        self.logger.info("\tSamples Success: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['status'] == 'success'])))
+        self.logger.info("\tSamples Failed: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['status'] == 'failed'])))
         
     def preprocess_sample(self, sample: str):
         """
@@ -179,3 +218,5 @@ class BaseDaskHistMaker():
         Processes output from the futures and returns the final output.
         """
         pass
+
+

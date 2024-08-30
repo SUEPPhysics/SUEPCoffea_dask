@@ -1,10 +1,15 @@
+"""
+Author: Luca Lavezzo
+Date: August 2024
+"""
+
 import logging
 import pandas as pd
 import numpy as np
 
-import higgs_reweight
-import pileup_weight
-import triggerSF
+from CMS_corrections import higgs_reweight
+from CMS_corrections import pileup_weight
+from CMS_corrections import triggerSF
 
 
 class EventWeightProcessor:
@@ -35,6 +40,7 @@ class EventWeightProcessor:
             "ggF-scout"
         ]
         self.supported_variations = [
+            '', # nominal
             "puweights_up",
             "puweights_down",
             "trigSF_up",
@@ -56,7 +62,6 @@ class EventWeightProcessor:
         self.supported_isMC = [0, 1]
         self.supported_eras = ["2016", "2017", "2018", "2016apv"]
 
-    @staticmethod
     def run(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Run the processor on the DataFrame.
@@ -69,14 +74,14 @@ class EventWeightProcessor:
         
         return self.apply_event_weights(df)
 
-    @staticmethod
     def validate_df(self, df: pd.DataFrame) -> bool:
 
         if "event_weight" in df.keys():
             logging.error("DataFrame already has column 'event_weight'.")
             return False
+        
+        return True
 
-    @staticmethod
     def validate_options(self) -> bool:
 
         if self.channel not in self.supported_channels:
@@ -97,7 +102,6 @@ class EventWeightProcessor:
 
         return True
     
-    @staticmethod
     def apply_event_weights(self, df: pd.DataFrame) -> pd.DataFrame:
 
         # apply event weights
@@ -177,8 +181,8 @@ class EventWeightProcessor:
                 if 'btag' in self.variation.lower():
                     btag_weights = self.variation
                 else:
-                    btag_weights = 'bTagWeight_nominal'
-                btag_weights += "_" + self.region
+                    btag_weights = 'bTagWeight_central'
+                btag_weights += "_" + self.region.lower()
                 if btag_weights not in df.keys():
                     logging.warning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
                     # TODO this should not be a pass, but a raise exception, but we don't have all weights rn

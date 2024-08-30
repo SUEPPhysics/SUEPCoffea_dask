@@ -267,6 +267,33 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 )[:, i],
             )
 
+        # highest nconst non SUEP candidate (validate that highest pT ~= highest nconst)
+        other_AK15_nconst = ak.num(events.WH_other_AK15_constituents, axis=-1)
+        mostNumerousAK15 = events.WH_other_AK15[
+            ak.argmax(other_AK15_nconst, axis=-1, keepdims=True)
+        ]
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxConst_pt_HighestPT",
+            mostNumerousAK15.pt.to_numpy(allow_missing=True),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxConst_eta_HighestPT",
+            mostNumerousAK15.eta.to_numpy(allow_missing=True),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxConst_phi_HighestPT",
+            mostNumerousAK15.phi.to_numpy(allow_missing=True),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxConst_nconst_HighestPT",
+            ak.max(other_AK15_nconst, axis=-1).to_numpy(allow_missing=True),
+        )
+
+
         # WH system
         if 'WH_W' in events.fields:
             VH_system = events.WH_SUEP_cand + events.WH_W

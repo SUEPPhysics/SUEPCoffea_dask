@@ -163,6 +163,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             self.logger.info("Applying normalization.")
 
             self.logger.debug(f"Found total_gensumweight {gensumweight}.")
+            if gensumweight == 0:
+                gensumweight = 1
+                self.logger.warning("Found gensumweight 0, setting to 1.")
             xsection = fill_utils.getXSection(sample, self.options.era, failOnKeyError=True)
             self.logger.debug(f"Found cross section x kr x br: {xsection}.")
             lumi = plot_utils.getLumi(self.options.era, scouting='scout' in self.options.channel)
@@ -194,6 +197,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         metadata["git_diff"] = diff
 
         self.write_output(sample, histograms, metadata)
+
+        return {}
 
     def setupSlurmClient(
             self,

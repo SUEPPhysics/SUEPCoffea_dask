@@ -1,6 +1,12 @@
+"""
+Script to run the SUEPDaskHistMaker for the WH analysis.
+Author: Luca Lavezzo
+Date: August 2024
+"""
+
 import os
 import argparse
-from types import SimpleNamespace, Namespace
+from types import SimpleNamespace
 
 import fill_utils
 import hist_defs
@@ -8,7 +14,7 @@ import var_defs
 from SUEPDaskHistMaker import SUEPDaskHistMaker
 
 
-def getOptions() -> Namespace:
+def getOptions() -> dict:
 
     username = os.environ["USER"]
 
@@ -20,7 +26,7 @@ def getOptions() -> Namespace:
 
     # reuired SUEPDaskHistMaker arguments
     parser.add_argument('--isMC', type=int, default=1, help='isMC')
-    parser.add_argument('--channel', type=str, default='WH' help='Channel')
+    parser.add_argument('--channel', type=str, default='WH', help='Channel')
     parser.add_argument('--era', type=str, required=True, help='Era')
     parser.add_argument('--tag', type=str, required=True, help='Ntuple tag')
     parser.add_argument('--output', type=str, required=True, help='Output tag')
@@ -31,17 +37,17 @@ def getOptions() -> Namespace:
     parser.add_argument('--xrootd', type=int, default=0, help='Use xrootd to read the ntuples')
     parser.add_argument('--saveDir', type=str, default='/ceph/submit/data/user/'+username[0]+'/'+username+'/SUEP/outputs/', help='Save directory')
     parser.add_argument('--logDir', type=str, default='/work/submit/'+username+'/SUEP/logs/', help='Log directory')
-    parser.add_argument('--dataDirLocal', type=str, default='/data/submit/cms/store/user/'+username+'/SUEP/{}/{}/', help='Local ntuple directory')
+    parser.add_argument('--dataDirLocal', type=str, default='/ceph/submit/data/user/'+username[0]+'/'+username+'/SUEP/{}/{}/', help='Local ntuple directory')
     parser.add_argument('--dataDirXRootD', type=str, default='/cms/store/user/'+username+'/SUEP/{}/{}/', help='XRootD ntuple directory')
     parser.add_argument('--merged', type=int, default=0, help='Use merged ntuples')
     parser.add_argument('--maxFiles', type=int, default=-1, help='Maximum number of files to run on')
     parser.add_argument('--pkl', type=int, default=1, help='Use pickle files')
     parser.add_argument('--printEvents', type=int, default=0, help='Print events')
-    parser.add_argument('--scouting', type=int, default=0, help='Scouting')
     parser.add_argument('--redirector', type=str, default='root://submit50.mit.edu/', help='Redirector')
+    parser.add_argument('--doABCD', type=int, default=0, help='Do ABCD')
 
     options = parser.parse_args()
-    return dict(options)
+    return vars(options)
 
 
 def main():
@@ -49,7 +55,7 @@ def main():
     options = getOptions()
 
     with open(options['input']) as f:
-        samples = f.read().splitlines()
+        samples = [line.split('/')[-1] for line in f.read().splitlines()]
 
     config = {
         "CRWJ": {
@@ -74,10 +80,7 @@ def main():
                 "SUEP_S1_HighestPT < 0.3",
                 "SUEP_nconst_HighestPT < 40",
             ],
-            "syst":  [
-                "puweights_up",
-                "puweights_down"
-            ],
+            "syst":  [],
         },
     }
     hists = {}
@@ -93,7 +96,7 @@ def main():
     
     histmaker = SUEPDaskHistMaker(config=config, options=options, hists=hists)
     if options['client'] == 'local':
-        client = histmaker.setupLocalClient(10)
+        client = histmaker.setupLocalClient(20)
     else:
         client = histmaker.setupSlurmClient(n_workers=100, min_workers=2, max_workers=200)
     histmaker.run(client, samples)

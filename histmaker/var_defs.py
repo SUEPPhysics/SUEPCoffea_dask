@@ -117,52 +117,9 @@ def initialize_new_variables(label: str, options, config: dict):
                 ],
             ],
             [
-                "deltaPhi_SUEP_bjet",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "bjet_phi",
-                ],
-            ],
-            [
-                "deltaPhi_jet1_bjet",
-                deltaPhi_x_y,
-                ["jet1_phi", "bjet_phi"],
-            ],
-            [
-                "deltaPhi_lepton_bjet",
-                deltaPhi_x_y,
-                ["lepton_phi", "bjet_phi"],
-            ],
-            [
                 "nak4jets_outsideSUEP",
                 lambda x, y: (x - y),
                 ["ngood_ak4jets", "ak4jets_inSUEPcluster_n_HighestPT"],
-            ],
-            [
-                "nonSUEP_S1",
-                lambda x, y: 1.5 * (x + y),
-                ["nonSUEP_eig0_HighestPT", "nonSUEP_eig1_HighestPT"],
-            ],
-            [
-                "ntracks_outsideSUEP",
-                lambda x, y: (x - y),
-                ["ntracks", "SUEP_nconst_HighestPT"],
-            ],
-            [
-                "BV_highestSUEPTrack_SUEP",
-                balancing_var,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "SUEP_nconst_minus_otherAK15_maxConst",
-                lambda x, y: (x - y),
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
-            ],
-            [
-                "jetsInSameHemisphere",
-                lambda x, y: ((x == 1) | (y < 1.5)),
-                ["ngood_ak4jets", "maxDeltaPhiJets"],
             ],
             [
                 "deltaPhi_genSUEP_SUEP",
@@ -184,60 +141,11 @@ def initialize_new_variables(label: str, options, config: dict):
                 lambda x, y: x / y,
                 ["n_darkphis_inTracker", "n_darkphis"],
             ],
-            [
-                "percent_tracks_dPhiW0p2",
-                lambda x, y: x / y,
-                ["ntracks_dPhiW0p2", "ntracks"],
-            ],
-            [
-                "SUEPMostNumerous",
-                lambda x, y: x > y,
-                ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
-            ],
-            [
-                "MaxConstAK15_phi",
-                lambda x_nconst, y_nconst, x_phi, y_phi: np.where(
-                    x_nconst > y_nconst, x_phi, y_phi
-                ),
-                [
-                    "SUEP_nconst_HighestPT",
-                    "otherAK15_maxConst_nconst_HighestPT",
-                    "SUEP_phi_HighestPT",
-                    "otherAK15_maxConst_phi_HighestPT",
-                ],
-            ],
-            [
-                "MaxConstAK15_eta",
-                lambda x_nconst, y_nconst, x_eta, y_eta: np.where(
-                    x_nconst > y_nconst, x_eta, y_eta
-                ),
-                [
-                    "SUEP_nconst_HighestPT",
-                    "otherAK15_maxConst_nconst_HighestPT",
-                    "SUEP_eta_HighestPT",
-                    "otherAK15_maxConst_eta_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_SUEPgen_MaxConstAK15",
-                deltaPhi_x_y,
-                ["SUEP_genPhi", "MaxConstAK15_phi"],
-            ],
-            [
-                "deltaR_SUEPgen_MaxConstAK15",
-                deltaR,
-                ["SUEP_genEta", "MaxConstAK15_eta", "SUEP_genPhi", "MaxConstAK15_phi"],
-            ],
-            [
-                "highestPTtrack_pt_norm",
-                lambda x, y: x / y,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "highestPTtrack_pt_norm2",
-                lambda x, y: x / y,
-                ["SUEP_highestPTtrack_HighestPT", "SUEP_pt_avg_HighestPT"],
-            ],
+            # [
+            #     "SUEPMostNumerous",
+            #     lambda x, y: x > y,
+            #     ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
+            # ],
             ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
             ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
             ["new_W_pt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
