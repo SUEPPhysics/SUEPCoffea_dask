@@ -1,0 +1,193 @@
+import logging
+import pandas as pd
+import numpy as np
+
+import higgs_reweight
+import pileup_weight
+import triggerSF
+
+
+class EventWeightProcessor:
+    """
+    Apply CMS_corrections weights and variations to a pandas DataFrame,
+    based on the options provided. Adds a column "event_weight" to the DataFrame.
+    """
+
+    def __init__(self,       
+        variation: str,
+        sample: str,
+        isMC: bool,
+        era: str,
+        channel: str,
+        region: str = ''
+    ):
+        
+        self.variation = variation
+        self.sample = sample
+        self.isMC = isMC
+        self.era = era
+        self.channel = channel
+        self.region = region
+
+        self.supported_channels = [
+            "WH",
+            "ggF",
+            "ggF-scout"
+        ]
+        self.supported_variations = [
+            "puweights_up",
+            "puweights_down",
+            "trigSF_up",
+            "trigSF_down",
+            "PSWeight_ISR_up",
+            "PSWeight_ISR_down",
+            "PSWeight_FSR_up",
+            "PSWeight_FSR_down",
+            "track_down",
+            "JER_up",
+            "JER_down",
+            "JES_up",
+            "JES_down",
+            "higgs_weights_up",
+            "higgs_weights_down",
+            "prefire_up",
+            "prefire_down",
+        ]
+        self.supported_isMC = [0, 1]
+        self.supported_eras = ["2016", "2017", "2018", "2016apv"]
+
+    @staticmethod
+    def run(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Run the processor on the DataFrame.
+        """
+        if not self.validate_options():
+            raise Exception("Invalid options.")
+
+        if not self.validate_df(df):
+            raise Exception("Invalid DataFrame.")
+        
+        return self.apply_event_weights(df)
+
+    @staticmethod
+    def validate_df(self, df: pd.DataFrame) -> bool:
+
+        if "event_weight" in df.keys():
+            logging.error("DataFrame already has column 'event_weight'.")
+            return False
+
+    @staticmethod
+    def validate_options(self) -> bool:
+
+        if self.channel not in self.supported_channels:
+            logging.error(f"Channel {self.channel} not supported.")
+            return False
+        
+        if self.variation not in self.supported_variations:
+            logging.error(f"Variation {self.variation} not supported.")
+            return False
+        
+        if self.isMC not in self.supported_isMC:
+            logging.error(f"isMC {self.isMC} not supported.")
+            return False
+
+        if self.era not in self.supported_eras:
+            logging.error(f"Era {self.era} not supported.")
+            return False
+
+        return True
+    
+    @staticmethod
+    def apply_event_weights(self, df: pd.DataFrame) -> pd.DataFrame:
+
+        # apply event weights
+        if self.isMC:
+
+            df["event_weight"] = df["genweight"].to_numpy()
+
+            # 1) pileup weights
+            puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
+                self.era
+            )
+            pu = pileup_weight.get_pileup_weights(
+                df, self.variation, puweights, puweights_up, puweights_down
+            )
+            df["event_weight"] *= pu
+
+            # 2) PS weights
+            if "PSWeight" in self.variation:
+                df["event_weight"] *= df[self.variation]
+
+            # 3) prefire weights
+            if (self.era in ["2016apv", "2016", "2017"]):
+                if "prefire" in self.variation:
+                    df["event_weight"] *= df[self.variation]
+                else:
+                    df["event_weight"] *= df["prefire_nom"]
+
+            # 4) TriggerSF weights
+            if self.channel == "ggF":
+                (
+                    trig_bins,
+                    trig_weights,
+                    trig_weights_up,
+                    trig_weights_down,
+                ) = triggerSF.triggerSF(self.era)
+                trigSF = triggerSF.get_trigSF_weight(
+                    df,
+                    self.variation,
+                    trig_bins,
+                    trig_weights,
+                    trig_weights_up,
+                    trig_weights_down,
+                )
+                df["event_weight"] *= trigSF
+            elif self.channel == "ggF-scout":
+                trigSF = triggerSF.get_scout_trigSF_weight(
+                    np.array(df["ht"]).astype(int), self.variation, self.era
+                )
+                df["event_weight"] *= trigSF
+            elif self.channel == "WH":
+                # TODO add WH triggerSF
+                pass
+
+            # 5) Higgs_pt weights
+            if "mS125" in self.sample:
+                (
+                    higgs_bins,
+                    higgs_weights,
+                    higgs_weights_up,
+                    higgs_weights_down,
+                ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
+                higgs_weight = higgs_reweight.get_higgs_weight(
+                    df,
+                    self.variation,
+                    higgs_bins,
+                    higgs_weights,
+                    higgs_weights_up,
+                    higgs_weights_down,
+                )
+                df["event_weight"] *= higgs_weight
+
+             # 8) b-tag weights. These have different values for each event selection
+            if self.channel == 'WH' and self.isMC:
+                if self.region == '':
+                    raise Exception("You need to define a region to use btag weights. (Why? Because we have different b-tagging efficiencies for different regions.)")
+
+                if 'btag' in self.variation.lower():
+                    btag_weights = self.variation
+                else:
+                    btag_weights = 'bTagWeight_nominal'
+                btag_weights += "_" + self.region
+                if btag_weights not in df.keys():
+                    logging.warning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
+                    # TODO this should not be a pass, but a raise exception, but we don't have all weights rn
+                    pass
+                else:
+                    df['event_weight'] *= df[btag_weights]
+
+        # data
+        else:
+            df["event_weight"] = np.ones(df.shape[0])
+
+        return df

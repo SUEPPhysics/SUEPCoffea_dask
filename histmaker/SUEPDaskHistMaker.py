@@ -25,13 +25,11 @@ import hist_defs
 import var_defs
 from CMS_corrections import (
     GNN_syst,
-    higgs_reweight,
-    pileup_weight,
     track_killing,
-    triggerSF,
 )
+from CMS_corrections.EventWeightProcessor import EventWeightProcessor
 import plotting.plot_utils as plot_utils
-from dask_histmaker import BaseDaskHistMaker
+from BaseDaskHistMaker import BaseDaskHistMaker
 
 
 class SUEPDaskHistMaker(BaseDaskHistMaker):
@@ -390,7 +388,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             df:pd.DataFrame, variation:str, options: SimpleNamespace, config_out:dict, config_tag:str,
             histograms:dict, cutflow:dict = {}, metadata:dict = {}
         ):
-        # TODO move this to fill_utils?
+        # TODO move this to fill_utils? or its own class?
 
         df_plot = df.copy()
 
@@ -401,7 +399,15 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         logging.debug(f"\tFilling variation {variation} ({config_tag}).")
 
         # apply event weights
-        df_plot = SUEPDaskHistMaker.apply_event_weights(df_plot, variation, options, metadata["sample"], config_tag)
+        eventWeightProcessor = EventWeightProcessor(
+            variation=variation,
+            sample=metadata["sample"],
+            channel=options.channel,
+            era=options.era,
+            isMC=options.isMC,
+            region=config_tag
+        )
+        df_plot = eventWeightProcessor.run(df_plot)
 
         # prepare the DataFrame for plotting: blind, selections, new variables
         df_plot = fill_utils.prepare_DataFrame(
@@ -442,96 +448,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         )
 
         return histograms, cutflow, metadata
-
-    @staticmethod
-    def apply_event_weights(df: pd.DataFrame, variation: str, options: SimpleNamespace, sample: str = '', config_tag: str = '') -> pd.DataFrame:
-        # TODO move this to fill_utils?
-
-        # apply event weights
-        if options.isMC:
-
-            df["event_weight"] = df["genweight"].to_numpy()
-
-            # 1) pileup weights
-            puweights, puweights_up, puweights_down = pileup_weight.pileup_weight(
-                options.era
-            )
-            pu = pileup_weight.get_pileup_weights(
-                df, variation, puweights, puweights_up, puweights_down
-            )
-            df["event_weight"] *= pu
-
-            # 2) PS weights
-            if "PSWeight" in variation and variation in df.keys():
-                df["event_weight"] *= df[variation]
-
-            # 3) prefire weights
-            if (options.era in ["2016apv", "2016", "2017"]):
-                if "prefire" in variation and variation in df.keys():
-                    df["event_weight"] *= df[variation]
-                else:
-                    df["event_weight"] *= df["prefire_nom"]
-
-            # 4) TriggerSF weights
-            if options.channel == "ggF":
-                if options.scouting != 1:
-                    (
-                        trig_bins,
-                        trig_weights,
-                        trig_weights_up,
-                        trig_weights_down,
-                    ) = triggerSF.triggerSF(options.era)
-                    trigSF = triggerSF.get_trigSF_weight(
-                        df,
-                        variation,
-                        trig_bins,
-                        trig_weights,
-                        trig_weights_up,
-                        trig_weights_down,
-                    )
-                    df["event_weight"] *= trigSF
-                else:
-                    trigSF = triggerSF.get_scout_trigSF_weight(
-                        np.array(df["ht"]).astype(int), variation, options.era
-                    )
-                    df["event_weight"] *= trigSF
-
-            # 5) Higgs_pt weights
-            if "mS125" in sample:
-                (
-                    higgs_bins,
-                    higgs_weights,
-                    higgs_weights_up,
-                    higgs_weights_down,
-                ) = higgs_reweight.higgs_reweight(df["SUEP_genPt"])
-                higgs_weight = higgs_reweight.get_higgs_weight(
-                    df,
-                    variation,
-                    higgs_bins,
-                    higgs_weights,
-                    higgs_weights_up,
-                    higgs_weights_down,
-                )
-                df["event_weight"] *= higgs_weight
-
-             # 8) b-tag weights. These have different values for each event selection
-            if options.channel == 'WH' and options.isMC:
-                if 'btag' in variation.lower():
-                    btag_weights = variation
-                else:
-                    btag_weights = 'bTagWeight_nominal'
-                btag_weights += "_" + config_tag
-                if btag_weights not in df.keys():
-                    logging.warning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
-                    pass
-                else:
-                    df['event_weight'] *= df[btag_weights]
-
-        # data
-        else:
-            df["event_weight"] = np.ones(df.shape[0])
-
-        return df
 
     
 if __name__ == "__main__":
