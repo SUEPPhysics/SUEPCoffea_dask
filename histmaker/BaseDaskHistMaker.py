@@ -111,7 +111,7 @@ class BaseDaskHistMaker():
         for sample in samples:
             output[sample] = {}
             output[sample]["_processing_metadata"] = dict_accumulator({})
-            output[sample]["_processing_metadata"]["status"] = ""
+            output[sample]["_processing_metadata"]["postprocess_status"] = ""
             output[sample]["_processing_metadata"]["n_processed"] = value_accumulator(float, 0)
             output[sample]["_processing_metadata"]["n_success"] = value_accumulator(float, 0)
             output[sample]["_processing_metadata"]["n_failed"] = value_accumulator(float, 0)
@@ -162,10 +162,10 @@ class BaseDaskHistMaker():
         for sample in list(output.keys()):
             try:
                 output[sample].update(self.postprocess_sample(sample, output[sample]))
-                output[sample]["_processing_metadata"]["status"] = "success"
+                output[sample]["_processing_metadata"]["postprocess_status"] = "success"
             except Exception as e:
                 self.logger.error(f"Failed to postprocess sample {sample}: {e}")
-                output[sample]["_processing_metadata"]["status"] = "failed"
+                output[sample]["_processing_metadata"]["postprocess_status"] = "failed"
                 continue
 
         self.print_summary(output)
@@ -195,9 +195,9 @@ class BaseDaskHistMaker():
 
         self.logger.info("")
 
-        self.logger.info(f"Total samples processed: {len(output.keys())}")
-        self.logger.info("\tSamples Success: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['status'] == 'success'])))
-        self.logger.info("\tSamples Failed: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['status'] == 'failed'])))
+        self.logger.info(f"Total samples post-processed: {len(output.keys())}")
+        self.logger.info("\tSamples Success: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['postprocess_status'] == 'success'])))
+        self.logger.info("\tSamples Failed: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['postprocess_status'] == 'failed'])))
         
     def preprocess_sample(self, sample: str):
         """
