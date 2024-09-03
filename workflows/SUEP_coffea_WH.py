@@ -611,6 +611,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["looseNotTightLepton" + str(i + 1) + "_flavor"] = ak.fill_none(
                 ak.pad_none(looseNotTightLeptons_pTsorted.pdgID, i + 1, axis=1, clip=True), -999
             )[:, i]
+
+        if 'nCRQCDleptons' in events.fields:
+            output["vars"]["nCRQCDleptons"] = events.nCRQCDleptons
         
         # saving W information
         if 'WH_W' in events.fields:
@@ -655,7 +658,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["nphotons"] = ak.num(photons).to_list()
 
         # tight photon information
-        if 'WH_gamma' in events.fields:
+        if 'WH_gamma' in events.fields or self.VRGJ:
+
+            output["vars"]["WH_gammaTriggerBits"] = events.WH_gammaTriggerBits
+
             output["vars"]["photon_pt"] = events.WH_gamma.pt
             output["vars"]["photon_eta"] = events.WH_gamma.eta
             output["vars"]["photon_phi"] = events.WH_gamma.phi
@@ -769,7 +775,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = WH_utils.qualityFiltersSelection(events, self.era)
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
 
-        events = WH_utils.orthogonalitySelection(events)
+        if self.VRGJ:
+            events = WH_utils.VRGJOrthogonalitySelection(events, era=self.era)
+        else:
+            events = WH_utils.orthogonalitySelection(events)
         output["cutflow_orthogonality" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
@@ -958,7 +967,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             # this is not very efficient, as we are processing a lot of events that we drop
             # it also assumes that we have SUEP_nconst for each method
             methods = [column.split("SUEP_nconst_")[-1] for column in output["vars"].columns if "SUEP_nconst_" in column]
-            selection = np.any([~output["vars"]["SUEP_nconst_" + method].isnull() for method in methods], axis=0)
+            if len(methods) == 0:
+                # no events passed any method
+                selection = np.zeros(len(events), dtype=bool)
+            else:
+                selection = np.any([~output["vars"]["SUEP_nconst_" + method].isnull() for method in methods], axis=0)
             events = events[selection]
             output["vars"] = output["vars"][selection]
 

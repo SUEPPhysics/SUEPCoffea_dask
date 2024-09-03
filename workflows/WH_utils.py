@@ -230,7 +230,7 @@ def getLeptons(events):
             "dz": events.Electron.dz,
             "charge": events.Electron.pdgId / (-11),
             "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
-            "pfIsoId": -1,
+            "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
         },
         with_name="Momentum4D",
     )
@@ -551,6 +551,44 @@ def orthogonalitySelection(events):
     return events
 
 
+def VRGJOrthogonalitySelection(events, era:str):
+    """
+    Stay orthogonal to ZH via the leptons, ggF via HT, and WH via tight leptons.
+    """
+
+    # follow ZH and offline lepton definitions
+    looseMuons, looseElectrons, _ = getLooseLeptons(events)
+
+    # ZH orthogonality
+    cutHasTwoMuons = (
+        (ak.num(looseMuons, axis=1) == 2)
+        & (ak.max(looseMuons.pt, axis=1, mask_identity=False) >= 25)
+        & (ak.sum(looseMuons.charge, axis=1) == 0)
+    )
+    cutHasTwoElecs = (
+        (ak.num(looseElectrons, axis=1) == 2)
+        & (ak.max(looseElectrons.pt, axis=1, mask_identity=False) >= 25)
+        & (ak.sum(looseElectrons.charge, axis=1) == 0)
+    )
+    cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) < 4
+    cutHasTwoLeps = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
+    events = events[~cutHasTwoLeps]
+
+    # ggF orthogonality
+    if era == "2016" or era == "2016apv":
+        ggFTrigger = events.HLT.PFHT900 == 1
+    else:
+        ggFTrigger = events.HLT.PFHT1050 == 1
+    events = events[~ggFTrigger]
+
+    # WH orthogonality
+    _, _, tightLeptons = getTightLeptons(events)
+    cutTightLeptons = ak.num(tightLeptons) == 0
+    events = events[cutTightLeptons]
+
+    return events
+
+
 def qualityFiltersSelection(events, era: str):
     ### Apply MET filter selection (see https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2)
     if era == "2018" or era == "2017":
@@ -632,18 +670,21 @@ def CRQCDSelection(events):
 
     # require exactly one lepton
     CRQCDleptons = ak.concatenate([almostTightMuons, almostLooseElectrons], axis=1)
-    oneLeptonSelection = ak.num(CRQCDleptons) == 1
+    oneLeptonSelection = ak.num(CRQCDleptons) >= 1
     events = events[oneLeptonSelection]
     CRQCDleptons = CRQCDleptons[oneLeptonSelection]
 
     if 'WH_lepton' in events.fields:
         raise Exception("WH_lepton already in events.")
     events = ak.with_field(events, CRQCDleptons[:,0], "WH_lepton")
+    events = ak.with_field(events, ak.num(CRQCDleptons), "nCRQCDleptons")
 
     return events
 
 
 def onePhotonSelection(events, isMC: bool = 1):
+
+    # TODO we need to define an orthogonal region to the SR. Via trigger or tight lepton selection or MET or what?
 
     photons = getPhotons(events, isMC=isMC)
 
