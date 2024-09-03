@@ -109,8 +109,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         futures = [client.submit(self.process_file, ifile, sample, self.hists, self.config, self.options) for ifile in files]
 
-        del files
-
         return futures
     
     def postprocess_sample(self, sample: str, output: dict) -> dict:
@@ -137,8 +135,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "xsec": 1,
             "gensumweight": gensumweight,
             "lumi": 1,
-            "nfailed": output["_processing_metadata"].get("nfailed", value_accumulator(float, 0)).value,
-            "nsuccess": output["_processing_metadata"].get("nsuccess", value_accumulator(float, 0)).value   
+            "n_processed": output["_processing_metadata"].get("n_processed", value_accumulator(float, 0)).value,
+            "n_success": output["_processing_metadata"].get("n_success", value_accumulator(float, 0)).value,     
+            "n_failed": output["_processing_metadata"].get("n_failed", value_accumulator(float, 0)).value,
         }
 
         if self.options.isMC and self.options.doSyst:
@@ -222,13 +221,13 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         # set default slurm extra arguments
         if len(extra_args) == 0:
             logDir = self.options.logDir
-            logDir = os.path.join(logDir, "dask_histmaker", self.options.tag)
+            logDir = os.path.join(logDir, "dask_histmaker", self.options.output)
             if not os.path.exists(logDir):
                 os.makedirs(logDir)
             extra_args=[
-            f"--output={logDir}/job_output_%j.out",
-            f"--error={logDir}/job_output_%j.err",
-            "--partition=submit,submit-gpu",
+                f"--output={logDir}/job_output_%j.out",
+                f"--error={logDir}/job_output_%j.err",
+                "--partition=submit,submit-gpu",
             ]
 
         client = super().setupSlurmClient(n_workers, min_workers, max_workers, slurm_env, extra_args)
@@ -256,7 +255,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             dataDir = (
                 self.options.dataDirLocal.format(self.options.tag, sample)
                 if self.options.dataDirLocal.count("{}") == 2
-                else self.options.dataDir
+                else self.options.dataDirLocal
             )
             if self.options.merged:
                 dataDir += "merged/"

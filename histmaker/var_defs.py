@@ -28,39 +28,29 @@ def initialize_new_variables(label: str, options, config: dict):
             [
                 "W_SUEP_BV",
                 balancing_var,
-                ["W_pt_PuppiMET", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "W_jet1_BV",
-                balancing_var,
-                ["W_pt_PuppiMET", "jet1_pt"],
-            ],
-            [
-                "ak4SUEP1_SUEP_BV",
-                balancing_var,
-                ["ak4jet1_inSUEPcluster_pt_HighestPT", "SUEP_pt_HighestPT"],
+                ["W_pt", "SUEP_pt_HighestPT"],
             ],
             [
                 "W_SUEP_vBV",
                 vector_balancing_var,
                 [
-                    "W_phi_PuppiMET",
+                    "W_phi",
                     "SUEP_phi_HighestPT",
-                    "W_pt_PuppiMET",
+                    "W_pt",
                     "SUEP_pt_HighestPT",
                 ],
             ],
             [
-                "W_jet1_vBV",
-                vector_balancing_var,
-                ["W_phi_PuppiMET", "jet1_phi", "W_pt_PuppiMET", "jet1_pt"],
+                "photon_SUEP_BV",
+                balancing_var,
+                ["photon_pt", "SUEP_pt_HighestPT"],
             ],
             [
                 "deltaPhi_SUEP_W",
                 deltaPhi_x_y,
                 [
                     "SUEP_phi_HighestPT",
-                    "W_phi_PuppiMET",
+                    "W_phi",
                 ],
             ],
             [
@@ -85,6 +75,14 @@ def initialize_new_variables(label: str, options, config: dict):
                 ],
             ],
             [
+                "deltaPhi_SUEP_photon",
+                deltaPhi_x_y,
+                [
+                    "SUEP_phi_HighestPT",
+                    "photon_phi",
+                ],
+            ],
+            [
                 "deltaPhi_minDeltaPhiMETJet_SUEP",
                 deltaPhi_x_y,
                 [
@@ -105,7 +103,7 @@ def initialize_new_variables(label: str, options, config: dict):
                 deltaPhi_x_y,
                 [
                     "minDeltaPhiMETJet_phi",
-                    "MET_phi",
+                    "WH_MET_phi",
                 ],
             ],
             [

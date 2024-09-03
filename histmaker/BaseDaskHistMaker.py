@@ -7,6 +7,8 @@ import logging
 import os
 import socket
 from typing import List
+from tqdm import tqdm
+from time import time
 from dask.distributed import Client, LocalCluster, as_completed, Future
 from dask_jobqueue import SLURMCluster
 from coffea.processor.accumulator import AccumulatorABC
@@ -69,7 +71,7 @@ class BaseDaskHistMaker():
         cluster = SLURMCluster(
             job_name="dask-histmaker",
             cores=1,
-            memory='2GB',
+            memory='4GB',
             scheduler_options={
                 'dashboard_address': '1776',
                 'host': socket.gethostname()
@@ -80,9 +82,12 @@ class BaseDaskHistMaker():
         )
 
         cluster.scale(n_workers)
-        cluster.adapt(minimum=min_workers, maximum=max_workers)
-        client = Client(cluster, heartbeat_interval='10s', timeout='10000s')
+        #cluster.adapt(minimum=min_workers, maximum=max_workers) # this seems to make things very unstable with Slurm
+        client = Client(cluster)
 
+        self.logger.info(f"Waiting for workers to be ready...")
+        client.wait_for_workers(1)
+        self.logger.info(f"Workers ready. SLURMClient ready.")
         self.logger.info(client)
 
         return client
@@ -92,9 +97,16 @@ class BaseDaskHistMaker():
         client: Client,
         samples: List[str]
     ) -> dict:
+        
+        output = {}
+        output['_processing_metadata'] = {}
+        
+        output['_processing_metadata']['t_start'] = time()
 
         for sample in samples:
             self.preprocess_sample(sample)
+
+        output['_processing_metadata']['t_preprocess'] = time()
 
         futures = {}
         for sample in samples:
@@ -107,7 +119,7 @@ class BaseDaskHistMaker():
         # flatten futures to a list to execute them
         futures = [future for sublist in futures.values() for future in sublist]
 
-        output = {}
+        # add some sample metadata to the output
         for sample in samples:
             output[sample] = {}
             output[sample]["_processing_metadata"] = dict_accumulator({})
@@ -116,11 +128,11 @@ class BaseDaskHistMaker():
             output[sample]["_processing_metadata"]["n_success"] = value_accumulator(float, 0)
             output[sample]["_processing_metadata"]["n_failed"] = value_accumulator(float, 0)
 
-        for future in as_completed(futures):
-
-            output[sample]["_processing_metadata"]["n_processed"] += 1
+        for future in tqdm(as_completed(futures), total=len(futures)):
 
             sample = future._sample
+
+            output[sample]["_processing_metadata"]["n_processed"] += 1
 
             try:
                 result = future.result()
@@ -159,7 +171,9 @@ class BaseDaskHistMaker():
                 output[sample]["_processing_metadata"]["n_failed"] += 1
                 continue
 
-        for sample in list(output.keys()):
+        output['_processing_metadata']['t_process'] = time()
+
+        for sample in samples:
             try:
                 output[sample].update(self.postprocess_sample(sample, output[sample]))
                 output[sample]["_processing_metadata"]["postprocess_status"] = "success"
@@ -168,18 +182,22 @@ class BaseDaskHistMaker():
                 output[sample]["_processing_metadata"]["postprocess_status"] = "failed"
                 continue
 
-        self.print_summary(output)
+        output['_processing_metadata']['t_postprocess'] = time()
+
+        self.print_summary(output, samples)
 
         return output
     
-    def print_summary(self, output: dict) -> None:
+    def print_summary(self, output: dict, samples: list) -> None:
         
         _tot_futures_results = {}
 
+        self.logger.info("")
         self.logger.info("Run Summary:")
-        for sample in output.keys():
+
+        self.logger.info("")
+        for sample in samples:
             self.logger.info(f"Sample: {sample}")
-            self.logger.info(f"\tStatus: {output[sample]['_processing_metadata']['status']}")
             for key, value in output[sample]['_processing_metadata'].items():
                 if key.startswith("n_"):
                     status = key.split("_")[1]
@@ -189,16 +207,20 @@ class BaseDaskHistMaker():
                     _tot_futures_results[status] += value.value
 
         self.logger.info("")
-        
         for status, value in _tot_futures_results.items():
             self.logger.info(f"Total futures {status}: {value}")
 
         self.logger.info("")
-
-        self.logger.info(f"Total samples post-processed: {len(output.keys())}")
-        self.logger.info("\tSamples Success: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['postprocess_status'] == 'success'])))
-        self.logger.info("\tSamples Failed: " + str(len([s for s in output.keys() if output[s]['_processing_metadata']['postprocess_status'] == 'failed'])))
+        self.logger.info(f"Total samples post-processed: {len(samples)}")
+        self.logger.info("\tSamples Success: " + str(len([s for s in samples if output[s]['_processing_metadata']['postprocess_status'] == 'success'])))
+        self.logger.info("\tSamples Failed: " + str(len([s for s in samples if output[s]['_processing_metadata']['postprocess_status'] == 'failed'])))
         
+        self.logger.info("")
+        self.logger.info(f"Time to preprocess: {output['_processing_metadata']['t_preprocess'] - output['_processing_metadata']['t_start']:.2f} s")
+        self.logger.info(f"Time to process: {output['_processing_metadata']['t_process'] - output['_processing_metadata']['t_preprocess']:.2f} s")
+        self.logger.info(f"Time to postprocess: {output['_processing_metadata']['t_postprocess'] - output['_processing_metadata']['t_process']:.2f} s")
+        self.logger.info(f"Total time: {output['_processing_metadata']['t_postprocess'] - output['_processing_metadata']['t_start']:.2f} s")
+
     def preprocess_sample(self, sample: str):
         """
         To be written by the user.

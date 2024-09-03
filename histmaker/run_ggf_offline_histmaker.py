@@ -71,54 +71,33 @@ def main():
    
     # set up your configuration
     config = {
-        # "CRWJ": {
-        #     "input_method": "HighestPT",
-        #     "method_var": "SUEP_nconst_HighestPT",
-        #     "SR": [
-        #         ["SUEP_S1_HighestPT", ">=", 0.3],
-        #         ["SUEP_nconst_HighestPT", ">=", 40],
-        #     ],
-        #     "selections": [
-        #         "WH_MET_pt > 30",
-        #         "W_pt > 40",
-        #         "W_mt < 130",
-        #         "W_mt > 30",
-        #         "bjetSel == 1",
-        #         "deltaPhi_SUEP_W > 1.5",
-        #         "deltaPhi_SUEP_MET > 1.5",
-        #         "deltaPhi_lepton_SUEP > 1.5",
-        #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-        #         "W_SUEP_BV < 2",
-        #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-        #         "SUEP_S1_HighestPT < 0.3",
-        #         "SUEP_nconst_HighestPT < 40",
-        #     ],
-        #     "syst":  [],
-        # },
-        "VRGJ": {
-            "input_method": "HighestPT",
-            "method_var": "SUEP_nconst_HighestPT",
-            "SR": [
-                ["SUEP_S1_HighestPT", ">=", 0.3],
-                ["SUEP_nconst_HighestPT", ">=", 40],
-            ],
+        "Cluster70": {
+            "input_method": "CL",
+            "method_var": "SUEP_S1_CL",
+            "xvar": "SUEP_S1_CL",
+            "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+            "yvar": "SUEP_nconst_CL",
+            "yvar_regions": [30, 50, 70, 1000],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
             "selections": [
-
-                # "WH_gammaTriggerBits < 4"
-                
-                "photon_pt > 40",
-
-                "bjetSel == 1",
-
-                "deltaPhi_SUEP_photon > 1.5",
-                "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                "photon_SUEP_BV < 2",
-                
-                "SUEP_S1_HighestPT < 0.3",
-                "SUEP_nconst_HighestPT < 40",
+                ["ht_JEC", ">", 1200],
+                ["ntracks", ">", 0],
+                "SUEP_nconst_CL > 30",
+                "SUEP_S1_CL > 0.3",
             ],
-        }
+        },
+        "ClusterInverted": {
+            "input_method": "CL",
+            "method_var": "ISR_S1_CL",
+            "xvar": "ISR_S1_CL",
+            "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+            "yvar": "ISR_nconst_CL",
+            "yvar_regions": [30, 50, 70, 1000],
+            "SR": [["SUEP_S1_CL", ">=", 0.5], ["SUEP_nconst_CL", ">=", 70]],
+            "selections": [["ht_JEC", ">", 1200], ["ntracks", ">", 0]],
+        },
     }
+    
     hists = {}
     for output_method in config.keys():
         var_defs.initialize_new_variables(output_method, SimpleNamespace(**options), config[output_method])

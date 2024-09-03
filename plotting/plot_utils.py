@@ -434,6 +434,10 @@ def getSampleNameAndBin(sample_name):
         sample = formatWHToSUEPNaming(sample_name)
         bin = None
 
+    elif sample_name.startswith("GJets_HT-"):
+        sample = "GJets_HT"
+        bin = sample_name.split(".root")[0].split("_Tune")[0]
+
     else:
         sample = sample_name.split(".root")[0]
         bin = None
