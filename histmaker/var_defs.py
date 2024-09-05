@@ -9,7 +9,7 @@ def initialize_new_variables(label: str, options, config: dict):
         [name, function, [input_vars]],
         ...
     ]
-    and adds it to the config dictionary, if not alreayd there
+    and adds it to the config dictionary, if not already there
     """
 
     if 'new_variables' in config.keys():
@@ -40,11 +40,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     "SUEP_pt_HighestPT",
                 ],
             ],
-            [
-                "photon_SUEP_BV",
-                balancing_var,
-                ["photon_pt", "SUEP_pt_HighestPT"],
-            ],
+           
             [
                 "deltaPhi_SUEP_W",
                 deltaPhi_x_y,
@@ -72,14 +68,6 @@ def initialize_new_variables(label: str, options, config: dict):
                 [
                     "lepton_phi",
                     "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_photon",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "photon_phi",
                 ],
             ],
             [
@@ -194,6 +182,29 @@ def initialize_new_variables(label: str, options, config: dict):
             new_vars += [
                 ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
                 ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
+            ]
+
+        if "VRGJ" in label:
+
+            new_vars += [
+                [
+                    "gammaTriggerSel",
+                    lambda x: x % 64 != 0,
+                    ["WH_gammaTriggerBits"],
+                ],
+                [
+                    "photon_SUEP_BV",
+                    balancing_var,
+                    ["photon_pt", "SUEP_pt_HighestPT"],
+                ],
+                [
+                    "deltaPhi_SUEP_photon",
+                    deltaPhi_x_y,
+                    [
+                        "SUEP_phi_HighestPT",
+                        "photon_phi",
+                    ],
+                ],
             ]
 
     config['new_variables'] = new_vars

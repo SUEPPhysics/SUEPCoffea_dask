@@ -1217,6 +1217,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"nphotons_{label}",
             #     label=r"$n_\gamma$",
             # ).Weight(),
+            f"nCRQCDleptons_{label}": Hist.new.Reg(
+                10,
+                0,
+                10,
+                name=f"nCRQCDleptons_{label}",
+                label="$n_{\mathrm{CRQCD~leptons}}$",
+            ).Weight(),
             f"deltaPhi_SUEP_photon_{label}": Hist.new.Reg(
                 60,
                 0,

@@ -12,6 +12,27 @@ from CMS_corrections import pileup_weight
 from CMS_corrections import triggerSF
 
 
+def apply_correctionlib(
+    corr_file:str,
+    corr_variable:str,
+    input_variable:np.ndarray
+):
+    """
+    Apply a correction from a correctionlib file to a (numpy) variable.
+    corr_file: path to the file containing the weights
+    corr_variable: variable to use as correction
+    input_variable: variable to use as input for the weights
+
+    https://cms-nanoaod.github.io/correctionlib/correctionlib_tutorial.html
+    """
+    import correctionlib
+
+    ceval = correctionlib.CorrectionSet.from_file(corr_file)
+    corrections = ceval[corr_variable].evaluate(input_variable)
+
+    return corrections
+
+
 class EventWeightProcessor:
     """
     Apply CMS_corrections weights and variations to a pandas DataFrame,
@@ -189,6 +210,10 @@ class EventWeightProcessor:
                     pass
                 else:
                     df['event_weight'] *= df[btag_weights]
+
+            #if "GJets_HT" in self.sample:
+                # df['event_weight'] *= apply_correctionlib("CMS_corrections/photon_pt_corr.json", "ptweight", df['photon_pt'])
+            #    df['event_weight'] *= apply_correctionlib("CMS_corrections/suep_pt_corr.json", "suepptweight", df['SUEP_pt_HighestPT'])
 
         # data
         else:

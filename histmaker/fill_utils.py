@@ -245,7 +245,7 @@ def make_selection(
         raise Exception("Couldn't find operator requested " + operator)
 
 
-def apply_scaling_weights(
+def apply_scaling_weights_byregion(
     df,
     scaling_weights,
     abcd,

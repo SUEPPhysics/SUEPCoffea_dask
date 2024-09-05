@@ -71,7 +71,31 @@ def main():
    
     # set up your configuration
     config = {
-        # "CRWJ": {
+         "CRWJ": {
+            "input_method": "HighestPT",
+            "method_var": "SUEP_nconst_HighestPT",
+            "SR": [
+                ["SUEP_S1_HighestPT", ">=", 0.3],
+                ["SUEP_nconst_HighestPT", ">=", 40],
+            ],
+            "selections": [
+                "WH_MET_pt > 30",
+                "W_pt > 40",
+                "W_mt < 130",
+                "W_mt > 30",
+                "bjetSel == 1",
+                "deltaPhi_SUEP_W > 1.5",
+                "deltaPhi_SUEP_MET > 1.5",
+                "deltaPhi_lepton_SUEP > 1.5",
+                "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                "W_SUEP_BV < 2",
+                "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                #"SUEP_S1_HighestPT < 0.3",
+                #"SUEP_nconst_HighestPT < 40",
+            ],
+            "syst":  [],
+        },
+        # "CRWJmu": {
         #     "input_method": "HighestPT",
         #     "method_var": "SUEP_nconst_HighestPT",
         #     "SR": [
@@ -92,37 +116,57 @@ def main():
         #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
         #         "SUEP_S1_HighestPT < 0.3",
         #         "SUEP_nconst_HighestPT < 40",
+        #         "isMuon == 1",
         #     ],
         #     "syst":  [],
         # },
-        "VRGJ": {
-            "input_method": "HighestPT",
-            "method_var": "SUEP_nconst_HighestPT",
-            "SR": [
-                ["SUEP_S1_HighestPT", ">=", 0.3],
-                ["SUEP_nconst_HighestPT", ">=", 40],
-            ],
-            "selections": [
-
-                # "WH_gammaTriggerBits < 4"
-                
-                "photon_pt > 40",
-
-                "bjetSel == 1",
-
-                "deltaPhi_SUEP_photon > 1.5",
-                "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                "photon_SUEP_BV < 2",
-                
-                "SUEP_S1_HighestPT < 0.3",
-                "SUEP_nconst_HighestPT < 40",
-            ],
-        }
+        # "CRWJe": {
+        #     "input_method": "HighestPT",
+        #     "method_var": "SUEP_nconst_HighestPT",
+        #     "SR": [
+        #         ["SUEP_S1_HighestPT", ">=", 0.3],
+        #         ["SUEP_nconst_HighestPT", ">=", 40],
+        #     ],
+        #     "selections": [
+        #         "WH_MET_pt > 30",
+        #         "W_pt > 40",
+        #         "W_mt < 130",
+        #         "W_mt > 30",
+        #         "bjetSel == 1",
+        #         "deltaPhi_SUEP_W > 1.5",
+        #         "deltaPhi_SUEP_MET > 1.5",
+        #         "deltaPhi_lepton_SUEP > 1.5",
+        #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+        #         "W_SUEP_BV < 2",
+        #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+        #         "SUEP_S1_HighestPT < 0.3",
+        #         "SUEP_nconst_HighestPT < 40",
+        #         "isElectron == 1",
+        #     ],
+        #     "syst":  [],
+        # },
+        # "VRGJ": {
+        #     "input_method": "HighestPT",
+        #     "method_var": "SUEP_nconst_HighestPT",
+        #     "SR": [
+        #         ["SUEP_S1_HighestPT", ">=", 0.3],
+        #         ["SUEP_nconst_HighestPT", ">=", 40],
+        #     ],
+        #     "selections": [
+        #         "gammaTriggerSel == 1",
+        #         "photon_pt > 40",
+        #         "bjetSel == 1",
+        #         "deltaPhi_SUEP_photon > 1.5",
+        #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+        #         "photon_SUEP_BV < 2",
+        #         #"SUEP_S1_HighestPT < 0.3",
+        #         #"SUEP_nconst_HighestPT < 40",
+        #     ],
+        # }
     }
     hists = {}
     for output_method in config.keys():
         var_defs.initialize_new_variables(output_method, SimpleNamespace(**options), config[output_method])
-        hist_defs.initialize_histograms(hists, output_method, SimpleNamespace(**options), config[output_method])
         if options.get("doSyst", False):
             for syst in config[output_method].get("syst", []):
                 if any([j in syst for j in ["JER", "JES"]]):

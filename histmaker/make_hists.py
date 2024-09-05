@@ -149,7 +149,7 @@ def makeParser(parser=None):
         "--pkl",
         type=int,
         default=0,
-        help="Use pickle files instead of root files (default=False)",
+        help="Write output to a pickle file instead of a root file (default=False)",
     )
     parser.add_argument(
         "--verbose",
@@ -253,7 +253,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
     # N.B.: these are just an optional, arbitrary scaling of weights you're passing in
     if options.weights is not None and options.weights != "None":
         scaling_weights = fill_utils.read_in_weights(options.weights)
-        df = fill_utils.apply_scaling_weights(
+        df = fill_utils.apply_scaling_weights_byregion(
             df.copy(),
             scaling_weights,
             config["Cluster"],
@@ -342,29 +342,111 @@ def main():
 
     if options.channel == "WH":
         config = {
-            "NOAK15": {
-                "input_method": "HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.3],
-                    ["SUEP_nconst_HighestPT", ">=", 40],
-                ],
-                "selections": [
-                    "SUEP_S1_HighestPT < 0.3",
-                    "SUEP_nconst_HighestPT < 40",
-                ],
-            },
-            "RAW": {
-                "input_method": "HighestPT",
-                "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.3],
-                    ["SUEP_nconst_HighestPT", ">=", 40],
-                ],
-                "selections": [
-                    "SUEP_S1_HighestPT < 0.3",
-                    "SUEP_nconst_HighestPT < 40",
-                ],
-            },
+            # "NOAK15": {
+            #     "input_method": "HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "PuppiMET_pt > 30",
+            #     ],
+            # },
+            # "NOAK15PFMET": {
+            #     "input_method": "HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "MET_pt > 30",
+            #     ],
+            # },
+            # "AK15PUPPI": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "PuppiMET_pt > 30",
+            #     ],
+            # },
+            # "AK15PF": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "MET_pt > 30",
+            #     ],
+            # },
+            # "CRWJlite": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "PuppiMET_pt > 30",
+            #         "bjetSel == 0"
+            #     ],
+            # },
+            # "CRTTlite": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "PuppiMET_pt > 30",
+            #         "bjetSel == 1"
+            #     ],
+            # },
+            # "AK15b": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "PuppiMET_pt > 30",
+            #         "bjetSel == 0"
+            #     ],
+            # },
+            # "RAW": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "lepton_pt > 100"
+            #     ],
+            # },
             # "SR": {
             #     "input_method": "HighestPT",
             #     "method_var": "SUEP_nconst_HighestPT",
@@ -382,9 +464,76 @@ def main():
             #         "deltaPhi_SUEP_MET > 1.5",
             #         "deltaPhi_lepton_SUEP > 1.5",
             #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #         "deltaPhi_minDeltaPhiMETJet_MET > 0.4",
             #         "W_SUEP_BV < 2",
             #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #     ],
+            # },
+            # "CRWJPF": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "MET_pt > 30",
+            #         "new_W_pt_PFMET > 40",
+            #         "new_W_mt_PFMET < 130",
+            #         "new_W_mt_PFMET > 30",
+            #         "bjetSel == 1",
+            #         "deltaPhi_SUEP_W_PFMET > 1.5",
+            #         "deltaPhi_SUEP_PFMET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_PFMET_SUEP_BV < 2",
+            #         #"deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #     ],
+            # },
+            # "CRTTPF": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "MET_pt > 30",
+            #         "new_W_pt_PFMET > 40",
+            #         "new_W_mt_PFMET < 130",
+            #         "new_W_mt_PFMET > 30",
+            #         "bjetSel == 0",
+            #         "deltaPhi_SUEP_W_PFMET > 1.5",
+            #         "deltaPhi_SUEP_PFMET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_PFMET_SUEP_BV < 2",
+            #         #"deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #     ],
+            # },
+            #  "CRNoB": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "WH_MET_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
             #     ],
             # },
             "CRWJ": {
@@ -410,77 +559,123 @@ def main():
                     "SUEP_nconst_HighestPT < 40",
                 ],
             },
-            "CRWJe": {
-                "input_method": "HighestPT",
-                "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.3],
-                    ["SUEP_nconst_HighestPT", ">=", 40],
-                ],
-                "selections": [
-                    "WH_MET_pt > 30",
-                    "W_pt > 40",
-                    "W_mt < 130",
-                    "W_mt > 30",
-                    "bjetSel == 1",
-                    "deltaPhi_SUEP_W > 1.5",
-                    "deltaPhi_SUEP_MET > 1.5",
-                    "deltaPhi_lepton_SUEP > 1.5",
-                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                    "W_SUEP_BV < 2",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    "SUEP_S1_HighestPT < 0.3",
-                    "SUEP_nconst_HighestPT < 40",
-                    "isElectron == 1"
-                ],
-            },
-            "CRWJmu": {
-                "input_method": "HighestPT",
-                "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.3],
-                    ["SUEP_nconst_HighestPT", ">=", 40],
-                ],
-                "selections": [
-                    "WH_MET_pt > 30",
-                    "W_pt > 40",
-                    "W_mt < 130",
-                    "W_mt > 30",
-                    "bjetSel == 1",
-                    "deltaPhi_SUEP_W > 1.5",
-                    "deltaPhi_SUEP_MET > 1.5",
-                    "deltaPhi_lepton_SUEP > 1.5",
-                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                    "W_SUEP_BV < 2",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    "SUEP_S1_HighestPT < 0.3",
-                    "SUEP_nconst_HighestPT < 40",
-                    "isMuon == 1"
-                ],
-            },
-            "CRTT": {
-                "input_method": "HighestPT",
-                "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.3],
-                    ["SUEP_nconst_HighestPT", ">=", 40],
-                ],
-                "selections": [
-                    "WH_MET_pt > 30",
-                    "W_pt > 40",
-                    "W_mt < 130",
-                    "W_mt > 30",
-                    "bjetSel == 0",
-                    "deltaPhi_SUEP_W > 1.5",
-                    "deltaPhi_SUEP_MET > 1.5",
-                    "deltaPhi_lepton_SUEP > 1.5",
-                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                    "W_SUEP_BV < 2",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    "SUEP_S1_HighestPT < 0.3",
-                    "SUEP_nconst_HighestPT < 40",
-                ],
-            },
+            # "CRWJ": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "WH_MET_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 1",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #     ],
+            # },
+            # "CRWJe": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "WH_MET_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 1",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "isElectron == 1"
+            #     ],
+            # },
+            # "CRWJmu": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "WH_MET_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 1",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #         "isMuon == 1"
+            #     ],
+            # },
+            # "CRTT": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.3],
+            #         ["SUEP_nconst_HighestPT", ">=", 40],
+            #     ],
+            #     "selections": [
+            #         "WH_MET_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 0",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #         "SUEP_nconst_HighestPT < 40",
+            #     ],
+            # },
+            # "CRCQD": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 0.5],
+            #         ["SUEP_nconst_HighestPT", ">=", 50],
+            #     ],
+            #     "selections": [
+            #         "MET_pt > 30",
+            #         "W_pt > 40",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 0",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.5",
+            #         "SUEP_nconst_HighestPT < 50",
+            #     ],
+            # },
         }
 
     if options.channel == "ggF":
@@ -822,6 +1017,8 @@ def main():
 
     # write histograms and metadata to a root or pkl file
     outFile = options.saveDir + "/" + sample + "_" + options.output
+    if not os.path.exists(options.saveDir):
+        os.makedirs(options.saveDir)
     if options.pkl:
         outFile += ".pkl"
         logging.info("Saving outputs to " + outFile)

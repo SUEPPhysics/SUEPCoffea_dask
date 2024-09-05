@@ -54,6 +54,9 @@ default_style = {
     "VH": {
         "color": "royalblue",
     },
+    "GJets_HT": {
+        "color": "maroon",
+    },
     "WJetsToLNu_Pt": {
         "color": "deepskyblue",
     },
@@ -788,7 +791,8 @@ def styled_plot_ratio(
         linestyle=[style.get("linestyle", "-") for style in styles],
         fmt=[style.get("fmt", "") for style in styles],
     )
-
+    axs[0].legend(fontsize="xx-small", loc=(1.01, 0))
+    
     if stacked_hlist:
         if stacked_labels:
             stacked_styles = getStyles(stacked_labels)

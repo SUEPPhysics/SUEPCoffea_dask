@@ -45,7 +45,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         self.options = self.get_options(options)
         self.config = kwargs.get("config", {})
-        self.hists = kwargs.get("hists", {})
 
         logging.basicConfig(level=logging.ERROR) 
         self.logger = logging.getLogger(self.__class__.__name__) # logging for this class only
@@ -107,7 +106,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         
         self.logger.debug("Creating futures for sample " + sample)
 
-        futures = [client.submit(self.process_file, ifile, sample, self.hists, self.config, self.options) for ifile in files]
+        futures = [client.submit(self.process_file, ifile, sample, self.config, self.options) for ifile in files]
 
         return futures
     
@@ -298,7 +297,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                     froot[h] = hist
 
     @staticmethod
-    def process_file(ifile: str, sample: str, hists: dict, config: dict, options: SimpleNamespace) -> dict:
+    def process_file(ifile: str, sample: str, config: dict, options: SimpleNamespace) -> dict:
         """
         Read in ntuple hdf5 files and process each systematic variation to produce histograms and cutflows.
         Returns: a dictionary of histograms, cutflows, and gensumweight.
@@ -307,7 +306,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         logging.debug(f"Processing file {ifile}.")
 
         output = {
-            "hists": copy.deepcopy(hists),
+            "hists": {},
             "cutflow": {},
             "gensumweight": value_accumulator(float, 0),
         }
@@ -371,6 +370,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         for config_tag, config_out in config.items():
 
             logging.debug(f"\tUsing configuration {config_tag}.")
+
+            hist_defs.initialize_histograms(output['hists'], config_tag, options, config_out)
 
             logging.debug(f"\tRunning nominal variation")
             SUEPDaskHistMaker.plot_variation(df, '', options, config_out, config_tag, output["hists"], output["cutflow"], ntuple_metadata)
