@@ -332,8 +332,11 @@ def prepare_DataFrame(
         df['SUEP_S1_HighestPT'] = np.zeros(df.shape[0])
     if 'SUEP_nconst_HighestPT' not in df.columns:
         df['SUEP_nconst_HighestPT'] = np.zeros(df.shape[0])
+    if 'otherAK15_maxPT_pt_HighestPT' not in df.columns:
+        df['otherAK15_maxPT_pt_HighestPT'] = np.zeros(df.shape[0])
 
     # TODO temporaray: set to 0 values that are nan
+    df['otherAK15_maxPT_pt_HighestPT'] = df['otherAK15_maxPT_pt_HighestPT'].fillna(0)
     df['SUEP_S1_HighestPT'] = df['SUEP_S1_HighestPT'].fillna(0)
     df['SUEP_nconst_HighestPT'] = df['SUEP_nconst_HighestPT'].fillna(0)
 

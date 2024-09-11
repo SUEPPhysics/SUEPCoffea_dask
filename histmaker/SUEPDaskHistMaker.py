@@ -46,10 +46,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         self.options = self.get_options(options)
         self.config = kwargs.get("config", {})
 
-        logging.basicConfig(level=logging.ERROR) 
+        logging.basicConfig(level=logging.INFO) 
         self.logger = logging.getLogger(self.__class__.__name__) # logging for this class only
         self.logger.setLevel(level=logging.INFO)
         if self.options.verbose:
+            logging.basicConfig(level=logging.DEBUG) 
             self.logger.setLevel(logging.DEBUG)
 
     def get_options(self, options: dict) -> SimpleNamespace:
@@ -158,7 +159,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                     )
 
         if self.options.isMC:
-            self.logger.info("Applying normalization.")
 
             self.logger.debug(f"Found total_gensumweight {gensumweight}.")
             if gensumweight == 0:

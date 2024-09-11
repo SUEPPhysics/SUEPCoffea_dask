@@ -272,6 +272,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         mostNumerousAK15 = events.WH_other_AK15[
             ak.argmax(other_AK15_nconst, axis=-1, keepdims=True)
         ]
+        highestPT_otherAK15 = events.WH_other_AK15[
+            ak.argmax(events.WH_other_AK15.pt, axis=-1, keepdims=True)
+        ]
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_pt_HighestPT",
@@ -292,7 +295,21 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             "otherAK15_maxConst_nconst_HighestPT",
             ak.max(other_AK15_nconst, axis=-1).to_numpy(allow_missing=True),
         )
-
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxPT_pt_HighestPT",
+            highestPT_otherAK15.pt.to_numpy(allow_missing=True),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxPT_eta_HighestPT",
+            highestPT_otherAK15.eta.to_numpy(allow_missing=True),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxPT_phi_HighestPT",
+            highestPT_otherAK15.phi.to_numpy(allow_missing=True),
+        )
 
         # WH system
         if 'WH_W' in events.fields:
@@ -661,6 +678,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if 'WH_gamma' in events.fields or self.VRGJ:
 
             output["vars"]["WH_gammaTriggerBits"] = events.WH_gammaTriggerBits
+            if not self.isMC: output["vars"]["WH_gammaTriggerUnprescaleWeight"] = events.WH_gammaTriggerUnprescaleWeight
 
             output["vars"]["photon_pt"] = events.WH_gamma.pt
             output["vars"]["photon_eta"] = events.WH_gamma.eta
@@ -759,19 +777,15 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["cutflow_goldenJSON" + out_label] += ak.sum(events.genWeight)
 
         # temporarily disabled for studies of w+jets data/MC
-        # events = WH_utils.genSelection(events, self.sample)
+        events = WH_utils.genSelection(events, self.sample)
         output["cutflow_genCuts" + out_label] += ak.sum(events.genWeight)
 
         if not self.VRGJ:
             events = WH_utils.triggerSelection(
                 events, self.sample, self.era, self.isMC, output, out_label
             )
-        else:
-            events = WH_utils.gammaTriggerSelection(
-                events, self.era
-            )
-        output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
-
+            output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
+        
         events = WH_utils.qualityFiltersSelection(events, self.era)
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
 
@@ -798,6 +812,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         elif self.VRGJ:
             events = WH_utils.onePhotonSelection(events, self.isMC)
             output["cutflow_onePhoton" + out_label] += ak.sum(events.genWeight)
+            events = WH_utils.prescaledGammaTriggersSelection(events, self.era, bool(self.isMC))
+            output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
         elif self.CRQCD: 
             events = WH_utils.CRQCDSelection(events)
             output["cutflow_oneLooseLepton" + out_label] += ak.sum(events.genWeight)
@@ -835,9 +851,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events = ak.with_field(events, events.PuppiMET, "WH_MET")
         if not self.VRGJ:
             events = ak.with_field(events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W")
-
-        events = events[events.WH_MET.pt > 20]
-        output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
+            events = events[events.WH_MET.pt > 20]
+            output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
 
         # TODO do we want this?
         # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)    

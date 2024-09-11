@@ -367,6 +367,7 @@ def getPhotons(events, isMC: bool = 1):
         & (abs(events.Photon.eta) <= 2.5)
         & (events.Photon.electronVeto)
         & (events.Photon.pt >= 30)
+        & (events.Photon.pfRelIso03_all < 0.15)
     )
 
     photons = photons[cutPhotons]
@@ -489,7 +490,8 @@ def getGammaTriggerBits(events, era: str):
     """
 
     if era == '2018':
-        gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon110EB_TightID_TightIso)*2 + (events.HLT.Photon100EB_TightID_TightIso)*4 + (events.HLT.Photon120_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*32 + (events.HLT.Photon30_HoverELoose)*64 + (events.HLT.Photon20_HoverELoose)*128
+        # gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon110EB_TightID_TightIso)*2 + (events.HLT.Photon100EB_TightID_TightIso)*4 + (events.HLT.Photon120_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*32 + (events.HLT.Photon30_HoverELoose)*64 + (events.HLT.Photon20_HoverELoose)*128
+        gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon110EB_TightID_TightIso)*2 + (events.HLT.Photon100EB_TightID_TightIso)*4 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*16
     elif era == '2017':
         gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon165_R9Id90_HE10_IsoM)*2 + (events.HLT.Photon120_R9Id90_HE10_IsoM)*4 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon30_HoverELoose)*32 + (events.HLT.Photon20_HoverELoose)*64  
     elif era == '2016' or era == '2016apv':
@@ -499,6 +501,32 @@ def getGammaTriggerBits(events, era: str):
     
     return gammaTriggerBits
 
+
+def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgHLTRunIISummary?sortcol=2;table=2;up=0
+
+    gammaTriggerBits = getGammaTriggerBits(events, era)
+    events = ak.with_field(events, gammaTriggerBits, "WH_gammaTriggerBits")
+
+    gammaTriggerUnprescaleWeight = ak.zeros_like(events.genWeight)
+    if era == '2018':
+        trigger_pt_offset = 5
+        mask_Photon200 = ((events.HLT.Photon200 == 1) & (events.WH_gamma.pt > (200 + trigger_pt_offset)))
+        mask_Photon75 = ((events.HLT.Photon75_R9Id90_HE10_IsoM == 1) & ((events.WH_gamma.pt > (75 + trigger_pt_offset)) & (events.WH_gamma.pt < (200 + trigger_pt_offset))))
+        mask_Photon50 = ((events.HLT.Photon50_R9Id90_HE10_IsoM == 1) & ((events.WH_gamma.pt > (50 + trigger_pt_offset)) & (events.WH_gamma.pt < (75 + trigger_pt_offset))))
+        mask_highPt = (events.WH_gamma.pt > (50 + trigger_pt_offset))
+        mask = mask_Photon200 | mask_Photon75 | mask_Photon50 | mask_highPt
+        if not isMC:
+            gammaTriggerUnprescaleWeight = ak.where(mask_Photon200, 1, gammaTriggerUnprescaleWeight)
+            gammaTriggerUnprescaleWeight = ak.where(mask_Photon75, 59.96/0.95, gammaTriggerUnprescaleWeight)
+            gammaTriggerUnprescaleWeight = ak.where(mask_Photon50, 59.96/0.24, gammaTriggerUnprescaleWeight)
+    else:
+        # other eras are not supported yet
+        raise ValueError(f"Invalid era: {era}")
+    
+    events = ak.with_field(events, gammaTriggerUnprescaleWeight, "WH_gammaTriggerUnprescaleWeight")
+    events = events[mask]
+    return events
 
 def gammaTriggerSelection(events, era: str):
     """
@@ -575,11 +603,13 @@ def VRGJOrthogonalitySelection(events, era:str):
     events = events[~cutHasTwoLeps]
 
     # ggF orthogonality
-    if era == "2016" or era == "2016apv":
-        ggFTrigger = events.HLT.PFHT900 == 1
-    else:
-        ggFTrigger = events.HLT.PFHT1050 == 1
-    events = events[~ggFTrigger]
+    # TODO commenting out to study how to be orthogonal to scouting
+    # and the effect this has on the jet and SUEP candidate pts
+    # if era == "2016" or era == "2016apv":
+    #     ggFTrigger = events.HLT.PFHT900 == 1
+    # else:
+    #     ggFTrigger = events.HLT.PFHT1050 == 1
+    # events = events[~ggFTrigger]
 
     # WH orthogonality
     _, _, tightLeptons = getTightLeptons(events)

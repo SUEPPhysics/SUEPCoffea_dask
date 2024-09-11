@@ -46,6 +46,11 @@ def main():
         default=0,
         help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.",
     )
+    parser.add_argument(
+        '--dataDirLocal',
+        type=str,
+        default='/ceph/submit/data/user/' + os.environ["USER"][0] + '/' + os.environ["USER"] + '/SUEP/',
+    )
     parser.add_argument("-redirector", type=str, default="root://submit50.mit.edu/")
     options = parser.parse_args()
 
@@ -53,10 +58,7 @@ def main():
     home_base = os.environ["HOME"]
     username = os.environ["USER"]
     proxy_copy = os.path.join(home_base, proxy_base)
-
-    out_dir = (
-            "/ceph/submit/data/user/" + username[0] + "/" + username + "/SUEP/" + options.tag + "/{}/"
-    )
+    out_dir = options.dataDirLocal + "/" + options.tag + "/{}/"
     out_dir_xrd = "/" + username + "/SUEP/" + options.tag + "/{}/"
     move_dir = "/work/submit/" + username + "/SUEP/" + options.tag + "/{}/"
     jobs_base_dir = "/work/submit/" + username + "/SUEP/logs/"

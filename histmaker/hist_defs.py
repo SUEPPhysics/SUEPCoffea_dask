@@ -1,5 +1,5 @@
 from hist import Hist
-
+import numpy as np
 
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
     # don't recreate histograms if called multiple times with the same output label
@@ -67,10 +67,8 @@ def init_hists_cluster(output, label, regions_list=[""]):
         # these histograms will be made for each systematic, and each ABCD region
         output.update(
             {
-                f"{r}SUEP_nconst_{label}": Hist.new.Reg(
-                    500,
-                    0,
-                    500,
+                f"{r}SUEP_nconst_{label}": Hist.new.Variable(
+                    np.linspace(-0.5, 499.5, 501),
                     name=f"{r}SUEP_nconst_{label}",
                     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
                 ).Weight(),
@@ -171,10 +169,8 @@ def init_hists_cluster(output, label, regions_list=[""]):
                         name=f"SUEP_S1_{label}",
                         label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
                     )
-                    .Reg(
-                        500,
-                        0,
-                        500,
+                    .Variable(
+                        np.linspace(-0.5, 499.5, 501),
                         name=f"nconst_{label}",
                         label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
                     )
@@ -370,10 +366,8 @@ def init_hists_GNN(output, label, config, regions_list=[""]):
                 )
                 .Reg(100, 0, 1, name=f"{model}_{label}", label="GNN Output")
                 .Weight(),
-                f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Reg(
-                    500,
-                    0,
-                    500,
+                f"2D_SUEP_nconst_vs_{model}_{label}": Hist.new.Variable(
+                    np.linspace(-0.5, 499.5, 501),
                     name=f"SUEP_nconst_{label}",
                     label="# Const",
                 )
@@ -470,10 +464,8 @@ def init_hists_GNNInverted(output, label, config, regions_list=[""]):
 def init_hists_highestPT(output, label, regions_list=[""]):
     output.update(
         {
-            f"SUEP_nconst_{label}": Hist.new.Reg(
-                100,
-                0,
-                100,
+            f"SUEP_nconst_{label}": Hist.new.Variable(
+                np.linspace(-0.5, 199.5, 201),
                 name=f"SUEP_nconst_{label}",
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             ).Weight(),
@@ -490,6 +482,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 1000,
                 name=f"SUEP_pt_{label}",
                 label=r"$p^{\mathrm{SUEP}}_T$ [GeV]",
+            ).Weight(),
+            f"otherAK15_maxPT_pt_{label}": Hist.new.Reg(
+                1000,
+                0,
+                200,
+                name=f"otherAK15_maxPT_pt_{label}",
+                label=r"$p^{\mathrm{sub-leading~AK15}}_T$ [GeV]",
             ).Weight(),
             f"ntracks_{label}": Hist.new.Reg(
                 100,
@@ -547,10 +546,8 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"SUEP_S1_{label}",
                 label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
             )
-            .Reg(
-                500,
-                0,
-                500,
+            .Variable(
+                np.linspace(-0.5, 199.5, 201),
                 name=f"nconst_{label}",
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
@@ -596,6 +593,9 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 2000,
                 name=f"SUEP_delta_mass_genMass_{label}",
                 label="SUEP Mass - genSUEP Mass [GeV]",
+            ).Weight(),
+            f"ht_{label}": Hist.new.Reg(
+                100, 0, 10000, name=f"ht_{label}", label="HT"
             ).Weight(),
             # f"ntracks_dPhiW1p0_{label}": Hist.new.Reg(
             #     100,
@@ -1022,13 +1022,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"ak4jets_inSUEPcluster_pt_{label}",
             #     label="ak4jets in SUEP cluster $p_T$",
             # ).Weight(),
-            # f"ak4jet1_inSUEPcluster_pt_{label}": Hist.new.Reg(
-            #     1000,
-            #     0,
-            #     1000,
-            #     name=f"ak4jet1_inSUEPcluster_pt_{label}",
-            #     label="ak4jet1 in SUEP cluster $p_T$",
-            # ).Weight(),
+            f"ak4jet1_inSUEPcluster_pt_{label}": Hist.new.Reg(
+                1000,
+                0,
+                1000,
+                name=f"ak4jet1_inSUEPcluster_pt_{label}",
+                label="ak4jet1 in SUEP cluster $p_T$",
+            ).Weight(),
             # f"ak4jet1_inSUEPcluster_mass_{label}": Hist.new.Reg(
             #     1000,
             #     0,
@@ -1243,14 +1243,14 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 1000,
                 name=f"photon_pt_{label}",
-                label=r"$\gamma$ $p_T$",
+                label=r"$p^{\gamma}_T$",
             ).Weight(),
             f"photon_eta_{label}": Hist.new.Reg(
                 100,
                 -3,
                 3,
                 name=f"photon_eta_{label}",
-                label=r"$\gamma$ $\eta$",
+                label=r"$\eta^{\gamma}$",
             ).Weight(),
             f"photon_pixelSeed_{label}": Hist.new.Reg(
                 2,
@@ -1315,19 +1315,47 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"photon_isScEtaEE_{label}",
                 label=r"$\gamma$ isScEtaEE",
             ).Weight(),
-            f"minDeltaR_ak4jet_photon_{label}": Hist.new.Reg(
+            f"minDeltaRJetPhoton_{label}": Hist.new.Reg(
                 100,
                 0,
                 6,
-                name=f"minDeltaR_ak4jet_photon_{label}",
+                name=f"minDeltaRJetPhoton_{label}",
                 label=r"min($\Delta R$(ak4jets, $\gamma$))",
             ).Weight(),
-            f"minDeltaR_lepton_photon_{label}": Hist.new.Reg(
+            f"maxDeltaRJetPhoton_{label}": Hist.new.Reg(
                 100,
                 0,
                 6,
-                name=f"minDeltaR_lepton_photon_{label}",
-                label=r"min($\Delta R$($\ell$, $\gamma$))",
+                name=f"maxDeltaRJetPhoton_{label}",
+                label=r"max($\Delta R$(ak4jets, $\gamma$))",
+            ).Weight(),
+            f"minDeltaPhiJetPhoton_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"minDeltaPhiJetPhoton_{label}",
+                label=r"min($\Delta\phi$(ak4jets, $\gamma$))",
+            ).Weight(),
+            f"maxDeltaPhiJetPhoton_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"maxDeltaPhiJetPhoton_{label}",
+                label=r"max($\Delta\phi$(ak4jets, $\gamma$))",
+            ).Weight(),
+            f"minDeltaEtaJetPhoton_{label}": Hist.new.Reg(
+                100,
+                0,
+                6,
+                name=f"minDeltaEtaJetPhoton_{label}",
+                label=r"min($\Delta\eta$(ak4jets, $\gamma$))",
+            ).Weight(),
+            f"maxDeltaEtaJetPhoton_{label}": Hist.new.Reg(
+                100,
+                0,
+                6,
+                name=f"maxDeltaEtaJetPhoton_{label}",
+                label=r"max($\Delta\eta$(ak4jets, $\gamma$))",
             ).Weight(),
             f"W_SUEP_BV_{label}": Hist.new.Reg(
                 100,

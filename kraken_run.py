@@ -31,9 +31,41 @@ sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
 pip install h5py
 
-echo "----- xrdcp the input file over"
-echo "xrdcp $2 $3.root"
-xrdcp $2 $3.root
+# echo "----- xrdcp the input file over"
+# echo "xrdcp $2 $3.root"
+# xrdcp $2 $3.root
+
+#######################################################################################
+max_retries=3
+retry_count=0
+success=false
+
+while [ $retry_count -lt $max_retries ]; do
+    xrdcp "$2" "$3.root"
+    if [ $? -eq 0 ]; then
+        echo "File copied successfully!"
+        success=true
+        break
+    else
+        echo "Failed to copy the file. Attempt $((retry_count+1)) of $max_retries."
+        retry_count=$((retry_count+1))
+        if [ $retry_count -lt $max_retries ]; then
+            echo "Waiting 15 minutes before retrying..."
+            sleep 900  # 900 seconds = 15 minutes
+        fi
+    fi
+done
+
+if [ "$success" = false ]; then
+    echo "Failed to copy the file after $max_retries attempts."
+    exit 1
+fi
+
+if [ ! -f "$3.root" ]; then
+    echo "File $3.root does not exist locally. Presumably something went wrong with the xrdcp command. Exiting."
+    exit 1
+fi
+#######################################################################################
 
 echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "voms-proxy-info"
@@ -61,7 +93,7 @@ echo " ------ THE END (everyone dies !) ----- "
 condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 2GB
-request_memory        = 5GB
+request_memory        = 4GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -146,7 +178,7 @@ def main():
         help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the MIT T2 with xrootd requests.",
     )
     parser.add_argument(
-        "-o", "--output", type=str, default=f"root://submit50.mit.edu//cms/store/user/{username}/SUEP/", help="Output condor directory. The samples fill be found under root://redirector//your/path/tag/sample."
+        "-o", "--output", type=str, default=f"root://submit50.mit.edu//data/group/cms/store/user/{username}/SUEP/", help="Output condor directory. The samples fill be found under root://redirector//your/path/tag/sample."
     )
     parser.add_argument(
         "-l", "--logs", type=str, default=f"/work/submit/{username}/SUEP/logs/", help="Local path where to store the condor logs. The logs for each sample will be stored in /path/tag/sample."
