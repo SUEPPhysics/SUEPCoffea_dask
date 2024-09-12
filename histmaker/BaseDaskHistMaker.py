@@ -103,11 +103,13 @@ class BaseDaskHistMaker():
         
         output['_processing_metadata']['t_start'] = time()
 
+        self.logger.info(f"Preprocessing samples.")
         for sample in samples:
             self.preprocess_sample(sample)
 
         output['_processing_metadata']['t_preprocess'] = time()
 
+        self.logger.info(f"Processing samples.")
         futures = {}
         for sample in samples:
             sample_futures = self.process_sample(client, sample)
@@ -128,6 +130,7 @@ class BaseDaskHistMaker():
             output[sample]["_processing_metadata"]["n_success"] = value_accumulator(float, 0)
             output[sample]["_processing_metadata"]["n_failed"] = value_accumulator(float, 0)
 
+        self.logger.info(f"Processing and collecting futures.")
         for future in tqdm(as_completed(futures), total=len(futures)):
 
             sample = future._sample
@@ -173,6 +176,7 @@ class BaseDaskHistMaker():
 
         output['_processing_metadata']['t_process'] = time()
 
+        self.logger.info(f"Postprocessing samples.")
         for sample in samples:
             try:
                 output[sample].update(self.postprocess_sample(sample, output[sample]))

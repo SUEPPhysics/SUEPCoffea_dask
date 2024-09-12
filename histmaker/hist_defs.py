@@ -1211,12 +1211,12 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"lepton_dz_{label}",
             #     label=r"$\ell$ dz",
             # ).Weight(),
-            # f"nphotons_{label}": Hist.new.Int(
-            #     0,
-            #     10,
-            #     name=f"nphotons_{label}",
-            #     label=r"$n_\gamma$",
-            # ).Weight(),
+            f"nphotons_{label}": Hist.new.Int(
+                0,
+                10,
+                name=f"nphotons_{label}",
+                label=r"$n_\gamma$",
+            ).Weight(),
             f"nCRQCDleptons_{label}": Hist.new.Reg(
                 10,
                 0,
@@ -1297,7 +1297,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             f"photon_pfRelIso03_all_{label}": Hist.new.Reg(
                 100,
                 0,
-                5,
+                1,
                 name=f"photon_pfRelIso03_all_{label}",
                 label=r"$\gamma$ pfRelIso03_all",
             ).Weight(),

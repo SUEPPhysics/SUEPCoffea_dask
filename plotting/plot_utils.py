@@ -36,6 +36,12 @@ default_style = {
         "linewidth": 2,
         "linestyle": "-",
     },
+    "MC-VRGH": {
+        "color": "gold",
+        "fmt": "",
+        "linewidth": 2,
+        "linestyle": "-",
+    },
     "QCD": {  # as used in ggf-offline
         "color": "slateblue",
     },
@@ -1532,7 +1538,7 @@ def make_ABCD_6regions(hist_abcd, xregions, yregions, sum_var=None):
     return A, B, C, D, E, SR
 
 
-def ABCD_6regions_errorProp(abcd, xregions, yregions, sum_var="x", new_bins=None):
+def ABCD_6regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=False, new_bins=None):
     """
     Does 6 region ABCD using error propagation of the statistical uncertanties of the regions.
     """
@@ -1583,20 +1589,23 @@ def ABCD_6regions_errorProp(abcd, xregions, yregions, sum_var="x", new_bins=None
         )  # only needed for mode1, if mode 2, just initialize it to an empty accumulator
 
         # define the scaling factor function
-        a, b, hnum_bin, hnum2, hden_bin, hden = symbols(
-            "A B hNUM_bin hNUM2 hDEN_bin hDEN"
+        a, b, hnum_bin, hnum, hnum2, hden_bin, hden = symbols(
+            "A B hNUM_bin hNUM hNUM2 hDEN_bin hDEN"
         )
-        if mode1:
+        if mode1 and not approx:
             exp = hnum_bin**2 * hnum2 * a * hden_bin**-1 * b**-2
+        elif mode1 and approx:
+            exp = hnum_bin * hnum * hnum2 * a * hden**-1 *  b**-2 
         elif mode2:
             exp = hnum_bin * hnum2**2 * a * b**-2 * hden**-1
 
         # defines lists of variables (sympy symbols) and accumulators (hist.sum())
-        variables = [a, b, hnum_bin, hnum2, hden_bin, hden]
+        variables = [a, b, hnum_bin, hnum, hnum2, hden_bin, hden]
         accs = [
             A.sum(),
             B.sum(),
             hNUM_bin,
+            hNUM.sum(),
             hNUM2.sum(),
             hDEN_bin,
             hDEN.sum(),
@@ -1661,31 +1670,31 @@ def make_ABCD_9regions(hist_abcd, xregions, yregions, sum_var="X"):
 
     elif sum_var == "y":
         A = hist_abcd[
-            xregions[0][0] : xregions[0][1] : sum, yregions[0][0] : yregions[0][1]
+            xregions[0][0] : xregions[0][1], yregions[0][0] : yregions[0][1] : sum
         ]
         B = hist_abcd[
-            xregions[0][0] : xregions[0][1] : sum, yregions[1][0] : yregions[1][1]
+            xregions[0][0] : xregions[0][1], yregions[1][0] : yregions[1][1] : sum
         ]
         C = hist_abcd[
-            xregions[0][0] : xregions[0][1] : sum, yregions[2][0] : yregions[2][1]
+            xregions[0][0] : xregions[0][1], yregions[2][0] : yregions[2][1] : sum
         ]
         D = hist_abcd[
-            xregions[1][0] : xregions[1][1] : sum, yregions[0][0] : yregions[0][1]
+            xregions[1][0] : xregions[1][1], yregions[0][0] : yregions[0][1] : sum
         ]
         E = hist_abcd[
-            xregions[1][0] : xregions[1][1] : sum, yregions[1][0] : yregions[1][1]
+            xregions[1][0] : xregions[1][1], yregions[1][0] : yregions[1][1] : sum
         ]
         F = hist_abcd[
-            xregions[1][0] : xregions[1][1] : sum, yregions[2][0] : yregions[2][1]
+            xregions[1][0] : xregions[1][1], yregions[2][0] : yregions[2][1] : sum
         ]
         G = hist_abcd[
-            xregions[2][0] : xregions[2][1] : sum, yregions[0][0] : yregions[0][1]
+            xregions[2][0] : xregions[2][1], yregions[0][0] : yregions[0][1] : sum
         ]
         H = hist_abcd[
-            xregions[2][0] : xregions[2][1] : sum, yregions[1][0] : yregions[1][1]
+            xregions[2][0] : xregions[2][1], yregions[1][0] : yregions[1][1] : sum
         ]
         SR = hist_abcd[
-            xregions[2][0] : xregions[2][1] : sum, yregions[2][0] : yregions[2][1]
+            xregions[2][0] : xregions[2][1], yregions[2][0] : yregions[2][1] : sum
         ]
 
     return A, B, C, D, E, F, G, H, SR
