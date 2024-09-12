@@ -182,7 +182,7 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             mceff = ak.prod(term1 * term2 * term3, axis=1)
 
             term1 = np.where(jetsPre.btag >= btagcuts(wps_name['T'], era), SF['T'][syst_var] * effs['T'], 1)
-            term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), SF['L'][syst_var] * effs['L'], 1)
+            term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), SF['L'][syst_var] * effs['L'] - SF['T'][syst_var] * effs['T'], 1)
             term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - SF['L'][syst_var] * effs['L'], 1)
             dataeff = ak.prod(term1 * term2 * term3, axis=1)
 
