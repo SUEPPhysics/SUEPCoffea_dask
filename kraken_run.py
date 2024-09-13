@@ -29,12 +29,12 @@ hostname
 
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
+# singularity image is missing some things
 pip install h5py
 
-# echo "----- xrdcp the input file over"
+echo "----- xrdcp the input file over"
 # echo "xrdcp $2 $3.root"
 # xrdcp $2 $3.root
-
 #######################################################################################
 max_retries=3
 retry_count=0
@@ -71,12 +71,38 @@ echo "----- Found Proxy in: $X509_USER_PROXY"
 echo "voms-proxy-info"
 voms-proxy-info
 
+echo "----- Running the command"
 echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root"
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root
 
-#echo "----- transferring output to scratch :"
-echo "xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}"
-xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
+echo "----- Transferring output:"
+#echo "xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}"
+#xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
+#######################################################################################
+max_retries=3
+retry_count=0
+success=false
+
+while [ $retry_count -lt $max_retries ]; do
+    xrdcp -d 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
+    if [ $? -eq 0 ]; then
+        echo "Output transferred successfully!"
+        success=true
+        break
+    else
+        echo "Failed to transfer the output. Attempt $((retry_count+1)) of $max_retries."
+        retry_count=$((retry_count+1))
+        if [ $retry_count -lt $max_retries ]; then
+            echo "Waiting 15 minutes before retrying..."
+            sleep 900  # 900 seconds = 15 minutes
+        fi
+    fi
+done
+
+if [ "$success" = false ]; then
+    echo "Failed to transfer the output after $max_retries attempts."
+fi
+#######################################################################################
 
 {extras}
 
@@ -105,6 +131,7 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
+transfer_output_files = ""
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
@@ -241,13 +268,18 @@ def main():
 
             # extract sample name from each sample path
             if "/" in sample_path:
-                sample_name = sample_path.split("/")[-1]
+                if sample_path.endswith("/"):   # in case if you left an extra slash at the end..
+                    sample_name = sample_path.split("/")[-2]
+                else:
+                    sample_name = sample_path.split("/")[-1]
             else:
                 sample_name = sample_path
             if sample_name.endswith(
                 ".root"
             ):  # case where 1 file is given as input, treated as a separate sample
                 sample_name = sample_name.replace(".root", "")
+            if len(sample_name) < 1:
+                continue
 
             # if the redirector is specified, take it, and strip it from the sample path, if not use the default
             if sample_path.startswith("root://"):
