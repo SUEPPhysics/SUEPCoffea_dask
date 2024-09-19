@@ -338,6 +338,7 @@ def getPhotons(events, isMC: bool = 1):
                 "cutBased": events.Photon.cutBased,
                 "isScEtaEB": events.Photon.isScEtaEB,
                 "isScEtaEE": events.Photon.isScEtaEE,
+                "sieie": events.Photon.sieie,
                 "genPartFlav ": events.Photon.genPartFlav,
             },
             with_name="Momentum4D",
@@ -358,6 +359,7 @@ def getPhotons(events, isMC: bool = 1):
                 "cutBased": events.Photon.cutBased,
                 "isScEtaEB": events.Photon.isScEtaEB,
                 "isScEtaEE": events.Photon.isScEtaEE,
+                "sieie": events.Photon.sieie,
             },
             with_name="Momentum4D",
         )
@@ -373,6 +375,24 @@ def getPhotons(events, isMC: bool = 1):
     photons = photons[cutPhotons]
 
     return photons
+
+
+def getGenPhotons(events):
+    """
+    Get final state photons in the gen-level.
+    """
+    parts = getGenPart(events)
+    photons = parts[(abs(parts.pdgID) == 22) & (parts.statusFlags & (1 << 8) != 0) & (parts.statusFlags & (1 << 13) != 0)]
+    return photons
+
+
+def storeGenPhotonStuff(events, output):
+
+    genPhotons = getGenPhotons(events)
+    deltaR_genPhotons_recoPhotons = genPhotons.deltaR(events.WH_gamma)
+    output["vars"]["minDeltaRGenRecoPhotons"] = ak.min(ak.fill_none(ak.pad_none(deltaR_genPhotons_recoPhotons, 1, clip=False), -999), axis=1)
+
+    return output
 
 
 def getTrigObj(events):
@@ -510,10 +530,9 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
     
     gammaTriggerUnprescaleWeight = ak.zeros_like(events.genWeight)
     if era == '2018':
-        trigger_pt_offset = 5
-        mask_Photon200 = ((events.HLT.Photon200 == 1) & (events.WH_gamma.pt > (200 + trigger_pt_offset)))
-        mask_Photon75 = ((events.HLT.Photon75_R9Id90_HE10_IsoM == 1) & ((events.WH_gamma.pt > (75 + trigger_pt_offset)) & (events.WH_gamma.pt < (200 + trigger_pt_offset))))
-        mask_Photon50 = ((events.HLT.Photon50_R9Id90_HE10_IsoM == 1) & ((events.WH_gamma.pt > (50 + trigger_pt_offset)) & (events.WH_gamma.pt < (75 + trigger_pt_offset))))
+        mask_Photon200 = ((events.HLT.Photon200 == 1) & (events.WH_gamma.pt > 210))
+        mask_Photon75 = ((events.HLT.Photon75_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 85) & (events.WH_gamma.pt < 210))
+        mask_Photon50 = ((events.HLT.Photon50_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 60) & (events.WH_gamma.pt < 85))
         mask = mask_Photon200 | mask_Photon75 | mask_Photon50
         if not isMC:
             gammaTriggerUnprescaleWeight = ak.where(mask_Photon200, 1, gammaTriggerUnprescaleWeight)
@@ -525,6 +544,26 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
     
     events = ak.with_field(events, gammaTriggerUnprescaleWeight, "WH_gammaTriggerUnprescaleWeight")
     events = events[mask]
+    return events
+
+def doubleCountingGenPhotonsSelection(events, sample: str):
+    """
+    Orthogonalize the QCD_HT samples to the GJets_HT samples.
+    Should only matters for gamma+jets control region.f
+    """
+
+    if 'QCD_HT' in sample or 'QCD_Pt' in sample:
+        mask = (
+            (events.GenPart.status==1) & 
+            ((events.GenPart.statusFlags&64) == 0) & 
+            (events.GenPart.pdgId==22) & 
+            (events.GenPart.pt >= 25) &  
+            (abs(events.GenPart.eta) < 2.5)
+        )
+        doubleCountedPhotons = events.GenPart[mask]
+        no_doubleCountedPhotons = (ak.num(doubleCountedPhotons) == 0)
+        events = ak.with_field(events, no_doubleCountedPhotons, "WH_no_doubleCountedPhotons")
+
     return events
 
 def orthogonalitySelection(events):
@@ -566,7 +605,7 @@ def orthogonalitySelection(events):
 
 def VRGJOrthogonalitySelection(events, era:str):
     """
-    Stay orthogonal to ZH via the leptons, ggF via HT, and WH via tight leptons.
+    Stay orthogonal to ZH and WH via their respective lepton selections.
     """
 
     # follow ZH and offline lepton definitions
@@ -586,15 +625,6 @@ def VRGJOrthogonalitySelection(events, era:str):
     cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) < 4
     cutHasTwoLeps = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
     events = events[~cutHasTwoLeps]
-
-    # ggF orthogonality
-    # TODO commenting out to study how to be orthogonal to scouting
-    # and the effect this has on the jet and SUEP candidate pts
-    # if era == "2016" or era == "2016apv":
-    #     ggFTrigger = events.HLT.PFHT900 == 1
-    # else:
-    #     ggFTrigger = events.HLT.PFHT1050 == 1
-    # events = events[~ggFTrigger]
 
     # WH orthogonality
     _, _, tightLeptons = getTightLeptons(events)

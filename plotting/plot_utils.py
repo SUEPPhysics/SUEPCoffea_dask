@@ -30,6 +30,12 @@ default_style = {
         "linewidth": 2,
         "linestyle": "",
     },
+    "data-VRGJ": {
+        "color": "black",
+        "fmt": "^",
+        "linewidth": 2,
+        "linestyle": "",
+    },
     "MC": {
         "color": "slateblue",
         "fmt": "",
@@ -48,6 +54,9 @@ default_style = {
     "QCD_Pt": {
         "color": "hotpink",
     },
+    "QCD_HT": {
+        "color": "mediumvioletred",
+    },
     "VVV": {
         "color": "darkorange",
     },
@@ -60,13 +69,13 @@ default_style = {
     "VH": {
         "color": "royalblue",
     },
-    "GJets_HT": {
+    "GJets": {
         "color": "maroon",
     },
     "WJetsToLNu_Pt": {
         "color": "deepskyblue",
     },
-    "DYJetsToLL_LHEFilterPtZ": {
+    "DYJetsToLL": {
         "color": "gray",
     },
     "ttX": {
@@ -80,6 +89,9 @@ default_style = {
     },
     "TTJets": {
         "color": "midnightblue",
+    },
+    "VGammaToJJGamma": {
+        "color": "sienna",
     },
     "ggf-mS125": {
         "color": "cyan",
@@ -372,7 +384,7 @@ def getSampleNameAndBin(sample_name):
         bin = None
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
-        sample = "DYJetsToLL_LHEFilterPtZ"
+        sample = "DYJetsToLL"
         bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
 
     elif "DYJetsToLL_M" in sample_name:
@@ -431,6 +443,10 @@ def getSampleNameAndBin(sample_name):
         sample = "SingleMuon"
         bin = sample_name.split("-")[0]
 
+    elif any([s in sample_name for s in ["WGammaToJJGamma_TuneCP5_13TeV", "ZGammaToJJGamma_TuneCP5_13TeV"]]):
+        sample = "VGammaToJJGamma"
+        bin = None
+
     elif sample_name.startswith("ttHpythia"):  # private ttH samples
         sample = formatTTHToSUEPNaming(sample_name)
         bin = None
@@ -444,7 +460,7 @@ def getSampleNameAndBin(sample_name):
         bin = None
 
     elif sample_name.startswith("GJets_HT-"):
-        sample = "GJets_HT"
+        sample = "GJets"
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     else:
@@ -802,6 +818,10 @@ def styled_plot_ratio(
     if stacked_hlist:
         if stacked_labels:
             stacked_styles = getStyles(stacked_labels)
+        _default_cmap = plt.cm.jet(np.linspace(0, 1, len(stacked_hlist)))
+        cmap = []
+        for ic in range(len(_default_cmap)):
+            cmap.append(stacked_styles[ic].get("color", _default_cmap[ic]))
         hep.histplot(
             stacked_hlist,
             label=stacked_labels,
@@ -809,7 +829,7 @@ def styled_plot_ratio(
             density=density,
             stack=True,
             histtype="fill",
-            color=[style.get("color", None) for style in stacked_styles],
+            color=cmap,
             zorder=0,
         )
         axs[0].set_xlabel("")
@@ -866,8 +886,12 @@ def plot_ratio(
     # Set up default values for the optional draw arguments
     if labels is None:
         labels = [None] * len(hlist)
+    _default_cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
     if cmap is None:
-        cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
+        cmap = _default_cmap
+    for ic in range(len(cmap)):
+        if cmap[ic] is None:
+            cmap[ic] = _default_cmap[ic]
     if linewidth is None:
         linewidth = [1] * len(hlist)
     if linestyle is None:

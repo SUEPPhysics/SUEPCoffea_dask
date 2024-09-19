@@ -327,19 +327,6 @@ def prepare_DataFrame(
         # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
 
-    # TODO temporary
-    if 'SUEP_S1_HighestPT' not in df.columns:
-        df['SUEP_S1_HighestPT'] = np.zeros(df.shape[0])
-    if 'SUEP_nconst_HighestPT' not in df.columns:
-        df['SUEP_nconst_HighestPT'] = np.zeros(df.shape[0])
-    if 'otherAK15_maxPT_pt_HighestPT' not in df.columns:
-        df['otherAK15_maxPT_pt_HighestPT'] = np.zeros(df.shape[0])
-
-    # TODO temporaray: set to 0 values that are nan
-    df['otherAK15_maxPT_pt_HighestPT'] = df['otherAK15_maxPT_pt_HighestPT'].fillna(0)
-    df['SUEP_S1_HighestPT'] = df['SUEP_S1_HighestPT'].fillna(0)
-    df['SUEP_nconst_HighestPT'] = df['SUEP_nconst_HighestPT'].fillna(0)
-
     # 2. blind
     if blind and not isMC:
         df = blind_DataFrame(df, label_out, config["SR"])

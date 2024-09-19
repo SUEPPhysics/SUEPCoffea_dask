@@ -635,6 +635,18 @@
     "xsec": 0.5269,
     "signal": 0
   },
+  "WGammaToJJGamma_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 8.635,
+    "signal": 0
+  },
+  "ZGammaToJJGamma_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 4.144,
+    "signal": 0
+  },
   "GJets_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18MiniAODv2-4cores5k_106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "kr": 1,
     "br": 1,
