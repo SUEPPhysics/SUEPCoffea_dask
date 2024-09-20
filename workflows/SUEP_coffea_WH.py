@@ -278,37 +278,37 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_pt_HighestPT",
-            mostNumerousAK15.pt.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.pt, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_eta_HighestPT",
-            mostNumerousAK15.eta.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.eta, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_phi_HighestPT",
-            mostNumerousAK15.phi.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.phi, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_nconst_HighestPT",
-            ak.max(other_AK15_nconst, axis=-1).to_numpy(allow_missing=True),
+            ak.fill_none(ak.max(other_AK15_nconst, axis=-1), 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxPT_pt_HighestPT",
-            highestPT_otherAK15.pt.to_numpy(allow_missing=True),
+            ak.fill_none(highestPT_otherAK15.pt, 0),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxPT_eta_HighestPT",
-            highestPT_otherAK15.eta.to_numpy(allow_missing=True),
+            ak.fill_none(highestPT_otherAK15.eta, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxPT_phi_HighestPT",
-            highestPT_otherAK15.phi.to_numpy(allow_missing=True),
+            ak.fill_none(highestPT_otherAK15.phi, 0).to_list(),
         )
 
         # WH system
