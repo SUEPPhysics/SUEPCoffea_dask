@@ -510,7 +510,7 @@ def getGammaTriggerBits(events, era: str):
     """
 
     if era == '2018':
-        gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon75_R9Id90_HE10_IsoM)*2 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*4
+        gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon120_R9Id90_HE10_IsoM)*2 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*4 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*8
     elif era == '2017':
         gammaTriggerBits = (events.HLT.Photon200) + (events.HLT.Photon165_R9Id90_HE10_IsoM)*2 + (events.HLT.Photon120_R9Id90_HE10_IsoM)*4 + (events.HLT.Photon75_R9Id90_HE10_IsoM)*8 + (events.HLT.Photon50_R9Id90_HE10_IsoM)*16 + (events.HLT.Photon30_HoverELoose)*32 + (events.HLT.Photon20_HoverELoose)*64  
     elif era == '2016' or era == '2016apv':
@@ -530,12 +530,14 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
     
     gammaTriggerUnprescaleWeight = ak.zeros_like(events.genWeight)
     if era == '2018':
-        mask_Photon200 = ((events.HLT.Photon200 == 1) & (events.WH_gamma.pt > 210))
-        mask_Photon75 = ((events.HLT.Photon75_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 85) & (events.WH_gamma.pt < 210))
-        mask_Photon50 = ((events.HLT.Photon50_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 60) & (events.WH_gamma.pt < 85))
-        mask = mask_Photon200 | mask_Photon75 | mask_Photon50
+        mask_Photon200 = ((events.HLT.Photon200 == 1) & (events.WH_gamma.pt > 230))
+        mask_Photon120 = ((events.HLT.Photon120_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 135) & (events.WH_gamma.pt < 230))
+        mask_Photon75 = ((events.HLT.Photon75_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 80) & (events.WH_gamma.pt < 135))
+        mask_Photon50 = ((events.HLT.Photon50_R9Id90_HE10_IsoM == 1) & (events.WH_gamma.pt > 60) & (events.WH_gamma.pt < 80))
+        mask = mask_Photon200 | mask_Photon120 | mask_Photon75 | mask_Photon50
         if not isMC:
             gammaTriggerUnprescaleWeight = ak.where(mask_Photon200, 1, gammaTriggerUnprescaleWeight)
+            gammaTriggerUnprescaleWeight = ak.where(mask_Photon120, 59.96/7.44 , gammaTriggerUnprescaleWeight)
             gammaTriggerUnprescaleWeight = ak.where(mask_Photon75, 59.96/0.95, gammaTriggerUnprescaleWeight)
             gammaTriggerUnprescaleWeight = ak.where(mask_Photon50, 59.96/0.24, gammaTriggerUnprescaleWeight)
     else:
