@@ -29,6 +29,7 @@ from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
 from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
+from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -718,6 +719,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["maxDeltaEtaJetPhoton"] = ak.fill_none(
                 ak.max(jet_photon_combinations_deltaEta, axis=-1), -999
             )
+
+            # photon scale factors
+            photon_SFs = getPhotonSFs(events.WH_gamma, era=self.era, wp="wp90", doSyst=self.do_syst)
+            output["vars"]["photon_SF"] = photon_SFs["nominal"]
+            if self.do_syst:
+                output["vars"]["photon_SF_up"] = photon_SFs["up"]
+                output["vars"]["photon_SF_down"] = photon_SFs["down"]
+
 
         # saving min, max delta R, phi, eta between jets
         jet_combinations = ak.combinations(
