@@ -425,12 +425,27 @@ def triggerSelection(
 
         # remove events in the SingleMuon dataset
         events = events[~triggerSingleMuon]
-        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        # HLT.Ele115_CaloIdVT_GsfTrkIdT does not exist for ~5 fb^-1 of 2017 data, remove events where this trigger is not present
+        run_start = 299368
+        run_end = 306460
+        run_mask = (events.run > run_start) & (events.run < run_end)
+
+        if 'Ele115_CaloIdVT_GsfTrkIdT' in ak.fields(events.HLT):
+            temp_trig = ak.where(run_mask, (events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT), events.HLT.Photon200)
+        else:
+            temp_trig = events.HLT.Photon200
 
         # Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
         filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
         events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
-        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        # redefine to match new length of "events"
+        run_mask = (events.run > run_start) & (events.run < run_end)
+        if 'Ele115_CaloIdVT_GsfTrkIdT' in ak.fields(events.HLT):
+            temp_trig = ak.where(run_mask, (events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT), events.HLT.Photon200)
+        else:
+            temp_trig = events.HLT.Photon200
 
         # grab prefiltered events
         trig_obs = getTrigObj(events)
