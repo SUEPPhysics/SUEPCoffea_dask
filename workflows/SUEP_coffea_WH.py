@@ -49,7 +49,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         CRQCD:bool=False,
         VRGJ:bool=False,
         dropNonMethodEvents:bool=False,
-        storeJetsInfo:bool=False,
+        storeJetsInfo:bool=True,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -526,11 +526,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output["vars"]["PSWeight"] = psweights
 
             for metaCR in ["sr", "crwj", "crtt"]:
-                bTagWeights = doBTagWeights(
-                    events.WH_jets_jec, era_int, wps="TL", channel="wh_"+metaCR, do_syst=self.do_syst
-                )  
-                for var in bTagWeights.keys():
-                    output["vars"]["bTagWeight_" + var + "_" + metaCR] = bTagWeights[var]
+                if self.era == "2018":
+                    bTagWeights = doBTagWeights(
+                        events.WH_jets_jec, era_int, wps="TL", channel="wh_"+metaCR, do_syst=self.do_syst
+                    )  
+                    for var in bTagWeights.keys():
+                        output["vars"]["bTagWeight_" + var + "_" + metaCR] = bTagWeights[var]
+                else:
+                    continue
 
             prefireweights = GetPrefireWeights(self, events)  # Prefire weights
             output["vars"]["prefire_nom"] = prefireweights[0]
@@ -781,7 +784,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             print("\n\nNo events pass goldenJSON.\n\n")
             return events, output
 
-        # temporarily disabled for studies of w+jets data/MC
         events = WH_utils.genSelection(events, self.sample)
         output["cutflow_genCuts" + out_label] += ak.sum(events.genWeight)
 
