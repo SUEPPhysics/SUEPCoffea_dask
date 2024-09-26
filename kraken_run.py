@@ -226,7 +226,7 @@ def main():
         file_ext = "hdf5"
         
     # Making sure that the proxy is good
-    proxy, lifetime = check_proxy(time_min=12)
+    proxy, lifetime = check_proxy(time_min=100)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
     missing_samples = []
