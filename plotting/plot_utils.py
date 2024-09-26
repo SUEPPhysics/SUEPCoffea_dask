@@ -1,13 +1,11 @@
+import gc
 import logging
 import math
 import os
-import sys
 import pickle
-import shutil
 import subprocess
 import sys
 from collections import defaultdict
-import gc
 
 import boost_histogram as bh
 import hist
@@ -443,7 +441,12 @@ def getSampleNameAndBin(sample_name):
         sample = "SingleMuon"
         bin = sample_name.split("-")[0]
 
-    elif any([s in sample_name for s in ["WGammaToJJGamma_TuneCP5_13TeV", "ZGammaToJJGamma_TuneCP5_13TeV"]]):
+    elif any(
+        [
+            s in sample_name
+            for s in ["WGammaToJJGamma_TuneCP5_13TeV", "ZGammaToJJGamma_TuneCP5_13TeV"]
+        ]
+    ):
         sample = "VGammaToJJGamma"
         bin = None
 
@@ -814,7 +817,7 @@ def styled_plot_ratio(
         fmt=[style.get("fmt", "") for style in styles],
     )
     axs[0].legend(fontsize="xx-small", loc=(1.01, 0))
-    
+
     if stacked_hlist:
         if stacked_labels:
             stacked_styles = getStyles(stacked_labels)
@@ -1562,7 +1565,9 @@ def make_ABCD_6regions(hist_abcd, xregions, yregions, sum_var=None):
     return A, B, C, D, E, SR
 
 
-def ABCD_6regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=False, new_bins=None):
+def ABCD_6regions_errorProp(
+    abcd, xregions, yregions, sum_var="x", approx=False, new_bins=None
+):
     """
     Does 6 region ABCD using error propagation of the statistical uncertanties of the regions.
     """
@@ -1619,7 +1624,7 @@ def ABCD_6regions_errorProp(abcd, xregions, yregions, sum_var="x", approx=False,
         if mode1 and not approx:
             exp = hnum_bin**2 * hnum2 * a * hden_bin**-1 * b**-2
         elif mode1 and approx:
-            exp = hnum_bin * hnum * hnum2 * a * hden**-1 *  b**-2 
+            exp = hnum_bin * hnum * hnum2 * a * hden**-1 * b**-2
         elif mode2:
             exp = hnum_bin * hnum2**2 * a * b**-2 * hden**-1
 
@@ -2183,7 +2188,10 @@ def make_n1_plots(
 
     return figs
 
-def make_btag_effs(h, hadron_flavors = {0: 'L', 4: 'C', 5: 'B'}, btag_categories = {1: 'L', 2: 'T'}):
+
+def make_btag_effs(
+    h, hadron_flavors={0: "L", 4: "C", 5: "B"}, btag_categories={1: "L", 2: "T"}
+):
     """
     Take as input a 4D histogram with axes jets_pt, jets_eta, jets_hadronFlavor (default: 0: loose, 1: charm, 4: bottom), jets_btag_category (default: 0: fail, 1: loose, 2: tight).
     The assumption is that the btag categories are in increasing order of tightness, such that efficiency in category i is the number of jets in i divided by any bin < i.
@@ -2196,9 +2204,9 @@ def make_btag_effs(h, hadron_flavors = {0: 'L', 4: 'C', 5: 'B'}, btag_categories
     for btag, blabel in btag_categories.items():
         effs[blabel] = {}
         for flavor, flabel in hadron_flavors.items():
-            num = h[:,:,flavor*1.0j,btag*1.0j].values()
-            den = h[:,:,flavor*1.0j,:btag*1.0j:sum].values()
-            eff = np.where(den > 0, num/den, 0)
+            num = h[:, :, flavor * 1.0j, btag * 1.0j].values()
+            den = h[:, :, flavor * 1.0j, : btag * 1.0j : sum].values()
+            eff = np.where(den > 0, num / den, 0)
             corr = dense_lookup(eff, [h.axes[0].edges, h.axes[1].edges])
             effs[blabel][flabel] = corr
 

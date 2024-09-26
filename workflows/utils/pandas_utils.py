@@ -1,8 +1,3 @@
-import os
-import pathlib
-import shutil
-from typing import List, Optional
-
 import awkward as ak
 import coffea
 import pandas as pd
@@ -29,9 +24,9 @@ def h5store(
     store.get_storer(gname).attrs.metadata = kwargs
 
 
-def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None, mode='w'):
+def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None, mode="w"):
     store = pd.HDFStore(fname, mode=mode)
-    
+
     # pandas to hdf5
     for out, gname in zip(dfs, df_names):
         if metadata is None:
@@ -48,7 +43,7 @@ def save_dfs(self, dfs, df_names, fname="out.hdf5", metadata=None, mode='w'):
         store_fin = h5store(self, store, out, fname, gname, **metadata)
 
     store.close()
-        
+
 
 def format_dataframe(dataframe: pd.DataFrame):
     """

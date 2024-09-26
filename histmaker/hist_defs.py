@@ -1,5 +1,6 @@
-from hist import Hist
 import numpy as np
+from hist import Hist
+
 
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
     # don't recreate histograms if called multiple times with the same output label
@@ -31,7 +32,6 @@ def initialize_histograms(output: dict, label: str, options, config: dict) -> di
 
     ###########################################################################################################################
     # WH analysis
-
     if 'limits' not in label:
         if "WH" in options.channel:
             init_hists_highestPT(output, label)
@@ -212,7 +212,7 @@ def init_hists_cluster(output, label, regions_list=[""]):
                         name=f"{r}SUEP_ISR_deltaPhi_{label}",
                         label=r"SUEP $\phi$ - ISR $\phi$ [GeV]",
                     ).Weight(),
-                     f"{r}SUEP_pt_avg_{label}": Hist.new.Reg(
+                    f"{r}SUEP_pt_avg_{label}": Hist.new.Reg(
                         100,
                         0,
                         100,
@@ -859,7 +859,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 20,
                 name=f"nBLoose_{label}",
-                label="$n_{\mathrm{Loose~B-jets}}$",
+                label=r"$n_{\mathrm{Loose~B-jets}}$",
             ).Weight(),
             # f"nBMedium_{label}": Hist.new.Reg(
             #     20,
@@ -873,7 +873,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 20,
                 name=f"nBTight_{label}",
-                label="$n_{\mathrm{Tight~B-jets}}$",
+                label=r"$n_{\mathrm{Tight~B-jets}}$",
             ).Weight(),
             # f"nBLoose_noLepIso_{label}": Hist.new.Reg(
             #     20,
@@ -1296,7 +1296,14 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 10,
                 name=f"nCRQCDleptons_{label}",
-                label="$n_{\mathrm{CRQCD~leptons}}$",
+                label=r"$n_{\mathrm{CRQCD~leptons}}$",
+            ).Weight(),
+            f"W_SUEP_BV_{label}": Hist.new.Reg(
+                100,
+                -1,
+                10,
+                name=f"W_SUEP_BV_{label}",
+                label="($p_T^W - p_T^{SUEP}$)/$p_T^{SUEP}$",
             ).Weight(),
             # f"W_jet1_BV_{label}": Hist.new.Reg(
             #     100,
@@ -1599,12 +1606,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"deltaPhi_lepton_SUEP_{label}",
                 label=r"$\Delta\phi$($\ell$, SUEP)",
             ).Weight(),
-            f"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category_{label}": Hist.new
-                .Variable([0, 30, 50, 70, 100, 140, 200, 300, 600, 1000], name="jets_pt")
-                .Variable([0, 1.44, 2.5], name="jets_eta")
-                .IntCategory([0, 4, 5], name="jets_hadronFlavor")
-                .Variable([0,1,2,3], name="jets_btag_category")
-                .Weight(),
+            f"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category_{label}": Hist.new.Variable(
+                [0, 30, 50, 70, 100, 140, 200, 300, 600, 1000], name="jets_pt"
+            )
+            .Variable([0, 1.44, 2.5], name="jets_eta")
+            .IntCategory([0, 4, 5], name="jets_hadronFlavor")
+            .Variable([0, 1, 2, 3], name="jets_btag_category")
+            .Weight(),
             # f"deltaPhi_W_genW_{label}": Hist.new.Reg(
             #     60,
             #     -3.2,
@@ -2206,6 +2214,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #            ).Weight(),
         }
     )
+
 
 def init_hists_VRGJ(output, label):
 

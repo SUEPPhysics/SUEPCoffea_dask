@@ -4,19 +4,13 @@ Date: August 2024
 """
 
 import logging
-import pandas as pd
+
 import numpy as np
-
-from CMS_corrections import higgs_reweight
-from CMS_corrections import pileup_weight
-from CMS_corrections import triggerSF
+import pandas as pd
+from CMS_corrections import higgs_reweight, pileup_weight, triggerSF
 
 
-def apply_correctionlib(
-    corr_file:str,
-    corr_variable:str,
-    input_variable:np.ndarray
-):
+def apply_correctionlib(corr_file: str, corr_variable: str, input_variable: np.ndarray):
     """
     Apply a correction from a correctionlib file to a (numpy) variable.
     corr_file: path to the file containing the weights
@@ -39,15 +33,16 @@ class EventWeightProcessor:
     based on the options provided. Adds a column "event_weight" to the DataFrame.
     """
 
-    def __init__(self,       
+    def __init__(
+        self,
         variation: str,
         sample: str,
         isMC: bool,
         era: str,
         channel: str,
-        region: str = ''
+        region: str = "",
     ):
-        
+
         self.variation = variation
         self.sample = sample
         self.isMC = isMC
@@ -55,14 +50,9 @@ class EventWeightProcessor:
         self.channel = channel
         self.region = region
 
-        self.supported_channels = [
-            "WH",
-            "WH-VRGJ",
-            "ggF",
-            "ggF-scout"
-        ]
+        self.supported_channels = ["WH", "WH-VRGJ", "ggF", "ggF-scout"]
         self.supported_variations = [
-            '', # nominal
+            "",  # nominal
             "puweights_up",
             "puweights_down",
             "trigSF_up",
@@ -93,7 +83,7 @@ class EventWeightProcessor:
 
         if not self.validate_df(df):
             raise Exception("Invalid DataFrame.")
-        
+
         return self.apply_event_weights(df)
 
     def validate_df(self, df: pd.DataFrame) -> bool:
@@ -101,7 +91,7 @@ class EventWeightProcessor:
         if "event_weight" in df.keys():
             logging.error("DataFrame already has column 'event_weight'.")
             return False
-        
+
         return True
 
     def validate_options(self) -> bool:
@@ -109,11 +99,11 @@ class EventWeightProcessor:
         if self.channel not in self.supported_channels:
             logging.error(f"Channel {self.channel} not supported.")
             return False
-        
+
         if self.variation not in self.supported_variations:
             logging.error(f"Variation {self.variation} not supported.")
             return False
-        
+
         if self.isMC not in self.supported_isMC:
             logging.error(f"isMC {self.isMC} not supported.")
             return False
@@ -123,7 +113,7 @@ class EventWeightProcessor:
             return False
 
         return True
-    
+
     def apply_event_weights(self, df: pd.DataFrame) -> pd.DataFrame:
 
         # apply event weights
@@ -145,7 +135,7 @@ class EventWeightProcessor:
                 df["event_weight"] *= df[self.variation]
 
             # 3) prefire weights
-            if (self.era in ["2016apv", "2016", "2017"]):
+            if self.era in ["2016apv", "2016", "2017"]:
                 if "prefire" in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
@@ -200,17 +190,19 @@ class EventWeightProcessor:
                 if self.region == '':
                     raise Exception("You need to define a region to use btag weights. (Why? Because we have different b-tagging efficiencies for different regions.)")
 
-                if 'btag' in self.variation.lower():
+                if "btag" in self.variation.lower():
                     btag_weights = self.variation
                 else:
-                    btag_weights = 'bTagWeight_central'
+                    btag_weights = "bTagWeight_central"
                 btag_weights += "_" + self.region.lower()
                 if btag_weights not in df.keys():
-                    logging.warning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
+                    logging.warning(
+                        f"btag weights {btag_weights} not found in DataFrame. Not applying them."
+                    )
                     # TODO this should not be a pass, but a raise exception, but we don't have all weights rn
                     pass
                 else:
-                    df['event_weight'] *= df[btag_weights]
+                    df["event_weight"] *= df[btag_weights]
 
         # data
         else:
@@ -218,7 +210,7 @@ class EventWeightProcessor:
             df["event_weight"] = np.ones(df.shape[0])
 
             # un-prescaling for the gamma triggers
-            if self.channel == 'WH-VRGJ':
-               df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
+            if self.channel == "WH-VRGJ":
+                df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
 
         return df

@@ -211,6 +211,7 @@ def getMET(tree):
     )
     return MET
 
+
 def getJets(tree, lepton=None):
     Jets_awk = ak.zip(
         {
@@ -233,6 +234,7 @@ def getJets(tree, lepton=None):
 
     return Jets_correct
 
+
 def getScalarParticle(genParticles):
     genParticles_PdgId = genParticles.pdgId
     genParticles_Status = genParticles.status
@@ -240,6 +242,7 @@ def getScalarParticle(genParticles):
         (genParticles_PdgId == 25) & (genParticles_Status == 62)
     ]
     return scalarParticle
+
 
 def classifyGenParticles_ggF(genParticles):
     genParticles_ParentId = genParticles.genPartIdxMother
@@ -306,6 +309,7 @@ def classifyGenParticles_ggF(genParticles):
         scalarParticle,
     )
 
+
 def classifyGenParticles_WH(genParticles):
     genParticles_ParentId = genParticles.genPartIdxMother
     genParticles_PdgId = genParticles.pdgId
@@ -320,36 +324,41 @@ def classifyGenParticles_WH(genParticles):
     fromBQuark = [id in bQuarkIds for id in genParticles_ParentId]
 
     # Define mask arrays to select the desired particles
-    finalParticles = (genParticles.pt > 1) # & (genParticles_Status == 1) 
- 
-    genParticles_e = genParticles[
-        finalParticles & (abs(genParticles_PdgId) == 11)
-    ]
-    genParticles_mu = genParticles[
-        finalParticles & (abs(genParticles_PdgId) == 13)
-    ]
+    finalParticles = genParticles.pt > 1  # & (genParticles_Status == 1)
+
+    genParticles_e = genParticles[finalParticles & (abs(genParticles_PdgId) == 11)]
+    genParticles_mu = genParticles[finalParticles & (abs(genParticles_PdgId) == 13)]
     genParticles_nu = genParticles[
-        finalParticles & ((abs(genParticles_PdgId) == 14) | (abs(genParticles_PdgId) == 16) | (abs(genParticles_PdgId) == 18))
+        finalParticles
+        & (
+            (abs(genParticles_PdgId) == 14)
+            | (abs(genParticles_PdgId) == 16)
+            | (abs(genParticles_PdgId) == 18)
+        )
     ]
-    genParticles_gamma = genParticles[
-        finalParticles & (abs(genParticles_PdgId) == 22)
-    ]
-    genParticles_pi = genParticles[
-        finalParticles & (abs(genParticles_PdgId) == 211)
-    ]
-    genParticles_hadron = genParticles[
-        finalParticles & (abs(genParticles_PdgId) > 100)
-    ]
-    genParticles_W = genParticles[
-        finalParticles & (abs(genParticles_PdgId) == 24)
-    ]
+    genParticles_gamma = genParticles[finalParticles & (abs(genParticles_PdgId) == 22)]
+    genParticles_pi = genParticles[finalParticles & (abs(genParticles_PdgId) == 211)]
+    genParticles_hadron = genParticles[finalParticles & (abs(genParticles_PdgId) > 100)]
+    genParticles_W = genParticles[finalParticles & (abs(genParticles_PdgId) == 24)]
     genParticles_top = genParticles[
-        finalParticles & ((abs(genParticles_PdgId) == 6) | (abs(genParticles_PdgId) == 8))
+        finalParticles
+        & ((abs(genParticles_PdgId) == 6) | (abs(genParticles_PdgId) == 8))
     ]
     other_genParticles = genParticles[
-       finalParticles & ((abs(genParticles_PdgId) != 11) & (abs(genParticles_PdgId) != 13) & (abs(genParticles_PdgId) != 14) & (abs(genParticles_PdgId) != 16) & 
-       (abs(genParticles_PdgId) != 18) & (abs(genParticles_PdgId) != 22) & (abs(genParticles_PdgId) != 211) & (abs(genParticles_PdgId) <= 100) &
-         (abs(genParticles_PdgId) != 24) & (abs(genParticles_PdgId) != 6) & (abs(genParticles_PdgId) != 8))
+        finalParticles
+        & (
+            (abs(genParticles_PdgId) != 11)
+            & (abs(genParticles_PdgId) != 13)
+            & (abs(genParticles_PdgId) != 14)
+            & (abs(genParticles_PdgId) != 16)
+            & (abs(genParticles_PdgId) != 18)
+            & (abs(genParticles_PdgId) != 22)
+            & (abs(genParticles_PdgId) != 211)
+            & (abs(genParticles_PdgId) <= 100)
+            & (abs(genParticles_PdgId) != 24)
+            & (abs(genParticles_PdgId) != 6)
+            & (abs(genParticles_PdgId) != 8)
+        )
     ]
     return (
         genParticles_e,
@@ -403,13 +412,17 @@ def scale(particles, scalar, method=2):
         e_normed = 2500.0 * energies / e_max
         return e_normed
 
+
 def getNormParticle(genParticles):
     scalarParticle = getScalarParticle(genParticles)
     if len(scalarParticle) == 0:
-        finalParticles = genParticles[(genParticles.status == 1) & (genParticles.pt > 1)]
+        finalParticles = genParticles[
+            (genParticles.status == 1) & (genParticles.pt > 1)
+        ]
         return finalParticles[ak.argmax(finalParticles.pt)]
     else:
         return scalarParticle[0]
+
 
 # Main plotting function
 def plot(
@@ -432,7 +445,7 @@ def plot(
     showLeptons=True,
     showAK4=True,
     showMET=True,
-    showLegend=True
+    showLegend=True,
 ):
     if ax is None:
         fig = plt.figure(figsize=(12, 8))
@@ -441,7 +454,7 @@ def plot(
     normParticle = getNormParticle(genParticles)
 
     if showGen:
-        if channel == 'ggF':
+        if channel == "ggF":
             (
                 fromScalarParticles_e,
                 fromScalarParticles_mu,
@@ -455,7 +468,7 @@ def plot(
                 isrParticles_hadron,
                 scalarParticle,
             ) = classifyGenParticles_ggF(genParticles)
-        elif channel == 'WH':
+        elif channel == "WH":
             (
                 fromScalarParticles_e,
                 fromScalarParticles_mu,
@@ -474,7 +487,7 @@ def plot(
         for jet in jetsAK15:
             ax = drawJetCone(ax, jet.eta, jet.phi, R=1.5, color="xkcd:green")
 
-    if showSUEPCandidate and channel=='WH':
+    if showSUEPCandidate and channel == "WH":
         highpt_jet = ak.argsort(jetsAK15.pt, axis=0, ascending=False, stable=True)
         jets_pTsorted = jetsAK15[highpt_jet]
         clusters_pTsorted = jetsAK15_tracks[highpt_jet]
@@ -494,7 +507,7 @@ def plot(
         else:  # draw SUEP and ISR ak15 candidates
             ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
 
-    if showSUEPCandidate and channel=='ggF':
+    if showSUEPCandidate and channel == "ggF":
         _, _, topTwoJets = SUEP_utils.getTopTwoJets(
             None,
             ak.ones_like(jetsAK15),
@@ -552,7 +565,7 @@ def plot(
             fromScalarParticles_gamma = fromScalarParticles_gamma.boost_p4(boost_SUEP)
             fromScalarParticles_pi = fromScalarParticles_pi.boost_p4(boost_SUEP)
             fromScalarParticles_hadron = fromScalarParticles_hadron.boost_p4(boost_SUEP)
-            if channel == 'ggF':
+            if channel == "ggF":
                 isrParticles_e = isrParticles_e.boost_p4(boost_SUEP)
                 isrParticles_mu = isrParticles_mu.boost_p4(boost_SUEP)
                 isrParticles_gamma = isrParticles_gamma.boost_p4(boost_SUEP)
@@ -620,23 +633,23 @@ def plot(
             fromScalarParticles_top.eta,
             s=scale(fromScalarParticles_top, normParticle),
             c="xkcd:light blue",
-            marker='$t$'
+            marker="$t$",
         )
         ax.scatter(
             fromScalarParticles_W.phi,
             fromScalarParticles_W.eta,
             s=scale(fromScalarParticles_W, normParticle),
             c="xkcd:light blue",
-            marker='$W$'
+            marker="$W$",
         )
         ax.scatter(
             other_genParticles.phi,
             other_genParticles.eta,
             s=scale(other_genParticles, normParticle),
             c="xkcd:light blue",
-            marker='o',
+            marker="o",
         )
-        if channel == 'ggF':
+        if channel == "ggF":
             ax.scatter(
                 isrParticles_e.phi,
                 isrParticles_e.eta,
@@ -713,7 +726,6 @@ def plot(
             color="xkcd:red",
         )
 
-
     if showRingOfFire:
         # draw two straight dashed lines, adjacent to the edges of the ring, that wrap around in phi
         ax.hlines(
@@ -742,7 +754,9 @@ def plot(
     line11 = ax.scatter([-100], [-100], label=r"$\nu$", marker="1", c="xkcd:black")
     line12 = ax.scatter([-100], [-100], label="W", marker="$W$", c="xkcd:black")
     line13 = ax.scatter([-100], [-100], label="top", marker="$t$", c="xkcd:black")
-    line14 = ax.scatter([-100], [-100], label="other gen particle", marker="o", c="xkcd:black")
+    line14 = ax.scatter(
+        [-100], [-100], label="other gen particle", marker="o", c="xkcd:black"
+    )
     line6 = ax.scatter(
         [-100],
         [-100],
@@ -756,7 +770,9 @@ def plot(
     line8 = ax.scatter(
         [-100],
         [-100],
-        label="Other AK15 jets" if showSUEPCandidate and channel=='ggF'else "AK15 Jets",
+        label=(
+            "Other AK15 jets" if showSUEPCandidate and channel == "ggF" else "AK15 Jets"
+        ),
         marker="o",
         facecolors="none",
         edgecolors="xkcd:green",
@@ -778,7 +794,7 @@ def plot(
             linestyle="--",
             edgecolors="xkcd:red",
         )
-    if showSUEPCandidate and channel == 'ggF':
+    if showSUEPCandidate and channel == "ggF":
         line10 = ax.scatter(
             [-100],
             [-100],
@@ -805,23 +821,35 @@ def plot(
         elif showLeptons and len(leptons) > 1:
             darkcyan_patch = mpatches.Patch(color="darkcyan", label="Lepton")
         if showGen:
-            handles = [line1, line2, line11, line3, line4, line5, line12, line13, line14, light_blue_patch, magenta_patch]
+            handles = [
+                line1,
+                line2,
+                line11,
+                line3,
+                line4,
+                line5,
+                line12,
+                line13,
+                line14,
+                light_blue_patch,
+                magenta_patch,
+            ]
         else:
             handles = [gray_patch]
         if not boost and len(scalarParticle.phi) > 0:  # add AK15, scalar mediator
             handles.append(line6)
-        if showSUEPCandidate and channel == 'ggF' and len(jetsAK15) > 2 and not boost:
+        if showSUEPCandidate and channel == "ggF" and len(jetsAK15) > 2 and not boost:
             handles.append(line8)
-        if showSUEPCandidate and channel == 'WH' and len(jetsAK15) > 1 and not boost:
+        if showSUEPCandidate and channel == "WH" and len(jetsAK15) > 1 and not boost:
             handles.append(line8)
         if showRingOfFire and boost:
             handles.append(line7)
-        if showSUEPCandidate and channel == 'WH':
+        if showSUEPCandidate and channel == "WH":
             if not boost:
                 handles.append(line9)
             else:
                 handles.append(red_patch)
-        if showSUEPCandidate and channel == 'ggF':
+        if showSUEPCandidate and channel == "ggF":
             if not boost:
                 handles.append(line9)
                 handles.append(line10)
@@ -835,7 +863,7 @@ def plot(
         if showLeptons:
             handles.append(darkcyan_patch)
 
-        ax.legend(handles=handles, loc=(1.01,0), fontsize=10)
+        ax.legend(handles=handles, loc=(1.01, 0), fontsize=10)
 
     # build a rectangle in axes coords
     left, width = 0.0, 1.0
@@ -936,7 +964,7 @@ def main():
 
     # get input file
     rootfile = args.input
-    
+
     fin = uproot.open(rootfile)
     tree = fin["Events"]
 
@@ -1010,7 +1038,7 @@ def main():
                 showPFCands=args.pfcands,
                 showLeptons=args.leptons,
                 showMET=args.MET,
-                showLegend=False
+                showLegend=False,
             )
             plot(
                 i,

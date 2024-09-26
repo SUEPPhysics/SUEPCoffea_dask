@@ -87,9 +87,7 @@ def test_ntuplemaker(run, config):
     print(colored(f"Found {len(options)} options to test for run {run}", "blue"))
 
     for iOption, option in enumerate(options):
-        command = (
-            f"python {script} {option} > {run}.out 2> {run}.err"
-        )
+        command = f"python {script} {option} > {run}.out 2> {run}.err"
 
         if "singularity" in config:
             command = f"singularity exec {config['singularity']} {command}"

@@ -1,6 +1,7 @@
-import vector
 import awkward as ak
 import numpy as np
+import vector
+
 
 def initialize_new_variables(label: str, options, config: dict):
     """
@@ -12,12 +13,12 @@ def initialize_new_variables(label: str, options, config: dict):
     and adds it to the config dictionary, if not already there
     """
 
-    if 'new_variables' in config.keys():
+    if "new_variables" in config.keys():
         return
 
     new_vars = []
 
-    if options.channel in ['WH', 'WH-VRGJ']:
+    if options.channel in ["WH", "WH-VRGJ"]:
         new_vars += [
             [
                 "bjetSel",
@@ -73,14 +74,14 @@ def initialize_new_variables(label: str, options, config: dict):
                     "WH_MET_phi",
                 ],
             ],
-             # [
+            # [
             #     "SUEPMostNumerous",
             #     lambda x, y: x > y,
             #     ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
             # ],
         ]
 
-        if options.channel == 'WH':
+        if options.channel == "WH":
 
             new_vars += [
                 [
@@ -206,7 +207,7 @@ def initialize_new_variables(label: str, options, config: dict):
                 [
                     "gammaTriggerSel",
                     gammaTriggerSel,
-                    ["photon_pt", "WH_gammaTriggerBits"]
+                    ["photon_pt", "WH_gammaTriggerBits"],
                 ],
                 [
                     "photon_SUEP_BV",
@@ -262,7 +263,8 @@ def initialize_new_variables(label: str, options, config: dict):
                 ]
             ]
 
-    config['new_variables'] = new_vars
+    config["new_variables"] = new_vars
+
 
 def deltaPhi_x_y(xphi, yphi):
 
@@ -406,6 +408,7 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
 
     return var
 
+
 def calc_mt(xphi, yphi, xpt, ypt):
 
     # cast inputs to numpy arrays
@@ -418,6 +421,7 @@ def calc_mt(xphi, yphi, xpt, ypt):
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
     return np.sqrt(2 * xpt * ypt * (1 - np.cos(x_v.deltaphi(y_v))))
+
 
 def gammaTriggerSel(photon_pt, bits):
 

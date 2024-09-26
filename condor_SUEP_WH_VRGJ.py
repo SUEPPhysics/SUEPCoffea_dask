@@ -1,5 +1,6 @@
 import argparse
 import os
+
 import h5py
 import hist
 
@@ -8,13 +9,13 @@ from coffea import processor
 
 # SUEP Repo Specific
 from workflows import SUEP_coffea_WH
-from workflows.utils import pandas_utils
-from workflows.utils import output_utils
+from workflows.utils import output_utils, pandas_utils
 
 
 def form_ntuple(options, output):
     df = pandas_utils.format_dataframe(output["out"][options.dataset]["vars"].value)
     return df
+
 
 def form_metadata(options, output):
     metadata = dict(
@@ -33,12 +34,14 @@ def form_metadata(options, output):
 
     return metadata
 
+
 def form_hists(options, output):
     hists = {}
     for key in output["out"][options.dataset].keys():
         if type(output["out"][options.dataset][key]) is hist.Hist:
             hists[key] = output["out"][options.dataset][key]
     return hists
+
 
 def main():
     # Begin argparse
@@ -56,11 +59,11 @@ def main():
         type=str,
     )
     parser.add_argument(
-        "--output_location", 
-        "-o", 
+        "--output_location",
+        "-o",
         default=os.getcwd(),
         help="Path to output directory, can be xrootd or local",
-        type=str
+        type=str,
     )
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
@@ -83,7 +86,7 @@ def main():
             sample=options.dataset,
             flag=False,
             output_location=options.output_location,
-            VRGJ=True, # this runs as gamma+jets VR!
+            VRGJ=True,  # this runs as gamma+jets VR!
             dropNonMethodEvents=True,
             storeJetsInfo=False,
         )
@@ -119,7 +122,9 @@ def main():
         output_utils.add_hists(options.outfile, hists)
 
         # write out the hdf5 to the output_location
-        output_utils.dump_table(fname=options.outfile, location=instance.output_location)
+        output_utils.dump_table(
+            fname=options.outfile, location=instance.output_location
+        )
 
 
 if __name__ == "__main__":

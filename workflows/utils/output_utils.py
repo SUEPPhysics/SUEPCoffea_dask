@@ -2,12 +2,11 @@ import os
 import pathlib
 import shutil
 from typing import List, Optional
+
 import h5py
 
 
-def dump_table(
-    fname: str, location: str, subdirs: Optional[List[str]] = None
-) -> None:
+def dump_table(fname: str, location: str, subdirs: Optional[List[str]] = None) -> None:
     subdirs = subdirs or []
     xrd_prefix = "root://"
     pfx_len = len(xrd_prefix)
@@ -61,7 +60,7 @@ def dump_table(
     pathlib.Path(local_file).unlink()
 
 
-def add_hists(file: str, hists: dict, group_name: str = 'hists') -> None:
+def add_hists(file: str, hists: dict, group_name: str = "hists") -> None:
     """
     Append histograms (hist.Hist) to an HDF5 file.
     Each histogram is stored in its own subgroup, with the histogram values, variances, and axis edges stored as datasets.
@@ -69,21 +68,23 @@ def add_hists(file: str, hists: dict, group_name: str = 'hists') -> None:
     :hists dict: dictionary of histogram names and histogram objects to be added
     """
 
-    with h5py.File(file, 'a') as hdf5_file:
+    with h5py.File(file, "a") as hdf5_file:
         hist_collection = hdf5_file.create_group(group_name)
 
         for hist_name, hist in hists.items():
             # Create a subgroup for each histogram
             hist_group_path = f"{group_name}/{hist_name}"
             hist_group = hdf5_file.create_group(hist_group_path)
-            
+
             # Store the histogram name as an attribute
-            hist_group.attrs['name'] = hist_name
-            
+            hist_group.attrs["name"] = hist_name
+
             # Store axis edges, values, and variances by converting them to numpy arrays
             for i, axis in enumerate(hist.axes):
                 axis_name = f"axis{i}"
-                hist_group.create_dataset(f"{axis_name}_name", data=axis.name.encode('utf-8'))
+                hist_group.create_dataset(
+                    f"{axis_name}_name", data=axis.name.encode("utf-8")
+                )
                 hist_group.create_dataset(f"{axis_name}_edges", data=axis.edges)
             hist_group.create_dataset("values", data=hist.values())
             hist_group.create_dataset("variances", data=hist.variances())
