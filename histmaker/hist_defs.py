@@ -1,5 +1,6 @@
-from hist import Hist
 import numpy as np
+from hist import Hist
+
 
 def initialize_histograms(output: dict, label: str, options, config: dict) -> dict:
     # don't recreate histograms if called multiple times with the same output label
@@ -32,7 +33,7 @@ def initialize_histograms(output: dict, label: str, options, config: dict) -> di
     ###########################################################################################################################
     if "WH" in options.channel:
         init_hists_highestPT(output, label)
-    if 'VRGJ' in options.channel:
+    if "VRGJ" in options.channel:
         init_hists_VRGJ(output, label)
 
     return output
@@ -207,7 +208,7 @@ def init_hists_cluster(output, label, regions_list=[""]):
                         name=f"{r}SUEP_ISR_deltaPhi_{label}",
                         label=r"SUEP $\phi$ - ISR $\phi$ [GeV]",
                     ).Weight(),
-                     f"{r}SUEP_pt_avg_{label}": Hist.new.Reg(
+                    f"{r}SUEP_pt_avg_{label}": Hist.new.Reg(
                         100,
                         0,
                         100,
@@ -840,7 +841,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 20,
                 name=f"nBLoose_{label}",
-                label="$n_{\mathrm{Loose~B-jets}}$",
+                label=r"$n_{\mathrm{Loose~B-jets}}$",
             ).Weight(),
             # f"nBMedium_{label}": Hist.new.Reg(
             #     20,
@@ -854,7 +855,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 20,
                 name=f"nBTight_{label}",
-                label="$n_{\mathrm{Tight~B-jets}}$",
+                label=r"$n_{\mathrm{Tight~B-jets}}$",
             ).Weight(),
             # f"nBLoose_noLepIso_{label}": Hist.new.Reg(
             #     20,
@@ -1230,7 +1231,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 10,
                 name=f"nCRQCDleptons_{label}",
-                label="$n_{\mathrm{CRQCD~leptons}}$",
+                label=r"$n_{\mathrm{CRQCD~leptons}}$",
             ).Weight(),
             f"deltaPhi_SUEP_photon_{label}": Hist.new.Reg(
                 60,
@@ -1244,7 +1245,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 -1,
                 10,
                 name=f"photon_SUEP_BV_{label}",
-                label="($p_T^{\gamma} - p_T^{SUEP}$)/$p_T^{SUEP}$",
+                label=r"($p_T^{\gamma} - p_T^{SUEP}$)/$p_T^{SUEP}$",
             ).Weight(),
             f"photon_pt_{label}": Hist.new.Reg(
                 100,
@@ -1673,12 +1674,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"deltaPhi_lepton_SUEP_{label}",
                 label=r"$\Delta\phi$($\ell$, SUEP)",
             ).Weight(),
-            f"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category_{label}": Hist.new
-                .Variable([0, 30, 50, 70, 100, 140, 200, 300, 600, 1000], name="jets_pt")
-                .Variable([0, 1.44, 2.5], name="jets_eta")
-                .IntCategory([0, 4, 5], name="jets_hadronFlavor")
-                .Variable([0,1,2,3], name="jets_btag_category")
-                .Weight(),
+            f"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category_{label}": Hist.new.Variable(
+                [0, 30, 50, 70, 100, 140, 200, 300, 600, 1000], name="jets_pt"
+            )
+            .Variable([0, 1.44, 2.5], name="jets_eta")
+            .IntCategory([0, 4, 5], name="jets_hadronFlavor")
+            .Variable([0, 1, 2, 3], name="jets_btag_category")
+            .Weight(),
             # f"deltaPhi_W_genW_{label}": Hist.new.Reg(
             #     60,
             #     -3.2,
@@ -2281,63 +2283,65 @@ def init_hists_highestPT(output, label, regions_list=[""]):
         }
     )
 
+
 def init_hists_VRGJ(output, label):
 
-    output.update({
-        f"WH_gammaTriggerBits_{label}": Hist.new.Reg(
-            10,
-            0,
-            10,
-            name=f"WH_gammaTriggerBits_{label}",
-            label=r"WH_gammaTriggerBits",
-        ).Weight(),
-        f"2D_photon_pt_vs_WH_gammaTriggerBits_{label}": Hist.new.Reg(
-            1000,
-            0,
-            1000,
-            name=f"photon_pt_{label}",
-            label="Photon $p_T$ [GeV]",
-        )
-        .Reg(
-            10,
-            0,
-            10,
-            name=f"WH_gammaTriggerBits_{label}",
-            label=r"WH_gammaTriggerBits",
-        )
-        .Weight(),
-        f"WH_no_doubleCountedPhotons_{label}": Hist.new.Int(
-            0,
-            2,
-            name=f"WH_no_doubleCountedPhotons_{label}",
-            label="no double counted photons",
-        ).Weight(),
-        f"minDeltaRGenRecoPhotons_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"minDeltaRGenRecoPhotons_{label}",
-            label="min $\Delta R(\mathrm{Gen \gamma, Reco \gamma})$",
-        ).Weight(),
-        
-        f"3D_photon_pt_vs_WH_gammaTriggerBits_vs_WH_gammaTriggerUnprescaleWeight_{label}": Hist.new.Reg(
-            1000,
-            0,
-            1000,
-            name=f"photon_pt_{label}",
-            label="Photon $p_T$ [GeV]",
-        )
-        .Reg(
-            10,
-            0,
-            10,
-            name=f"WH_gammaTriggerBits_{label}",
-            label=r"WH_gammaTriggerBits",
-        )
-        .Variable(
-            [0,2,60,64,245,251,500],
-            name=f"WH_gammaTriggerUnprescaleWeight_{label}",
-            label=r"WH_gammaTriggerUnprescaleWeight",
-        )
-        .Weight(),
-    })
+    output.update(
+        {
+            f"WH_gammaTriggerBits_{label}": Hist.new.Reg(
+                10,
+                0,
+                10,
+                name=f"WH_gammaTriggerBits_{label}",
+                label=r"WH_gammaTriggerBits",
+            ).Weight(),
+            f"2D_photon_pt_vs_WH_gammaTriggerBits_{label}": Hist.new.Reg(
+                1000,
+                0,
+                1000,
+                name=f"photon_pt_{label}",
+                label="Photon $p_T$ [GeV]",
+            )
+            .Reg(
+                10,
+                0,
+                10,
+                name=f"WH_gammaTriggerBits_{label}",
+                label=r"WH_gammaTriggerBits",
+            )
+            .Weight(),
+            f"WH_no_doubleCountedPhotons_{label}": Hist.new.Int(
+                0,
+                2,
+                name=f"WH_no_doubleCountedPhotons_{label}",
+                label="no double counted photons",
+            ).Weight(),
+            f"minDeltaRGenRecoPhotons_{label}": Hist.new.Reg(
+                100,
+                0,
+                6,
+                name=f"minDeltaRGenRecoPhotons_{label}",
+                label=r"min $\Delta R(\mathrm{Gen \gamma, Reco \gamma})$",
+            ).Weight(),
+            f"3D_photon_pt_vs_WH_gammaTriggerBits_vs_WH_gammaTriggerUnprescaleWeight_{label}": Hist.new.Reg(
+                1000,
+                0,
+                1000,
+                name=f"photon_pt_{label}",
+                label="Photon $p_T$ [GeV]",
+            )
+            .Reg(
+                10,
+                0,
+                10,
+                name=f"WH_gammaTriggerBits_{label}",
+                label=r"WH_gammaTriggerBits",
+            )
+            .Variable(
+                [0, 2, 60, 64, 245, 251, 500],
+                name=f"WH_gammaTriggerUnprescaleWeight_{label}",
+                label=r"WH_gammaTriggerUnprescaleWeight",
+            )
+            .Weight(),
+        }
+    )

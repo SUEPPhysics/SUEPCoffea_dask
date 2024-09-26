@@ -33,6 +33,7 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
+
 import plotting.plot_utils as plot_utils
 
 
@@ -184,7 +185,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
             df, syst, puweights, puweights_up, puweights_down
         )
         df["event_weight"] *= pu
-        df['pileup_weight'] = pu
+        df["pileup_weight"] = pu
 
         # 2) PS weights
         if "PSWeight" in syst and syst in df.keys():
@@ -248,7 +249,7 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
         if any([j in syst for j in ["JER", "JES"]]):
             # update configuration to cut on jet energy correction variables
             config = fill_utils.get_jet_correction_config(config, syst)
-            
+
     # scaling weights
     # N.B.: these are just an optional, arbitrary scaling of weights you're passing in
     if options.weights is not None and options.weights != "None":
@@ -300,16 +301,18 @@ def plot_systematic(df, metadata, config, syst, options, output, cutflow={}):
                 )
 
         # 8) b-tag weights. These have different values for each event selection
-        if options.channel == 'WH' and options.isMC:
-            if 'btag' in syst.lower():
+        if options.channel == "WH" and options.isMC:
+            if "btag" in syst.lower():
                 btag_weights = syst
             else:
-                btag_weights = 'bTagWeight_nominal'
+                btag_weights = "bTagWeight_nominal"
             btag_weights += "_" + label_out
             if btag_weights not in df.keys():
-                logging.warning(f"btag weights {btag_weights} not found in DataFrame. Not applying them.")
+                logging.warning(
+                    f"btag weights {btag_weights} not found in DataFrame. Not applying them."
+                )
             else:
-                df['event_weight'] *= df[btag_weights]
+                df["event_weight"] *= df[btag_weights]
 
         # auto fill all histograms
         fill_utils.auto_fill(

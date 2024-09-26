@@ -47,9 +47,13 @@ def main():
         help="Move files to move_dir from out_dir_xrd while you check if they are corrupted.",
     )
     parser.add_argument(
-        '--dataDirLocal',
+        "--dataDirLocal",
         type=str,
-        default='/ceph/submit/data/user/' + os.environ["USER"][0] + '/' + os.environ["USER"] + '/SUEP/',
+        default="/ceph/submit/data/user/"
+        + os.environ["USER"][0]
+        + "/"
+        + os.environ["USER"]
+        + "/SUEP/",
     )
     parser.add_argument("-redirector", type=str, default="root://submit50.mit.edu/")
     options = parser.parse_args()
