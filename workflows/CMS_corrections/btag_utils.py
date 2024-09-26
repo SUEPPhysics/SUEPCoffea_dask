@@ -1,17 +1,25 @@
-import pickle
 import os
+import pickle
+
 import awkward as ak
 import correctionlib
 import numpy as np
 
 
-def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: bool = False, base_dir: str = '.') -> dict:
+def doBTagWeights(
+    jetsPre,
+    era: int,
+    wps: str,
+    channel: str = "zh",
+    do_syst: bool = False,
+    base_dir: str = ".",
+) -> dict:
     """
     Compute btagging weights for a given jet collection.
     We support working points (wps): 'L', 'M', 'T', 'TL', 'LT',
     where the last two are the same, and represent a combination of Tight and Loose WPs.
     """
-    if wps not in ('T', 'L', 'M', 'TL', 'LT'):
+    if wps not in ("T", "L", "M", "TL", "LT"):
         raise ValueError(f"Invalid WP: {wp}")
 
     # some jet pre selection
@@ -27,8 +35,8 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
     flattened_eta = np.array(np.abs(jets.eta))
 
     # grab the correct weights based on the era
-    if era == 2015: # 2016apv ... 
-        btagfile = os.path.join(base_dir,"data/BTagUL16APV/btagging.json.gz")
+    if era == 2015:  # 2016apv ...
+        btagfile = os.path.join(base_dir, "data/BTagUL16APV/btagging.json.gz")
         btagfileL = os.path.join(base_dir, "data/BTagUL16/btagging.json.gz")
     if era == 2016:
         btagfile = os.path.join(base_dir, "data/BTagUL16/btagging.json.gz")
@@ -60,7 +68,11 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             SF[wp]["HFcorrelated_Up"] = np.where(
                 (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
                 corrector["deepJet_comb"].evaluate(
-                    "up_correlated", wp, hadronFlavourLightAsB, flattened_eta, flattened_pt
+                    "up_correlated",
+                    wp,
+                    hadronFlavourLightAsB,
+                    flattened_eta,
+                    flattened_pt,
                 ),
                 SF[wp]["central"],
             )
@@ -100,7 +112,11 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             SF[wp]["LFcorrelated_Up"] = np.where(
                 abs(jets.hadronFlavour) == 0,
                 correctorL["deepJet_incl"].evaluate(
-                    "up_correlated", wp, hadronFlavourBCAsLight, flattened_eta, flattened_pt
+                    "up_correlated",
+                    wp,
+                    hadronFlavourBCAsLight,
+                    flattened_eta,
+                    flattened_pt,
                 ),
                 SF[wp]["central"],
             )
@@ -150,14 +166,17 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
             SF[wp][syst] = ak.unflatten(SF[wp][syst], njets)
 
     # single WP: tight, loose, or medium
-    if wps in ('T', 'L', 'M'):
-        for (
-            syst_var
-        ) in (
-            SF[wps].keys()
-        ):  # Method (1.a) here: https://twiki.cern.ch/twiki/bin/view/CMS/BTagSFMethods
+    if wps in ("T", "L", "M"):
+        for syst_var in SF[
+            wps
+        ].keys():  # Method (1.a) here: https://twiki.cern.ch/twiki/bin/view/CMS/BTagSFMethods
             mceff = ak.prod(
-                np.where(jetsPre.btag >= btagcuts(wps_name[wps], era), effs[wps], 1 - effs[wps]), axis=1
+                np.where(
+                    jetsPre.btag >= btagcuts(wps_name[wps], era),
+                    effs[wps],
+                    1 - effs[wps],
+                ),
+                axis=1,
             )
             dataeff = ak.prod(
                 np.where(
@@ -168,22 +187,40 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
                 axis=1,
             )
             weights[syst_var] = np.where(mceff > 0, dataeff / mceff, 1)
-    
+
     # combination of two WPs: TL or LT (same thing)
-    elif wps in ('TL', 'LT'):
-        for (
-            syst_var
-        ) in (
-            SF['L'].keys()
-        ): # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#Extension_to_multiple_operating 
-            term1 = np.where(jetsPre.btag >= btagcuts(wps_name['T'], era), effs['T'], 1)
-            term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), effs['L'] - effs['T'], 1)
-            term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - effs['L'], 1)
+    elif wps in ("TL", "LT"):
+        for syst_var in SF[
+            "L"
+        ].keys():  # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#Extension_to_multiple_operating
+            term1 = np.where(jetsPre.btag >= btagcuts(wps_name["T"], era), effs["T"], 1)
+            term2 = np.where(
+                (jetsPre.btag < btagcuts(wps_name["T"], era))
+                & (jetsPre.btag >= btagcuts(wps_name["L"], era)),
+                effs["L"] - effs["T"],
+                1,
+            )
+            term3 = np.where(
+                jetsPre.btag < btagcuts(wps_name["L"], era), 1 - effs["L"], 1
+            )
             mceff = ak.prod(term1 * term2 * term3, axis=1)
 
-            term1 = np.where(jetsPre.btag >= btagcuts(wps_name['T'], era), SF['T'][syst_var] * effs['T'], 1)
-            term2 = np.where((jetsPre.btag < btagcuts(wps_name['T'], era)) & (jetsPre.btag >= btagcuts(wps_name['L'], era)), SF['L'][syst_var] * effs['L'] - SF['T'][syst_var] * effs['T'], 1)
-            term3 = np.where(jetsPre.btag < btagcuts(wps_name['L'], era), 1 - SF['L'][syst_var] * effs['L'], 1)
+            term1 = np.where(
+                jetsPre.btag >= btagcuts(wps_name["T"], era),
+                SF["T"][syst_var] * effs["T"],
+                1,
+            )
+            term2 = np.where(
+                (jetsPre.btag < btagcuts(wps_name["T"], era))
+                & (jetsPre.btag >= btagcuts(wps_name["L"], era)),
+                SF["L"][syst_var] * effs["L"] - SF["T"][syst_var] * effs["T"],
+                1,
+            )
+            term3 = np.where(
+                jetsPre.btag < btagcuts(wps_name["L"], era),
+                1 - SF["L"][syst_var] * effs["L"],
+                1,
+            )
             dataeff = ak.prod(term1 * term2 * term3, axis=1)
 
             weights[syst_var] = np.where(mceff > 0, dataeff / mceff, 1)
@@ -191,13 +228,15 @@ def doBTagWeights(jetsPre, era: int, wps: str, channel: str = 'zh', do_syst: boo
     return weights
 
 
-def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh", base_dir: str = '.') -> dict:
+def getBTagEffs(
+    jets, era: int, wp: str = "L", channel: str = "zh", base_dir: str = "."
+) -> dict:
     """
     Get the efficiencies of b-tagging for a given jet collection,
     binned in jet pt and abs(eta), for a given analysis (channel),
     and for a given WP.
     """
-    if era == 2015: # 2016apv ...
+    if era == 2015:  # 2016apv ...
         btagfile = os.path.join(base_dir, f"data/BTagUL16APV/{channel}_eff.pickle")
     if era == 2016:
         btagfile = os.path.join(base_dir, f"data/BTagUL16/{channel}_eff.pickle")
@@ -209,10 +248,10 @@ def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh", base_dir: str = '.
     bfile = open(btagfile, "rb")
     effsHists = pickle.load(bfile)
 
-    if sorted(list(effsHists.keys())) == ['B', 'C', 'L']:
+    if sorted(list(effsHists.keys())) == ["B", "C", "L"]:
         effsHist = effsHists
     else:
-        effsHist = effsHists[wp]            
+        effsHist = effsHists[wp]
 
     effs = effsHist["L"](jets.pt, np.abs(jets.eta))
     effs = np.where(
@@ -223,7 +262,7 @@ def getBTagEffs(jets, era: int, wp:str="L", channel:str="zh", base_dir: str = '.
     )
 
     return effs
-    
+
 
 def btagcuts(WP: str, era: int) -> float:
     if era == 2015:  # 2016APV

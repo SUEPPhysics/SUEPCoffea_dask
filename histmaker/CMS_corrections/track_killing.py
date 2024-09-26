@@ -20,7 +20,9 @@ def generate_up_histograms(plots):
         if not hist_name.endswith("_track_down"):
             continue
         hDown = plots[hist_name].copy()
-        if len(hDown.axes) > 2: # make_up_symmetric_variation() does not support higher dimensional histograms yet
+        if (
+            len(hDown.axes) > 2
+        ):  # make_up_symmetric_variation() does not support higher dimensional histograms yet
             continue
         hNom = plots[hist_name.replace("_track_down", "")].copy()
         hUp = make_up_symmetric_variation(hNom, hDown)

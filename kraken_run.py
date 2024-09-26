@@ -179,10 +179,18 @@ def main():
         help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the MIT T2 with xrootd requests.",
     )
     parser.add_argument(
-        "-o", "--output", type=str, default=f"root://submit50.mit.edu//data/group/cms/store/user/{username}/SUEP/", help="Output condor directory. The samples fill be found under root://redirector//your/path/tag/sample."
+        "-o",
+        "--output",
+        type=str,
+        default=f"root://submit50.mit.edu//data/group/cms/store/user/{username}/SUEP/",
+        help="Output condor directory. The samples fill be found under root://redirector//your/path/tag/sample.",
     )
     parser.add_argument(
-        "-l", "--logs", type=str, default=f"/work/submit/{username}/SUEP/logs/", help="Local path where to store the condor logs. The logs for each sample will be stored in /path/tag/sample."
+        "-l",
+        "--logs",
+        type=str,
+        default=f"/work/submit/{username}/SUEP/logs/",
+        help="Local path where to store the condor logs. The logs for each sample will be stored in /path/tag/sample.",
     )
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     options = parser.parse_args()
@@ -192,7 +200,7 @@ def main():
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    
+
     # define which file you want to run, the output file name and extension that it produces
     # these will be transferred back to the output directory
     if options.channel == "ggF":
@@ -224,7 +232,7 @@ def main():
         condor_file = "condor_SUEP_WH_VRGJ.py"
         outfile = "out"
         file_ext = "hdf5"
-        
+
     # Making sure that the proxy is good
     proxy, lifetime = check_proxy(time_min=100)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
@@ -242,7 +250,9 @@ def main():
 
             # extract sample name from each sample path
             if "/" in sample_path:
-                if sample_path.endswith("/"):   # in case if you left an extra slash at the end..
+                if sample_path.endswith(
+                    "/"
+                ):  # in case if you left an extra slash at the end..
                     sample_name = sample_path.split("/")[-2]
                 else:
                     sample_name = sample_path.split("/")[-1]
@@ -302,12 +312,12 @@ def main():
                     infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
                 infiles.close()
-            
+
             # create the output directory for this sample
             fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
-            _sample_path = '/' + fin_outdir_condor.split("//")[-1]
+            _sample_path = "/" + fin_outdir_condor.split("//")[-1]
             _tokens = options.output.split("//")
-            _redirector = _tokens[0] + '//' + _tokens[1] + '//'
+            _redirector = _tokens[0] + "//" + _tokens[1] + "//"
             os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
 
             # write the executable we give to condor

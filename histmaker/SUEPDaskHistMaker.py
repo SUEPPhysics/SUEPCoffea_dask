@@ -3,33 +3,32 @@ Author: Luca Lavezzo
 Date: August 2024
 """
 
+import copy
+import json
 import logging
 import os
 import pickle
 import subprocess
 import sys
-import uproot
-import copy
-import json
+from types import SimpleNamespace
+from typing import List
+
 import numpy as np
 import pandas as pd
-from dask import delayed
-from typing import List
-from types import SimpleNamespace
-from dask.distributed import Client, Future
+import uproot
 from coffea.processor import value_accumulator
+from dask import delayed
+from dask.distributed import Client, Future
 
 sys.path.append("..")
 import fill_utils
 import hist_defs
 import var_defs
-from CMS_corrections import (
-    GNN_syst,
-    track_killing,
-)
-from CMS_corrections.EventWeightProcessor import EventWeightProcessor
-import plotting.plot_utils as plot_utils
 from BaseDaskHistMaker import BaseDaskHistMaker
+from CMS_corrections import GNN_syst, track_killing
+from CMS_corrections.EventWeightProcessor import EventWeightProcessor
+
+import plotting.plot_utils as plot_utils
 
 
 class SUEPDaskHistMaker(BaseDaskHistMaker):
@@ -46,11 +45,13 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         self.options = self.get_options(options)
         self.config = kwargs.get("config", {})
 
-        logging.basicConfig(level=logging.INFO) 
-        self.logger = logging.getLogger(self.__class__.__name__) # logging for this class only
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(
+            self.__class__.__name__
+        )  # logging for this class only
         self.logger.setLevel(level=logging.INFO)
         if self.options.verbose:
-            logging.basicConfig(level=logging.DEBUG) 
+            logging.basicConfig(level=logging.DEBUG)
             self.logger.setLevel(logging.DEBUG)
 
     def get_options(self, options: dict) -> SimpleNamespace:
@@ -59,32 +60,36 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         """
 
         self.default_options = {
-            'output': 'daskHistMaker',
-            'doSyst': 0,
-            'verbose': 0,
-            'xrootd': 0,
-            'saveDir': '/ceph/submit/data/user/l/'+os.environ['USER']+'/SUEP/outputs/',
-            'logDir': '/work/submit/'+os.environ['USER']+'/SUEP/logs/',
-            'file': None,
-            'dataDirLocal': '/data/submit/cms/store/user/'+os.environ['USER']+'/SUEP/{}/{}/',
-            'dataDirXRootD': '/cms/store/user/'+os.environ['USER']+'/SUEP/{}/{}/',
-            'merged': 0,
-            'maxFiles': -1,
-            'pkl': 1,
-            'printEvents': False,
-            'scouting': 0,
-            'doInf': 0,
-            'doABCD': 0,
-            'blind': 1,
-            'redirector': 'root://submit50.mit.edu/',
+            "output": "daskHistMaker",
+            "doSyst": 0,
+            "verbose": 0,
+            "xrootd": 0,
+            "saveDir": "/ceph/submit/data/user/l/"
+            + os.environ["USER"]
+            + "/SUEP/outputs/",
+            "logDir": "/work/submit/" + os.environ["USER"] + "/SUEP/logs/",
+            "file": None,
+            "dataDirLocal": "/data/submit/cms/store/user/"
+            + os.environ["USER"]
+            + "/SUEP/{}/{}/",
+            "dataDirXRootD": "/cms/store/user/" + os.environ["USER"] + "/SUEP/{}/{}/",
+            "merged": 0,
+            "maxFiles": -1,
+            "pkl": 1,
+            "printEvents": False,
+            "scouting": 0,
+            "doInf": 0,
+            "doABCD": 0,
+            "blind": 1,
+            "redirector": "root://submit50.mit.edu/",
         }
-        self.mandatory_options = ['era', 'tag', 'channel', 'isMC']
+        self.mandatory_options = ["era", "tag", "channel", "isMC"]
         self.options = self.default_options
         self.options.update(options)
         for opt in self.mandatory_options:
             if opt not in self.options:
                 raise ValueError(f"Missing mandatory option {opt}.")
-            
+
         return SimpleNamespace(**self.options)
 
     def preprocess_sample(self, sample: str) -> None:
@@ -104,13 +109,16 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         if len(files) == 0:
             self.logger.error("No files found, exiting.")
             return []
-        
+
         self.logger.debug("Creating futures for sample " + sample)
 
-        futures = [client.submit(self.process_file, ifile, sample, self.config, self.options) for ifile in files]
+        futures = [
+            client.submit(self.process_file, ifile, sample, self.config, self.options)
+            for ifile in files
+        ]
 
         return futures
-    
+
     def postprocess_sample(self, sample: str, output: dict) -> dict:
         """
         Put together metadata using the output from the futures.
@@ -131,13 +139,20 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "isMC": int(self.options.isMC),
             "era": self.options.era,
             "sample": sample,
-            "signal": (self.options.isMC) and (fill_utils.isSampleSignal(sample, self.options.era)),
+            "signal": (self.options.isMC)
+            and (fill_utils.isSampleSignal(sample, self.options.era)),
             "xsec": 1,
             "gensumweight": gensumweight,
             "lumi": 1,
-            "n_processed": output["_processing_metadata"].get("n_processed", value_accumulator(float, 0)).value,
-            "n_success": output["_processing_metadata"].get("n_success", value_accumulator(float, 0)).value,     
-            "n_failed": output["_processing_metadata"].get("n_failed", value_accumulator(float, 0)).value,
+            "n_processed": output["_processing_metadata"]
+            .get("n_processed", value_accumulator(float, 0))
+            .value,
+            "n_success": output["_processing_metadata"]
+            .get("n_success", value_accumulator(float, 0))
+            .value,
+            "n_failed": output["_processing_metadata"]
+            .get("n_failed", value_accumulator(float, 0))
+            .value,
         }
 
         if self.options.isMC and self.options.doSyst:
@@ -147,7 +162,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             histograms = track_killing.generate_up_histograms(histograms)
 
             for output_method in self.config.keys():
-                if 'fGNNsyst' in self.config[output_method]:
+                if "fGNNsyst" in self.config[output_method]:
                     # do the GNN systematic
                     GNN_syst.apply_GNN_syst(
                         histograms,
@@ -164,12 +179,16 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             if gensumweight == 0:
                 gensumweight = 1
                 self.logger.warning("Found gensumweight 0, setting to 1.")
-            xsection = fill_utils.getXSection(sample, self.options.era, failOnKeyError=True)
+            xsection = fill_utils.getXSection(
+                sample, self.options.era, failOnKeyError=True
+            )
             self.logger.debug(f"Found cross section x kr x br: {xsection}.")
-            lumi = plot_utils.getLumi(self.options.era, scouting='scout' in self.options.channel)
+            lumi = plot_utils.getLumi(
+                self.options.era, scouting="scout" in self.options.channel
+            )
             self.logger.debug(f"Found lumi: {lumi}.")
 
-            if metadata['signal']:
+            if metadata["signal"]:
                 normalization = 1 / gensumweight
             else:
                 normalization = xsection * lumi / gensumweight
@@ -179,8 +198,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             cutflow = fill_utils.apply_normalization(cutflow, normalization)
 
             # update metadata
-            metadata['xsec'] = xsection
-            metadata['lumi'] = lumi
+            metadata["xsec"] = xsection
+            metadata["lumi"] = lumi
 
         # update metadata
         if cutflow is not {}:
@@ -199,22 +218,25 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         return {}
 
     def setupSlurmClient(
-            self,
-            n_workers: int = 1, min_workers: int = 1, max_workers: int = 1,
-            slurm_env: list = [], extra_args: list = []
-        ) -> Client:
+        self,
+        n_workers: int = 1,
+        min_workers: int = 1,
+        max_workers: int = 1,
+        slurm_env: list = [],
+        extra_args: list = [],
+    ) -> Client:
 
         # set default slurm environment variables
         if len(slurm_env) == 0:
             slurm_env = [
                 'export DASK_DISTRIBUTED__COMM__ALLOWED_TRANSPORTS=["tcp://[::]:0"]',
-                'export XRD_RUNFORKHANDLER=1',
-                'export XRD_STREAMTIMEOUT=10',
+                "export XRD_RUNFORKHANDLER=1",
+                "export XRD_STREAMTIMEOUT=10",
                 'echo "Landed on $HOSTNAME"',
                 f'source {os.getenv("HOME")}/.bashrc',
-                f'cd {os.chdir(os.path.dirname(os.path.abspath(__file__)))}',
+                f"cd {os.chdir(os.path.dirname(os.path.abspath(__file__)))}",
                 f"export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))}",
-                f'conda activate SUEP',
+                f"conda activate SUEP",
             ]
 
         # set default slurm extra arguments
@@ -223,17 +245,19 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             logDir = os.path.join(logDir, "dask_histmaker", self.options.output)
             if not os.path.exists(logDir):
                 os.makedirs(logDir)
-            extra_args=[
+            extra_args = [
                 f"--output={logDir}/job_output_%j.out",
                 f"--error={logDir}/job_output_%j.err",
                 "--partition=submit,submit-gpu",
             ]
 
-        client = super().setupSlurmClient(n_workers, min_workers, max_workers, slurm_env, extra_args)
+        client = super().setupSlurmClient(
+            n_workers, min_workers, max_workers, slurm_env, extra_args
+        )
 
         return client
 
-    def get_filelist(self, sample: str = '') -> List[str]:
+    def get_filelist(self, sample: str = "") -> List[str]:
 
         self.logger.debug(f"Getting list of files for sample {sample}.")
         if self.options.file:
@@ -246,7 +270,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             )
             if self.options.merged:
                 dataDir += "/merged/"
-            result = subprocess.check_output(["xrdfs", self.options.redirector, "ls", dataDir])
+            result = subprocess.check_output(
+                ["xrdfs", self.options.redirector, "ls", dataDir]
+            )
             result = result.decode("utf-8")
             files = result.split("\n")
             files = [f for f in files if len(f) > 0]
@@ -263,9 +289,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             files = files[: self.options.maxFiles]
         files = [f for f in files if ".hdf5" in f]
 
-        self.logger.debug("Found {} files for sample {}.".format(len(files), sample))
+        self.logger.debug(f"Found {len(files)} files for sample {sample}.")
         return files
-    
+
     def write_output(self, sample: str, histograms: dict, metadata: dict = {}) -> None:
         """
         Writes the histograms and metadata to a .root file or a .pkl file, as specified by the options.
@@ -291,13 +317,15 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 for h, hist in histograms.items():
                     if len(hist.axes) > 3:
                         self.logger.warning(
-                           f"Skipping {h} because it has more than 3 axes. This is not supported by .root files."
+                            f"Skipping {h} because it has more than 3 axes. This is not supported by .root files."
                         )
                         continue
                     froot[h] = hist
 
     @staticmethod
-    def process_file(ifile: str, sample: str, config: dict, options: SimpleNamespace) -> dict:
+    def process_file(
+        ifile: str, sample: str, config: dict, options: SimpleNamespace
+    ) -> dict:
         """
         Read in ntuple hdf5 files and process each systematic variation to produce histograms and cutflows.
         Returns: a dictionary of histograms, cutflows, and gensumweight.
@@ -310,7 +338,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "cutflow": {},
             "gensumweight": value_accumulator(float, 0),
         }
-        
+
         # get the file
         df, ntuple_metadata, ntuple_hists = fill_utils.open_ntuple(
             ifile, redirector=options.redirector, xrootd=options.xrootd
@@ -328,18 +356,22 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         if sample != "" and ntuple_metadata.get("sample", False):
             if sample != ntuple_metadata["sample"]:
                 raise Exception(
-                        "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
-                            ntuple_metadata["sample"], sample
-                        )
+                    "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
+                        ntuple_metadata["sample"], sample
                     )
+                )
 
         # update the gensumweight
         if options.isMC:
-            logging.debug(f"\tFound gensumweight {ntuple_metadata['gensumweight']} in ntuple.")
+            logging.debug(
+                f"\tFound gensumweight {ntuple_metadata['gensumweight']} in ntuple."
+            )
             output["gensumweight"] += ntuple_metadata["gensumweight"]
 
         # update the cutflows
-        if ntuple_metadata != 0 and any(["cutflow" in k for k in ntuple_metadata.keys()]):
+        if ntuple_metadata != 0 and any(
+            ["cutflow" in k for k in ntuple_metadata.keys()]
+        ):
             logging.debug("\tFound cutflows in ntuple.")
             for k, v in ntuple_metadata.items():
                 if "cutflow" in k:
@@ -363,7 +395,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         if df.shape[0] == 0:
             logging.debug("\tNo events in file, skipping.")
             return output
-        
+
         # we might modify this for systematics, so make a copy
         config = copy.deepcopy(config)
 
@@ -371,16 +403,36 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
             logging.debug(f"\tUsing configuration {config_tag}.")
 
-            hist_defs.initialize_histograms(output['hists'], config_tag, options, config_out)
+            hist_defs.initialize_histograms(
+                output["hists"], config_tag, options, config_out
+            )
 
             logging.debug(f"\tRunning nominal variation")
-            SUEPDaskHistMaker.plot_variation(df, '', options, config_out, config_tag, output["hists"], output["cutflow"], ntuple_metadata)
+            SUEPDaskHistMaker.plot_variation(
+                df,
+                "",
+                options,
+                config_out,
+                config_tag,
+                output["hists"],
+                output["cutflow"],
+                ntuple_metadata,
+            )
 
             if options.doSyst and options.isMC:
 
                 for syst in config_out.get("syst", []):
                     logging.debug(f"Running syst {syst}")
-                    SUEPDaskHistMaker.plot_variation(df, syst, options, config_out, config_tag, output["hists"], output["cutflow"], ntuple_metadata)
+                    SUEPDaskHistMaker.plot_variation(
+                        df,
+                        syst,
+                        options,
+                        config_out,
+                        config_tag,
+                        output["hists"],
+                        output["cutflow"],
+                        ntuple_metadata,
+                    )
 
         # remove file at the end of loop
         if options.xrootd:
@@ -390,9 +442,15 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
     @staticmethod
     def plot_variation(
-            df:pd.DataFrame, variation:str, options: SimpleNamespace, config_out:dict, config_tag:str,
-            histograms:dict, cutflow:dict = {}, metadata:dict = {}
-        ):
+        df: pd.DataFrame,
+        variation: str,
+        options: SimpleNamespace,
+        config_out: dict,
+        config_tag: str,
+        histograms: dict,
+        cutflow: dict = {},
+        metadata: dict = {},
+    ):
         # TODO move this to fill_utils? or its own class?
 
         df_plot = df.copy()
@@ -410,7 +468,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             channel=options.channel,
             era=options.era,
             isMC=options.isMC,
-            region=config_tag
+            region=config_tag,
         )
         df_plot = eventWeightProcessor.run(df_plot)
 
@@ -439,7 +497,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         # if no output histograms are defined for this method, skip it
         if config_tag and len([h for h in histograms.keys() if config_tag in h]) == 0:
-            logging.warning(f"\tNo histograms defined for configuration {config_tag}, skipping filling histograms.")
+            logging.warning(
+                f"\tNo histograms defined for configuration {config_tag}, skipping filling histograms."
+            )
             return histograms, cutflow, metadata
 
         # auto fill all histograms
@@ -454,34 +514,34 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         return histograms, cutflow, metadata
 
-    
+
 if __name__ == "__main__":
 
     # example usage
 
     options = {
-        'isMC': 1,
-        'channel': 'WH',
-        'era': '2018',
-        'tag': 'WH_7_20',
-        'output': 'testDaskHistMaker',
-        'doSyst': 0,
-        'verbose': 0,
-        'xrootd': 0,
-        'saveDir': '/ceph/submit/data/user/l/lavezzo/SUEP/outputs/',
-        'logDir': '/work/submit/lavezzo/SUEP/logs/',
-        'file': None,
-        'dataDirLocal': '/data/submit/cms/store/user/lavezzo/SUEP/{}/{}/',
-        'dataDirXRootD': '/cms/store/user/lavezzo/SUEP/{}/{}/',
-        'merged': 0,
-        'maxFiles': -1,
-        'pkl': 1,
-        'printEvents': False,
-        'scouting': 0,
-        'doInf': 0,
-        'doABCD': 0,
-        'blind': 1,
-        'redirector': 'root://submit50.mit.edu/',
+        "isMC": 1,
+        "channel": "WH",
+        "era": "2018",
+        "tag": "WH_7_20",
+        "output": "testDaskHistMaker",
+        "doSyst": 0,
+        "verbose": 0,
+        "xrootd": 0,
+        "saveDir": "/ceph/submit/data/user/l/lavezzo/SUEP/outputs/",
+        "logDir": "/work/submit/lavezzo/SUEP/logs/",
+        "file": None,
+        "dataDirLocal": "/data/submit/cms/store/user/lavezzo/SUEP/{}/{}/",
+        "dataDirXRootD": "/cms/store/user/lavezzo/SUEP/{}/{}/",
+        "merged": 0,
+        "maxFiles": -1,
+        "pkl": 1,
+        "printEvents": False,
+        "scouting": 0,
+        "doInf": 0,
+        "doABCD": 0,
+        "blind": 1,
+        "redirector": "root://submit50.mit.edu/",
     }
 
     config = {
@@ -507,27 +567,31 @@ if __name__ == "__main__":
                 "SUEP_S1_HighestPT < 0.3",
                 "SUEP_nconst_HighestPT < 40",
             ],
-            "syst":  [
-                "puweights_up",
-                "puweights_down"
-            ],
+            "syst": ["puweights_up", "puweights_down"],
         },
     }
     hists = {}
     for output_method in config.keys():
-        var_defs.initialize_new_variables(output_method, SimpleNamespace(**options), config[output_method])
-        hist_defs.initialize_histograms(hists, output_method, SimpleNamespace(**options), config[output_method])
+        var_defs.initialize_new_variables(
+            output_method, SimpleNamespace(**options), config[output_method]
+        )
+        hist_defs.initialize_histograms(
+            hists, output_method, SimpleNamespace(**options), config[output_method]
+        )
         if options.get("doSyst", False):
             for syst in config[output_method].get("syst", []):
                 if any([j in syst for j in ["JER", "JES"]]):
                     config = fill_utils.get_jet_correction_config(config, syst)
-    if options.get("doSyst", False): config = fill_utils.get_track_killing_config(config)
-    
-    
+    if options.get("doSyst", False):
+        config = fill_utils.get_track_killing_config(config)
+
     histmaker = SUEPDaskHistMaker(config=config, options=options, hists=hists)
     client = histmaker.setupLocalClient(10)
-    #client = histmaker.setupSlurmClient(n_workers=100, min_workers=2, max_workers=200)
-    histmaker.run(client, [
-        "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
-    ])
+    # client = histmaker.setupSlurmClient(n_workers=100, min_workers=2, max_workers=200)
+    histmaker.run(
+        client,
+        [
+            "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM"
+        ],
+    )
     client.close()
