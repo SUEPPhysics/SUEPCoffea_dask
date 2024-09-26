@@ -29,6 +29,7 @@ from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
 from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
+from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -278,37 +279,37 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_pt_HighestPT",
-            mostNumerousAK15.pt.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.pt, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_eta_HighestPT",
-            mostNumerousAK15.eta.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.eta, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_phi_HighestPT",
-            mostNumerousAK15.phi.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.phi, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_nconst_HighestPT",
-            ak.max(other_AK15_nconst, axis=-1).to_numpy(allow_missing=True),
+            ak.fill_none(ak.max(other_AK15_nconst, axis=-1), 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxPT_pt_HighestPT",
-            highestPT_otherAK15.pt.to_numpy(allow_missing=True),
+            ak.fill_none(highestPT_otherAK15.pt, 0),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxPT_eta_HighestPT",
-            highestPT_otherAK15.eta.to_numpy(allow_missing=True),
+            ak.fill_none(highestPT_otherAK15.eta, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxPT_phi_HighestPT",
-            highestPT_otherAK15.phi.to_numpy(allow_missing=True),
+            ak.fill_none(highestPT_otherAK15.phi, 0).to_list(),
         )
 
         # WH system
@@ -682,6 +683,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
             output["vars"]["WH_gammaTriggerBits"] = events.WH_gammaTriggerBits
             if not self.isMC: output["vars"]["WH_gammaTriggerUnprescaleWeight"] = events.WH_gammaTriggerUnprescaleWeight
+            if 'QCD_HT' in self.sample or 'QCD_Pt' in self.sample: output["vars"]["WH_no_doubleCountedPhotons"] = events.WH_no_doubleCountedPhotons
+            if self.isMC: output = WH_utils.storeGenPhotonStuff(events, output)
 
             output["vars"]["photon_pt"] = events.WH_gamma.pt
             output["vars"]["photon_eta"] = events.WH_gamma.eta
@@ -695,6 +698,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["photon_isScEtaEB"] = events.WH_gamma.isScEtaEB
             output["vars"]["photon_isScEtaEE"] = events.WH_gamma.isScEtaEE
             output["vars"]["photon_cutBased"] = events.WH_gamma.cutBased
+            output["vars"]["photon_sieie"] = events.WH_gamma.sieie
 
             # saving min, max delta R, phi, eta between any jet and the tight photon
             jet_photon_combinations_deltaR = np.abs(events.WH_jets_jec.deltaR(events.WH_gamma))
@@ -718,6 +722,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["maxDeltaEtaJetPhoton"] = ak.fill_none(
                 ak.max(jet_photon_combinations_deltaEta, axis=-1), -999
             )
+
+            # photon scale factors
+            photon_SFs = getPhotonSFs(events.WH_gamma, era=self.era, wp="wp90", doSyst=self.do_syst)
+            output["vars"]["photon_SF"] = photon_SFs["nominal"]
+            if self.do_syst:
+                output["vars"]["photon_SF_up"] = photon_SFs["up"]
+                output["vars"]["photon_SF_down"] = photon_SFs["down"]
+
 
         # saving min, max delta R, phi, eta between jets
         jet_combinations = ak.combinations(
@@ -821,6 +833,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["cutflow_onePhoton" + out_label] += ak.sum(events.genWeight)
             events = WH_utils.prescaledGammaTriggersSelection(events, self.era, bool(self.isMC))
             output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
+            events = WH_utils.doubleCountingGenPhotonsSelection(events, self.sample)
+            output["cutflow_doublePhotons" + out_label] += ak.sum(events.genWeight)
         elif self.CRQCD: 
             events = WH_utils.CRQCDSelection(events)
             output["cutflow_oneLooseLepton" + out_label] += ak.sum(events.genWeight)
@@ -904,6 +918,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_oneTightLepton": processor.value_accumulator(float, 0),
                 "cutflow_oneLooseLepton": processor.value_accumulator(float, 0),
                 "cutflow_onePhoton": processor.value_accumulator(float, 0),
+                "cutflow_doublePhotons": processor.value_accumulator(float, 0),
                 "cutflow_qualityFilters": processor.value_accumulator(float, 0),
                 "cutflow_jetHEMcut": processor.value_accumulator(float, 0),
                 "cutflow_electronHEMcut": processor.value_accumulator(float, 0),

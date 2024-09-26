@@ -199,13 +199,13 @@ class BaseDaskHistMaker():
         self.logger.info("")
         self.logger.info("Run Summary:")
 
-        self.logger.info("")
+        self.logger.debug("")
         for sample in samples:
-            self.logger.info(f"Sample: {sample}")
+            self.logger.debug(f"Sample: {sample}")
             for key, value in output[sample]['_processing_metadata'].items():
                 if key.startswith("n_"):
                     status = key.split("_")[1]
-                    self.logger.info(f"\t{status}: {value.value}")
+                    self.logger.debug(f"\t{status}: {value.value}")
                     if status not in _tot_futures_results.keys():
                         _tot_futures_results[status] = 0
                     _tot_futures_results[status] += value.value

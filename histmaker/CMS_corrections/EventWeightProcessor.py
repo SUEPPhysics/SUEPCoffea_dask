@@ -57,6 +57,7 @@ class EventWeightProcessor:
 
         self.supported_channels = [
             "WH",
+            "WH-VRGJ",
             "ggF",
             "ggF-scout"
         ]
@@ -172,7 +173,7 @@ class EventWeightProcessor:
                     np.array(df["ht"]).astype(int), self.variation, self.era
                 )
                 df["event_weight"] *= trigSF
-            elif self.channel == "WH":
+            elif self.channel in ["WH", "WH-VRGJ"]:
                 # TODO add WH triggerSF
                 pass
 
@@ -195,7 +196,7 @@ class EventWeightProcessor:
                 df["event_weight"] *= higgs_weight
 
              # 8) b-tag weights. These have different values for each event selection
-            if self.channel == 'WH' and self.isMC:
+            if self.channel in ['WH', 'WH_VRGJ'] and self.isMC:
                 if self.region == '':
                     raise Exception("You need to define a region to use btag weights. (Why? Because we have different b-tagging efficiencies for different regions.)")
 
@@ -211,12 +212,13 @@ class EventWeightProcessor:
                 else:
                     df['event_weight'] *= df[btag_weights]
 
-            #if "GJets_HT" in self.sample:
-                # df['event_weight'] *= apply_correctionlib("CMS_corrections/photon_pt_corr.json", "ptweight", df['photon_pt'])
-            #    df['event_weight'] *= apply_correctionlib("CMS_corrections/suep_pt_corr.json", "suepptweight", df['SUEP_pt_HighestPT'])
-
         # data
         else:
+
             df["event_weight"] = np.ones(df.shape[0])
+
+            # un-prescaling for the gamma triggers
+            if self.channel == 'WH-VRGJ':
+               df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
 
         return df

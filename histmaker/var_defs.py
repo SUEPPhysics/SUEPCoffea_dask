@@ -17,82 +17,12 @@ def initialize_new_variables(label: str, options, config: dict):
 
     new_vars = []
 
-    if options.channel == 'WH':
-
+    if options.channel in ['WH', 'WH-VRGJ']:
         new_vars += [
             [
                 "bjetSel",
                 lambda x, y: ((x == 0) & (y < 2)),
                 ["nBTight", "nBLoose"],
-            ],
-            [
-                "W_SUEP_BV",
-                balancing_var,
-                ["W_pt", "SUEP_pt_HighestPT"],
-            ],
-            [
-                "W_SUEP_vBV",
-                vector_balancing_var,
-                [
-                    "W_phi",
-                    "SUEP_phi_HighestPT",
-                    "W_pt",
-                    "SUEP_pt_HighestPT",
-                ],
-            ],
-           
-            [
-                "deltaPhi_SUEP_W",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "W_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_MET",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "WH_MET_phi",
-                ],
-            ],
-            [
-                "deltaPhi_lepton_MET",
-                deltaPhi_x_y,
-                ["lepton_phi", "WH_MET_phi"],
-            ],
-            [
-                "deltaPhi_lepton_SUEP",
-                deltaPhi_x_y,
-                [
-                    "lepton_phi",
-                    "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_minDeltaPhiMETJet_SUEP",
-                deltaPhi_x_y,
-                [
-                    "minDeltaPhiMETJet_phi",
-                    "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "deltaPhi_minDeltaPhiMETJet_MET",
-                deltaPhi_x_y,
-                [
-                    "minDeltaPhiMETJet_phi",
-                    "WH_MET_phi",
-                ],
-            ],
-            [
-                "deltaPhi_minDeltaPhiMETJet_METUnc",
-                deltaPhi_x_y,
-                [
-                    "minDeltaPhiMETJet_phi",
-                    "WH_MET_phi",
-                ],
             ],
             [
                 "deltaPhi_SUEP_jet1",
@@ -127,70 +57,156 @@ def initialize_new_variables(label: str, options, config: dict):
                 lambda x, y: x / y,
                 ["n_darkphis_inTracker", "n_darkphis"],
             ],
-            # [
+            [
+                "deltaPhi_ak4jet1_inSUEPcluster_SUEP",
+                deltaPhi_x_y,
+                [
+                    "ak4jet1_inSUEPcluster_phi_HighestPT",
+                    "SUEP_phi_HighestPT",
+                ],
+            ]
+             # [
             #     "SUEPMostNumerous",
             #     lambda x, y: x > y,
             #     ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
             # ],
-            ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
-            ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
-            ["new_W_pt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
-            ["new_W_pt_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
-            ["new_W_mt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_mt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
-            ["new_W_mt_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_mt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
-            ["new_W_phi_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_phi(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
-            ["new_W_phi_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_phi(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
-            [
-                "deltaPhi_SUEP_PuppiMET",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "PuppiMET_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_PFMET",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "MET_phi",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_W_PuppiMET",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "new_W_phi_PuppiMET",
-                ],
-            ],
-            [
-                "deltaPhi_SUEP_W_PFMET",
-                deltaPhi_x_y,
-                [
-                    "SUEP_phi_HighestPT",
-                    "new_W_phi_PFMET",
-                ],
-            ],
-            [
-                "W_PFMET_SUEP_BV",
-                balancing_var,
-                ["new_W_pt_PFMET", "SUEP_pt_HighestPT"],
-            ],
         ]
-        if options.isMC:
-            new_vars += [
-                ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
-                ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
-            ]
 
-        if "VRGJ" in label:
+        if options.channel == 'WH':
+
+            new_vars += [
+                [
+                    "W_SUEP_BV",
+                    balancing_var,
+                    ["W_pt", "SUEP_pt_HighestPT"],
+                ],
+                [
+                    "W_SUEP_vBV",
+                    vector_balancing_var,
+                    [
+                        "W_phi",
+                        "SUEP_phi_HighestPT",
+                        "W_pt",
+                        "SUEP_pt_HighestPT",
+                    ],
+                ],
+                [
+                    "deltaPhi_SUEP_W",
+                    deltaPhi_x_y,
+                    [
+                        "SUEP_phi_HighestPT",
+                        "W_phi",
+                    ],
+                ],
+                [
+                    "deltaPhi_SUEP_MET",
+                    deltaPhi_x_y,
+                    [
+                        "SUEP_phi_HighestPT",
+                        "WH_MET_phi",
+                    ],
+                ],
+                [
+                    "deltaPhi_lepton_MET",
+                    deltaPhi_x_y,
+                    ["lepton_phi", "WH_MET_phi"],
+                ],
+                [
+                    "deltaPhi_lepton_SUEP",
+                    deltaPhi_x_y,
+                    [
+                        "lepton_phi",
+                        "SUEP_phi_HighestPT",
+                    ],
+                ],
+                [
+                    "deltaPhi_minDeltaPhiMETJet_SUEP",
+                    deltaPhi_x_y,
+                    [
+                        "minDeltaPhiMETJet_phi",
+                        "SUEP_phi_HighestPT",
+                    ],
+                ],
+                [
+                    "deltaPhi_minDeltaPhiMETJet_MET",
+                    deltaPhi_x_y,
+                    [
+                        "minDeltaPhiMETJet_phi",
+                        "WH_MET_phi",
+                    ],
+                ],
+                [
+                    "deltaPhi_minDeltaPhiMETJet_METUnc",
+                    deltaPhi_x_y,
+                    [
+                        "minDeltaPhiMETJet_phi",
+                        "WH_MET_phi",
+                    ],
+                ],
+                ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
+                ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
+                # ["new_W_pt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
+                # ["new_W_pt_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
+                # ["new_W_mt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_mt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
+                # ["new_W_mt_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_mt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
+                # ["new_W_phi_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_phi(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
+                # ["new_W_phi_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_phi(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
+                # [
+                #     "deltaPhi_SUEP_PuppiMET",
+                #     deltaPhi_x_y,
+                #     [
+                #         "SUEP_phi_HighestPT",
+                #         "PuppiMET_phi",
+                #     ],
+                # ],
+                # [
+                #     "deltaPhi_SUEP_PFMET",
+                #     deltaPhi_x_y,
+                #     [
+                #         "SUEP_phi_HighestPT",
+                #         "MET_phi",
+                #     ],
+                # ],
+                # [
+                #     "deltaPhi_SUEP_W_PuppiMET",
+                #     deltaPhi_x_y,
+                #     [
+                #         "SUEP_phi_HighestPT",
+                #         "new_W_phi_PuppiMET",
+                #     ],
+                # ],
+                # [
+                #     "deltaPhi_SUEP_W_PFMET",
+                #     deltaPhi_x_y,
+                #     [
+                #         "SUEP_phi_HighestPT",
+                #         "new_W_phi_PFMET",
+                #     ],
+                # ],
+                # [
+                #     "W_PFMET_SUEP_BV",
+                #     balancing_var,
+                #     ["new_W_pt_PFMET", "SUEP_pt_HighestPT"],
+                # ]
+            ]
+            if options.isMC:
+                new_vars += [
+                    ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
+                    ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
+                    # [
+                    #     "genCheck",
+                    #     lambda x: x < 100,
+                    #     ["LHE_Vpt"]
+                    # ]
+                ]
+
+        if options.channel == "WH-VRGJ":
 
             new_vars += [
                 [
                     "gammaTriggerSel",
-                    lambda x: x % 64 != 0,
-                    ["WH_gammaTriggerBits"],
+                    gammaTriggerSel,
+                    ["photon_pt", "WH_gammaTriggerBits"]
                 ],
                 [
                     "photon_SUEP_BV",
@@ -337,3 +353,8 @@ def calc_mt(xphi, yphi, xpt, ypt):
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
     return np.sqrt(2 * xpt * ypt * (1 - np.cos(x_v.deltaphi(y_v))))
+
+def gammaTriggerSel(photon_pt, bits):
+
+    photon200 = (bits % 2) == 1
+    return (photon_pt > 235) & photon200

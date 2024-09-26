@@ -30,8 +30,10 @@ def initialize_histograms(output: dict, label: str, options, config: dict) -> di
         init_hists_GNNInverted(output, label, config, regions_list)
 
     ###########################################################################################################################
-    if options.channel == "WH":
+    if "WH" in options.channel:
         init_hists_highestPT(output, label)
+    if 'VRGJ' in options.channel:
+        init_hists_VRGJ(output, label)
 
     return output
 
@@ -127,10 +129,8 @@ def init_hists_cluster(output, label, regions_list=[""]):
                         name=f"ht_JEC_JES_down_{label}",
                         label="HT JEC JES down",
                     ).Weight(),
-                    f"ntracks_{label}": Hist.new.Reg(
-                        500,
-                        0,
-                        500,
+                    f"ntracks_{label}": Hist.new.Variable(
+                        np.linspace(-0.5, 499.5, 501),
                         name=f"ntracks_{label}",
                         label=r"$n^{\mathrm{event}}_{\mathrm{tracks}}$",
                     ).Weight(),
@@ -464,6 +464,13 @@ def init_hists_GNNInverted(output, label, config, regions_list=[""]):
 def init_hists_highestPT(output, label, regions_list=[""]):
     output.update(
         {
+            f"event_weight_{label}": Hist.new.Reg(
+                1000,
+                -500,
+                500,
+                name=f"event_weight_{label}",
+                label="Event Weight",
+            ).Weight(),
             f"SUEP_nconst_{label}": Hist.new.Variable(
                 np.linspace(-0.5, 199.5, 201),
                 name=f"SUEP_nconst_{label}",
@@ -490,24 +497,18 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 name=f"otherAK15_maxPT_pt_{label}",
                 label=r"$p^{\mathrm{sub-leading~AK15}}_T$ [GeV]",
             ).Weight(),
-            f"ntracks_{label}": Hist.new.Reg(
-                100,
-                0,
-                100,
+            f"ntracks_{label}": Hist.new.Variable(
+                np.linspace(-0.5, 99.5, 101),
                 name=f"ntracks_{label}",
                 label=r"$n^{\mathrm{event}}_{\mathrm{tracks}}$",
             ).Weight(),
-            f"npfcands_{label}": Hist.new.Reg(
-                500,
-                0,
-                500,
+            f"npfcands_{label}": Hist.new.Variable(
+                np.linspace(-0.5, 99.5, 101),
                 name=f"npfcands_{label}",
                 label=r"$n^{\mathrm{event}}_{\mathrm{pfcands}}$",
             ).Weight(),
-            f"nlosttracks_{label}": Hist.new.Reg(
-                500,
-                0,
-                500,
+            f"nlosttracks_{label}": Hist.new.Variable(
+                np.linspace(-0.5, 99.5, 101),
                 name=f"nlosttracks_{label}",
                 label=r"$n^{\mathrm{event}}_{\mathrm{lost tracks}}$",
             ).Weight(),
@@ -839,7 +840,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 20,
                 name=f"nBLoose_{label}",
-                label="$n_{\mathrm{Loose~B-jets}$",
+                label="$n_{\mathrm{Loose~B-jets}}$",
             ).Weight(),
             # f"nBMedium_{label}": Hist.new.Reg(
             #     20,
@@ -853,7 +854,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 0,
                 20,
                 name=f"nBTight_{label}",
-                label="$n_{\mathrm{Tight~B-jets}$",
+                label="$n_{\mathrm{Tight~B-jets}}$",
             ).Weight(),
             # f"nBLoose_noLepIso_{label}": Hist.new.Reg(
             #     20,
@@ -1022,6 +1023,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"ak4jets_inSUEPcluster_pt_{label}",
             #     label="ak4jets in SUEP cluster $p_T$",
             # ).Weight(),
+            f"deltaPhi_ak4jet1_inSUEPcluster_SUEP_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"deltaPhi_ak4jet1_inSUEPcluster_SUEP_{label}",
+                label=r"$\Delta\phi(\mathrm{ak4jet1, SUEP})$",
+            ).Weight(),
             f"ak4jet1_inSUEPcluster_pt_{label}": Hist.new.Reg(
                 1000,
                 0,
@@ -1602,13 +1610,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"deltaPhi_lepton_PuppiMET_{label}",
             #     label=r"$\Delta\phi$($\ell$, PuppiMET)",
             # ).Weight(),
-            # f"deltaPhi_lepton_MET_{label}": Hist.new.Reg(
-            #     60,
-            #     0,
-            #     3.2,
-            #     name=f"deltaPhi_lepton_MET_{label}",
-            #     label=r"$\Delta\phi$($\ell$, MET)",
-            # ).Weight(),
+            f"deltaPhi_lepton_MET_{label}": Hist.new.Reg(
+                60,
+                0,
+                3.2,
+                name=f"deltaPhi_lepton_MET_{label}",
+                label=r"$\Delta\phi$($\ell$, MET)",
+            ).Weight(),
             # f"deltaPhi_SUEP_CaloMET_{label}": Hist.new.Reg(
             #     60,
             #     0,
@@ -2101,36 +2109,6 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             # )
             # .Weight(),
-            f"2D_lepton_pt_vs_ngood_fastjets_{label}": Hist.new.Reg(
-                1000,
-                0,
-                1000,
-                name=f"lepton_pt_{label}",
-                label="Lepton $p_T$",
-            )
-            .Reg(
-                10,
-                0,
-                10,
-                name=f"ngood_fastjets_{label}",
-                label="$n_{AK15}$",
-            )
-            .Weight(),
-            f"2D_ntracks_vs_ngood_fastjets_{label}": Hist.new.Reg(
-                100,
-                0,
-                100,
-                name=f"ntracks_{label}",
-                label="$n_{\mathrm{tracks}}$",
-            )
-            .Reg(
-                10,
-                0,
-                10,
-                name=f"ngood_fastjets_{label}",
-                label="$n_{AK15}$",
-            )
-            .Weight(),
             # f"2D_SUEP_genEta_vs_deltaR_genSUEP_SUEP_{label}": Hist.new.Reg(
             #     100,
             #     -5,
@@ -2302,3 +2280,64 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #            ).Weight(),
         }
     )
+
+def init_hists_VRGJ(output, label):
+
+    output.update({
+        f"WH_gammaTriggerBits_{label}": Hist.new.Reg(
+            10,
+            0,
+            10,
+            name=f"WH_gammaTriggerBits_{label}",
+            label=r"WH_gammaTriggerBits",
+        ).Weight(),
+        f"2D_photon_pt_vs_WH_gammaTriggerBits_{label}": Hist.new.Reg(
+            1000,
+            0,
+            1000,
+            name=f"photon_pt_{label}",
+            label="Photon $p_T$ [GeV]",
+        )
+        .Reg(
+            10,
+            0,
+            10,
+            name=f"WH_gammaTriggerBits_{label}",
+            label=r"WH_gammaTriggerBits",
+        )
+        .Weight(),
+        f"WH_no_doubleCountedPhotons_{label}": Hist.new.Int(
+            0,
+            2,
+            name=f"WH_no_doubleCountedPhotons_{label}",
+            label="no double counted photons",
+        ).Weight(),
+        f"minDeltaRGenRecoPhotons_{label}": Hist.new.Reg(
+            100,
+            0,
+            6,
+            name=f"minDeltaRGenRecoPhotons_{label}",
+            label="min $\Delta R(\mathrm{Gen \gamma, Reco \gamma})$",
+        ).Weight(),
+        
+        f"3D_photon_pt_vs_WH_gammaTriggerBits_vs_WH_gammaTriggerUnprescaleWeight_{label}": Hist.new.Reg(
+            1000,
+            0,
+            1000,
+            name=f"photon_pt_{label}",
+            label="Photon $p_T$ [GeV]",
+        )
+        .Reg(
+            10,
+            0,
+            10,
+            name=f"WH_gammaTriggerBits_{label}",
+            label=r"WH_gammaTriggerBits",
+        )
+        .Variable(
+            [0,2,60,64,245,251,500],
+            name=f"WH_gammaTriggerUnprescaleWeight_{label}",
+            label=r"WH_gammaTriggerUnprescaleWeight",
+        )
+        .Weight(),
+    })
