@@ -210,6 +210,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             events.WH_SUEP_cand
         )  # delta R between jets (selecting events that pass the HighestPT selections) and the SUEP cluster
         ak4jets_inSUEPcluster = events.WH_jets_jec[dR_ak4_SUEP < 1.5]
+        ak4jets_outsideSUEPcluster = events.WH_jets_jec[dR_ak4_SUEP > 1.5]
         output["vars"].loc(
             indices,
             "ak4jets_inSUEPcluster_n_HighestPT" + out_label,
@@ -257,16 +258,54 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     -999,
                 )[:, i],
             )
+        output["vars"].loc(
+            indices,
+            "ak4jets_outsideSUEPcluster_n_HighestPT" + out_label,
+            ak.num(ak4jets_outsideSUEPcluster, axis=1),
+        )
+        output["vars"].loc(
+            indices,
+            "ak4jets_outsideSUEPcluster_pt_HighestPT" + out_label,
+            ak.sum(ak4jets_outsideSUEPcluster.pt, axis=1),
+        )
+        ak4jets_outsideSUEPcluster_ptargsort = ak.argsort(
+            ak4jets_outsideSUEPcluster.pt, axis=1, ascending=False, stable=True
+        )  # sort by pt to save some of these jets
+        ak4jets_outsideSUEPcluster_ptsort = ak4jets_outsideSUEPcluster[
+            ak4jets_outsideSUEPcluster_ptargsort
+        ]
+        for i in range(2):
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_mass_HighestPT" + out_label,
+                "ak4jet" + str(i + 1) + "_outsideSUEPcluster_pt_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
-                        ak4jets_inSUEPcluster_ptsort.mass, i + 1, axis=1, clip=True
+                        ak4jets_outsideSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True
                     ),
                     -999,
                 )[:, i],
             )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_outsideSUEPcluster_phi_HighestPT" + out_label,
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_outsideSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_outsideSUEPcluster_eta_HighestPT" + out_label,
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_outsideSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+
 
         # highest nconst non SUEP candidate (validate that highest pT ~= highest nconst)
         other_AK15_nconst = ak.num(events.WH_other_AK15_constituents, axis=-1)

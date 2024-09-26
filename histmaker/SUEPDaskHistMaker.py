@@ -367,6 +367,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         # we might modify this for systematics, so make a copy
         config = copy.deepcopy(config)
 
+        # DEBUG
+        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample:
+            print("HARD CODED CUT ON LHE VPT < 100 GEV")
+            df = df[df["LHE_Vpt"] < 100]
+
         for config_tag, config_out in config.items():
 
             logging.debug(f"\tUsing configuration {config_tag}.")

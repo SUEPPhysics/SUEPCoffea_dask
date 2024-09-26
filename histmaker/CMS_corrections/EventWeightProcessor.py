@@ -195,8 +195,8 @@ class EventWeightProcessor:
                 )
                 df["event_weight"] *= higgs_weight
 
-             # 8) b-tag weights. These have different values for each event selection
-            if self.channel in ['WH', 'WH_VRGJ'] and self.isMC:
+            # 8) b-tag weights. These have different values for each event selection
+            if self.channel in ['WH', 'WH-VRGJ'] and self.isMC:
                 if self.region == '':
                     raise Exception("You need to define a region to use btag weights. (Why? Because we have different b-tagging efficiencies for different regions.)")
 

@@ -205,7 +205,7 @@ class BaseDaskHistMaker():
             for key, value in output[sample]['_processing_metadata'].items():
                 if key.startswith("n_"):
                     status = key.split("_")[1]
-                    self.logger.debug(f"\t{status}: {value.value}")
+                    self.logger.debug(f" {status}: {value.value}")
                     if status not in _tot_futures_results.keys():
                         _tot_futures_results[status] = 0
                     _tot_futures_results[status] += value.value
@@ -216,8 +216,8 @@ class BaseDaskHistMaker():
 
         self.logger.info("")
         self.logger.info(f"Total samples post-processed: {len(samples)}")
-        self.logger.info("\tSamples Success: " + str(len([s for s in samples if output[s]['_processing_metadata']['postprocess_status'] == 'success'])))
-        self.logger.info("\tSamples Failed: " + str(len([s for s in samples if output[s]['_processing_metadata']['postprocess_status'] == 'failed'])))
+        self.logger.info("Samples succeded: " + str(len([s for s in samples if output[s]['_processing_metadata']['postprocess_status'] == 'success'])))
+        self.logger.info("Samples failed: " + str(len([s for s in samples if output[s]['_processing_metadata']['postprocess_status'] == 'failed'])))
         
         self.logger.info("")
         self.logger.info(f"Time to preprocess: {output['_processing_metadata']['t_preprocess'] - output['_processing_metadata']['t_start']:.2f} s")

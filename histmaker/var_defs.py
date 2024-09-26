@@ -64,7 +64,15 @@ def initialize_new_variables(label: str, options, config: dict):
                     "ak4jet1_inSUEPcluster_phi_HighestPT",
                     "SUEP_phi_HighestPT",
                 ],
-            ]
+            ],
+            [
+                "deltaPhi_minDeltaPhiMETJet_MET",
+                deltaPhi_x_y,
+                [
+                    "minDeltaPhiMETJet_phi",
+                    "WH_MET_phi",
+                ],
+            ],
              # [
             #     "SUEPMostNumerous",
             #     lambda x, y: x > y,
@@ -79,6 +87,11 @@ def initialize_new_variables(label: str, options, config: dict):
                     "W_SUEP_BV",
                     balancing_var,
                     ["W_pt", "SUEP_pt_HighestPT"],
+                ],
+                [
+                    "SUEP_W_BV",
+                    balancing_var,
+                    ["SUEP_pt_HighestPT", "W_pt"],
                 ],
                 [
                     "W_SUEP_vBV",
@@ -128,20 +141,12 @@ def initialize_new_variables(label: str, options, config: dict):
                     ],
                 ],
                 [
-                    "deltaPhi_minDeltaPhiMETJet_MET",
+                    'deltaPhi_ak4jet1_outsideSUEPcluster_SUEP',
                     deltaPhi_x_y,
                     [
-                        "minDeltaPhiMETJet_phi",
-                        "WH_MET_phi",
-                    ],
-                ],
-                [
-                    "deltaPhi_minDeltaPhiMETJet_METUnc",
-                    deltaPhi_x_y,
-                    [
-                        "minDeltaPhiMETJet_phi",
-                        "WH_MET_phi",
-                    ],
+                        'ak4jet1_outsideSUEPcluster_phi_HighestPT',
+                        'SUEP_phi_HighestPT'
+                    ]
                 ],
                 ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
                 ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
@@ -193,11 +198,6 @@ def initialize_new_variables(label: str, options, config: dict):
                 new_vars += [
                     ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
                     ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
-                    # [
-                    #     "genCheck",
-                    #     lambda x: x < 100,
-                    #     ["LHE_Vpt"]
-                    # ]
                 ]
 
         if options.channel == "WH-VRGJ":
@@ -221,6 +221,45 @@ def initialize_new_variables(label: str, options, config: dict):
                         "photon_phi",
                     ],
                 ],
+                [
+                    "SUEP_photon_BV",
+                    balancing_var,
+                    ["SUEP_pt_HighestPT", "photon_pt"],
+                ],
+                [
+                    "deltaPhi_photon_looseNotTightLepton",
+                    deltaPhi_x_y,
+                    [
+                        "photon_phi",
+                        "looseNotTightLepton1_phi",
+                    ],
+                ],
+                [
+                    "deltaPhi_photon_looseNotTightHardLepton",
+                    deltaPhi_x_y_pTReq(50),
+                    [
+                        "photon_phi",
+                        "looseNotTightLepton1_phi",
+                        "looseNotTightLepton1_pt",
+                    ],
+                ],
+                [
+                    "deltaPhi_photon_hardMET",
+                    deltaPhi_x_y_pTReq(50),
+                    [
+                        "photon_phi",
+                        "WH_MET_phi",
+                        "WH_MET_pt",
+                    ],
+                ],
+                [
+                    "deltaPhi_photon_MET",
+                    deltaPhi_x_y,
+                    [
+                        "photon_phi",
+                        "WH_MET_phi",
+                    ],
+                ]
             ]
 
     config['new_variables'] = new_vars
@@ -243,6 +282,32 @@ def deltaPhi_x_y(xphi, yphi):
     abs_dphi[yphi < -2 * np.pi] = -999
 
     return abs_dphi
+
+def deltaPhi_x_y_pTReq(ypt_threshold):
+
+    def deltaPhi_x_y_pTReq_inner(xphi, yphi, ypt):
+
+        # cast inputs to numpy arrays
+        yphi = np.array(yphi)
+
+        x_v = vector.arr({"pt": np.ones(len(xphi)), "phi": xphi})
+        y_v = vector.arr({"pt": np.ones(len(yphi)), "phi": yphi})
+
+        signed_dphi = x_v.deltaphi(y_v)
+        abs_dphi = np.abs(signed_dphi.tolist())
+
+        # deal with the cases where phi was initialized to a moot value like -999
+        abs_dphi[xphi > 2 * np.pi] = -999
+        abs_dphi[yphi > 2 * np.pi] = -999
+        abs_dphi[xphi < -2 * np.pi] = -999
+        abs_dphi[yphi < -2 * np.pi] = -999
+
+        # set values to -999 if ypt < 50
+        abs_dphi[ypt < ypt_threshold] = -999
+
+        return abs_dphi
+    
+    return deltaPhi_x_y_pTReq_inner
 
 
 def deltaR(xEta, yEta, xPhi, yPhi):

@@ -365,7 +365,7 @@ def getPhotons(events, isMC: bool = 1):
         )
 
     cutPhotons = (
-        (events.Photon.mvaID_WP90)
+        (events.Photon.mvaID_WP90) # don't change this without changing the photon SFs
         & (abs(events.Photon.eta) <= 2.5)
         & (events.Photon.electronVeto)
         & (events.Photon.pt >= 30)
