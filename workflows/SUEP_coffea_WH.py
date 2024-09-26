@@ -776,6 +776,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             events = applyGoldenJSON(self, events)
         output["cutflow_goldenJSON" + out_label] += ak.sum(events.genWeight)
 
+        # output file if no events pass selections, avoids errors later on
+        if len(events) == 0:
+            print("\n\nNo events pass goldenJSON.\n\n")
+            return events, output
+
         # temporarily disabled for studies of w+jets data/MC
         events = WH_utils.genSelection(events, self.sample)
         output["cutflow_genCuts" + out_label] += ak.sum(events.genWeight)

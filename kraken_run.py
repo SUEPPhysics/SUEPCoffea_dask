@@ -33,10 +33,9 @@ sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 pip install h5py
 
 echo "----- xrdcp the input file over"
-# echo "xrdcp $2 $3.root"
-# xrdcp $2 $3.root
+echo "xrdcp $2 $3.root"
 #######################################################################################
-max_retries=3
+max_retries=2
 retry_count=0
 success=false
 
@@ -50,8 +49,8 @@ while [ $retry_count -lt $max_retries ]; do
         echo "Failed to copy the file. Attempt $((retry_count+1)) of $max_retries."
         retry_count=$((retry_count+1))
         if [ $retry_count -lt $max_retries ]; then
-            echo "Waiting 15 minutes before retrying..."
-            sleep 900  # 900 seconds = 15 minutes
+            echo "Waiting 5 minutes before retrying..."
+            sleep 300
         fi
     fi
 done
@@ -75,40 +74,15 @@ echo "----- Running the command"
 echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root"
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root
 
-echo "----- Transferring output:"
-#echo "xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}"
-#xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
-#######################################################################################
-max_retries=3
-retry_count=0
-success=false
-
-while [ $retry_count -lt $max_retries ]; do
-    xrdcp -d 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
-    if [ $? -eq 0 ]; then
-        echo "Output transferred successfully!"
-        success=true
-        break
-    else
-        echo "Failed to transfer the output. Attempt $((retry_count+1)) of $max_retries."
-        retry_count=$((retry_count+1))
-        if [ $retry_count -lt $max_retries ]; then
-            echo "Waiting 15 minutes before retrying..."
-            sleep 900  # 900 seconds = 15 minutes
-        fi
-    fi
-done
-
-if [ "$success" = false ]; then
-    echo "Failed to transfer the output after $max_retries attempts."
-fi
-#######################################################################################
+echo "----- Transferring output"
+echo "xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}"
+xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
 
 {extras}
 
+echo "----- Cleaning up"
 echo "rm *.{file_ext}"
 rm *.{file_ext}
-
 echo "rm $3.root"
 rm $3.root
 
@@ -118,7 +92,7 @@ echo " ------ THE END (everyone dies !) ----- "
 
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 2GB
+request_disk          = 4GB
 request_memory        = 4GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
@@ -252,7 +226,7 @@ def main():
         file_ext = "hdf5"
         
     # Making sure that the proxy is good
-    proxy, lifetime = check_proxy(time_min=100)
+    proxy, lifetime = check_proxy(time_min=12)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
     missing_samples = []

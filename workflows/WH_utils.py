@@ -402,6 +402,7 @@ def genSelection(events, sample: str):
     return events
 
 
+#TODO: this function needs to be cleaned up
 def triggerSelection(
     events, sample: str, era: str, isMC: bool, output=None, out_label=None
 ):
@@ -418,6 +419,8 @@ def triggerSelection(
         triggerPhoton = events.HLT.Photon175
     elif era == "2017" or era == "2018":
         triggerPhoton = events.HLT.Photon200
+    else:
+        raise ValueError
 
     if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
@@ -440,6 +443,9 @@ def triggerSelection(
         filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
         events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
 
+        if len(events) == 0:
+            return events
+        
         # redefine to match new length of "events"
         run_mask = (events.run > run_start) & (events.run < run_end)
         if 'Ele115_CaloIdVT_GsfTrkIdT' in ak.fields(events.HLT):
@@ -472,18 +478,20 @@ def triggerSelection(
         triggerElectron = (
             events.HLT.Ele27_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
         )
-    else:
+    elif "SingleMuon" not in sample: # doesn't exist for 2017 and do not need to define for SingleMuon dataset ever
         triggerElectron = (
             events.HLT.Ele32_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
         )
+
     # this is just for cutflow
     if output:
         output["cutflow_triggerSingleMuon" + out_label] += ak.sum(
             events[triggerSingleMuon].genWeight
         )
-        output["cutflow_triggerEGamma" + out_label] += ak.sum(
-            events[triggerPhoton | triggerElectron].genWeight
-        )
+        if "SingleMuon" not in sample:
+            output["cutflow_triggerEGamma" + out_label] += ak.sum(
+                events[triggerPhoton | triggerElectron].genWeight
+            )
 
     # Apply selection on events
     if isMC:
