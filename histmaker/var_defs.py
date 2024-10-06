@@ -39,26 +39,6 @@ def initialize_new_variables(label: str, options, config: dict):
                 ["ngood_ak4jets", "ak4jets_inSUEPcluster_n_HighestPT"],
             ],
             [
-                "deltaPhi_genSUEP_SUEP",
-                deltaPhi_x_y,
-                ["SUEP_genPhi", "SUEP_phi_HighestPT"],
-            ],
-            [
-                "deltaR_genSUEP_SUEP",
-                deltaR,
-                [
-                    "SUEP_genEta",
-                    "SUEP_eta_HighestPT",
-                    "SUEP_genPhi",
-                    "SUEP_phi_HighestPT",
-                ],
-            ],
-            [
-                "percent_darkphis_inTracker",
-                lambda x, y: x / y,
-                ["n_darkphis_inTracker", "n_darkphis"],
-            ],
-            [
                 "deltaPhi_ak4jet1_inSUEPcluster_SUEP",
                 deltaPhi_x_y,
                 [
@@ -80,6 +60,31 @@ def initialize_new_variables(label: str, options, config: dict):
             #     ["SUEP_nconst_HighestPT", "otherAK15_maxConst_nconst_HighestPT"],
             # ],
         ]
+
+        if options.isMC:
+
+            new_vars += [
+                [
+                    "deltaR_genSUEP_SUEP",
+                    deltaR,
+                    [
+                        "SUEP_genEta",
+                        "SUEP_eta_HighestPT",
+                        "SUEP_genPhi",
+                        "SUEP_phi_HighestPT",
+                    ],
+                ],
+                [
+                    'SUEP_genSUEP_BV',
+                    balancing_var,
+                    ['SUEP_pt_HighestPT', 'SUEP_genPt']
+                ],
+                [
+                    "percent_darkphis_inTracker",
+                    lambda x, y: x / y,
+                    ["n_darkphis_inTracker", "n_darkphis"],
+                ],
+            ]
 
         if options.channel == "WH":
 
@@ -260,6 +265,49 @@ def initialize_new_variables(label: str, options, config: dict):
                         "photon_phi",
                         "WH_MET_phi",
                     ],
+                ]
+            ]
+
+        # deal with MET variations
+        _met_variations = ['JER_up', 'JER_down', 'JES_up', 'JES_down', 'UnclusteredEn_up', 'UnclusteredEn_down'] 
+        for _var in _met_variations:
+            if _var not in label: continue
+            new_vars += [
+                [
+                    f"W_pt_{_var}",
+                    calc_vector_sum_pt,
+                    ["lepton_phi", f"PuppiMET_phi_{_var}", "lepton_pt", f"PuppiMET_pt_{_var}"],
+                ],
+                [
+                    f"W_phi_{_var}",
+                    calc_vector_sum_phi,
+                    ["lepton_phi", f"PuppiMET_phi_{_var}", "lepton_pt", f"PuppiMET_pt_{_var}"],
+                ],
+                [
+                    f"W_mt_{_var}",
+                    calc_mt,
+                    ["lepton_phi", f"PuppiMET_phi_{_var}", "lepton_pt", f"PuppiMET_pt_{_var}"],
+                ],
+                [
+                    f"deltaPhi_SUEP_MET_{_var}",
+                    deltaPhi_x_y,
+                    [
+                        "SUEP_phi_HighestPT",
+                        f"PuppiMET_phi_{_var}",
+                    ],
+                ],
+                [
+                    f"deltaPhi_SUEP_W_MET_{_var}",
+                    deltaPhi_x_y,
+                    [
+                        "SUEP_phi_HighestPT",
+                        f"W_phi_{_var}",
+                    ],
+                ],
+                [
+                    f"W_SUEP_BV_{_var}",
+                    balancing_var,
+                    [f"W_pt_{_var}", "SUEP_pt_HighestPT"],
                 ]
             ]
 

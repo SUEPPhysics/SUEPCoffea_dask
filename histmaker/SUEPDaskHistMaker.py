@@ -248,7 +248,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             extra_args = [
                 f"--output={logDir}/job_output_%j.out",
                 f"--error={logDir}/job_output_%j.err",
-                "--partition=submit,submit-gpu",
+                "--partition=submit",
             ]
 
         client = super().setupSlurmClient(
@@ -297,9 +297,10 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         Writes the histograms and metadata to a .root file or a .pkl file, as specified by the options.
         """
 
-        outFile = self.options.saveDir + "/" + sample + "_" + self.options.output
-        if not os.path.exists(self.options.saveDir):
-            os.makedirs(self.options.saveDir)
+        outFile = self.options.saveDir + "/" + self.options.output + "/" + sample
+        outDir = os.path.dirname(outFile)
+        if not os.path.exists(outDir):
+            os.makedirs(outDir)
         if self.options.pkl:
             outFile += ".pkl"
             self.logger.info("Saving outputs to " + outFile)
@@ -324,12 +325,21 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
     @staticmethod
     def process_file(
-        ifile: str, sample: str, config: dict, options: SimpleNamespace
+        ifile: str, sample: str, config: dict, options: SimpleNamespace,
     ) -> dict:
         """
         Read in ntuple hdf5 files and process each systematic variation to produce histograms and cutflows.
         Returns: a dictionary of histograms, cutflows, and gensumweight.
         """
+
+        # organize the configurations that we have to iterate over by the dataframe they need to access
+        # that way we can re-use the same dataframe for multiple configurations
+        processing_batches = {}
+        for config_tag, config_out in config.items():
+            _df_name = config_out.get("df_name", "vars")
+            if _df_name not in processing_batches.keys():
+                processing_batches[_df_name] = []
+            processing_batches[_df_name].append(config_tag)
 
         logging.debug(f"Processing file {ifile}.")
 
@@ -339,109 +349,121 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "gensumweight": value_accumulator(float, 0),
         }
 
-        # get the file
-        df, ntuple_metadata, ntuple_hists = fill_utils.open_ntuple(
-            ifile, redirector=options.redirector, xrootd=options.xrootd
-        )
-        if options.printEvents:
-            # in the case we are interested in the run, lumi, event numbers, we also need to know the file they're from
-            print(f"Opened file {ifile}")
+        for df_name, config_tags in processing_batches.items():
 
-        # check if file is corrupted
-        if type(df) == int:
-            logging.debug(f"\tFile {ifile} is corrupted, skipping.")
-            return output
+            logging.debug(f"Processing tags {config_tags} with df_name {df_name}.")            
 
-        # check sample consistency
-        if sample != "" and ntuple_metadata.get("sample", False):
-            if sample != ntuple_metadata["sample"]:
-                raise Exception(
-                    "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
-                        ntuple_metadata["sample"], sample
+            # get the file
+            df, ntuple_metadata, ntuple_hists = fill_utils.open_ntuple(
+                ifile, redirector=options.redirector, xrootd=options.xrootd, df_name=df_name
+            )
+            if options.printEvents:
+                # in the case we are interested in the run, lumi, event numbers, we also need to know the file they're from
+                print(f"Opened file {ifile}")
+
+            # check if file is corrupted
+            if type(df) == int:
+                logging.debug(f"\tFile {ifile} is corrupted, skipping.")
+                return output
+
+            # check sample consistency
+            if sample != "" and ntuple_metadata.get("sample", False):
+                if sample != ntuple_metadata["sample"]:
+                    raise Exception(
+                        "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
+                            ntuple_metadata["sample"], sample
+                        )
                     )
+
+            # update the gensumweight
+            if options.isMC:
+                logging.debug(
+                    f"\tFound gensumweight {ntuple_metadata.get('gensumweight_nominal', ntuple_metadata.get('gensumweight'))} in ntuple."
+                )
+                output["gensumweight"] += ntuple_metadata.get('gensumweight_nominal', ntuple_metadata.get('gensumweight'))
+
+            # update the cutflows
+            if ntuple_metadata != 0 and any(
+                ["cutflow" in k for k in ntuple_metadata.keys()]
+            ):
+                logging.debug("\tFound cutflows in ntuple.")
+                for k, v in ntuple_metadata.items():
+                    if "cutflow" in k:
+                        if k not in output["cutflow"].keys():
+                            output["cutflow"][k] = v
+                        else:
+                            output["cutflow"][k] += v
+
+            # update the ntuple histograms
+            for hist_name, hist in ntuple_hists.items():
+                logging.debug(f"\tFound histograms {hist_name} in ntuple.")
+                if hist_name in output["hists"]:
+                    output["hists"][hist_name] += hist
+                else:
+                    output["hists"][hist_name] = hist
+
+            # check if any events are in the ntuple dataframe
+            if "empty" in list(df.keys()):
+                logging.debug("\tNo events passed the selections, skipping.")
+                return output
+            if df.shape[0] == 0:
+                logging.debug("\tNo events in file, skipping.")
+                return output
+
+            # we might modify this for systematics, so make a copy
+            config = copy.deepcopy(config)
+
+            # DEBUG
+            if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample:
+                print("HARD CODED CUT ON LHE VPT < 100 GEV")
+                df = df[df["LHE_Vpt"] < 100]
+
+            for config_tag in config_tags:
+
+                config_out = config[config_tag]
+
+                logging.debug(f"\tUsing configuration {config_tag}.")
+
+                hist_defs.initialize_histograms(
+                    output["hists"], config_tag, options, config_out
                 )
 
-        # update the gensumweight
-        if options.isMC:
-            logging.debug(
-                f"\tFound gensumweight {ntuple_metadata['gensumweight']} in ntuple."
-            )
-            output["gensumweight"] += ntuple_metadata["gensumweight"]
+                logging.debug(f"\tRunning nominal variation")
+                SUEPDaskHistMaker.plot_variation(
+                    df,
+                    "",
+                    options,
+                    config_out,
+                    config_tag,
+                    output["hists"],
+                    output["cutflow"],
+                    ntuple_metadata,
+                )
 
-        # update the cutflows
-        if ntuple_metadata != 0 and any(
-            ["cutflow" in k for k in ntuple_metadata.keys()]
-        ):
-            logging.debug("\tFound cutflows in ntuple.")
-            for k, v in ntuple_metadata.items():
-                if "cutflow" in k:
-                    if k not in output["cutflow"].keys():
-                        output["cutflow"][k] = v
-                    else:
-                        output["cutflow"][k] += v
+                if options.doSyst and options.isMC:
 
-        # update the ntuple histograms
-        for hist_name, hist in ntuple_hists.items():
-            logging.debug(f"\tFound histograms {hist_name} in ntuple.")
-            if hist_name in output["hists"]:
-                output["hists"][hist_name] += hist
-            else:
-                output["hists"][hist_name] = hist
+                    for syst in config_out.get("syst", []):
 
-        # check if any events are in the ntuple dataframe
-        if "empty" in list(df.keys()):
-            logging.debug("\tNo events passed the selections, skipping.")
-            return output
-        if df.shape[0] == 0:
-            logging.debug("\tNo events in file, skipping.")
-            return output
+                        logging.debug(f"Running syst {syst}")
 
-        # we might modify this for systematics, so make a copy
-        config = copy.deepcopy(config)
+                        hist_defs.initialize_histograms(
+                            output["hists"], config_tag + "_" + syst, options, config_out
+                        )
+                        
+                        SUEPDaskHistMaker.plot_variation(
+                            df,
+                            syst,
+                            options,
+                            config_out,
+                            config_tag,
+                            output["hists"],
+                            output["cutflow"],
+                            ntuple_metadata,
+                        )
 
-        # DEBUG
-        if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample:
-            print("HARD CODED CUT ON LHE VPT < 100 GEV")
-            df = df[df["LHE_Vpt"] < 100]
-
-        for config_tag, config_out in config.items():
-
-            logging.debug(f"\tUsing configuration {config_tag}.")
-
-            hist_defs.initialize_histograms(
-                output["hists"], config_tag, options, config_out
-            )
-
-            logging.debug(f"\tRunning nominal variation")
-            SUEPDaskHistMaker.plot_variation(
-                df,
-                "",
-                options,
-                config_out,
-                config_tag,
-                output["hists"],
-                output["cutflow"],
-                ntuple_metadata,
-            )
-
-            if options.doSyst and options.isMC:
-
-                for syst in config_out.get("syst", []):
-                    logging.debug(f"Running syst {syst}")
-                    SUEPDaskHistMaker.plot_variation(
-                        df,
-                        syst,
-                        options,
-                        config_out,
-                        config_tag,
-                        output["hists"],
-                        output["cutflow"],
-                        ntuple_metadata,
-                    )
-
-        # remove file at the end of loop
-        if options.xrootd:
-            fill_utils.close_ntuple(ifile)
+            # remove file at the end of loop
+            if options.xrootd:
+                fill_utils.close_ntuple(ifile)
 
         return output
 

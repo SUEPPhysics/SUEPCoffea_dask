@@ -189,3 +189,118 @@ def doLeptonSFs(electrons, muons, era):
     lepSF["LepSFMuUp"] = ak.prod(ak.concatenate([elSF, muSFUp], axis=1), axis=1)
     lepSF["LepSFMuDown"] = ak.prod(ak.concatenate([elSF, muSFDown], axis=1), axis=1)
     return lepSF
+
+
+
+def doWHLeptonSFs(electrons, muons, era: str):
+
+    if era == "2016apv":
+        tag = "16APV"
+        etag = "2016preVFP"
+    elif era == "2016":
+        tag = "16"
+        etag = "2016postVFP"
+    elif era == "2017":
+        tag = "17"
+        etag = "2017"
+    elif era == "2018":
+        tag = "18"
+        etag = "2018"
+    else:
+        raise ValueError("Invalid era")
+
+    elecs, nelecs = ak.flatten(electrons), np.array(ak.num(electrons))
+    mus, nmus = ak.flatten(muons), np.array(ak.num(muons))
+
+    elall = correctionlib.CorrectionSet.from_file(
+        "data/EGammaUL%s/electron.json" % tag
+    )["UL-Electron-ID-SF"]
+    muid = correctionlib.CorrectionSet.from_file("data/MuUL%s/muon_Z.json" % tag)[
+        "NUM_TightID_DEN_TrackerMuons"
+    ]
+    muiso = correctionlib.CorrectionSet.from_file("data/MuUL%s/muon_Z.json" % tag)[
+        "NUM_TightRelIso_DEN_TightIDandIPCut"
+    ]
+
+    elSF = np.where(
+        elecs.pt > 20,
+        elall.evaluate(
+            etag,
+            "sf",
+            "RecoAbove20",
+            elecs.eta,
+            np.where(elecs.pt <= 20, 20.001, elecs.pt),
+        ),
+        elall.evaluate(
+            etag,
+            "sf",
+            "RecoBelow20",
+            elecs.eta,
+            np.where(abs(elecs.pt - 15) >= 4.999, 15, elecs.pt),
+        ),
+    ) * elall.evaluate(etag, "sf", "wp80iso", elecs.eta, elecs.pt)
+    elSFUp = np.where(
+        elecs.pt > 20,
+        elall.evaluate(
+            etag,
+            "sfup",
+            "RecoAbove20",
+            elecs.eta,
+            np.where(elecs.pt <= 20, 20.001, elecs.pt),
+        ),
+        elall.evaluate(
+            etag,
+            "sfup",
+            "RecoBelow20",
+            elecs.eta,
+            np.where(abs(elecs.pt - 15) >= 4.999, 15, elecs.pt),
+        ),
+    ) * elall.evaluate(etag, "sfup", "wp80iso", elecs.eta, elecs.pt)
+    elSFDown = np.where(
+        elecs.pt > 20,
+        elall.evaluate(
+            etag,
+            "sfdown",
+            "RecoAbove20",
+            elecs.eta,
+            np.where(elecs.pt <= 20, 20.001, elecs.pt),
+        ),
+        elall.evaluate(
+            etag,
+            "sfdown",
+            "RecoBelow20",
+            elecs.eta,
+            np.where(abs(elecs.pt - 15) >= 4.999, 15, elecs.pt),
+        ),
+    ) * elall.evaluate(etag, "sfdown", "wp80iso", elecs.eta, elecs.pt)
+
+    muSF = muid.evaluate(
+        etag + "_UL", abs(mus.eta), np.where(mus.pt <= 15, 15.001, mus.pt), "sf"
+    ) * muiso.evaluate(
+        etag + "_UL", abs(mus.eta), np.where(mus.pt <= 15, 15.001, mus.pt), "sf"
+    )
+    muSFUp = muid.evaluate(
+        etag + "_UL", abs(mus.eta), np.where(mus.pt <= 15, 15.001, mus.pt), "systup"
+    ) * muiso.evaluate(
+        etag + "_UL", abs(mus.eta), np.where(mus.pt <= 15, 15.001, mus.pt), "systup"
+    )
+    muSFDown = muid.evaluate(
+        etag + "_UL", abs(mus.eta), np.where(mus.pt <= 15, 15.001, mus.pt), "systdown"
+    ) * muiso.evaluate(
+        etag + "_UL", abs(mus.eta), np.where(mus.pt <= 15, 15.001, mus.pt), "systdown"
+    )
+
+    elSF = ak.unflatten(elSF, nelecs)
+    elSFUp = ak.unflatten(elSFUp, nelecs)
+    elSFDown = ak.unflatten(elSFDown, nelecs)
+    muSF = ak.unflatten(muSF, nmus)
+    muSFUp = ak.unflatten(muSFUp, nmus)
+    muSFDown = ak.unflatten(muSFDown, nmus)
+
+    lepSF = {}
+    lepSF["LepSF"] = ak.prod(ak.concatenate([elSF, muSF], axis=1), axis=1)
+    lepSF["LepSFElUp"] = ak.prod(ak.concatenate([elSFUp, muSF], axis=1), axis=1)
+    lepSF["LepSFElDown"] = ak.prod(ak.concatenate([elSFDown, muSF], axis=1), axis=1)
+    lepSF["LepSFMuUp"] = ak.prod(ak.concatenate([elSF, muSFUp], axis=1), axis=1)
+    lepSF["LepSFMuDown"] = ak.prod(ak.concatenate([elSF, muSFDown], axis=1), axis=1)
+    return lepSF

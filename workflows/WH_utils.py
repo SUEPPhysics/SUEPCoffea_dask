@@ -3,6 +3,7 @@ import numpy as np
 import vector
 
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
+from workflows.CMS_corrections.leptonscale_utils import doLeptonScaleVariations
 
 
 def getGenModel(events):
@@ -91,7 +92,7 @@ def getGenPart(events):
             "eta": genParts.eta,
             "phi": genParts.phi,
             "mass": genParts.mass,
-            "pdgID": genParts.pdgId,
+            "pdgId": genParts.pdgId,
             "status": genParts.status,
             "genPartIdxMother": genParts.genPartIdxMother,
             "statusFlags": genParts.statusFlags,
@@ -107,7 +108,7 @@ def getGenW(events):
     """
     genParticles = getGenPart(events)
     genW = genParticles[
-        (abs(genParticles.pdgID) == 24) & (0 < (genParticles.statusFlags & (1 << 13)))
+        (abs(genParticles.pdgId) == 24) & (0 < (genParticles.statusFlags & (1 << 13)))
     ]
     return genW
 
@@ -119,7 +120,7 @@ def getGenDarkPseudoscalars(events):
     """
 
     genParticles = getGenPart(events)
-    darkPseudoscalarParticles = genParticles[genParticles.pdgID == 999999]
+    darkPseudoscalarParticles = genParticles[genParticles.pdgId == 999999]
 
     return darkPseudoscalarParticles
 
@@ -131,7 +132,7 @@ def getTracks(events, iso_object=None, isolation_deltaR=0):
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass,
-            # "pdgID": events.PFCands.pdgID
+            # "pdgId": events.PFCands.pdgId
         },
         with_name="Momentum4D",
     )
@@ -195,7 +196,7 @@ def getLeptons(events):
             "eta": events.Muon.eta,
             "phi": events.Muon.phi,
             "mass": events.Muon.mass,
-            "pdgID": events.Muon.pdgId,
+            "pdgId": events.Muon.pdgId,
             "ID": (
                 ak.values_astype(events.Muon.tightId, np.int32)
                 + ak.values_astype(events.Muon.mediumId, np.int32)
@@ -210,6 +211,10 @@ def getLeptons(events):
             "charge": events.Muon.pdgId / (-13),
             "tightId": events.Muon.tightId,
             "pfIsoId": events.Muon.pfIsoId,
+            "aux1": events.Muon.genPartIdx,
+            "aux2": events.Muon.pt,
+            "aux3": events.Muon.nTrackerLayers,
+            "aux4": events.Muon.pt
         },
         with_name="Momentum4D",
     )
@@ -220,7 +225,7 @@ def getLeptons(events):
             "eta": events.Electron.eta,
             "phi": events.Electron.phi,
             "mass": events.Electron.mass,
-            "pdgID": events.Electron.pdgId,
+            "pdgId": events.Electron.pdgId,
             "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
             "IDMVA": (
                 ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
@@ -235,6 +240,10 @@ def getLeptons(events):
             "charge": events.Electron.pdgId / (-11),
             "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
             "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
+            "aux1": events.Electron.dEscaleUp,
+            "aux2": events.Electron.dEscaleDown,
+            "aux3": events.Electron.dEsigmaUp,
+            "aux4": events.Electron.dEsigmaDown
         },
         with_name="Momentum4D",
     )
@@ -278,12 +287,27 @@ def getLooseLeptons(events):
     return looseMuons, looseElectrons, looseLeptons
 
 
-def getTightLeptons(events):
+def getTightLeptons(events, era: str, variation: str = ''):
     """
     These leptons are the ones that will be used for the WH analysis.
+    We do the lepton scale variations here. Technically, one should do them
+    when we first define the lepton collections, but the main effect we are
+    concerend with is the effect on the lepton used to calculate the W.
+    Loose leptons are only used to impose orthogonality, and the scale
+    variations are quite small, so won't have a large impact there.
     """
 
     looseMuons, looseElectrons, _ = getLooseLeptons(events)
+
+    looseMuonsVars = doLeptonScaleVariations(events, looseMuons, int(era) if era != "2016apv" else 2015)
+    looseElectronsVars = doLeptonScaleVariations(events, looseElectrons, int(era) if era != "2016apv" else 2015)
+    
+    # re-assign pt to the pt with the lepton scales applied, and the original pt to pt_prevar
+    looseMuons = ak.with_field(looseMuons, looseMuons.pt, "pt_prevar")
+    looseElectrons = ak.with_field(looseElectrons, looseElectrons.pt, "pt_prevar")
+    variation = "_"+variation if variation != '' else ''
+    looseMuons = ak.with_field(looseMuons, looseMuonsVars[variation].pt, "pt")
+    looseElectrons = ak.with_field(looseElectrons, looseElectronsVars[variation].pt, "pt")
 
     # tighter lepton ID
     cutTightMuons = (
@@ -387,7 +411,7 @@ def getGenPhotons(events):
     """
     parts = getGenPart(events)
     photons = parts[
-        (abs(parts.pdgID) == 22)
+        (abs(parts.pdgId) == 22)
         & (parts.statusFlags & (1 << 8) != 0)
         & (parts.statusFlags & (1 << 13) != 0)
     ]
@@ -563,12 +587,9 @@ def getGammaTriggerBits(events, era: str):
     elif era == "2017":
         gammaTriggerBits = (
             (events.HLT.Photon200)
-            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
-            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 4
-            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
-            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
-            + (events.HLT.Photon30_HoverELoose) * 32
-            + (events.HLT.Photon20_HoverELoose) * 64
+            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 8
         )
     elif era == "2016" or era == "2016apv":
         gammaTriggerBits = (
@@ -596,7 +617,7 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
     events = events[(events.WH_gammaTriggerBits > 0)]
 
     gammaTriggerUnprescaleWeight = ak.zeros_like(events.genWeight)
-    if era == "2018":
+    if era == "2018" or era=="2017":
         mask_Photon200 = (events.HLT.Photon200 == 1) & (events.WH_gamma.pt > 230)
         mask_Photon120 = (
             (events.HLT.Photon120_R9Id90_HE10_IsoM == 1)
@@ -759,9 +780,9 @@ def qualityFiltersSelection(events, era: str):
     return events[cutAnyFilter]
 
 
-def oneTightLeptonSelection(events):
+def oneTightLeptonSelection(events, era: str, variation: str = ''):
 
-    _, _, tightLeptons = getTightLeptons(events)
+    _, _, tightLeptons = getTightLeptons(events, era=era, variation=variation)
 
     # require exactly one tight lepton
     leptonSelection = ak.num(tightLeptons) == 1

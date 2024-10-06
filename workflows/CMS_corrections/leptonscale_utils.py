@@ -87,7 +87,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -98,7 +98,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -109,7 +109,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -120,7 +120,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -131,7 +131,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )

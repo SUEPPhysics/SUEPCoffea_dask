@@ -70,6 +70,18 @@ class EventWeightProcessor:
             "higgs_weights_down",
             "prefire_up",
             "prefire_down",
+            "LepSFElUp",
+            "LepSFElDown",
+            "LepSFMuUp",
+            "LepSFMuDown",
+            "bTagWeight_HFcorrelated_Up",
+            "bTagWeight_HFcorrelated_Dn",
+            "bTagWeight_HFuncorrelated_Up",
+            "bTagWeight_HFuncorrelated_Dn",
+            "bTagWeight_LFcorrelated_Up",
+            "bTagWeight_LFcorrelated_Dn",
+            "bTagWeight_LFuncorrelated_Up",
+            "bTagWeight_LFuncorrelated_Dn",
         ]
         self.supported_isMC = [0, 1]
         self.supported_eras = ["2016", "2017", "2018", "2016apv"]
@@ -187,14 +199,11 @@ class EventWeightProcessor:
 
             # 8) b-tag weights. These have different values for each event selection
             if self.channel in ['WH', 'WH-VRGJ'] and self.isMC:
-                if self.region == '':
-                    raise Exception("You need to define a region to use btag weights. (Why? Because we have different b-tagging efficiencies for different regions.)")
-
                 if "btag" in self.variation.lower():
                     btag_weights = self.variation
                 else:
                     btag_weights = "bTagWeight_central"
-                btag_weights += "_" + self.region.lower()
+                btag_weights += "_" + self.channel.lower()
                 if btag_weights not in df.keys():
                     logging.warning(
                         f"btag weights {btag_weights} not found in DataFrame. Not applying them."
@@ -204,6 +213,22 @@ class EventWeightProcessor:
                 else:
                     df["event_weight"] *= df[btag_weights]
 
+            # 9) lepton SF
+            if self.channel == 'WH':
+                #pass
+                if 'LepSF' in self.variation:
+                    df["event_weight"] *= df[self.variation]
+                else:
+                    df["event_weight"] *= df["LepSF"]
+
+            # 10) photon SF
+            if self.channel == 'WH-VRGJ':
+                
+                if 'photon_SF' in self.variation:
+                    df["event_weight"] *= df[self.variation]
+                else:
+                    df["event_weight"] *= df["photon_SF"]
+
         # data
         else:
 
@@ -212,5 +237,9 @@ class EventWeightProcessor:
             # un-prescaling for the gamma triggers
             if self.channel == "WH-VRGJ":
                 df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
+
+            # ad hoc weights
+            #print("TEMPORARY: applying ad hoc weights for data to correct SUEP pT. Meant only for gamma+jets testing.")
+            #df["event_weight"] *= apply_correctionlib("CMS_corrections/photon_pt_corr.json", "ptweight", df["photon_pt"].to_numpy())
 
         return df

@@ -6,9 +6,9 @@ Date: August 2024
 import logging
 import os
 import socket
+import traceback
 from time import time
 from typing import List
-
 from coffea.processor import dict_accumulator, value_accumulator
 from coffea.processor.accumulator import AccumulatorABC
 from dask.distributed import Client, Future, LocalCluster, as_completed
@@ -176,6 +176,7 @@ class BaseDaskHistMaker:
 
             except Exception as e:
 
+                self.logger.error(traceback.format_exc())
                 self.logger.error(f"Failed to merge output: {e}")
                 output[sample]["_processing_metadata"]["n_failed"] += 1
                 continue

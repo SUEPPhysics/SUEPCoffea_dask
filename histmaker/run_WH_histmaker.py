@@ -7,6 +7,7 @@ Date: August 2024
 import argparse
 import os
 from types import SimpleNamespace
+from copy import deepcopy
 
 import fill_utils
 import hist_defs
@@ -36,6 +37,9 @@ def getOptions() -> dict:
     )
     parser.add_argument(
         "--nworkers", "-n", type=int, default=20, help="Number of workers to use"
+    )
+    parser.add_argument(
+        "--limits", action="store_true", help="Make hists for limits"
     )
 
     # required SUEPDaskHistMaker arguments
@@ -121,7 +125,169 @@ def main():
     options = getOptions()
 
     # set up your configuration
-    if options["channel"] == "WH":
+    if options['limits']:
+        options['pkl'] = 0 # need .root files for combine
+        options['doABCD'] = 1
+        options['doSyst'] = 1
+        if options['channel'] == "WH":
+            config = {
+                "SR": {
+                    "input_method": "HighestPT",
+                    "method_var": "SUEP_nconst_HighestPT",
+                    "xvar": "SUEP_S1_HighestPT",
+                    "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+                    "yvar": "SUEP_nconst_HighestPT",
+                    "yvar_regions": [20, 30, 1000],
+                    "SR": [
+                        ["SUEP_S1_HighestPT", ">=", 0.5],
+                        ["SUEP_nconst_HighestPT", ">=", 30]
+                    ],
+                    "selections": [
+                        "PuppiMET_pt > 30",
+                        "W_pt > 60",
+                        "W_mt < 130",
+                        "W_mt > 30",
+                        "bjetSel == 1",
+                        "deltaPhi_SUEP_W > 1.5",
+                        "deltaPhi_SUEP_MET > 1.5",
+                        "deltaPhi_lepton_SUEP > 1.5",
+                        "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                        "W_SUEP_BV < 2",
+                        "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                        "SUEP_S1_HighestPT > 0.3",
+                    ],
+                    "syst":  [
+                        "puweights_up",
+                        "puweights_down",
+                        "PSWeight_ISR_up",
+                        "PSWeight_ISR_down",
+                        "PSWeight_FSR_up",
+                        "PSWeight_FSR_down",
+                        "higgs_weights_up",
+                        "higgs_weights_down",
+                        "LepSFElUp",
+                        "LepSFElDown",
+                        "LepSFMuUp",
+                        "LepSFMuDown",
+                        "bTagWeight_HFcorrelated_Up",
+                        "bTagWeight_HFcorrelated_Dn",
+                        "bTagWeight_HFuncorrelated_Up",
+                        "bTagWeight_HFuncorrelated_Dn",
+                        "bTagWeight_LFcorrelated_Up",
+                        "bTagWeight_LFcorrelated_Dn",
+                        "bTagWeight_LFuncorrelated_Up",
+                        "bTagWeight_LFuncorrelated_Dn",
+                        "prefire_up",
+                        "prefire_down",
+                        # TODO: trigger scale factors, prefire
+                    ],
+                },
+                # "CRWJ": {
+                #     "input_method": "HighestPT",
+                #     "method_var": "SUEP_nconst_HighestPT",
+                #     "xvar": "SUEP_S1_HighestPT",
+                #     "xvar_regions": [0.05, 0.15, 0.25, 0.3],
+                #     "yvar": "SUEP_nconst_HighestPT",
+                #     "yvar_regions": [20, 30, 1000],
+                #     "selections": [
+                #             "PuppiMET_pt > 30",
+                #             "W_pt > 60",
+                #             "W_mt < 130",
+                #             "W_mt > 30",
+                #             "bjetSel == 1",
+                #             "deltaPhi_SUEP_W > 1.5",
+                #             "deltaPhi_SUEP_MET > 1.5",
+                #             "deltaPhi_lepton_SUEP > 1.5",
+                #             "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                #             "W_SUEP_BV < 2",
+                #             "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                #             "SUEP_S1_HighestPT < 0.3",
+                #     ],
+                #     "syst":  [],
+                # }
+            }
+
+            if options.get("doSyst") and options.get("isMC"):
+
+                # add systematic variations, which are identical, except for the dataframe name
+                variations = [
+                    "ElScaleUp",
+                    "ElScaleDown",
+                    "ElSigmaUp",
+                    "ElSigmaDown",
+                    "MuScaleUp",
+                    "MuScaleDown",
+                    "track_down"
+                ]
+                var_config = {}
+                for var in variations:
+                    for tag, config_tag in config.items():
+                        _var_config = deepcopy(config_tag)
+                        _var_config["syst"] = []    # don't need to run SFs for systematic variations
+                        _var_config["df_name"] = "vars_" + var # name of the dataframe in the hdf5 ntuple
+                        var_config.update({tag + "_" + var: _var_config})
+
+                # systematic variations that change the MET and W selections
+                met_variations = [
+                    "JER_up",
+                    "JER_down",
+                    "JES_up",
+                    "JES_down",
+                ]
+                for var in met_variations:
+                    for tag, config_tag in config.items():
+                        _var_config = deepcopy(config_tag)
+                        _var_config["syst"] = []
+                        # add the MET variation to the selection name, variables are defined in var_defs
+                        for iSel in range(len(_var_config["selections"])):
+                            s = _var_config["selections"][iSel]
+                            if "MET_" in s or "W_" in s:
+                                s = s.split(" ")
+                                s[0] = s[0] + "_" + var
+                                s = " ".join(s)
+                                _var_config["selections"][iSel] = s
+                            var_config.update({tag + "_" + var: _var_config})
+                        
+                config.update(var_config)
+
+        elif options['channel'] == "WH-VRGJ":
+            config = {
+                "VRGJlowS": {
+                    "input_method": "HighestPT",
+                    "method_var": "SUEP_nconst_HighestPT",
+                    "xvar": "SUEP_S1_HighestPT",
+                    "xvar_regions": [0.05, 0.15, 0.25, 0.3],
+                    "yvar": "SUEP_nconst_HighestPT",
+                    "yvar_regions": [20, 30, 1000],
+                    "selections": [
+                        "SUEP_nconst_HighestPT >= 10",
+                        "bjetSel == 1",
+                        "minDeltaPhiJetPhoton > 1.5",
+                        "deltaPhi_SUEP_photon > 1.5",
+                        "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                        "photon_SUEP_BV < 2",
+                        "SUEP_S1_HighestPT < 0.3",
+                    ],
+                },
+                "VRGJhighS": {
+                    "input_method": "HighestPT",
+                    "method_var": "SUEP_nconst_HighestPT",
+                    "xvar": "SUEP_S1_HighestPT",
+                    "xvar_regions": [0.3, 0.4, 0.5, 2.0],
+                    "yvar": "SUEP_nconst_HighestPT",
+                    "yvar_regions": [20, 30, 1000],
+                    "selections": [
+                        "SUEP_nconst_HighestPT >= 10",
+                        "bjetSel == 1",
+                        "minDeltaPhiJetPhoton > 1.5",
+                        "deltaPhi_SUEP_photon > 1.5",
+                        "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                        "photon_SUEP_BV < 2",
+                        "SUEP_S1_HighestPT > 0.3",
+                    ],
+                },
+            }
+    elif options["channel"] == "WH":
         config = {
              "SR": {
                 "input_method": "HighestPT",
@@ -131,9 +297,9 @@ def main():
                     ["SUEP_nconst_HighestPT", ">=", 30]
                 ],
                 "selections": [
-                    #"genCheck == 1",
-                    "WH_MET_pt > 30",
-                    "W_pt > 55",
+                    "SUEP_nconst_HighestPT >= 10",
+                    "PuppiMET_pt > 30",
+                    "W_pt > 60",
                     "W_mt < 130",
                     "W_mt > 30",
                     "bjetSel == 1",
@@ -150,14 +316,10 @@ def main():
             "CRWJ": {
                 "input_method": "HighestPT",
                 "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 0.25],
-                    ["SUEP_nconst_HighestPT", ">=", 30],
-                ],
                 "selections": [
-                    "SUEP_nconst_HighestPT > 10",
-                    "WH_MET_pt > 30",
-                    "W_pt > 55",
+                    "SUEP_nconst_HighestPT >= 10",
+                    "PuppiMET_pt > 30",
+                    "W_pt > 60",
                     "W_mt < 130",
                     "W_mt > 30",
                     "bjetSel == 1",
@@ -170,71 +332,15 @@ def main():
                     "SUEP_S1_HighestPT < 0.3",
                 ],
                 "syst": [],
-            },
-            # "SRlimits": {
-            #     "input_method": "HighestPT",
-            #     "method_var": "SUEP_nconst_HighestPT",
-            #     "xvar": "SUEP_S1_HighestPT",
-            #     "xvar_regions": [0.3, 0.4, 0.5, 2.0],
-            #     "yvar": "SUEP_nconst_HighestPT",
-            #     "yvar_regions": [20, 30, 1000],
-            #     "SR": [
-            #         ["SUEP_S1_HighestPT", ">=", 0.5],
-            #         ["SUEP_nconst_HighestPT", ">=", 30]
-            #     ],
-            #     "selections": [
-            #         # "genCheck == 1",
-            #         "WH_MET_pt > 30",
-            #         "W_pt > 55",
-            #         "W_mt < 130",
-            #         "W_mt > 30",
-            #         "bjetSel == 1",
-            #         "deltaPhi_SUEP_W > 1.5",
-            #         "deltaPhi_SUEP_MET > 1.5",
-            #         "deltaPhi_lepton_SUEP > 1.5",
-            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #         "W_SUEP_BV < 2",
-            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-            #         "SUEP_S1_HighestPT > 0.3",
-            #     ],
-            #      "syst":  [],
-            #  },
-            # "CRWJlimits": {
-            #     "input_method": "HighestPT",
-            #     "method_var": "SUEP_nconst_HighestPT",
-            #     "xvar": "SUEP_S1_HighestPT",
-            #     "xvar_regions": [0.05, 0.15, 0.25, 0.3],
-            #     "yvar": "SUEP_nconst_HighestPT",
-            #     "yvar_regions": [20, 30, 1000],
-            #     "SR": [
-            #         ["SUEP_S1_HighestPT", ">=", 0.25],
-            #         ["SUEP_nconst_HighestPT", ">=", 30]
-            #     ],
-            #     "selections": [
-            #         # "genCheck == 1",
-            #         "WH_MET_pt > 30",
-            #         "W_pt > 55",
-            #         "W_mt < 130",
-            #         "W_mt > 30",
-            #         "bjetSel == 1",
-            #         "deltaPhi_SUEP_W > 1.5",
-            #         "deltaPhi_SUEP_MET > 1.5",
-            #         "deltaPhi_lepton_SUEP > 1.5",
-            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #         "W_SUEP_BV < 2",
-            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-            #         "SUEP_S1_HighestPT < 0.3",
-            # ],
-            #     "syst":  [],
-            # },
+            }
     }
-    if options['channel'] == 'WH-VRGJ':
+    elif options['channel'] == 'WH-VRGJ':
         config = {
             "VRGJlowS": {
                "input_method": "HighestPT",
                "method_var": "SUEP_nconst_HighestPT",
                "selections": [
-                   "SUEP_nconst_HighestPT > 10",
+                   "SUEP_nconst_HighestPT >= 10",
                    "bjetSel == 1",
                    "minDeltaPhiJetPhoton > 1.5",
                    "deltaPhi_SUEP_photon > 1.5",
@@ -243,18 +349,28 @@ def main():
                    "SUEP_S1_HighestPT < 0.3",
                ],
             },
+            "VRGJhighS": {
+               "input_method": "HighestPT",
+               "method_var": "SUEP_nconst_HighestPT",
+               "selections": [
+                   "SUEP_nconst_HighestPT >= 10",
+                   "bjetSel == 1",
+                   "minDeltaPhiJetPhoton > 1.5",
+                   "deltaPhi_SUEP_photon > 1.5",
+                   "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                   "photon_SUEP_BV < 2",
+                   "SUEP_S1_HighestPT > 0.3",
+               ],
+            },
         }
+
+    print(config)
+    
     hists = {}
     for output_method in config.keys():
         var_defs.initialize_new_variables(
             output_method, SimpleNamespace(**options), config[output_method]
         )
-        if options.get("doSyst", False):
-            for syst in config[output_method].get("syst", []):
-                if any([j in syst for j in ["JER", "JES"]]):
-                    config = fill_utils.get_jet_correction_config(config, syst)
-    if options.get("doSyst", False):
-        config = fill_utils.get_track_killing_config(config)
 
     # run the SUEP histogram maker
     histmaker = SUEPDaskHistMaker(config=config, options=options, hists=hists)

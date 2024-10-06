@@ -82,6 +82,8 @@ def open_ntuple(
     redirector: str = "root://submit50.mit.edu/",
     xrootd: bool = False,
     xrootd_tmp_path: str = "/tmp/",
+    df_name: str = "vars",
+    hist_name: str = "hists",
 ):
     """
     Open a ntuple, either locally or on xrootd.
@@ -99,7 +101,7 @@ def open_ntuple(
         logging.debug(f"Copied {xrd_file} to {local_file}")
 
     logging.debug(f"Opening {local_file}")
-    return *h5LoadDf(local_file, "vars"), h5LoadHist(local_file, "hists")
+    return *h5LoadDf(local_file, df_name), h5LoadHist(local_file, hist_name)
 
 
 def close_ntuple(file: str, xrootd_tmp_path: str = "/tmp/") -> None:

@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import vector
 from coffea import processor
+from copy import deepcopy
 from hist import Hist
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -30,6 +31,7 @@ from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
+from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -49,7 +51,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output_location=None,
         CRQCD: bool = False,
         VRGJ: bool = False,
-        dropNonMethodEvents: bool = False,
         storeJetsInfo: bool = True,
     ) -> None:
         self._flag = flag
@@ -61,7 +62,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.scouting = 0
         self.CRQCD = CRQCD
         self.VRGJ = VRGJ
-        self.dropNonMethodEvents = dropNonMethodEvents
         self.storeJetsInfo = storeJetsInfo  # for the b-tag efficiencies
 
     def HighestPTMethod(
@@ -69,6 +69,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events,
         output,
         out_label=None,
+        variation='',
     ):
 
         # indices of events, used to keep track which events pass selections for each method
@@ -88,7 +89,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             iso_object=events.WH_lepton if not self.VRGJ else events.WH_gamma,
             isolation_deltaR=0.4,
         )
-        if self.isMC and "track_down" in out_label:
+        if self.isMC and "track_down" in variation:
             tracks = track_killing(self, tracks)
         events = ak.with_field(events, tracks, "WH_tracks")
 
@@ -397,6 +398,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self,
         events,
         output,
+        out_label:str="",
+        variation:str="",
     ):
         """
         Store event variables in the output dictionary.
@@ -559,10 +562,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["PuppiMET_pt_JER_down"] = events.PuppiMET.ptJERDown
             output["vars"]["PuppiMET_pt_JES_up"] = events.PuppiMET.ptJESUp
             output["vars"]["PuppiMET_pt_JES_down"] = events.PuppiMET.ptJESDown
+            output["vars"]["PuppiMET_pt_Unclustered_up"] = events.PuppiMET.ptUnclusteredUp
+            output["vars"]["PuppiMET_pt_Unclustered_down"] = events.PuppiMET.ptUnclusteredDown
             output["vars"]["PuppiMET_phi_JER_up"] = events.PuppiMET.phiJERUp
             output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
             output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
+            output["vars"]["PuppiMET_phi_Unclustered_up"] = events.PuppiMET.phiUnclusteredUp
+            output["vars"]["PuppiMET_phi_Unclustered_down"] = events.PuppiMET.phiUnclusteredDown
             # TODO CorrectedMETFactory is broken! The following cannot be trusted!
             # output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET.JER.up.pt
             # output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET.JER.up.pt
@@ -598,13 +605,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             else:
                 output["vars"]["PSWeight"] = psweights
 
-            for metaCR in ["sr", "crwj", "crtt"]:
+            for metaCR in ["wh", "wh-vrgj"]:
                 if self.era == "2018":
                     bTagWeights = doBTagWeights(
                         events.WH_jets_jec,
                         era_int,
                         wps="TL",
-                        channel="wh_" + metaCR,
+                        channel=metaCR,
                         do_syst=self.do_syst,
                     )
                     for var in bTagWeights.keys():
@@ -628,7 +635,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         cleaned_darkphis = ak.Array(len(events) * [0])
         if self.isMC:
             genParts = WH_utils.getGenPart(events)
-            genSUEP = genParts[(abs(genParts.pdgID) == 25)]
+            genSUEP = genParts[(abs(genParts.pdgId) == 25)]
 
             # we need to grab the last SUEP in the chain for each event
             SUEP_genMass = [g[-1].mass if len(g) > 0 else 0 for g in genSUEP]
@@ -649,10 +656,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # saving tight lepton kinematics
         if "WH_lepton" in events.fields:
             output["vars"]["lepton_pt"] = events.WH_lepton.pt
+            output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
             output["vars"]["lepton_eta"] = events.WH_lepton.eta
             output["vars"]["lepton_phi"] = events.WH_lepton.phi
             output["vars"]["lepton_mass"] = events.WH_lepton.mass
-            output["vars"]["lepton_flavor"] = events.WH_lepton.pdgID
+            output["vars"]["lepton_flavor"] = events.WH_lepton.pdgId
             output["vars"]["lepton_ID"] = events.WH_lepton.ID
             output["vars"]["lepton_IDMVA"] = events.WH_lepton.IDMVA
             output["vars"]["lepton_iso"] = events.WH_lepton.iso
@@ -691,6 +699,19 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 ak.max(jet_lepton_combinations_deltaEta, axis=-1), -999
             )
 
+            # lepton scale factors
+            unflattened_leptons = ak.unflatten(events.WH_lepton, np.ones(len(events), dtype=int))
+            leptonsSFs = doWHLeptonSFs(
+                unflattened_leptons[abs(unflattened_leptons.pdgId) == 11],
+                unflattened_leptons[abs(unflattened_leptons.pdgId) == 13],
+                era=self.era
+            )
+            output["vars"]["LepSF"] = leptonsSFs['LepSF']
+            output["vars"]["LepSFElUp"] = leptonsSFs['LepSFElUp']
+            output["vars"]["LepSFElDown"] = leptonsSFs['LepSFElDown']
+            output["vars"]["LepSFMuUp"] = leptonsSFs['LepSFMuUp']
+            output["vars"]["LepSFMuDown"] = leptonsSFs['LepSFMuDown']   
+
         # other loose leptons
         looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events)
         output["vars"]["nLooseLeptons"] = ak.num(looseLeptons).to_list()
@@ -725,7 +746,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["looseNotTightLepton" + str(i + 1) + "_flavor"] = (
                 ak.fill_none(
                     ak.pad_none(
-                        looseNotTightLeptons_pTsorted.pdgID, i + 1, axis=1, clip=True
+                        looseNotTightLeptons_pTsorted.pdgId, i + 1, axis=1, clip=True
                     ),
                     -999,
                 )[:, i]
@@ -898,7 +919,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         return events
 
-    def analysis(self, events, output, out_label=""):
+    def analysis(self, events, output, out_label:str="", variation:str=""):
 
         #####################################################################################
         # ---- Basic event selection
@@ -947,7 +968,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         if not self.CRQCD and not self.VRGJ:
-            events = WH_utils.oneTightLeptonSelection(events)
+            events = WH_utils.oneTightLeptonSelection(events, self.era, variation=variation if 'MuScale' in variation or 'ElScale' in variation else "")
             output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
         elif self.VRGJ:
             events = WH_utils.onePhotonSelection(events, self.isMC)
@@ -1014,12 +1035,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # ---- Store event level information
         #####################################################################################
 
-        # these only need to be saved once, as they shouldn't change even with track killing
-        if out_label == "":
-            events = self.storeEventVars(
-                events,
-                output=output,
-            )
+        events = self.storeEventVars(
+            events,
+            output=output,
+            out_label=out_label,
+        )
 
         #####################################################################################
         # ---- SUEP definition and analysis
@@ -1029,14 +1049,25 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             events,
             output=output,
             out_label=out_label,
+            variation=variation,
         )
+
+        # cut events that don't have a SUEP candidate
+        method_selection = np.any(
+            [
+                ~output["vars"]["SUEP_nconst_HighestPT"+out_label].isnull()
+            ],
+            axis=0,
+        )
+        output["vars"] = output["vars"][method_selection]
+        events = events[method_selection]
 
         return events, output
 
     def process(self, events):
         dataset = events.metadata["dataset"]
 
-        output = processor.dict_accumulator(
+        blank_output = processor.dict_accumulator(
             {
                 "gensumweight": processor.value_accumulator(float, 0),
                 "cutflow_total": processor.value_accumulator(float, 0),
@@ -1066,103 +1097,39 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # gen weights
         if self.isMC:
-            output["gensumweight"] += ak.sum(events.genWeight)
+            blank_output["gensumweight"] += ak.sum(events.genWeight)
         else:
             genWeight = np.ones(len(events))
             events = ak.with_field(events, genWeight, "genWeight")
 
+        output = {}
+
         # run the analysis
-        events, output = self.analysis(events, output)
+        output_nom = deepcopy(blank_output)
+        _, output_nom = self.analysis(events, output_nom)
+        output['nominal'] = output_nom
 
-        # run the analysis with the track systematics applied
+        # run the analysis with the systematic variations applied
         if self.isMC and self.do_syst:
-            output.update(
-                {
-                    "cutflow_total_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_goldenJSON_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_genCuts_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_triggerSingleMuon_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_triggerDoubleMuon_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_triggerEGamma_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_allTriggers_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_orthogonality_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_oneTightLepton_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_oneLooseLepton_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_onePhoton_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_qualityFilters_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_jetHEMcut_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_electronHEMcut_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_METHEMcut_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_JetVetoMap_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_MET20_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_oneAK4jet_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_oneCluster_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_twoTracksInCluster_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                }
-            )
 
-            if len(events) > 0:
-                self.HighestPTMethod(
-                    events,
-                    output=output,
-                    out_label="_track_down",
-                )
-
-        if self.dropNonMethodEvents and len(events) > 0:
-            # this is not very efficient, as we are processing a lot of events that we drop
-            # it also assumes that we have SUEP_nconst for each method
-            methods = [
-                column.split("SUEP_nconst_")[-1]
-                for column in output["vars"].columns
-                if "SUEP_nconst_" in column
+            # for these, we need to re-run the whole analysis
+            variations = [
+                "ElScaleUp",
+                "ElScaleDown",
+                "ElSigmaUp",
+                "ElSigmaDown",
+                "MuScaleUp",
+                "MuScaleDown",
+                "track_down"
             ]
-            if len(methods) == 0:
-                # no events passed any method
-                selection = np.zeros(len(events), dtype=bool)
-            else:
-                selection = np.any(
-                    [
-                        ~output["vars"]["SUEP_nconst_" + method].isnull()
-                        for method in methods
-                    ],
-                    axis=0,
+            for variation in variations:
+                output_var = deepcopy(blank_output)
+                _, output_var = self.analysis(
+                    events,
+                    output=output_var,
+                    variation=variation,
                 )
-            events = events[selection]
-            output["vars"] = output["vars"][selection]
+                output[variation] = output_var
 
         return {dataset: output}
 
