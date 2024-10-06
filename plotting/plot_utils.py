@@ -34,6 +34,24 @@ default_style = {
         "linewidth": 2,
         "linestyle": "",
     },
+    "data-VRGJ_2016": {
+        "color": "black",
+        "fmt": "^",
+        "linewidth": 2,
+        "linestyle": "",
+    },
+    "data-VRGJ_2017": {
+        "color": "black",
+        "fmt": "^",
+        "linewidth": 2,
+        "linestyle": "",
+    },
+    "data-VRGJ_2018": {
+        "color": "black",
+        "fmt": "^",
+        "linewidth": 2,
+        "linestyle": "",
+    },
     "MC": {
         "color": "slateblue",
         "fmt": "",
@@ -70,7 +88,7 @@ default_style = {
     "GJets": {
         "color": "maroon",
     },
-    "WJetsToLNu_Pt": {
+    "WJetsToLNu": {
         "color": "deepskyblue",
     },
     "DYJetsToLL": {
@@ -226,6 +244,18 @@ def findLumiAndEra(year, auto_lumi, infile_name, scouting):
 
     return lumi, era
 
+def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
+    hists = []
+    with open(filename) as file:
+        for line in file:
+            sample_name = line.strip().split("/")[-1]
+            sample_name = sample_name.replace(".root", "")
+            result_path = f"{plotDir}/{tag}/{sample_name}{file_ext}"
+            if filters:
+                if not all([filt in sample_name for filt in filters]):
+                    continue
+            hists.append(result_path)
+    return hists
 
 def getHistLists(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []
@@ -269,6 +299,8 @@ def formatGluGluToSUEPNaming(file):
 
 def formatWHToSUEPNaming(file):
     file = file.split("/")[-1]
+    file = file.replace(".root", "")
+    file = file.replace(".pkl", "")
     tokens = file.split("_")
 
     mS = tokens[1]
@@ -374,11 +406,11 @@ def getSampleNameAndBin(sample_name):
         bin = sample_name.split(".root")[0].split("_Tune")[0]
 
     elif "WJetsToLNu_Pt" in sample_name:
-        sample = "WJetsToLNu_Pt"
+        sample = "WJetsToLNu"
         bin = sample_name.split(".root")[0].split("_MatchEWPDG20")[0]
 
     elif "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
-        sample = "WJetsToLNu_incl"
+        sample = "WJetsToLNu"
         bin = None
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
@@ -602,7 +634,7 @@ def loader(
         # get the normalization factor for SUEP samples
         # xsec is already apply in make_hists.py for non SUEP samples
         if "signal" in file_metadata.keys():
-            if int(file_metadata["signal"]):
+            if int(bool(file_metadata["signal"])):
                 xsec = float(file_metadata["xsec"])
                 if verbose:
                     print("\tApplying xsec", xsec)
@@ -881,7 +913,7 @@ def plot_ratio(
             hlist[i] = h.copy() / h.sum().value
 
     # Set up variables for the stacked histogram
-    fig = plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(10, 10))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
