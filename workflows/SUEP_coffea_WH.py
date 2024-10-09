@@ -655,6 +655,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # saving tight lepton kinematics
         if "WH_lepton" in events.fields:
+            
             output["vars"]["lepton_pt"] = events.WH_lepton.pt
             output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
             output["vars"]["lepton_eta"] = events.WH_lepton.eta
@@ -870,9 +871,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 events.WH_gamma, era=self.era, wp="wp90", doSyst=self.do_syst
             )
             output["vars"]["photon_SF"] = photon_SFs["nominal"]
-            if self.do_syst:
-                output["vars"]["photon_SF_up"] = photon_SFs["up"]
-                output["vars"]["photon_SF_down"] = photon_SFs["down"]
+            output["vars"]["photon_SF_up"] = photon_SFs["up"]
+            output["vars"]["photon_SF_down"] = photon_SFs["down"]
 
         # saving min, max delta R, phi, eta between jets
         jet_combinations = ak.combinations(
@@ -1114,10 +1114,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
             # for these, we need to re-run the whole analysis
             variations = [
-                "ElScaleUp",
-                "ElScaleDown",
-                "ElSigmaUp",
-                "ElSigmaDown",
                 "MuScaleUp",
                 "MuScaleDown",
                 "track_down"
