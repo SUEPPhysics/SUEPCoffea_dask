@@ -117,6 +117,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "eta": events.PFCands.trkEta,
                 "phi": events.PFCands.trkPhi,
                 "mass": events.PFCands.mass,
+                "charge": events.PFCands.charge,
             },
             with_name="Momentum4D",
         )
@@ -137,6 +138,7 @@ class SUEP_cluster(processor.ProcessorABC):
                 "eta": events.lostTracks.eta,
                 "phi": events.lostTracks.phi,
                 "mass": 0.0,
+                "charge": events.lostTracks.charge,
             },
             with_name="Momentum4D",
         )
@@ -172,7 +174,7 @@ class SUEP_cluster(processor.ProcessorABC):
             & (abs(events.Muon.dxy) <= 0.02) 
             & (abs(events.Muon.dz) <= 0.1)
         )
-        if iso_cut is not None:
+        if (iso_cut is not None) and (iso_cut < 99):
             clean_muons = clean_muons & (events.Muon.miniPFRelIso_all < iso_cut)
 
         muons = muons[clean_muons]
@@ -221,49 +223,292 @@ class SUEP_cluster(processor.ProcessorABC):
         # Reconctruct the dark photons and dark mesons
         dataset = events.metadata["dataset"]
 
-        events_no_cut, muons_no_cut = self.muon_filter(events)
-        weights_no_cut = self.get_weights(events_no_cut)
-        dark_photons = self.get_dark_photons(muons_no_cut)
-        dark_mesons = self.get_dark_mesons(dark_photons)
-        output[dataset]["histograms"]["nMuon_vs_nDarkPho_vs_nDarkMeson"].fill(
-            ak.num(muons_no_cut),
-            ak.num(dark_photons),
-            ak.num(dark_mesons),
-            weight=weights_no_cut,
-        )
-
         # Muon iso cuts
-        for muon_iso_cut in [0.1, 0.5, 1, 5, 15]:
-            events_iso_cut, muons_iso_cut = self.muon_filter(events, iso_cut=muon_iso_cut)
-            weights_iso_cut = self.get_weights(events_iso_cut)
-            dark_photons = self.get_dark_photons(muons_iso_cut)
+        for muon_iso_cut in np.logspace(-2, 1, 12)[:-1]:
+            events_, muons = self.muon_filter(events, iso_cut=None)
+            events_inv = events_
+            muons_inv = muons[(muons.miniPFRelIso_all > 1) & ((muons.miniPFRelIso_all - muons.miniPFRelIso_chg) > muon_iso_cut)]
+            muons = muons[muons.miniPFRelIso_all < 1]
+            if muon_iso_cut < 9:
+                muons = muons[(muons.miniPFRelIso_all - muons.miniPFRelIso_chg) < muon_iso_cut]
+            select_by_muons_high = ak.num(muons) >= 3
+            events_ = events_[select_by_muons_high]
+            muons = muons[select_by_muons_high]
+            weights = self.get_weights(events_)
+
+            dark_photons = self.get_dark_photons(muons)
             dark_mesons = self.get_dark_mesons(dark_photons)
-            output[dataset]["histograms"]["iso_cut_vs_nMuon_vs_nDarkPho_vs_nDarkMeson_iso_cut"].fill(
+            output[dataset]["histograms"]["b_vetoed_vs_miniPFRelIso_cut_vs_nMuon"].fill(
+                False,
                 muon_iso_cut * 1.01,
-                ak.num(muons_iso_cut),
-                ak.num(dark_photons),
-                ak.num(dark_mesons),
-                weight=weights_iso_cut,
+                ak.num(muons),
+                weight=weights,
+            )
+            output[dataset]["histograms"]["b_vetoed_vs_miniPFRelIso_invcut_vs_nMuon"].fill(
+                False,
+                muon_iso_cut * 1.01,
+                ak.num(muons_inv),
+                weight=self.get_weights(events_inv),
             )
 
-        # B veto
-        events_b_veto, muons_b_veto = self.muon_filter(events)
-        muons_jetIdx_sanitized = ak.where(muons_b_veto.jetIdx >= 0, muons_b_veto.jetIdx, 0)
-        muon_is_not_from_b = ak.where(muons_b_veto.jetIdx >= 0, events_b_veto.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
-        muons_b_veto = muons_b_veto[muon_is_not_from_b]
-        at_least_three_muons = ak.num(muons_b_veto) >= 3
-        events_b_veto = events_b_veto[at_least_three_muons]
-        muons_b_veto = muons_b_veto[at_least_three_muons]
-        weights_b_veto = self.get_weights(events_b_veto)
-        dark_photons = self.get_dark_photons(muons_b_veto)
-        dark_mesons = self.get_dark_mesons(dark_photons)
-        output[dataset]["histograms"]["nMuon_vs_nDarkPho_vs_nDarkMeson_b_veto"].fill(
-            ak.num(muons_b_veto),
-            ak.num(dark_photons),
-            ak.num(dark_mesons),
-            weight=weights_b_veto,
-        )
+            if muon_iso_cut == 15:
+                output[dataset]["histograms"]["nMuon_muon_miniPFRelIso_all_cut_15"].fill(
+                    ak.num(muons),
+                    weight=weights,
+                )
+                muons_miniPFRelIso_neutral = muons.miniPFRelIso_all - muons.miniPFRelIso_chg
+                muons_1 = muons[muons_miniPFRelIso_neutral < 1]
+                muons_0p1 = muons[muons_miniPFRelIso_neutral < 0.1]
+                output[dataset]["histograms"]["nMuon_muon_miniPFRelIso_neutral_cut_1"].fill(
+                    ak.num(muons_1),
+                    weight=weights,
+                )
+                output[dataset]["histograms"]["nMuon_muon_miniPFRelIso_neutral_cut_0p1"].fill(
+                    ak.num(muons_0p1),
+                    weight=weights,
+                )
+                output[dataset]["histograms"]["muon_miniPFRelIso_neutral_vs_nMuon"].fill(
+                    ak.flatten(ak.where(muons.miniPFRelIso_all - muons.miniPFRelIso_chg > 1e-4, muons.miniPFRelIso_all - muons.miniPFRelIso_chg, 1e-4)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["muon_pfRelIso03_neutral_vs_nMuon"].fill(
+                    ak.flatten(ak.where(muons.pfRelIso03_all - muons.pfRelIso03_chg > 1e-4, muons.pfRelIso03_all - muons.pfRelIso03_chg, 1e-4)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
 
+                output[dataset]["histograms"]["iso_ratio_vs_nMuon"].fill(
+                    ak.flatten(ak.where(muons.miniPFRelIso_all > 0, muons.miniPFRelIso_chg / muons.miniPFRelIso_all, 1)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_pfRelIso03_all_vs_Muon_pfRelIso03_chg_vs_nMuon"].fill(
+                    ak.flatten(muons.pfRelIso03_all),
+                    ak.flatten(muons.pfRelIso03_chg),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_pfRelIso03_all_vs_Muon_pfRelIso04_all_vs_nMuon"].fill(
+                    ak.flatten(muons.pfRelIso03_all),
+                    ak.flatten(muons.pfRelIso04_all),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_miniPFRelIso_all_vs_Muon_miniPFRelIso_chg_vs_nMuon"].fill(
+                    ak.flatten(muons.miniPFRelIso_all),
+                    ak.flatten(muons.miniPFRelIso_chg),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_miniPFRelIso_all_vs_Muon_pfRelIso03_all_vs_nMuon"].fill(
+                    ak.flatten(muons.miniPFRelIso_all),
+                    ak.flatten(muons.pfRelIso03_all),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+
+                output[dataset]["histograms"]["Jet_chHEF_vs_nMuon"].fill(
+                    ak.flatten(events_.Jet.chHEF),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), events_.Jet.chHEF)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, events_.Jet.chHEF)[0]),
+                )
+                output[dataset]["histograms"]["Jet_muEF_vs_nMuon"].fill(
+                    ak.flatten(events_.Jet.muEF),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), events_.Jet.muEF)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, events_.Jet.muEF)[0]),
+                )
+                output[dataset]["histograms"]["Jet_muonSubtrFactor_vs_nMuon"].fill(
+                    ak.flatten(events_.Jet.muonSubtrFactor),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), events_.Jet.muonSubtrFactor)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, events_.Jet.muonSubtrFactor)[0]),
+                )
+                output[dataset]["histograms"]["Jet_nMuons_vs_nMuon"].fill(
+                    ak.flatten(events_.Jet.nMuons),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), events_.Jet.nMuons)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, events_.Jet.nMuons)[0]),
+                )
+                output[dataset]["histograms"]["Jet_neEmEF_vs_nMuon"].fill(
+                    ak.flatten(events_.Jet.neEmEF),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), events_.Jet.neEmEF)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, events_.Jet.neEmEF)[0]),
+                )
+                output[dataset]["histograms"]["Jet_neHEF_vs_nMuon"].fill(
+                    ak.flatten(events_.Jet.neHEF),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), events_.Jet.neHEF)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, events_.Jet.neHEF)[0]),
+                )
+                events.Jet.chHEF
+
+                tracks, _ = self.getTracks(events_)
+                output[dataset]["histograms"]["HT_neutral_vs_HT_charged_vs_nMuon"].fill(
+                    ak.sum(tracks.pt[tracks.charge == 0], axis=-1),
+                    ak.sum(tracks.pt[tracks.charge != 0], axis=-1),
+                    ak.num(muons),
+                )
+                output[dataset]["histograms"]["nPFCands_neutral_vs_nPFCands_charged_vs_nMuon"].fill(
+                    ak.num(tracks[tracks.charge == 0]),
+                    ak.num(tracks[tracks.charge != 0]),
+                    ak.num(muons),
+                )
+                output[dataset]["histograms"]["iso_ratio_vs_nMuon_iso_cut"].fill(
+                    ak.flatten(ak.where(muons.miniPFRelIso_all > 0, muons.miniPFRelIso_chg / muons.miniPFRelIso_all, 1)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["muon_pt"].fill(
+                    ak.flatten(muons.pt),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["muon_pt_max"].fill(
+                    ak.max(muons.pt, axis=-1),
+                    ak.num(muons),
+                    weight=weights,
+                )
+
+            if muon_iso_cut == 99:
+                output[dataset]["histograms"]["muon_miniPFRelIso_neutral_vs_nMuon"].fill(
+                    ak.flatten(ak.where(muons.miniPFRelIso_all - muons.miniPFRelIso_chg > 1e-4, muons.miniPFRelIso_all - muons.miniPFRelIso_chg, 1e-4)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["muon_pfRelIso03_neutral_vs_nMuon"].fill(
+                    ak.flatten(ak.where(muons.pfRelIso03_all - muons.pfRelIso03_chg > 1e-4, muons.pfRelIso03_all - muons.pfRelIso03_chg, 1e-4)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+
+                output[dataset]["histograms"]["iso_ratio_vs_nMuon"].fill(
+                    ak.flatten(ak.where(muons.miniPFRelIso_all > 0, muons.miniPFRelIso_chg / muons.miniPFRelIso_all, 1)),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_pfRelIso03_all_vs_Muon_pfRelIso03_chg_vs_nMuon"].fill(
+                    ak.flatten(muons.pfRelIso03_all),
+                    ak.flatten(muons.pfRelIso03_chg),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_pfRelIso03_all_vs_Muon_pfRelIso04_all_vs_nMuon"].fill(
+                    ak.flatten(muons.pfRelIso03_all),
+                    ak.flatten(muons.pfRelIso04_all),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_miniPFRelIso_all_vs_Muon_miniPFRelIso_chg_vs_nMuon"].fill(
+                    ak.flatten(muons.miniPFRelIso_all),
+                    ak.flatten(muons.miniPFRelIso_chg),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+                output[dataset]["histograms"]["Muon_miniPFRelIso_all_vs_Muon_pfRelIso03_all_vs_nMuon"].fill(
+                    ak.flatten(muons.miniPFRelIso_all),
+                    ak.flatten(muons.pfRelIso03_all),
+                    ak.flatten(ak.broadcast_arrays(ak.num(muons), muons.pt)[0]),
+                    weight=ak.flatten(ak.broadcast_arrays(weights, muons.pt)[0]),
+                )
+
+                output[dataset]["histograms"]["nJet_vs_nMuon"].fill(
+                    ak.num(abs(events_.Jet.eta) < 2.4),
+                    ak.num(muons),
+                    weight=weights,
+                )
+                output[dataset]["histograms"]["nFatJet_vs_nMuon"].fill(
+                    ak.num(abs(events_.FatJet.eta) < 2.4),
+                    ak.num(muons),
+                    weight=weights,
+                )
+                output[dataset]["histograms"]["ht_vs_nMuon"].fill(
+                    ak.sum(events_.Jet.pt[abs(events_.Jet.eta) < 2.4], axis=-1),
+                    ak.num(muons),
+                    weight=weights,
+                )
+                output[dataset]["histograms"]["tot_muon_charge_vs_nMuon"].fill(
+                    ak.sum(muons.charge, axis=-1),
+                    ak.num(muons),
+                    weight=weights,
+                )
+
+            # B veto
+            muons_jetIdx_sanitized = ak.where(muons.jetIdx >= 0, muons.jetIdx, 0)
+            muon_is_not_from_b = ak.where(muons.jetIdx >= 0, events_.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
+            muons_b_veto = muons[muon_is_not_from_b]
+            at_least_three_muons = ak.num(muons_b_veto) >= 3
+            events_b_veto = events_[at_least_three_muons]
+            muons_b_veto = muons_b_veto[at_least_three_muons]
+            weights_b_veto = weights[at_least_three_muons]
+
+            muons_inv_jetIdx_sanitized = ak.where(muons_inv.jetIdx >= 0, muons_inv.jetIdx, 0)
+            muon_inv_is_not_from_b = ak.where(muons_inv.jetIdx >= 0, events_inv.Jet[muons_inv_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
+            muons_inv_b_veto = muons_inv[muon_inv_is_not_from_b]
+
+            dark_photons = self.get_dark_photons(muons_b_veto)
+            dark_mesons = self.get_dark_mesons(dark_photons)
+            output[dataset]["histograms"]["b_vetoed_vs_miniPFRelIso_cut_vs_nMuon"].fill(
+                True,
+                muon_iso_cut * 1.01,
+                ak.num(muons_b_veto),
+                weight=weights_b_veto,
+            )
+            output[dataset]["histograms"]["b_vetoed_vs_miniPFRelIso_invcut_vs_nMuon"].fill(
+                True,
+                muon_iso_cut * 1.01,
+                ak.num(muons_inv_b_veto),
+                weight=self.get_weights(events_inv),
+            )
+        
+        # pfRelIso03_all
+        for muon_iso_cut in np.logspace(-2, 1, 12)[:-1]:
+            events_, muons = self.muon_filter(events, iso_cut=None)
+            events_inv = events_
+            muons_inv = muons[(muons.pfRelIso03_all > 1) & ((muons.pfRelIso03_all - muons.pfRelIso03_chg) > muon_iso_cut)]
+            muons = muons[muons.pfRelIso03_all < 1]
+            if muon_iso_cut < 9:
+                muons = muons[(muons.pfRelIso03_all - muons.pfRelIso03_chg) < muon_iso_cut]
+            select_by_muons_high = ak.num(muons) >= 3
+            events_ = events_[select_by_muons_high]
+            muons = muons[select_by_muons_high]
+            weights = self.get_weights(events_)
+
+            output[dataset]["histograms"]["b_vetoed_vs_pfRelIso03_cut_vs_nMuon"].fill(
+                False,
+                muon_iso_cut * 1.01,
+                ak.num(muons),
+                weight=weights,
+            )
+            output[dataset]["histograms"]["b_vetoed_vs_pfRelIso03_invcut_vs_nMuon"].fill(
+                False,
+                muon_iso_cut * 1.01,
+                ak.num(muons_inv),
+                weight=self.get_weights(events_inv),
+            )
+
+            # B veto
+            muons_jetIdx_sanitized = ak.where(muons.jetIdx >= 0, muons.jetIdx, 0)
+            muon_is_not_from_b = ak.where(muons.jetIdx >= 0, events_.Jet[muons_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
+            muons_b_veto = muons[muon_is_not_from_b]
+            at_least_three_muons = ak.num(muons_b_veto) >= 3
+            events_b_veto = events_[at_least_three_muons]
+            muons_b_veto = muons_b_veto[at_least_three_muons]
+            weights_b_veto = weights[at_least_three_muons]
+
+            muons_inv_jetIdx_sanitized = ak.where(muons_inv.jetIdx >= 0, muons_inv.jetIdx, 0)
+            muon_inv_is_not_from_b = ak.where(muons_inv.jetIdx >= 0, events_inv.Jet[muons_inv_jetIdx_sanitized].btagDeepFlavB < 0.05, True)
+            muons_inv_b_veto = muons_inv[muon_inv_is_not_from_b]
+
+            output[dataset]["histograms"]["b_vetoed_vs_pfRelIso03_cut_vs_nMuon"].fill(
+                True,
+                muon_iso_cut * 1.01,
+                ak.num(muons_b_veto),
+                weight=weights_b_veto,
+            )
+            output[dataset]["histograms"]["b_vetoed_vs_pfRelIso03_invcut_vs_nMuon"].fill(
+                True,
+                muon_iso_cut * 1.01,
+                ak.num(muons_inv_b_veto),
+                weight=self.get_weights(events_inv),
+            )
 
         return
 
@@ -450,65 +695,179 @@ class SUEP_cluster(processor.ProcessorABC):
             label="cutflow",
         ).Weight()
         histograms = {
-            "b_vetoed_vs_iso_cut_vs_nMuon_vs_nDarkPho_vs_nDarkMeson": hist.Hist.new.Bool(
-                name="b_vetoed", label="b_vetoed"
-            ).Variable(
-                [0.1, 0.5, 1, 5, 15, 99, 100], 
-                name="muon_miniPFRelIso_all cut", 
-                label="muon_miniPFRelIso_all cut"
+            "nMuon_muon_miniPFRelIso_all_cut_15": hist.Hist.new.Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "nMuon_muon_miniPFRelIso_neutral_cut_0p1": hist.Hist.new.Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "nMuon_muon_miniPFRelIso_neutral_cut_1": hist.Hist.new.Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "muon_miniPFRelIso_neutral_vs_nMuon": hist.Hist.new.Reg(
+                100, 1e-4, 100, name="muon_miniPFRelIso_neutral", label="muon_miniPFRelIso_neutral", transform=hist.axis.transform.log
             ).Reg(
-                9, 3, 12, name="nMuon", label="nMuon"
-            ).Regular(
-                10, 0, 10, name="nDarkPho", label="nDarkPho"
-            ).Regular(
-                10, 0, 10, name="nDarkMeson", label="nDarkMeson"
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "muon_pfRelIso03_neutral_vs_nMuon": hist.Hist.new.Reg(
+                100, 1e-4, 100, name="muon_pfRelIso03_neutral", label="muon_pfRelIso03_neutral", transform=hist.axis.transform.log
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Jet_chHEF_vs_nMuon": hist.Hist.new.Reg(
+                44, 0, 1.1, name="Jet_chHEF", label="Jet_chHEF"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Jet_muEF_vs_nMuon": hist.Hist.new.Reg(
+                44, 0, 1.1, name="Jet_muEF", label="Jet_muEF"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Jet_muonSubtrFactor_vs_nMuon": hist.Hist.new.Reg(
+                44, 0, 1.1, name="Jet_muonSubtrFactor", label="Jet_muonSubtrFactor"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Jet_nMuons_vs_nMuon": hist.Hist.new.Reg(
+                10, 0, 10, name="Jet_nMuons", label="Jet_nMuons"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Jet_neEmEF_vs_nMuon": hist.Hist.new.Reg(
+                44, 0, 1.1, name="Jet_neEmEF", label="Jet_neEmEF"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Jet_neHEF_vs_nMuon": hist.Hist.new.Reg(
+                44, 0, 1.1, name="Jet_neHEF", label="Jet_neHEF"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
             ).Weight(),
 
-            # "muon_jet_btagDeepFlavB": hist.Hist.new.Reg(
-            #     100, 0, 1, name="muon_jet_btagDeepFlavB", label="muon_jet_btagDeepFlavB"
-            # ).Weight(),
-            # "os_dimuon_mass_vs_deltaR": hist.Hist.new.Reg(
-            #     100, 0.01, 100, name="os_dimuon_mass", label="os_dimuon_mass", transform=hist.axis.transform.log
-            # ).Reg(
-            #     100, 0, 5, name="os_dimuon_deltaR", label="os_dimuon_deltaR"
-            # ).Weight(),
-            # "diDarkPho_mass_vs_deltaR": hist.Hist.new.Reg(
-            #     100, 0.01, 100, name="diDarkPho_mass", label="diDarkPho_mass", transform=hist.axis.transform.log
-            # ).Reg(
-            #     100, 0, 5, name="diDarkPho_deltaR", label="diDarkPho_deltaR"
-            # ).Weight(),
-            # "nDarkPho_vs_nDarkMeson_vs_nMuon": hist.Hist.new.Regular(
-            #     10, 0, 10, name="nDarkPho", label="nDarkPho"
-            # ).Regular(
-            #     10, 0, 10, name="nDarkMeson", label="nDarkMeson"
-            # ).Regular(
-            #     10, 0, 10, name="nMuon", label="nMuon"
-            # ).Weight(),
-            # "sph_muon_boost_vs_nMuon": hist.Hist.new.Regular(
-            #     100, 0, 1, name="sph_muon_boost", label="sph_muon_boost"
-            # ).Regular(7, 3, 10, name="nMuon", label="nMuon").Weight(),
-            # "sph_tracks_boost_vs_nMuon": hist.Hist.new.Regular(
-            #     100, 0, 1, name="sph_tracks_boost", label="sph_tracks_boost"
-            # ).Regular(7, 3, 10, name="nMuon", label="nMuon").Weight(),
-            # "sph_SUEPcand_tracks_boost_vs_SUEP_jet_pt_vs_nMuon": hist.Hist.new.Regular(
-            #     100, 0, 1, name="sph_SUEPcand_tracks_boost", label="sph_SUEPcand_tracks_boost"
-            # ).Regular(
-            #     100, 0, 1000, name="SUEP_jet_pt", label="SUEP_jet_pt"
-            # ).Regular(
-            #     7, 3, 10, name="nMuon", label="nMuon"
-            # ).Weight(),
-            # "suep_jet_pt_vs_beta": hist.Hist.new.Regular(
-            #     100, 0, 1000, name="suep_jet_pt", label="suep_jet_pt"
-            # ).Regular(100, 0, 1, name="beta", label="beta").Weight(),
-            # "sph_SUEPcand_tracks_true_boost_vs_nMuon": hist.Hist.new.Regular(
-            #     100, 
-            #     0, 
-            #     1, 
-            #     name="sph_SUEPcand_tracks_true_boost", 
-            #     label="sph_SUEPcand_tracks_true_boost"
-            # ).Regular(
-            #     7, 3, 10, name="nMuon", label="nMuon"
-            # ).Weight(),
+            "HT_neutral_vs_HT_charged_vs_nMuon": hist.Hist.new.Reg(
+                100, 1, 1000, name="HT_neutral", label="HT_neutral", transform=hist.axis.transform.log
+            ).Reg(
+                100, 1, 1000, name="HT_charged", label="HT_charged", transform=hist.axis.transform.log
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "nPFCands_neutral_vs_nPFCands_charged_vs_nMuon": hist.Hist.new.Reg(
+                100, 0, 300, name="nPFCands_neutral", label="nPFCands_neutral"
+            ).Reg(
+                100, 0, 300, name="nPFCands_charged", label="nPFCands_charged"
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "iso_ratio_vs_nMuon": hist.Hist.new.Reg(
+                44, 0, 1.1, name="iso_ratio", label="iso_ratio",
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "iso_ratio_vs_nMuon_iso_cut": hist.Hist.new.Reg(
+                44, 0, 1.1, name="iso_ratio", label="iso_ratio",
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Muon_pfRelIso03_all_vs_Muon_pfRelIso03_chg_vs_nMuon": hist.Hist.new.Reg(
+                100, 0.1, 100, name="Muon_pfRelIso03_all", label="Muon_pfRelIso03_all", transform=hist.axis.transform.log
+            ).Reg(
+                100, 0.1, 100, name="Muon_pfRelIso03_chg", label="Muon_pfRelIso03_chg", transform=hist.axis.transform.log
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Muon_pfRelIso03_all_vs_Muon_pfRelIso04_all_vs_nMuon": hist.Hist.new.Reg(
+                100, 0.1, 100, name="Muon_pfRelIso03_all", label="Muon_pfRelIso03_all", transform=hist.axis.transform.log
+            ).Reg(
+                100, 0.1, 100, name="Muon_pfRelIso04_all", label="Muon_pfRelIso04_all", transform=hist.axis.transform.log
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Muon_miniPFRelIso_all_vs_Muon_miniPFRelIso_chg_vs_nMuon": hist.Hist.new.Reg(
+                100, 0.1, 100, name="Muon_miniPFRelIso_all", label="Muon_miniPFRelIso_all", transform=hist.axis.transform.log
+            ).Reg(
+                100, 0.1, 100, name="Muon_miniPFRelIso_chg", label="Muon_miniPFRelIso_chg", transform=hist.axis.transform.log
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+            "Muon_miniPFRelIso_all_vs_Muon_pfRelIso03_all_vs_nMuon": hist.Hist.new.Reg(
+                100, 0.1, 100, name="Muon_miniPFRelIso_all", label="Muon_miniPFRelIso_all", transform=hist.axis.transform.log
+            ).Reg(
+                100, 0.1, 100, name="Muon_pfRelIso03_all", label="Muon_pfRelIso03_all", transform=hist.axis.transform.log
+            ).Reg(
+                7, 3, 10, name="nMuon", label="nMuon"
+            ).Weight(),
+
+
+            ############################################################
+            "b_vetoed_vs_miniPFRelIso_cut_vs_nMuon": hist.Hist.new.Bool(
+                name="b_vetoed", label="b_vetoed"
+            ).Regular(
+                11, 0.01, 10, name="muon_miniPFRelIso_all cut", 
+                label="muon_miniPFRelIso_all cut",
+                transform=hist.axis.transform.log,
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "b_vetoed_vs_pfRelIso03_cut_vs_nMuon": hist.Hist.new.Bool(
+                name="b_vetoed", label="b_vetoed"
+            ).Regular(
+                11, 0.01, 10, name="muon_pfRelIso03_all cut", 
+                label="muon_pfRelIso03_all cut",
+                transform=hist.axis.transform.log,
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "b_vetoed_vs_miniPFRelIso_invcut_vs_nMuon": hist.Hist.new.Bool(
+                name="b_vetoed", label="b_vetoed"
+            ).Regular(
+                11, 0.01, 10, name="muon_miniPFRelIso_all cut", 
+                label="muon_miniPFRelIso_all cut",
+                transform=hist.axis.transform.log,
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "b_vetoed_vs_pfRelIso03_invcut_vs_nMuon": hist.Hist.new.Bool(
+                name="b_vetoed", label="b_vetoed"
+            ).Regular(
+                11, 0.01, 10, name="muon_pfRelIso03_all cut", 
+                label="muon_pfRelIso03_all cut",
+                transform=hist.axis.transform.log,
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            ############################################################
+
+            "muon_pt": hist.Hist.new.Reg(
+                100, 1, 1000, name="muon_pt", label="muon_pt", transform=hist.axis.transform.log
+            ).Reg(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "muon_pt_max": hist.Hist.new.Reg(
+                100, 1, 1000, name="muon_pt_max", label="muon_pt_max", transform=hist.axis.transform.log
+            ).Reg(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "nJet_vs_nMuon": hist.Hist.new.Reg(
+                20, 0, 20, name="nJet", label="nJet"
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "nFatJet_vs_nMuon": hist.Hist.new.Reg(
+                10, 0, 10, name="nFatJet", label="nFatJet"
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "ht_vs_nMuon": hist.Hist.new.Reg(
+                50, 10, 1e4, name="ht", label="ht", transform=hist.axis.transform.log
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
+            "tot_muon_charge_vs_nMuon": hist.Hist.new.Reg(
+                10, -5, 5, name="tot_muon_charge", label="tot_muon_charge"
+            ).Regular(
+                9, 3, 12, name="nMuon", label="nMuon"
+            ).Weight(),
         }
         
         output = {

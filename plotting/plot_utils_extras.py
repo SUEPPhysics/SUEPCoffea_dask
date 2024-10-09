@@ -592,7 +592,7 @@ def plot_ratio_overlay(
         zorder=1,
     )
 
-    ax1.legend(ncol=2, loc="best")
+    ax1.legend(ncol=1, loc="best")
     if xlog:
         ax1.set_xscale("log")
     if ylog:
@@ -661,7 +661,10 @@ def plot_ratio_overlay(
     ax2.axhline(1, ls="--", color="gray")
     ax2.set_xlabel(hists[0].axes.name[0])
     ax2.set_ylabel("Ratio")
-    ax2.set_ylim(0, 2)
+    if ratio_ylog:
+        ax2.set_yscale("log")
+    else:
+        ax2.set_ylim(0, 2)
     if xlog:
         ax1.xaxis.set_minor_locator(LogLocator(numticks=999, subs="all"))
     if fig is None:

@@ -1,0 +1,98 @@
+{
+    "GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS125.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS200.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS200.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS200.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS200.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS300.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS300.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS300.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS300.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS400.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS400.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS400.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS400.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS500.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS500.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS500.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS500.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS600.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS600.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS600.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS600.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS800.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS800.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS800.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS800.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS1000.000_mPhi8.000_T16.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS1000.000_mPhi8.000_T16.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS1000.000_mPhi8.000_T16.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T16p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS1000.000_mPhi8.000_T16.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS125.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS200.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS200.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS200.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS200.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS300.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS300.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS300.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS300.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS400.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS400.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS400.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS400.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS500.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS500.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS500.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS500.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS600.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS600.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS600.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS600.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS800.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS800.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS800.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS800.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ],
+    "GluGluToSUEP_mS1000.000_mPhi8.000_T32.000_modeleptonic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS1000.000_mPhi8.000_T32.000_modeleptonic_1.root"
+    ],
+    "GluGluToSUEP_mS1000.000_mPhi8.000_T32.000_modehadronic_13TeV": [
+        "root://cmseos.fnal.gov//store/user/chpapage/Central_NANO_split_merged/GluGluToSUEP_T32p00_TuneCP5_13TeV_pythia8+RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2+NANOAODSIM/GluGluToSUEP_mS1000.000_mPhi8.000_T32.000_modehadronic_1.root"
+    ]
+}
