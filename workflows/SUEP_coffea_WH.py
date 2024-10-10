@@ -555,8 +555,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["WH_MET_phi"] = events.WH_MET.phi
         output["vars"]["WH_MET_sumEt"] = events.WH_MET.sumEt
 
-        # systematic variations
-        if self.isMC and self.do_syst:
+        # systematic variations of MET
+        if self.isMC:
 
             output["vars"]["PuppiMET_pt_JER_up"] = events.PuppiMET.ptJERUp
             output["vars"]["PuppiMET_pt_JER_down"] = events.PuppiMET.ptJERDown
@@ -570,28 +570,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
             output["vars"]["PuppiMET_phi_Unclustered_up"] = events.PuppiMET.phiUnclusteredUp
             output["vars"]["PuppiMET_phi_Unclustered_down"] = events.PuppiMET.phiUnclusteredDown
-            # TODO CorrectedMETFactory is broken! The following cannot be trusted!
-            # output["vars"]["MET_JEC_pt_JER_up"] = events.WH_MET.JER.up.pt
-            # output["vars"]["MET_JEC_pt_JER_down"] = events.WH_MET.JER.up.pt
-            # output["vars"]["MET_JEC_pt_JES_up"] = events.WH_MET.JES_jes.up.pt
-            # output["vars"]["MET_JEC_pt_JES_down"] = events.WH_MET.JES_jes.down.pt
-            # output["vars"][
-            #    "MET_JEC_pt_UnclusteredEnergy_up"
-            # ] = events.WH_MET.MET_UnclusteredEnergy.up.pt
-            # output["vars"][
-            #    "MET_JEC_pt_UnclusteredEnergy_down"
-            # ] = events.WH_MET.MET_UnclusteredEnergy.down.pt
-            # output["vars"]["MET_JEC_phi"] = events.WH_MET.phi
-            # output["vars"]["MET_JEC_phi_JER_up"] = events.WH_MET.JER.up.phi
-            # output["vars"]["MET_JEC_phi_JER_down"] = events.WH_MET.JER.down.phi
-            # output["vars"]["MET_JEC_phi_JES_up"] = events.WH_MET.JES_jes.up.phi
-            # output["vars"]["MET_JEC_phi_JES_down"] = events.WH_MET.JES_jes.down.phi
-            # output["vars"][
-            #    "MET_JEC_phi_UnclusteredEnergy_up"
-            # ] = events.WH_MET.MET_UnclusteredEnergy.up.phi
-            # output["vars"][
-            #    "MET_JEC_phi_UnclusteredEnergy_down"
-            # ] = events.WH_MET.MET_UnclusteredEnergy.down.phi
 
         # event weights
         if self.isMC:
@@ -612,7 +590,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                         era_int,
                         wps="TL",
                         channel=metaCR,
-                        do_syst=self.do_syst,
                     )
                     for var in bTagWeights.keys():
                         output["vars"]["bTagWeight_" + var + "_" + metaCR] = (
@@ -714,13 +691,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["LepSFMuDown"] = leptonsSFs['LepSFMuDown']   
 
         # other loose leptons
-        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events)
+        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events, isMC=self.isMC)
         output["vars"]["nLooseLeptons"] = ak.num(looseLeptons).to_list()
         output["vars"]["nLooseMuons"] = ak.num(looseMuons).to_list()
         output["vars"]["nLooseElectrons"] = ak.num(looseElectrons).to_list()
 
         # loose not tight leptons
-        _, _, looseNotTightLeptons = WH_utils.getLooseNotTightLeptons(events)
+        _, _, looseNotTightLeptons = WH_utils.getLooseNotTightLeptons(events, isMC=self.isMC)
         highpt_looseNotTightLeptons = ak.argsort(
             looseNotTightLeptons.pt, axis=1, ascending=False, stable=True
         )
@@ -868,7 +845,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
             # photon scale factors
             photon_SFs = getPhotonSFs(
-                events.WH_gamma, era=self.era, wp="wp90", doSyst=self.do_syst
+                events.WH_gamma, era=self.era, wp="wp90"
             )
             output["vars"]["photon_SF"] = photon_SFs["nominal"]
             output["vars"]["photon_SF_up"] = photon_SFs["up"]
@@ -951,9 +928,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
 
         if self.VRGJ:
-            events = WH_utils.VRGJOrthogonalitySelection(events, era=self.era)
+            events = WH_utils.VRGJOrthogonalitySelection(events, era=self.era, isMC=self.isMC)
         else:
-            events = WH_utils.orthogonalitySelection(events)
+            events = WH_utils.orthogonalitySelection(events, isMC=self.isMC)
         output["cutflow_orthogonality" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
@@ -968,7 +945,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         if not self.CRQCD and not self.VRGJ:
-            events = WH_utils.oneTightLeptonSelection(events, self.era, variation=variation if 'MuScale' in variation or 'ElScale' in variation else "")
+            events = WH_utils.oneTightLeptonSelection(events, self.era, isMC=self.isMC, variation=variation if 'MuScale' in variation or 'ElScale' in variation else "")
             output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
         elif self.VRGJ:
             events = WH_utils.onePhotonSelection(events, self.isMC)

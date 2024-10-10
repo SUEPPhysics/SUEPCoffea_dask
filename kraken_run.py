@@ -144,7 +144,7 @@ def main():
         "-doInf", "--doInf", type=int, default=0, help="Do inference or not."
     )
     parser.add_argument(
-        "-doSyst", "--doSyst", type=int, default=1, help="Apply systematics."
+        "-doSyst", "--doSyst", type=int, default=0, help="Run systematic variations."
     )
     parser.add_argument(
         "-cutflow", "--cutflow", type=int, default=0, help="Cutflow analyzer."

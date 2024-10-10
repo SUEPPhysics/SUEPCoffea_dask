@@ -282,12 +282,13 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 if self.options.dataDirLocal.count("{}") == 2
                 else self.options.dataDirLocal
             )
+            print(dataDir)
             if self.options.merged:
                 dataDir += "merged/"
             files = [dataDir + f for f in os.listdir(dataDir)]
+        files = [f for f in files if ".hdf5" in f]
         if self.options.maxFiles > 0:
             files = files[: self.options.maxFiles]
-        files = [f for f in files if ".hdf5" in f]
 
         self.logger.debug(f"Found {len(files)} files for sample {sample}.")
         return files

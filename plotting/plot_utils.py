@@ -139,6 +139,26 @@ default_style = {
     "ggf-mS1000": {
         "color": "red",
     },
+    'SUEP-WH-mS125_T2.0_mPhi2.0_generic': {
+        "color": "cyan",
+        "linewidth": 3,
+        "linestyle": "--",
+    },
+    'SUEP-WH-mS125_T3.0_mPhi3.0_generic': {
+        "color": "lime",
+        "linewidth": 3,
+        "linestyle": "--",
+    },
+    'SUEP-WH-mS125_T4.0_mPhi4.0_generic': {
+        "color": "dimgray",
+        "linewidth": 3,
+        "linestyle": "--",
+    },
+    'SUEP-WH-mS125_T8.0_mPhi8.0_generic': {
+        "color": "silver",
+        "linewidth": 3,
+        "linestyle": "--",
+    },
 }
 
 
@@ -467,6 +487,14 @@ def getSampleNameAndBin(sample_name):
 
     elif "EGamma+Run" in sample_name:
         sample = "EGamma"
+        bin = sample_name.split("-")[0]
+
+    elif "SingleElectron+Run" in sample_name:
+        sample = "SingleElectron"
+        bin = sample_name.split("-")[0]
+
+    elif "SinglePhoton+Run" in sample_name:
+        sample = "SinglePhoton"
         bin = sample_name.split("-")[0]
 
     elif "SingleMuon+Run" in sample_name:
@@ -910,10 +938,10 @@ def plot_ratio(
     # pre-processing of histograms before plotting routine
     if density:
         for i, h in enumerate(hlist):
-            hlist[i] = h.copy() / h.sum().value
+            hlist[i] = h.copy() / (np.sum(np.diff(h.axes[0].edges) * h.values()))
 
     # Set up variables for the stacked histogram
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(12, 12))
     plt.subplots_adjust(bottom=0.15, left=0.17)
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)

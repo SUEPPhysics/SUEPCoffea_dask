@@ -13,25 +13,36 @@ from workflows.utils import output_utils, pandas_utils
 
 
 def form_ntuple(options, output):
-    df = pandas_utils.format_dataframe(output["out"][options.dataset]["vars"].value)
-    return df
-
+    """
+    Extract the dataframes from the processor output
+    We expect this to have the shape: {variation1: {vars: df, ...}, variation2: {vars: df, ...}, ...}
+    """
+    dfs = []
+    variations = output["out"][options.dataset].keys()
+    for var in variations:
+        dfs.append(pandas_utils.format_dataframe(output["out"][options.dataset][var]["vars"].value))
+    return dfs, ["vars_" + var if var != "nominal" else "vars" for var in variations]
 
 def form_metadata(options, output):
+    """
+    Extract the metadata from the processor output
+    We expect this to have the shape: {variation1: {era: 2018, mc: 1, sample: X, ...}, ...}ll -h
+    """
     metadata = dict(
         era=options.era,
         mc=options.isMC,
         sample=options.dataset,
     )
-    metadata.update(
-        {
-            key: output["out"][options.dataset][key]
-            for key in output["out"][options.dataset].keys()
-            if type(output["out"][options.dataset][key]) is processor.value_accumulator
-        }
-    )
+    variations = output["out"][options.dataset].keys()
+    for var in variations:
+        metadata.update(
+            {
+                "_".join(filter(None, [key, var])): output["out"][options.dataset][var][key]
+                for key in output["out"][options.dataset][var].keys()
+                if type(output["out"][options.dataset][var][key]) is processor.value_accumulator
+            }
+        )
     metadata = pandas_utils.format_metadata(metadata)
-
     return metadata
 
 
@@ -86,9 +97,8 @@ def main():
             sample=options.dataset,
             flag=False,
             output_location=options.output_location,
-            VRGJ=True,  # this runs as gamma+jets VR!
-            dropNonMethodEvents=True,
-            storeJetsInfo=False,
+            VRGJ=True,
+            storeJetsInfo=True,
         )
     )
 
@@ -111,13 +121,13 @@ def main():
         )
 
         # format the desired data from the processor output
-        df = form_ntuple(options, output)
+        dfs, df_names = form_ntuple(options, output)
         metadata = form_metadata(options, output)
         hists = form_hists(options, output)
 
         # save everything to hdf5
         pandas_utils.save_dfs(
-            instance, [df], ["vars"], options.outfile, metadata=metadata
+            instance, dfs, df_names, options.outfile, metadata=metadata
         )
         output_utils.add_hists(options.outfile, hists)
 

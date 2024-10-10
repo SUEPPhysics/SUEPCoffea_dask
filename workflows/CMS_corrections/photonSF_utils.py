@@ -7,7 +7,7 @@ from correctionlib import _core
 
 
 def getPhotonSFs(
-    photons: ak.Array, era: str, wp: str, doSyst: bool = True
+    photons: ak.Array, era: str, wp: str
 ) -> List[float]:
     """
     Get the photon ID scale factors for an awkward array of photons.
@@ -36,26 +36,20 @@ def getPhotonSFs(
         photons_flat, photons_n = ak.flatten(photons), np.array(ak.num(photons))
         need_to_unflatten = True
 
-    print(
-        evaluator["UL-Photon-ID-SF"].evaluate(
-            era_map[era], "sf", wp, photons_flat.eta[0], photons_flat.pt[0]
-        )
-    )
     output["nominal"] = evaluator["UL-Photon-ID-SF"].evaluate(
         era_map[era], "sf", wp, photons_flat.eta, photons_flat.pt
     )
     if need_to_unflatten:
         output["nominal"] = ak.unflatten(output["nominal"], photons_n)
-    if doSyst:
-        output["up"] = evaluator["UL-Photon-ID-SF"].evaluate(
-            era_map[era], "sfup", wp, photons_flat.eta, photons_flat.pt
-        )
-        if need_to_unflatten:
-            output["up"] = ak.unflatten(output["up"], photons_n)
-        output["down"] = evaluator["UL-Photon-ID-SF"].evaluate(
-            era_map[era], "sfdown", wp, photons_flat.eta, photons_flat.pt
-        )
-        if need_to_unflatten:
-            output["down"] = ak.unflatten(output["down"], photons_n)
+    output["up"] = evaluator["UL-Photon-ID-SF"].evaluate(
+        era_map[era], "sfup", wp, photons_flat.eta, photons_flat.pt
+    )
+    if need_to_unflatten:
+        output["up"] = ak.unflatten(output["up"], photons_n)
+    output["down"] = evaluator["UL-Photon-ID-SF"].evaluate(
+        era_map[era], "sfdown", wp, photons_flat.eta, photons_flat.pt
+    )
+    if need_to_unflatten:
+        output["down"] = ak.unflatten(output["down"], photons_n)
 
     return output

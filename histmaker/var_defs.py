@@ -146,14 +146,14 @@ def initialize_new_variables(label: str, options, config: dict):
                         "SUEP_phi_HighestPT",
                     ],
                 ],
-                [
-                    'deltaPhi_ak4jet1_outsideSUEPcluster_SUEP',
-                    deltaPhi_x_y,
-                    [
-                        'ak4jet1_outsideSUEPcluster_phi_HighestPT',
-                        'SUEP_phi_HighestPT'
-                    ]
-                ],
+                # [
+                #     'deltaPhi_ak4jet1_outsideSUEPcluster_SUEP',
+                #     deltaPhi_x_y,
+                #     [
+                #         'ak4jet1_outsideSUEPcluster_phi_HighestPT',
+                #         'SUEP_phi_HighestPT'
+                #     ]
+                # ],
                 ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
                 ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
                 # ["new_W_pt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
@@ -204,6 +204,8 @@ def initialize_new_variables(label: str, options, config: dict):
                 new_vars += [
                     ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
                     ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
+                    #['LepSFMu', lambda x, y: x * y, ['LepSF', 'isMuon']],
+                    #['LepSFEl', lambda x, y: x * y, ['LepSF', 'isElectron']],
                 ]
 
         if options.channel == "WH-VRGJ":

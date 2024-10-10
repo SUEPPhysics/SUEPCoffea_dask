@@ -489,7 +489,7 @@ def init_hists_highestPT(output, label, regions_list=[""]):
                 label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
             ).Weight(),
             f"SUEP_pt_{label}": Hist.new.Reg(
-                1000,
+                100,
                 0,
                 1000,
                 name=f"SUEP_pt_{label}",
@@ -994,6 +994,13 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     name=f"jet3_qgl_{label}",
             #     label="3rd leading jet qgl",
             # ).Weight(),
+            f"bTagWeight_central_wh_{label}": Hist.new.Reg(
+                100,
+                0,
+                2,
+                name=f"bTagWeight_central_wh_{label}",
+                label="b-tag weight",
+            ).Weight(),
             f"bjetSel_{label}": Hist.new.Int(
                 0,
                 2,
@@ -1999,21 +2006,70 @@ def init_hists_highestPT(output, label, regions_list=[""]):
             #     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             # )
             # .Weight(),
-            # f"2D_ak4jet1_inSUEPcluster_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
-            #     1000,
-            #     0,
-            #     2000,
-            #     name=f"ak4jet1_inSUEPcluster_pt_{label}",
-            #     label=r"$p^{\mathrm{jet}}_T$",
-            # )
-            # .Reg(
-            #     500,
-            #     0,
-            #     500,
-            #     name=f"nconst_{label}",
-            #     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-            # )
-            # .Weight(),
+            f"LepSF_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSF_{label}",
+                label="LepSF",
+            ).Weight(),
+            f"LepSFMu_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSFMu_{label}",
+                label="LepSF ($\mu$)",
+            ).Weight(),
+            f"LepSFEl_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSFEl_{label}",
+                label="LepSF ($e$)",
+            ).Weight(),
+            f"LepSFMuUp_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSFMuUp_{label}",
+                label="LepSFMuUp",
+            ).Weight(),
+            f"LepSFMuDown_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSFMuDown_{label}",
+                label="LepSFMuDown",
+            ).Weight(),
+            f"LepSFEleUp_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSFEleUp_{label}",
+                label="LepSFEleUp",
+            ).Weight(),
+            f"LepSFEleDown_{label}": Hist.new.Reg(
+                500,
+                0.8,
+                1.2,
+                name=f"LepSFEleDown_{label}",
+                label="LepSFEleDown",
+            ).Weight(),
+            f"2D_ak4jet1_inSUEPcluster_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
+                1000,
+                0,
+                2000,
+                name=f"ak4jet1_inSUEPcluster_pt_{label}",
+                label=r"$p^{\mathrm{jet}}_T$",
+            )
+            .Reg(
+                500,
+                0,
+                500,
+                name=f"nconst_{label}",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            )
+            .Weight(),
             # f"2D_ak4SUEP1_SUEP_BV_vs_SUEP_nconst_{label}": Hist.new.Reg(
             #     100,
             #     -1,

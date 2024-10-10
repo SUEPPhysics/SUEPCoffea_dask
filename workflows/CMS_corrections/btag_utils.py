@@ -11,7 +11,6 @@ def doBTagWeights(
     era: int,
     wps: str,
     channel: str = "zh",
-    do_syst: bool = False,
     base_dir: str = ".",
 ) -> dict:
     """
@@ -64,95 +63,94 @@ def doBTagWeights(
             ),
             SF[wp]["central"],
         )
-        if do_syst:
-            SF[wp]["HFcorrelated_Up"] = np.where(
-                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-                corrector["deepJet_comb"].evaluate(
-                    "up_correlated",
-                    wp,
-                    hadronFlavourLightAsB,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["HFcorrelated_Dn"] = np.where(
-                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-                corrector["deepJet_comb"].evaluate(
-                    "down_correlated",
-                    wp,
-                    hadronFlavourLightAsB,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["HFuncorrelated_Up"] = np.where(
-                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-                corrector["deepJet_comb"].evaluate(
-                    "up_uncorrelated",
-                    wp,
-                    hadronFlavourLightAsB,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["HFuncorrelated_Dn"] = np.where(
-                (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
-                corrector["deepJet_comb"].evaluate(
-                    "down_uncorrelated",
-                    wp,
-                    hadronFlavourLightAsB,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["LFcorrelated_Up"] = np.where(
-                abs(jets.hadronFlavour) == 0,
-                correctorL["deepJet_incl"].evaluate(
-                    "up_correlated",
-                    wp,
-                    hadronFlavourBCAsLight,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["LFcorrelated_Dn"] = np.where(
-                abs(jets.hadronFlavour) == 0,
-                correctorL["deepJet_incl"].evaluate(
-                    "down_correlated",
-                    wp,
-                    hadronFlavourBCAsLight,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["LFuncorrelated_Up"] = np.where(
-                abs(jets.hadronFlavour) == 0,
-                correctorL["deepJet_incl"].evaluate(
-                    "up_uncorrelated",
-                    wp,
-                    hadronFlavourBCAsLight,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
-            SF[wp]["LFuncorrelated_Dn"] = np.where(
-                abs(jets.hadronFlavour) == 0,
-                correctorL["deepJet_incl"].evaluate(
-                    "down_uncorrelated",
-                    wp,
-                    hadronFlavourBCAsLight,
-                    flattened_eta,
-                    flattened_pt,
-                ),
-                SF[wp]["central"],
-            )
+        SF[wp]["HFcorrelated_Up"] = np.where(
+            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+            corrector["deepJet_comb"].evaluate(
+                "up_correlated",
+                wp,
+                hadronFlavourLightAsB,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["HFcorrelated_Dn"] = np.where(
+            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+            corrector["deepJet_comb"].evaluate(
+                "down_correlated",
+                wp,
+                hadronFlavourLightAsB,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["HFuncorrelated_Up"] = np.where(
+            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+            corrector["deepJet_comb"].evaluate(
+                "up_uncorrelated",
+                wp,
+                hadronFlavourLightAsB,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["HFuncorrelated_Dn"] = np.where(
+            (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
+            corrector["deepJet_comb"].evaluate(
+                "down_uncorrelated",
+                wp,
+                hadronFlavourLightAsB,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["LFcorrelated_Up"] = np.where(
+            abs(jets.hadronFlavour) == 0,
+            correctorL["deepJet_incl"].evaluate(
+                "up_correlated",
+                wp,
+                hadronFlavourBCAsLight,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["LFcorrelated_Dn"] = np.where(
+            abs(jets.hadronFlavour) == 0,
+            correctorL["deepJet_incl"].evaluate(
+                "down_correlated",
+                wp,
+                hadronFlavourBCAsLight,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["LFuncorrelated_Up"] = np.where(
+            abs(jets.hadronFlavour) == 0,
+            correctorL["deepJet_incl"].evaluate(
+                "up_uncorrelated",
+                wp,
+                hadronFlavourBCAsLight,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
+        SF[wp]["LFuncorrelated_Dn"] = np.where(
+            abs(jets.hadronFlavour) == 0,
+            correctorL["deepJet_incl"].evaluate(
+                "down_uncorrelated",
+                wp,
+                hadronFlavourBCAsLight,
+                flattened_eta,
+                flattened_pt,
+            ),
+            SF[wp]["central"],
+        )
 
     # these are the efficiencies computed for each analysis and WP
     effs = {wp: getBTagEffs(jets, era, wp, channel, base_dir) for wp in wps}
