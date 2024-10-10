@@ -1,0 +1,5 @@
+/store/user/paus/nanosu/A02//SinglePhoton+Run2016B-ver2_HIPM_UL2016_MiniAODv2-v2+MINIAOD
+/store/user/paus/nanosu/A02//SinglePhoton+Run2016C-HIPM_UL2016_MiniAODv2-v4+MINIAOD
+/store/user/paus/nanosu/A02//SinglePhoton+Run2016D-HIPM_UL2016_MiniAODv2-v2+MINIAOD
+/store/user/paus/nanosu/A02//SinglePhoton+Run2016E-HIPM_UL2016_MiniAODv2-v2+MINIAOD
+/store/user/paus/nanosu/A02//SinglePhoton+Run2016F-HIPM_UL2016_MiniAODv2-v2+MINIAOD
