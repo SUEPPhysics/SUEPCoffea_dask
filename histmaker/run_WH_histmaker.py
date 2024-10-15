@@ -102,7 +102,7 @@ def getOptions() -> dict:
         type=str,
         help="Ntuple single filename, in case you don't want to process a whole sample",
     )
-    parser.add_argument("--blind", type=int, default=0, help="Blind")
+    parser.add_argument("--blind", type=int, default=1, help="Blind")
 
     options = parser.parse_args()
     options = vars(options)
@@ -414,29 +414,56 @@ def main():
                     "prefire_down",
                 ],
              },
-            # "CRWJ": {
-            #     "input_method": "HighestPT",
-            #     "method_var": "SUEP_nconst_HighestPT",
-            #     "selections": [
-            #         "SUEP_nconst_HighestPT >= 10",
-            #         "PuppiMET_pt > 30",
-            #         "W_pt > 60",
-            #         "W_mt < 130",
-            #         "W_mt > 30",
-            #         "bjetSel == 1",
-            #         "deltaPhi_SUEP_W > 1.5",
-            #         "deltaPhi_SUEP_MET > 1.5",
-            #         "deltaPhi_lepton_SUEP > 1.5",
-            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #         "W_SUEP_BV < 2",
-            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-            #         "SUEP_S1_HighestPT < 0.3",
-            #     ],
-            #     "syst": [],
-            # }
+            "CRWJ": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 2.0],
+                    ["SUEP_nconst_HighestPT", ">=", 1000]
+                ],
+                "selections": [
+                    "SUEP_nconst_HighestPT >= 10",
+                    "PuppiMET_pt > 30",
+                    "W_pt > 60",
+                    "W_mt < 130",
+                    "W_mt > 30",
+                    "bjetSel == 1",
+                    "deltaPhi_SUEP_W > 1.5",
+                    "deltaPhi_SUEP_MET > 1.5",
+                    "deltaPhi_lepton_SUEP > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT < 0.3",
+                ],
+                "syst": [
+                    "puweights_up",
+                    "puweights_down",
+                    "PSWeight_ISR_up",
+                    "PSWeight_ISR_down",
+                    "PSWeight_FSR_up",
+                    "PSWeight_FSR_down",
+                    "higgs_weights_up",
+                    "higgs_weights_down",
+                    "LepSFElUp",
+                    "LepSFElDown",
+                    "LepSFMuUp",
+                    "LepSFMuDown",
+                    "bTagWeight_HFcorrelated_Up",
+                    "bTagWeight_HFcorrelated_Dn",
+                    "bTagWeight_HFuncorrelated_Up",
+                    "bTagWeight_HFuncorrelated_Dn",
+                    "bTagWeight_LFcorrelated_Up",
+                    "bTagWeight_LFcorrelated_Dn",
+                    "bTagWeight_LFuncorrelated_Up",
+                    "bTagWeight_LFuncorrelated_Dn",
+                    "prefire_up",
+                    "prefire_down",
+                ],
+            }
         }
 
-        if options.get("isMC"):
+        if options.get("isMC") and options.get("doSyst"):
 
             # add systematic variations, which are identical, except for the dataframe name
             variations = [
@@ -477,6 +504,18 @@ def main():
 
     elif options['channel'] == 'WH-VRGJ':
         config = {
+            # "VRGJnoB": {
+            #    "input_method": "HighestPT",
+            #    "method_var": "SUEP_nconst_HighestPT",
+            #    "selections": [
+            #        "SUEP_nconst_HighestPT >= 10",
+            #        "minDeltaPhiJetPhoton > 1.5",
+            #        "deltaPhi_SUEP_photon > 1.5",
+            #        "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #        "photon_SUEP_BV < 2",
+            #        "SUEP_S1_HighestPT < 0.3",
+            #    ],
+            # },
             "VRGJlowS": {
                "input_method": "HighestPT",
                "method_var": "SUEP_nconst_HighestPT",

@@ -782,7 +782,7 @@ def check_proxy(time_min=100):
         redone_proxy = False
         while not redone_proxy:
             status = os.system(f"voms-proxy-init -voms cms --hours=140")
-            lifetime = 12
+            lifetime = 140
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
 

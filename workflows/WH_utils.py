@@ -630,16 +630,18 @@ def getGammaTriggerBits(events, era: str):
     if era == "2018":
         gammaTriggerBits = (
             (events.HLT.Photon200)
-            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 2
-            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 4
-            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
         )
     elif era == "2017":
         gammaTriggerBits = (
             (events.HLT.Photon200)
-            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 2
-            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 4
-            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
         )
     elif era == "2016" or era == "2016apv":
         gammaTriggerBits = (
