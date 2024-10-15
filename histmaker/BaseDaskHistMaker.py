@@ -9,8 +9,6 @@ import socket
 import traceback
 from time import time
 from typing import List
-from coffea.processor import dict_accumulator, value_accumulator
-from coffea.processor.accumulator import AccumulatorABC
 from dask.distributed import Client, Future, LocalCluster, as_completed
 from dask_jobqueue import SLURMCluster
 from tqdm import tqdm
@@ -124,17 +122,11 @@ class BaseDaskHistMaker:
         # add some sample metadata to the output
         for sample in samples:
             output[sample] = {}
-            output[sample]["_processing_metadata"] = dict_accumulator({})
+            output[sample]["_processing_metadata"] = {}
             output[sample]["_processing_metadata"]["postprocess_status"] = ""
-            output[sample]["_processing_metadata"]["n_processed"] = value_accumulator(
-                float, 0
-            )
-            output[sample]["_processing_metadata"]["n_success"] = value_accumulator(
-                float, 0
-            )
-            output[sample]["_processing_metadata"]["n_failed"] = value_accumulator(
-                float, 0
-            )
+            output[sample]["_processing_metadata"]["n_processed"] = 0
+            output[sample]["_processing_metadata"]["n_success"] = 0
+            output[sample]["_processing_metadata"]["n_failed"] = 0
 
         self.logger.info(f"Processing and collecting futures.")
         for future in tqdm(as_completed(futures), total=len(futures)):
@@ -148,17 +140,8 @@ class BaseDaskHistMaker:
 
                 for key, value in result.items():
 
-                    # coffea's accumulators can be added together
-                    if issubclass(type(value), AccumulatorABC):
-
-                        if key in output[sample].keys():
-                            output[sample][key] += value
-                        else:
-
-                            output[sample][key] = value
-
-                    # we can also add dictionaries (e.g. of hist histograms, cutflows)
-                    elif type(value) is dict:
+                    # we can add dictionaries (e.g. of hist histograms, cutflows)
+                    if type(value) is dict:
 
                         if key in output[sample].keys():
                             for subkey in value.keys():
@@ -176,8 +159,8 @@ class BaseDaskHistMaker:
 
             except Exception as e:
 
-                self.logger.error(traceback.format_exc())
                 self.logger.error(f"Failed to merge output: {e}")
+                self.logger.error(traceback.format_exc())
                 output[sample]["_processing_metadata"]["n_failed"] += 1
                 continue
 
@@ -212,10 +195,10 @@ class BaseDaskHistMaker:
             for key, value in output[sample]["_processing_metadata"].items():
                 if key.startswith("n_"):
                     status = key.split("_")[1]
-                    self.logger.debug(f" {status}: {value.value}")
+                    self.logger.debug(f" {status}: {value}")
                     if status not in _tot_futures_results.keys():
                         _tot_futures_results[status] = 0
-                    _tot_futures_results[status] += value.value
+                    _tot_futures_results[status] += value
 
         self.logger.info("")
         for status, value in _tot_futures_results.items():

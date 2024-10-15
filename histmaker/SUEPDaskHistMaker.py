@@ -16,7 +16,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 import uproot
-from coffea.processor import value_accumulator
+# from coffea.processor import value_accumulator
 from dask import delayed
 from dask.distributed import Client, Future
 
@@ -131,7 +131,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         histograms = output.get("hists", {})
         cutflow = output.get("cutflow", {})
-        gensumweight = output.get("gensumweight", value_accumulator(float, 0)).value
+        gensumweight = output.get("gensumweight", 0)
 
         metadata = {
             "ntuple_tag": self.options.tag,
@@ -145,14 +145,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "gensumweight": gensumweight,
             "lumi": 1,
             "n_processed": output["_processing_metadata"]
-            .get("n_processed", value_accumulator(float, 0))
-            .value,
+            .get("n_processed", 0),
             "n_success": output["_processing_metadata"]
-            .get("n_success", value_accumulator(float, 0))
-            .value,
+            .get("n_success", 0),
             "n_failed": output["_processing_metadata"]
-            .get("n_failed", value_accumulator(float, 0))
-            .value,
+            .get("n_failed", 0),
         }
 
         if self.options.isMC and self.options.doSyst:
@@ -233,10 +230,17 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 "export XRD_RUNFORKHANDLER=1",
                 "export XRD_STREAMTIMEOUT=10",
                 'echo "Landed on $HOSTNAME"',
+                f'echo "source {os.getenv("HOME")}/.bashrc"',
                 f'source {os.getenv("HOME")}/.bashrc',
+                f'echo "cd {os.chdir(os.path.dirname(os.path.abspath(__file__)))}"',
                 f"cd {os.chdir(os.path.dirname(os.path.abspath(__file__)))}",
+                'echo "export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))}"',
                 f"export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))}",
+                'echo "conda activate SUEP"',
                 f"conda activate SUEP",
+                'echo "which python"',
+                "which python",
+                'echo "Worker environment setup done."',
             ]
 
         # set default slurm extra arguments
@@ -347,7 +351,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         output = {
             "hists": {},
             "cutflow": {},
-            "gensumweight": value_accumulator(float, 0),
+            "gensumweight": 0,
         }
 
         for df_name, config_tags in processing_batches.items():
@@ -364,8 +368,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
             # check if file is corrupted
             if type(df) == int:
-                logging.debug(f"\tFile {ifile} is corrupted, skipping.")
-                return output
+                raise Exception(f"\tFile {ifile} is corrupted, skipping.")
 
             # check sample consistency
             if sample != "" and ntuple_metadata.get("sample", False):
@@ -414,10 +417,20 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             # we might modify this for systematics, so make a copy
             config = copy.deepcopy(config)
 
-            # DEBUG
+            # DEBUG - hotfixes because we are fucking stupid and our ntuples trash
             if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample:
                 print("HARD CODED CUT ON LHE VPT < 100 GEV")
                 df = df[df["LHE_Vpt"] < 100]
+            print(options.tag)
+            if options.tag == "WH_10_9_VRGJ_2017":
+                print("HARD CODED FIX FOR THE WEIGHTS")
+                # {1.0, 8.059139784946236, 63.11578947368422, 249.83333333333334}
+                mask1 = (df['WH_gammaTriggerUnprescaleWeight'] > 8) & (df['WH_gammaTriggerUnprescaleWeight'] < 60)
+                mask2 = (df['WH_gammaTriggerUnprescaleWeight'] > 60) & (df['WH_gammaTriggerUnprescaleWeight'] < 240)
+                mask3 = (df['WH_gammaTriggerUnprescaleWeight'] > 240)
+                df['WH_gammaTriggerUnprescaleWeight'][mask1] = 5.3256
+                df['WH_gammaTriggerUnprescaleWeight'][mask2] = 31.46969
+                df['WH_gammaTriggerUnprescaleWeight'][mask3] = 138.4666666
 
             for config_tag in config_tags:
 
