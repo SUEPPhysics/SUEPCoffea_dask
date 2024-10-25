@@ -646,14 +646,10 @@ def getGammaTriggerBits(events, era: str):
     elif era == "2016" or era == "2016apv":
         gammaTriggerBits = (
             (events.HLT.Photon175)
-            + (events.HLT.Photon165_HE10) * 2
-            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 4
-            + (events.HLT.Photon90_R9Id90_HE10_IsoM) * 8
-            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 16
-            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 32
-            + (events.HLT.Photon36_R9Id90_HE10_IsoM) * 64
-            + (events.HLT.Photon30_R9Id90_HE10_IsoM) * 128
-            + (events.HLT.Photon22_R9Id90_HE10_IsoM) * 256
+            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon90_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
         )
     else:
         raise ValueError(f"Invalid era: {era}")
@@ -751,8 +747,8 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
         mask_Photon175 = (events.HLT.Photon175 == 1) & (events.WH_gamma.pt > 200)
         mask_Photon165 = (
             (events.HLT.Photon165_R9Id90_HE10_IsoM == 1) 
-            & (events.WH_gamma.pt > 200)
-            & (events.WH_gamma.pt < 180)
+            & (events.WH_gamma.pt > 180)
+            & (events.WH_gamma.pt < 200)
         )
         mask_Photon90 = (
             (events.HLT.Photon90_R9Id90_HE10_IsoM == 1)
@@ -766,7 +762,7 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
         )   
         mask_Photon50 = (
             (events.HLT.Photon50_R9Id90_HE10_IsoM == 1)
-            & (events.WH_gamma.pt > 55)
+            & (events.WH_gamma.pt > 60)
             & (events.WH_gamma.pt < 80)
         )
         mask = mask_Photon175 | mask_Photon165 | mask_Photon90 | mask_Photon75 | mask_Photon50
@@ -787,7 +783,6 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
                 mask_Photon50, 36.47 / 0.50, gammaTriggerUnprescaleWeight
             )
     else:
-        # other eras are not supported yet
         raise ValueError(f"Invalid era: {era}")
 
     events = ak.with_field(

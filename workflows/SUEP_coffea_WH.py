@@ -1030,14 +1030,18 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         )
 
         # cut events that don't have a SUEP candidate
-        method_selection = np.any(
-            [
-                ~output["vars"]["SUEP_nconst_HighestPT"+out_label].isnull()
-            ],
-            axis=0,
-        )
-        output["vars"] = output["vars"][method_selection]
-        events = events[method_selection]
+        if "SUEP_nconst_HighestPT" in output["vars"].columns:
+            method_selection = np.any(
+                [
+                    ~output["vars"]["SUEP_nconst_HighestPT"+out_label].isnull()
+                ],
+                axis=0,
+            )
+            output["vars"] = output["vars"][method_selection]
+            events = events[method_selection]
+        else:
+            events = events[0:0]
+            output["vars"] = output["vars"][[]]
 
         return events, output
 
