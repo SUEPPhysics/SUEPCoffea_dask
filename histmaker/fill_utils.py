@@ -126,7 +126,7 @@ def get_git_info(path="."):
     commit = (
         subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
     )
-    diff = subprocess.check_output(["git", "diff"]).strip().decode("utf-8")
+    diff = subprocess.check_output(["git", "diff", "--", ".", "':(exclude)*.ipynb'"]).strip().decode("utf-8")
 
     return commit, diff
 

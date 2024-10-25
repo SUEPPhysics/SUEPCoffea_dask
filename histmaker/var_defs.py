@@ -202,8 +202,9 @@ def initialize_new_variables(label: str, options, config: dict):
             ]
             if options.isMC:
                 new_vars += [
-                    ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
-                    ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
+                    #["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
+                    #["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
+                    ["W_genW_BV", balancing_var, ["W_pt", "genW_pt"]],
                     #['LepSFMu', lambda x, y: x * y, ['LepSF', 'isMuon']],
                     #['LepSFEl', lambda x, y: x * y, ['LepSF', 'isElectron']],
                 ]
@@ -393,7 +394,8 @@ def balancing_var(xpt, ypt):
     xpt = np.array(xpt)
     ypt = np.array(ypt)
 
-    var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt)) * -999)
+    _eps = 1e-10
+    var = np.where(ypt > 0, (xpt - ypt) / (ypt + _eps), np.ones(len(xpt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     var[xpt < 0] = -999
@@ -450,7 +452,8 @@ def vector_balancing_var(xphi, yphi, xpt, ypt):
 
     vector_sum_pt = calc_vector_sum_pt(xphi, yphi, xpt, ypt)
 
-    var = np.where(ypt > 0, vector_sum_pt / ypt, np.ones(len(xpt)) * -999)
+    _eps = 1e-10
+    var = np.where(ypt > 0, vector_sum_pt / (ypt + _eps), np.ones(len(xpt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     var[xpt < 0] = -999

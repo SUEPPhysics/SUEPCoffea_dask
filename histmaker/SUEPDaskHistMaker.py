@@ -232,12 +232,12 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 'echo "Landed on $HOSTNAME"',
                 f'echo "source {os.getenv("HOME")}/.bashrc"',
                 f'source {os.getenv("HOME")}/.bashrc',
-                f'echo "cd {os.chdir(os.path.dirname(os.path.abspath(__file__)))}"',
-                f"cd {os.chdir(os.path.dirname(os.path.abspath(__file__)))}",
-                'echo "export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))}"',
+                f'echo "cd {os.path.dirname(os.path.abspath(__file__))}"',
+                f"cd {os.path.dirname(os.path.abspath(__file__))}",
+                f'echo "export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))}"',
                 f"export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))}",
-                'echo "conda activate SUEP"',
-                f"conda activate SUEP",
+                'echo "conda activate dask"',
+                f"conda activate dask",
                 'echo "which python"',
                 "which python",
                 'echo "Worker environment setup done."',
@@ -286,7 +286,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 if self.options.dataDirLocal.count("{}") == 2
                 else self.options.dataDirLocal
             )
-            print(dataDir)
             if self.options.merged:
                 dataDir += "merged/"
             files = [dataDir + f for f in os.listdir(dataDir)]
@@ -334,7 +333,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
     ) -> dict:
         """
         Read in ntuple hdf5 files and process each systematic variation to produce histograms and cutflows.
-        Returns: a dictionary of histograms, cutflows, and gensumweight.
+        Returns: a dictionary of histograms, a dictionary of cutflows, and gensumweight as a float.
         """
 
         # organize the configurations that we have to iterate over by the dataframe they need to access
@@ -378,6 +377,13 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                             ntuple_metadata["sample"], sample
                         )
                     )
+            # check era consistency
+            if options.era != ntuple_metadata.get("era", False):
+                raise Exception(
+                    "This script should only run on one era at a time. Found {} in ntuple metadata, and passed era {}".format(
+                        ntuple_metadata["era"], options.era
+                    )
+                )
 
             # update the gensumweight
             if options.isMC:
@@ -421,16 +427,19 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             if "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample:
                 print("HARD CODED CUT ON LHE VPT < 100 GEV")
                 df = df[df["LHE_Vpt"] < 100]
-            print(options.tag)
             if options.tag == "WH_10_9_VRGJ_2017":
                 print("HARD CODED FIX FOR THE WEIGHTS")
                 # {1.0, 8.059139784946236, 63.11578947368422, 249.83333333333334}
                 mask1 = (df['WH_gammaTriggerUnprescaleWeight'] > 8) & (df['WH_gammaTriggerUnprescaleWeight'] < 60)
                 mask2 = (df['WH_gammaTriggerUnprescaleWeight'] > 60) & (df['WH_gammaTriggerUnprescaleWeight'] < 240)
                 mask3 = (df['WH_gammaTriggerUnprescaleWeight'] > 240)
-                df['WH_gammaTriggerUnprescaleWeight'][mask1] = 5.3256
-                df['WH_gammaTriggerUnprescaleWeight'][mask2] = 31.46969
-                df['WH_gammaTriggerUnprescaleWeight'][mask3] = 138.4666666
+                df.loc[mask1, 'WH_gammaTriggerUnprescaleWeight'] = 5.3256
+                df.loc[mask2, 'WH_gammaTriggerUnprescaleWeight'] = 31.46969
+                df.loc[mask3, 'WH_gammaTriggerUnprescaleWeight'] = 138.4666666
+            if options.tag == "WH_10_14_VRGJ_2016" or options.tag == "WH_10_14_VRGJ_2016apv":
+                print("HARD CODED FIX TO REMOVE PHOTON175")
+                mask1 = (df['photon_pt'] > 200) & (df['WH_gammaTriggerBits'] == 1)
+                df.loc[mask1, 'WH_gammaTriggerUnprescaleWeight'] = 0
 
             for config_tag in config_tags:
 

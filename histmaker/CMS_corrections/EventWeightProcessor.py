@@ -82,6 +82,8 @@ class EventWeightProcessor:
             "bTagWeight_LFcorrelated_Dn",
             "bTagWeight_LFuncorrelated_Up",
             "bTagWeight_LFuncorrelated_Dn",
+            "photon_SF_up",
+            "photon_SF_down",
         ]
         self.supported_isMC = [0, 1]
         self.supported_eras = ["2016", "2017", "2018", "2016apv"]
@@ -215,7 +217,6 @@ class EventWeightProcessor:
 
             # 9) lepton SF
             if self.channel == 'WH':
-                #pass
                 if 'LepSF' in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
@@ -223,7 +224,6 @@ class EventWeightProcessor:
 
             # 10) photon SF
             if self.channel == 'WH-VRGJ':
-                
                 if 'photon_SF' in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
@@ -239,7 +239,7 @@ class EventWeightProcessor:
                 df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
 
             # ad hoc weights
-            #print("TEMPORARY: applying ad hoc weights for data to correct SUEP pT. Meant only for gamma+jets testing.")
-            #df["event_weight"] *= apply_correctionlib("CMS_corrections/photon_pt_corr.json", "ptweight", df["photon_pt"].to_numpy())
+            # print("TEMPORARY: applying ad hoc weights for data to correct suep pT. Meant only for gamma+jets testing.")
+            # df["event_weight"] *= apply_correctionlib("CMS_corrections/suep_pt_corr.json", "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
 
         return df

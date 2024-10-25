@@ -50,7 +50,7 @@ def getOptions() -> dict:
     parser.add_argument("--output", type=str, required=True, help="Output tag")
 
     # optional SUEPDaskHistMaker arguments
-    parser.add_argument("--doSyst", type=int, default=0, help="Do systematics")
+    parser.add_argument("--doSyst", type=int, default=0, help="Do systematic variations")
     parser.add_argument("--verbose", type=int, default=0, help="Verbose")
     parser.add_argument(
         "--xrootd", type=int, default=0, help="Use xrootd to read the ntuples"
@@ -179,35 +179,59 @@ def main():
                         "bTagWeight_LFuncorrelated_Dn",
                         "prefire_up",
                         "prefire_down",
-                        # TODO: trigger scale factors, prefire
+                        # TODO: trigger scale factors
                     ],
                 },
-                # "CRWJ": {
-                #     "input_method": "HighestPT",
-                #     "method_var": "SUEP_nconst_HighestPT",
-                #     "xvar": "SUEP_S1_HighestPT",
-                #     "xvar_regions": [0.05, 0.15, 0.25, 0.3],
-                #     "yvar": "SUEP_nconst_HighestPT",
-                #     "yvar_regions": [20, 30, 1000],
-                #     "selections": [
-                #             "PuppiMET_pt > 30",
-                #             "W_pt > 60",
-                #             "W_mt < 130",
-                #             "W_mt > 30",
-                #             "bjetSel == 1",
-                #             "deltaPhi_SUEP_W > 1.5",
-                #             "deltaPhi_SUEP_MET > 1.5",
-                #             "deltaPhi_lepton_SUEP > 1.5",
-                #             "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                #             "W_SUEP_BV < 2",
-                #             "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                #             "SUEP_S1_HighestPT < 0.3",
-                #     ],
-                #     "syst":  [],
-                # }
+                "CRWJ": {
+                    "input_method": "HighestPT",
+                    "method_var": "SUEP_nconst_HighestPT",
+                    "xvar": "SUEP_S1_HighestPT",
+                    "xvar_regions": [0.05, 0.15, 0.25, 0.3],
+                    "yvar": "SUEP_nconst_HighestPT",
+                    "yvar_regions": [20, 30, 1000],
+                    "selections": [
+                            "PuppiMET_pt > 30",
+                            "W_pt > 60",
+                            "W_mt < 130",
+                            "W_mt > 30",
+                            "bjetSel == 1",
+                            "deltaPhi_SUEP_W > 1.5",
+                            "deltaPhi_SUEP_MET > 1.5",
+                            "deltaPhi_lepton_SUEP > 1.5",
+                            "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                            "W_SUEP_BV < 2",
+                            "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                            "SUEP_S1_HighestPT < 0.3",
+                    ],
+                    "syst":  [
+                        "puweights_up",
+                        "puweights_down",
+                        "PSWeight_ISR_up",
+                        "PSWeight_ISR_down",
+                        "PSWeight_FSR_up",
+                        "PSWeight_FSR_down",
+                        "higgs_weights_up",
+                        "higgs_weights_down",
+                        "LepSFElUp",
+                        "LepSFElDown",
+                        "LepSFMuUp",
+                        "LepSFMuDown",
+                        "bTagWeight_HFcorrelated_Up",
+                        "bTagWeight_HFcorrelated_Dn",
+                        "bTagWeight_HFuncorrelated_Up",
+                        "bTagWeight_HFuncorrelated_Dn",
+                        "bTagWeight_LFcorrelated_Up",
+                        "bTagWeight_LFcorrelated_Dn",
+                        "bTagWeight_LFuncorrelated_Up",
+                        "bTagWeight_LFuncorrelated_Dn",
+                        "prefire_up",
+                        "prefire_down",
+                        # TODO: trigger scale factors
+                    ],
+                }
             }
 
-            if options.get("isMC"):
+            if options.get("isMC") and options.get("doSyst"):
 
                 # add systematic variations, which are identical, except for the dataframe name
                 variations = [
@@ -252,10 +276,13 @@ def main():
                     "input_method": "HighestPT",
                     "method_var": "SUEP_nconst_HighestPT",
                     "xvar": "SUEP_S1_HighestPT",
-                    "xvar_regions": [0.05, 0.15, 0.25, 0.3],
+                    "xvar_regions": [0.1, 0.17, 0.25, 0.3],
                     "yvar": "SUEP_nconst_HighestPT",
-                    "yvar_regions": [20, 30, 1000],
+                    "yvar_regions": [10, 20, 30, 1000],
                     "selections": [
+                        "photon_r9 > 0.9",
+                        "photon_hoe < 0.6",
+                        "photon_pfRelIso03_all < 0.1",
                         "SUEP_nconst_HighestPT >= 10",
                         "bjetSel == 1",
                         "minDeltaPhiJetPhoton > 1.5",
@@ -293,8 +320,11 @@ def main():
                     "xvar": "SUEP_S1_HighestPT",
                     "xvar_regions": [0.3, 0.4, 0.5, 2.0],
                     "yvar": "SUEP_nconst_HighestPT",
-                    "yvar_regions": [20, 30, 1000],
+                    "yvar_regions": [10, 20, 30, 1000],
                     "selections": [
+                        "photon_r9 > 0.9",
+                        "photon_hoe < 0.6",
+                        "photon_pfRelIso03_all < 0.1",
                         "SUEP_nconst_HighestPT >= 10",
                         "bjetSel == 1",
                         "minDeltaPhiJetPhoton > 1.5",
@@ -413,54 +443,54 @@ def main():
                     "prefire_up",
                     "prefire_down",
                 ],
-             },
-            "CRWJ": {
-                "input_method": "HighestPT",
-                "method_var": "SUEP_nconst_HighestPT",
-                "SR": [
-                    ["SUEP_S1_HighestPT", ">=", 2.0],
-                    ["SUEP_nconst_HighestPT", ">=", 1000]
-                ],
-                "selections": [
-                    "SUEP_nconst_HighestPT >= 10",
-                    "PuppiMET_pt > 30",
-                    "W_pt > 60",
-                    "W_mt < 130",
-                    "W_mt > 30",
-                    "bjetSel == 1",
-                    "deltaPhi_SUEP_W > 1.5",
-                    "deltaPhi_SUEP_MET > 1.5",
-                    "deltaPhi_lepton_SUEP > 1.5",
-                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                    "W_SUEP_BV < 2",
-                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                    "SUEP_S1_HighestPT < 0.3",
-                ],
-                "syst": [
-                    "puweights_up",
-                    "puweights_down",
-                    "PSWeight_ISR_up",
-                    "PSWeight_ISR_down",
-                    "PSWeight_FSR_up",
-                    "PSWeight_FSR_down",
-                    "higgs_weights_up",
-                    "higgs_weights_down",
-                    "LepSFElUp",
-                    "LepSFElDown",
-                    "LepSFMuUp",
-                    "LepSFMuDown",
-                    "bTagWeight_HFcorrelated_Up",
-                    "bTagWeight_HFcorrelated_Dn",
-                    "bTagWeight_HFuncorrelated_Up",
-                    "bTagWeight_HFuncorrelated_Dn",
-                    "bTagWeight_LFcorrelated_Up",
-                    "bTagWeight_LFcorrelated_Dn",
-                    "bTagWeight_LFuncorrelated_Up",
-                    "bTagWeight_LFuncorrelated_Dn",
-                    "prefire_up",
-                    "prefire_down",
-                ],
-            }
+             }
+            # "CRWJ": {
+            #     "input_method": "HighestPT",
+            #     "method_var": "SUEP_nconst_HighestPT",
+            #     "SR": [
+            #         ["SUEP_S1_HighestPT", ">=", 2.0],
+            #         ["SUEP_nconst_HighestPT", ">=", 1000]
+            #     ],
+            #     "selections": [
+            #         "SUEP_nconst_HighestPT >= 10",
+            #         "PuppiMET_pt > 30",
+            #         "W_pt > 60",
+            #         "W_mt < 130",
+            #         "W_mt > 30",
+            #         "bjetSel == 1",
+            #         "deltaPhi_SUEP_W > 1.5",
+            #         "deltaPhi_SUEP_MET > 1.5",
+            #         "deltaPhi_lepton_SUEP > 1.5",
+            #         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #         "W_SUEP_BV < 2",
+            #         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+            #         "SUEP_S1_HighestPT < 0.3",
+            #     ],
+            #     "syst": [
+            #         "puweights_up",
+            #         "puweights_down",
+            #         "PSWeight_ISR_up",
+            #         "PSWeight_ISR_down",
+            #         "PSWeight_FSR_up",
+            #         "PSWeight_FSR_down",
+            #         "higgs_weights_up",
+            #         "higgs_weights_down",
+            #         "LepSFElUp",
+            #         "LepSFElDown",
+            #         "LepSFMuUp",
+            #         "LepSFMuDown",
+            #         "bTagWeight_HFcorrelated_Up",
+            #         "bTagWeight_HFcorrelated_Dn",
+            #         "bTagWeight_HFuncorrelated_Up",
+            #         "bTagWeight_HFuncorrelated_Dn",
+            #         "bTagWeight_LFcorrelated_Up",
+            #         "bTagWeight_LFcorrelated_Dn",
+            #         "bTagWeight_LFuncorrelated_Up",
+            #         "bTagWeight_LFuncorrelated_Dn",
+            #         "prefire_up",
+            #         "prefire_down",
+            #     ],
+            # }
         }
 
         if options.get("isMC") and options.get("doSyst"):
@@ -504,43 +534,61 @@ def main():
 
     elif options['channel'] == 'WH-VRGJ':
         config = {
-            # "VRGJnoB": {
+            # "VRGJ": {
             #    "input_method": "HighestPT",
             #    "method_var": "SUEP_nconst_HighestPT",
+            #    "SR": [
+            #                 ["SUEP_S1_HighestPT", ">=", 2.0],
+            #                 ["SUEP_nconst_HighestPT", ">=", 1000]
+            #     ],
             #    "selections": [
-            #        "SUEP_nconst_HighestPT >= 10",
+            #        #"SUEP_nconst_HighestPT >= 10",
             #        "minDeltaPhiJetPhoton > 1.5",
-            #        "deltaPhi_SUEP_photon > 1.5",
-            #        "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-            #        "photon_SUEP_BV < 2",
-            #        "SUEP_S1_HighestPT < 0.3",
+            #        #"deltaPhi_SUEP_photon > 1.5",
+            #        #"ak4jets_inSUEPcluster_n_HighestPT >= 1",
+            #        #"photon_SUEP_BV < 2",
+            #        #"SUEP_S1_HighestPT < 0.3",
             #    ],
             # },
             "VRGJlowS": {
-               "input_method": "HighestPT",
-               "method_var": "SUEP_nconst_HighestPT",
-               "selections": [
-                   "SUEP_nconst_HighestPT >= 10",
-                   "bjetSel == 1",
-                   "minDeltaPhiJetPhoton > 1.5",
-                   "deltaPhi_SUEP_photon > 1.5",
-                   "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                   "photon_SUEP_BV < 2",
-                   "SUEP_S1_HighestPT < 0.3",
-               ],
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 2.0],
+                    ["SUEP_nconst_HighestPT", ">=", 1000]
+                ],
+                "selections": [
+                    "photon_r9 > 0.9",
+                    "photon_hoe < 0.6",
+                    "photon_pfRelIso03_all < 0.1",
+                    "SUEP_nconst_HighestPT >= 10",
+                    "bjetSel == 1",
+                    "minDeltaPhiJetPhoton > 1.5",
+                    "deltaPhi_SUEP_photon > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "photon_SUEP_BV < 2",
+                    "SUEP_S1_HighestPT < 0.3",
+                ],
             },
             "VRGJhighS": {
-               "input_method": "HighestPT",
-               "method_var": "SUEP_nconst_HighestPT",
-               "selections": [
-                   "SUEP_nconst_HighestPT >= 10",
-                   "bjetSel == 1",
-                   "minDeltaPhiJetPhoton > 1.5",
-                   "deltaPhi_SUEP_photon > 1.5",
-                   "ak4jets_inSUEPcluster_n_HighestPT >= 1",
-                   "photon_SUEP_BV < 2",
-                   "SUEP_S1_HighestPT > 0.3",
-               ],
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 2.0],
+                    ["SUEP_nconst_HighestPT", ">=", 1000]
+                ],
+                "selections": [
+                    "photon_r9 > 0.9",
+                    "photon_hoe < 0.6",
+                    "photon_pfRelIso03_all < 0.1",
+                    "SUEP_nconst_HighestPT >= 10",
+                    "bjetSel == 1",
+                    "minDeltaPhiJetPhoton > 1.5",
+                    "deltaPhi_SUEP_photon > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "photon_SUEP_BV < 2",
+                    "SUEP_S1_HighestPT > 0.3",
+                ],
             },
         }
     

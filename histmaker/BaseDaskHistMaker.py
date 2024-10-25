@@ -7,6 +7,7 @@ import logging
 import os
 import socket
 import traceback
+import numbers
 from time import time
 from typing import List
 from dask.distributed import Client, Future, LocalCluster, as_completed
@@ -78,7 +79,7 @@ class BaseDaskHistMaker:
                 "dashboard_address": "1776",
                 "host": socket.gethostname(),
             },
-            silence_logs="error",
+            silence_logs="warning",
             job_extra_directives=extra_args,
             job_script_prologue=slurm_env,
         )
@@ -152,6 +153,14 @@ class BaseDaskHistMaker:
                         else:
                             output[sample][key] = value
 
+                    # we can also combine numbers
+                    elif isinstance(value, numbers.Number):
+
+                        if key in output[sample].keys():
+                            output[sample][key] += value
+                        else:
+                            output[sample][key] = value
+
                     else:
                         raise Exception(f"Type {type(value)} not supported for output.")
 
@@ -173,6 +182,7 @@ class BaseDaskHistMaker:
                 output[sample]["_processing_metadata"]["postprocess_status"] = "success"
             except Exception as e:
                 self.logger.error(f"Failed to postprocess sample {sample}: {e}")
+                self.logger.error(traceback.format_exc())
                 output[sample]["_processing_metadata"]["postprocess_status"] = "failed"
                 continue
 

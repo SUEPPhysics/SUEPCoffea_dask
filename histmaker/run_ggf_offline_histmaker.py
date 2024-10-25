@@ -40,7 +40,7 @@ def getOptions() -> dict:
 
     # reuired SUEPDaskHistMaker arguments
     parser.add_argument("--isMC", type=int, default=1, help="isMC")
-    parser.add_argument("--channel", type=str, default="WH", help="Channel")
+    parser.add_argument("--channel", type=str, default="ggF", help="Channel")
     parser.add_argument("--era", type=str, required=True, help="Era")
     parser.add_argument("--tag", type=str, required=True, help="Ntuple tag")
     parser.add_argument("--output", type=str, required=True, help="Output tag")
