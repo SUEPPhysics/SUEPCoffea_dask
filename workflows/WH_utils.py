@@ -219,34 +219,65 @@ def getLeptons(events, isMC: int):
             },
             with_name="Momentum4D",
         )
-        electrons = ak.zip(
-            {
-                "pt": events.Electron.pt,
-                "eta": events.Electron.eta,
-                "phi": events.Electron.phi,
-                "mass": events.Electron.mass,
-                "pdgId": events.Electron.pdgId,
-                "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-                "IDMVA": (
-                    ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
-                    + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
-                    + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
-                ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
-                "iso": events.Electron.pfRelIso03_all,
-                "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
-                "miniIso": events.Electron.miniPFRelIso_all,
-                "dxy": events.Electron.dxy,
-                "dz": events.Electron.dz,
-                "charge": events.Electron.pdgId / (-11),
-                "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
-                "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
-                "aux1": events.Electron.dEscaleUp,
-                "aux2": events.Electron.dEscaleDown,
-                "aux3": events.Electron.dEsigmaUp,
-                "aux4": events.Electron.dEsigmaDown
-            },
-            with_name="Momentum4D",
-        )
+
+        if 'dEscaleUp' in ak.fields(events.Electron):
+            electrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                    "pdgId": events.Electron.pdgId,
+                    "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+                    "IDMVA": (
+                        ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                        + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
+                        + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+                    "iso": events.Electron.pfRelIso03_all,
+                    "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                    "miniIso": events.Electron.miniPFRelIso_all,
+                    "dxy": events.Electron.dxy,
+                    "dz": events.Electron.dz,
+                    "charge": events.Electron.pdgId / (-11),
+                    "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
+                    "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
+                    "aux1": events.Electron.dEscaleUp,
+                    "aux2": events.Electron.dEscaleDown,
+                    "aux3": events.Electron.dEsigmaUp,
+                    "aux4": events.Electron.dEsigmaDown
+                },
+                with_name="Momentum4D",
+            )
+        else: # this stupid workaround is only needed because some of the background MC for 2016apv seems to be missing the scale variations for electrons
+            electrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                    "pdgId": events.Electron.pdgId,
+                    "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+                    "IDMVA": (
+                        ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                        + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
+                        + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+                    "iso": events.Electron.pfRelIso03_all,
+                    "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                    "miniIso": events.Electron.miniPFRelIso_all,
+                    "dxy": events.Electron.dxy,
+                    "dz": events.Electron.dz,
+                    "charge": events.Electron.pdgId / (-11),
+                    "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
+                    "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
+                    "aux1": events.Electron.pt * 0,
+                    "aux2": events.Electron.pt * 0,
+                    "aux3": events.Electron.pt * 0,
+                    "aux4": events.Electron.pt * 0
+                },
+                with_name="Momentum4D",
+            )
     else:
         muons = ak.zip(
             {
