@@ -55,9 +55,9 @@ class pandas_accumulator(AccumulatorABC):
         self._value[key] = value
 
     def __getitem__(self, key):
-        if not isinstance(key, (str, list, pd.Series, np.ndarray)):
+        if not isinstance(key, (slice, str, list, pd.Series, np.ndarray)):
             raise ValueError(
-                "Value must be a string/list/pd.Series/np.array not %r." % type(key)
+                "Value must be a slice/string/list/pd.Series/np.array not %r." % type(key)
             )
         if isinstance(key, str):
             if key not in self._value.keys():
