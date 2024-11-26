@@ -345,6 +345,7 @@ def prepare_DataFrame(
     # 3. make new variables
     if "new_variables" in config.keys():
         for var in config["new_variables"]:
+            make_new_variable(df, var[0], var[1], *var[2])
             try:
                 make_new_variable(df, var[0], var[1], *var[2])
             except KeyError as e:
@@ -404,8 +405,11 @@ def prepare_DataFrame(
 
         # now, apply selections
         for isel, sel in enumerate(config["selections"]):
-            sel = format_selection(sel, df)
-            df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+
+            # apply selections, unless there are no events left already!
+            if df.shape[0] > 0:
+                sel = format_selection(sel, df)
+                df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
             # store number of events passing using the event weights into the cutflow dict
             cutflow_label = (

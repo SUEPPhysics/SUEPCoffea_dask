@@ -533,6 +533,12 @@
     "xsec": 86.55,
     "signal": 0
   },
+  "ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM": {
+    "kr": 1,
+    "br": 1,
+    "xsec": 3.74,
+    "signal": 0
+  },
   "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8+RunIISummer20UL17MiniAODv2-106X_mc2017_realistic_v9-v1+MINIAODSIM": {
     "kr": 1,
     "br": 1,
@@ -11171,7 +11177,7 @@
     "xsec": 1.358,
     "signal": 1
   },
-  "SUEP_mS125.000_mPhi2.000_T8.000_modegeneric ": {
+  "SUEP_mS125.000_mPhi2.000_T8.000_modegeneric": {
     "br": 0.3177,
     "kr": 1,
     "xsec": 1.358,

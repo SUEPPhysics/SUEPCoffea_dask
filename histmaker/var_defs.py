@@ -411,6 +411,7 @@ def initialize_new_variables(label: str, options, config: dict):
 def deltaPhi_x_y(xphi, yphi):
 
     # cast inputs to numpy arrays
+    xphi = np.array(xphi)
     yphi = np.array(yphi)
 
     x_v = vector.arr({"pt": np.ones(len(xphi)), "phi": xphi})
@@ -420,10 +421,10 @@ def deltaPhi_x_y(xphi, yphi):
     abs_dphi = np.abs(signed_dphi.tolist())
 
     # deal with the cases where phi was initialized to a moot value like -999
-    abs_dphi[xphi > 2 * np.pi] = -999
-    abs_dphi[yphi > 2 * np.pi] = -999
-    abs_dphi[xphi < -2 * np.pi] = -999
-    abs_dphi[yphi < -2 * np.pi] = -999
+    abs_dphi[(xphi > 2 * np.pi)] = -999
+    abs_dphi[(yphi > 2 * np.pi)] = -999
+    abs_dphi[(xphi < -2 * np.pi)] = -999
+    abs_dphi[(yphi < -2 * np.pi)] = -999
 
     return abs_dphi
 
@@ -432,7 +433,9 @@ def deltaPhi_x_y_pTReq(ypt_threshold):
     def deltaPhi_x_y_pTReq_inner(xphi, yphi, ypt):
 
         # cast inputs to numpy arrays
+        xphi = np.array(xphi)
         yphi = np.array(yphi)
+        ypt = np.array(ypt)
 
         x_v = vector.arr({"pt": np.ones(len(xphi)), "phi": xphi})
         y_v = vector.arr({"pt": np.ones(len(yphi)), "phi": yphi})
@@ -441,13 +444,13 @@ def deltaPhi_x_y_pTReq(ypt_threshold):
         abs_dphi = np.abs(signed_dphi.tolist())
 
         # deal with the cases where phi was initialized to a moot value like -999
-        abs_dphi[xphi > 2 * np.pi] = -999
-        abs_dphi[yphi > 2 * np.pi] = -999
-        abs_dphi[xphi < -2 * np.pi] = -999
-        abs_dphi[yphi < -2 * np.pi] = -999
+        abs_dphi[(xphi > 2 * np.pi)] = -999
+        abs_dphi[(yphi > 2 * np.pi)] = -999
+        abs_dphi[(xphi < -2 * np.pi)] = -999
+        abs_dphi[(yphi < -2 * np.pi)] = -999
 
         # set values to -999 if ypt < 50
-        abs_dphi[ypt < ypt_threshold] = -999
+        abs_dphi[(ypt < ypt_threshold)] = -999
 
         return abs_dphi
     
@@ -471,10 +474,10 @@ def deltaR(xEta, yEta, xPhi, yPhi):
         dR = dR.to_numpy()
 
     # deal with the cases where eta and phi were initialized to a moot value like -999
-    dR[xEta < -100] = -999
-    dR[yEta < -100] = -999
-    dR[xPhi < -100] = -999
-    dR[yPhi < -100] = -999
+    dR[(xEta < -100)] = -999
+    dR[(yEta < -100)] = -999
+    dR[(xPhi < -100)] = -999
+    dR[(yPhi < -100)] = -999
 
     return dR
 
@@ -489,8 +492,8 @@ def balancing_var(xpt, ypt):
     var = np.where(ypt > 0, (xpt - ypt) / (ypt + _eps), np.ones(len(xpt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    var[xpt < 0] = -999
-    var[ypt < 0] = -999
+    var[(xpt < 0)] = -999
+    var[(ypt < 0)] = -999
 
     return var
 
@@ -531,7 +534,7 @@ def calc_vector_sum_pt(*args):
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     for i in range(0, len(args), 2):
         pt = np.array(args[i + 1])
-        vector_sum_pt[pt < 0] = -999
+        vector_sum_pt[(pt < 0)] = -999
 
     return vector_sum_pt
 
@@ -558,7 +561,7 @@ def calc_vector_sum_phi(*args):
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     for i in range(0, len(args), 2):
         pt = np.array(args[i + 1])
-        vector_sum_phi[pt < 0] = -999
+        vector_sum_phi[(pt < 0)] = -999
 
     return vector_sum_phi
 
@@ -578,7 +581,7 @@ def vector_balancing_var(*args):
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
     for i in range(1, len(args), 2):
         pt = np.array(args[i])
-        var[pt < 0] = -999
+        var[(pt < 0)] = -999
 
     return var
 
@@ -594,7 +597,14 @@ def calc_mt(xphi, xpt, yphi, ypt):
     x_v = vector.arr({"pt": xpt, "phi": xphi})
     y_v = vector.arr({"pt": ypt, "phi": yphi})
 
-    return np.sqrt(2 * xpt * ypt * (1 - np.cos(x_v.deltaphi(y_v))))
+    mt = np.sqrt(2 * xpt * ypt * (1 - np.cos(x_v.deltaphi(y_v))))
+
+    mt[(xpt < 0)] = -999
+    mt[(ypt < 0)] = -999
+    mt[(xphi < -100)] = -999
+    mt[(yphi < -100)] = -999
+
+    return mt
 
 
 def gammaTriggerSel(photon_pt, bits):

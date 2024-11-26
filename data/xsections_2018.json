@@ -2633,6 +2633,12 @@
     "xsec": 0.185,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS125.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.00259608107509008,
+    "xsec": 45.2,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS125.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.00259608107509008,
@@ -2649,6 +2655,12 @@
     "br": 1,
     "kr": 0.00259608107509008,
     "xsec": 45.2,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.0048232274473043275,
+    "xsec": 16.9,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2669,6 +2681,12 @@
     "xsec": 16.9,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS300.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.009035833057989004,
+    "xsec": 6.59,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS300.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.009035833057989004,
@@ -2685,6 +2703,12 @@
     "br": 1,
     "kr": 0.009035833057989004,
     "xsec": 6.59,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS400.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.01466909822798684,
+    "xsec": 3.16,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS400.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2705,6 +2729,12 @@
     "xsec": 3.16,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS500.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.021723022957297833,
+    "xsec": 1.71,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS500.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.021723022957297833,
@@ -2721,6 +2751,12 @@
     "br": 1,
     "kr": 0.021723022957297833,
     "xsec": 1.71,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS600.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.030197607245921985,
+    "xsec": 1.0,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS600.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2741,6 +2777,12 @@
     "xsec": 1.0,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS700.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.0400928510938593,
+    "xsec": 0.621,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS700.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.0400928510938593,
@@ -2757,6 +2799,12 @@
     "br": 1,
     "kr": 0.0400928510938593,
     "xsec": 0.621,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS800.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.051408754501109766,
+    "xsec": 0.402,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS800.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2777,6 +2825,12 @@
     "xsec": 0.402,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS900.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.0641453174676734,
+    "xsec": 0.269,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS900.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.0641453174676734,
@@ -2793,6 +2847,12 @@
     "br": 1,
     "kr": 0.0641453174676734,
     "xsec": 0.269,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS1000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.07830253999355018,
+    "xsec": 0.185,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS1000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2991,6 +3051,12 @@
     "br": 1,
     "kr": 0.009035833057989004,
     "xsec": 6.59,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T4p00_mS400.000_mPhi2.000_T4.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.01466909822798684,
+    "xsec": 3.16,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T4p00_mS400.000_mPhi2.000_T4.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -9305,6 +9371,12 @@
     "xsec": 0.0096,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS2000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 1.00000,
+    "xsec": 0.0096,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS2000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 1.00000,
@@ -9725,6 +9797,12 @@
     "xsec": 0.0926,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS1200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.19190,
+    "xsec": 0.0926,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS1200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.19190,
@@ -10140,6 +10218,12 @@
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T2p80_mS1500.000_mPhi1.400_T2.800_modehadronic_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 0.58560,
+    "xsec": 0.0369,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS1500.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
     "br": 1,
     "kr": 0.58560,
     "xsec": 0.0369,

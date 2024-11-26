@@ -440,6 +440,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 print("HARD CODED FIX TO REMOVE PHOTON175")
                 mask1 = (df['photon_pt'] > 200) & (df['WH_gammaTriggerBits'] == 1)
                 df.loc[mask1, 'WH_gammaTriggerUnprescaleWeight'] = 0
+            if options.tag == "WH_10_29_2017MC" or options.tag == "WH_11_4_2016MC":
+                mask = (df['Pileup_nTrueInt'] < 0) | (df['Pileup_nTrueInt'].isna())
+                if any(mask):
+                    print("HARD CODED FIX FOR Pileup_nTrueInt")
+                    df = df[~mask]
 
             for config_tag in config_tags:
 
