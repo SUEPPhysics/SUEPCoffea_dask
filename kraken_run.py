@@ -32,6 +32,10 @@ sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 # singularity image is missing some things
 pip install h5py
 
+echo "----- Found Proxy in: $X509_USER_PROXY"
+echo "voms-proxy-info"
+voms-proxy-info
+
 echo "----- xrdcp the input file over"
 echo "xrdcp $2 $3.root"
 #######################################################################################
@@ -66,19 +70,27 @@ if [ ! -f "$3.root" ]; then
 fi
 #######################################################################################
 
-echo "----- Found Proxy in: $X509_USER_PROXY"
-echo "voms-proxy-info"
-voms-proxy-info
-
 echo "----- Running the command"
 echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root"
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root
 
-echo "----- Transferring output"
-echo "xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}"
-xrdcp --retry 3 {outfile}.{file_ext} {outdir}/$3.{file_ext}
-
 {extras}
+
+echo "----- Transferring output"
+output_file="{outdir}/$3.{file_ext}"
+echo "xrdcp --retry 3 {outfile}.{file_ext} $output_file"
+xrdcp --retry 3 {outfile}.{file_ext} $output_file
+
+echo "----- Verifying the output file"
+redirector=${{output_file%//*}}/
+path=${{output_file#*//*/}}
+echo "xrdfs $redirector stat $path"
+xrdfs $redirector stat $path
+if [ $? -ne 0 ]; then
+    echo "Output file verification failed."
+else
+    echo "Output file verification succeeded."
+fi
 
 echo "----- Cleaning up"
 echo "rm *.{file_ext}"
@@ -89,7 +101,7 @@ rm $3.root
 echo " ------ THE END (everyone dies !) ----- "
 """
 
-
+# the following have been dropped due to high failure rates with xrootd: T2_IT_Bari,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_BR_SPRACE,T2_AT_Vienna,T2_US_Vanderbilt,T2_ES_IFCA,T2_FI_HIP
 condor_TEMPLATE = """
 universe              = vanilla
 request_disk          = 4GB
@@ -112,7 +124,7 @@ use_x509userproxy     = True
 x509userproxy         = /home/submit/{user}/{proxy}
 +AccountingGroup      = "analysis.{user}"
 Requirements          = ( BOSCOCluster =!= "t3serv008.mit.edu" && BOSCOCluster =!= "ce03.cmsaf.mit.edu" && BOSCOCluster =!= "eofe8.mit.edu")
-+DESIRED_Sites        = "T2_AT_Vienna,T2_BE_IIHE,T2_BE_UCL,T2_BR_SPRACE,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC,T3_US_MIT"
++DESIRED_Sites        = "T2_BE_IIHE,T2_BE_UCL,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC,T3_US_MIT"
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 +JobFlavour           = "{queue}"
 
@@ -234,7 +246,7 @@ def main():
         file_ext = "hdf5"
 
     # Making sure that the proxy is good
-    proxy, lifetime = check_proxy(time_min=100)
+    proxy, lifetime = check_proxy(time_min=72)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
     missing_samples = []
@@ -313,12 +325,17 @@ def main():
                     nfiles += 1
                 infiles.close()
 
-            # create the output directory for this sample
+            # create the output directory for this sample if it doesn't exist
             fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
             _sample_path = "/" + fin_outdir_condor.split("//")[-1]
             _tokens = options.output.split("//")
             _redirector = _tokens[0] + "//" + _tokens[1] + "//"
-            os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
+            check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
+            _sample_dir_exists = subprocess.call(check_dir_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+            if not _sample_dir_exists:
+                os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
+            else:
+                logging.warning(f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten.")
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
@@ -359,14 +376,14 @@ def main():
                 condorfile.write(condor)
                 condorfile.close()
 
-            # don't submit if it's a dryrun
-            if options.dryrun:
-                continue
-
             # write the git info to a file in the output directory where the ntuples will be stored
             gitfile = write_git_info()
             os.system(f"xrdcp -s {gitfile} {fin_outdir_condor}/{gitfile}")
             os.system(f"rm {gitfile}")
+
+            # don't submit if it's a dryrun
+            if options.dryrun:
+                continue
 
             # wait before submitting the next sample
             if iSample != 0 and options.wait > 0:

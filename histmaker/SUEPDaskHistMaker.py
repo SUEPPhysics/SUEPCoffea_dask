@@ -353,7 +353,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "gensumweight": 0,
         }
 
-        for df_name, config_tags in processing_batches.items():
+        for iBatch, (df_name, config_tags) in enumerate(processing_batches.items()):
 
             logging.debug(f"Processing tags {config_tags} with df_name {df_name}.")            
 
@@ -361,62 +361,62 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             df, ntuple_metadata, ntuple_hists = fill_utils.open_ntuple(
                 ifile, redirector=options.redirector, xrootd=options.xrootd, df_name=df_name
             )
-            if options.printEvents:
-                # in the case we are interested in the run, lumi, event numbers, we also need to know the file they're from
-                print(f"Opened file {ifile}")
 
             # check if file is corrupted
             if type(df) == int:
                 raise Exception(f"\tFile {ifile} is corrupted, skipping.")
 
-            # check sample consistency
-            if sample != "" and ntuple_metadata.get("sample", False):
-                if sample != ntuple_metadata["sample"]:
+            # metadata is identical for all dataframes, only run this once
+            if iBatch == 0:
+
+                # check sample consistency
+                if sample != "" and ntuple_metadata.get("sample", False):
+                    if sample != ntuple_metadata["sample"]:
+                        raise Exception(
+                            "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
+                                ntuple_metadata["sample"], sample
+                            )
+                        )
+                # check era consistency
+                if options.era != ntuple_metadata.get("era", False):
                     raise Exception(
-                        "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
-                            ntuple_metadata["sample"], sample
+                        "This script should only run on one era at a time. Found {} in ntuple metadata, and passed era {}".format(
+                            ntuple_metadata["era"], options.era
                         )
                     )
-            # check era consistency
-            if options.era != ntuple_metadata.get("era", False):
-                raise Exception(
-                    "This script should only run on one era at a time. Found {} in ntuple metadata, and passed era {}".format(
-                        ntuple_metadata["era"], options.era
+
+                # update the gensumweight
+                if options.isMC:
+                    logging.debug(
+                        f"\tFound gensumweight {ntuple_metadata.get('gensumweight_nominal', ntuple_metadata.get('gensumweight'))} in ntuple."
                     )
-                )
+                    output["gensumweight"] += ntuple_metadata.get('gensumweight_nominal', ntuple_metadata.get('gensumweight'))
 
-            # update the gensumweight
-            if options.isMC:
-                logging.debug(
-                    f"\tFound gensumweight {ntuple_metadata.get('gensumweight_nominal', ntuple_metadata.get('gensumweight'))} in ntuple."
-                )
-                output["gensumweight"] += ntuple_metadata.get('gensumweight_nominal', ntuple_metadata.get('gensumweight'))
+                # update the cutflows
+                if ntuple_metadata != 0 and any(
+                    ["cutflow" in k for k in ntuple_metadata.keys()]
+                ):
+                    logging.debug("\tFound cutflows in ntuple.")
+                    for k, v in ntuple_metadata.items():
+                        if "cutflow" in k:
+                            if k not in output["cutflow"].keys():
+                                output["cutflow"][k] = v
+                            else:
+                                output["cutflow"][k] += v
 
-            # update the cutflows
-            if ntuple_metadata != 0 and any(
-                ["cutflow" in k for k in ntuple_metadata.keys()]
-            ):
-                logging.debug("\tFound cutflows in ntuple.")
-                for k, v in ntuple_metadata.items():
-                    if "cutflow" in k:
-                        if k not in output["cutflow"].keys():
-                            output["cutflow"][k] = v
-                        else:
-                            output["cutflow"][k] += v
-
-            # update the ntuple histograms
-            for hist_name, hist in ntuple_hists.items():
-                logging.debug(f"\tFound histograms {hist_name} in ntuple.")
-                if hist_name in output["hists"]:
-                    output["hists"][hist_name] += hist
-                else:
-                    output["hists"][hist_name] = hist
+                # update the ntuple histograms
+                for hist_name, hist in ntuple_hists.items():
+                    logging.debug(f"\tFound histograms {hist_name} in ntuple.")
+                    if hist_name in output["hists"]:
+                        output["hists"][hist_name] += hist
+                    else:
+                        output["hists"][hist_name] = hist
 
             # check if any events are in the ntuple dataframe
             if "empty" in list(df.keys()):
                 logging.debug("\tNo events passed the selections, skipping.")
                 return output
-            if df.shape[0] == 0:
+            if df.shape[0] == 0 or df.shape[1] == 0:
                 logging.debug("\tNo events in file, skipping.")
                 return output
 
@@ -461,13 +461,14 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                     output["hists"],
                     output["cutflow"],
                     ntuple_metadata,
+                    ifile
                 )
 
                 if options.doSyst and options.isMC:
 
                     for syst in config_out.get("syst", []):
 
-                        logging.debug(f"Running syst {syst}")
+                        logging.debug(f"Running syst {syst}.")
 
                         hist_defs.initialize_histograms(
                             output["hists"], config_tag + "_" + syst, options, config_out
@@ -484,9 +485,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                             ntuple_metadata,
                         )
 
-            # remove file at the end of loop
-            if options.xrootd:
-                fill_utils.close_ntuple(ifile)
+        # remove file at the end of loop
+        if options.xrootd:
+            fill_utils.close_ntuple(ifile)
 
         return output
 
@@ -500,6 +501,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         histograms: dict,
         cutflow: dict = {},
         metadata: dict = {},
+        ifile: str = "",
     ):
         # TODO move this to fill_utils? or its own class?
 
@@ -539,11 +541,14 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         # print out events that pass the selections, if requested
         if options.printEvents:
-            print("Events passing selections for", config_tag)
-            for index, row in df_plot.iterrows():
-                print(
-                    f"{int(row['event'])}, {int(row['run'])}, {int(row['luminosityBlock'])}"
-                )
+            print("Writing events passing selections to file.")
+            fname = ifile.split("/")[-2] + "+" + ifile.split("/")[-1].replace("/", "+")
+            with open(f"events_{config_tag}_{fname}.txt", "a") as f:
+                #f.write(f"Events passing selections for {config_tag} in file {ifile}\n")
+                for index, row in df_plot.iterrows():
+                    f.write(
+                        f"{int(row['event'])}, {int(row['run'])}, {int(row['luminosityBlock'])}\n"
+                    )
 
         # if no output histograms are defined for this method, skip it
         if config_tag and len([h for h in histograms.keys() if config_tag in h]) == 0:

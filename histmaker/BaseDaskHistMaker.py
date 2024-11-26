@@ -109,16 +109,16 @@ class BaseDaskHistMaker:
         output["_processing_metadata"]["t_preprocess"] = time()
 
         self.logger.info(f"Processing samples.")
-        futures = {}
+        futures_dict = {}
         for sample in samples:
             sample_futures = self.process_sample(client, sample)
             # this is used for internal tracking of which sample the output belongs to
             for future in sample_futures:
                 future._sample = sample
-            futures[sample] = sample_futures
+            futures_dict[sample] = sample_futures
 
         # flatten futures to a list to execute them
-        futures = [future for sublist in futures.values() for future in sublist]
+        futures = [future for sublist in futures_dict.values() for future in sublist]
 
         # add some sample metadata to the output
         for sample in samples:

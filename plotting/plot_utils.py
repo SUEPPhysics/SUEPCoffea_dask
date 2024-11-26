@@ -6,7 +6,7 @@ import pickle
 import subprocess
 import sys
 from collections import defaultdict
-
+import re
 import boost_histogram as bh
 import hist
 import hist.intervals
@@ -23,43 +23,29 @@ from histmaker import fill_utils
 
 default_style = {
     "data": {
+        "label": "data",
         "color": "black",
         "fmt": "o",
         "linewidth": 2,
         "linestyle": "",
     },
     "data-VRGJ": {
-        "color": "black",
-        "fmt": "^",
-        "linewidth": 2,
-        "linestyle": "",
-    },
-    "data-VRGJ_2016": {
-        "color": "black",
-        "fmt": "^",
-        "linewidth": 2,
-        "linestyle": "",
-    },
-    "data-VRGJ_2017": {
-        "color": "black",
-        "fmt": "^",
-        "linewidth": 2,
-        "linestyle": "",
-    },
-    "data-VRGJ_2018": {
+        "label": "data",
         "color": "black",
         "fmt": "^",
         "linewidth": 2,
         "linestyle": "",
     },
     "MC": {
+        "label": "MC",
         "color": "slateblue",
         "fmt": "",
         "linewidth": 2,
         "linestyle": "-",
     },
-    "MC-VRGH": {
-        "color": "gold",
+    "MC-VRGJ": {
+        "label": "MC",
+        "color": "maroon",
         "fmt": "",
         "linewidth": 2,
         "linestyle": "-",
@@ -68,9 +54,11 @@ default_style = {
         "color": "slateblue",
     },
     "QCD_Pt": {
+        "label": "QCD",
         "color": "hotpink",
     },
     "QCD_HT": {
+        "label": "QCD",
         "color": "mediumvioletred",
     },
     "VVV": {
@@ -86,9 +74,11 @@ default_style = {
         "color": "royalblue",
     },
     "GJets": {
+        "label": r"$\gamma$+jets",
         "color": "maroon",
     },
     "WJetsToLNu": {
+        "label": r"W+jets $\rightarrow~\ell+\nu$",
         "color": "deepskyblue",
     },
     "DYJetsToLL": {
@@ -161,16 +151,31 @@ default_style = {
     },
 }
 
+mA_map = {'leptonic':0.5,'hadronic':0.7,'generic':1.0}
 
-def getStyle(sample):
+def getStyle(sample: str) -> dict:
 
-    if sample in default_style.keys():
-        return default_style[sample]
+    if any([sample.endswith(f"_{year}") for year in ["2016apv", "2016", "2017", "2018"]]):
+        sample = '_'.join(sample.split("_")[:-1])
 
-    if "GluGluToSUEP" and "mS" in sample:
+    if "GluGluToSUEP"  in sample and "mS" in sample:
         sample = sample[sample.find("mS") + 2 :]
         sample = sample.split("_")[0]
         return default_style["ggf-mS" + sample]
+
+    if sample.startswith("SUEP-WH"):
+        pattern = r"SUEP-WH-mS(?P<mS>\d+)_T(?P<TD>\d+\.\d+)_mPhi(?P<mPhi>\d+\.\d+)_(?P<mode>\w+)"
+        match = re.search(pattern, sample)
+        temp = float(match.group("TD"))
+        mPhi = float(match.group("mPhi"))
+        mode = match.group("mode")
+        mA = mA_map[mode]
+        _style = default_style.get(sample, {"linewidth": 3, "linestyle": "--"})
+        _style["label"] = f"$T_D$={temp} GeV, $m_{{\phi}}$={mPhi} GeV, $m_{{A'}}$={mA} GeV"
+        return _style
+    
+    if sample in default_style.keys():
+        return default_style[sample]
 
     else:
         return {}
@@ -721,28 +726,28 @@ def openHistFile(infile_name):
     return hists, metadata
 
 
-def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
-    plots[new_tag] = {}
+def combineSamples(plots: dict, samples: list) -> dict:
+    out = {}
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):
             h = plots[sample].get(key, None)
             htype = type(h)
             if htype == hist.hist.Hist:  # histograms
                 if i == 0:
-                    plots[new_tag][key] = h.copy()
+                    out[key] = h.copy()
                 else:
                     try:
-                        plots[new_tag][key] += h.copy()
+                        out[key] += h.copy()
                     except (ValueError, KeyError) as e:
                         print(
                             f"WARNING: couldn't merge histrogram {key} for sample {sample}. Skipping. (Error: {e})"
                         )
             elif htype == float or htype == int:  # cutflows
                 if i == 0:
-                    plots[new_tag][key] = h
+                    out[key] = h
                 else:
                     try:
-                        plots[new_tag][key] += h
+                        out[key] += h
                     except (ValueError, KeyError) as e:
                         print(
                             f"WARNING: couldn't merge cutflow {key} for sample {sample}. Skipping. (Error: {e})"
@@ -750,7 +755,7 @@ def combineSamples(plots: dict, samples: list, new_tag: str) -> dict:
             else:
                 print(f"WARNING: unknown type for {key} in sample {sample}: {htype}")
 
-    return plots
+    return out
 
 
 def check_proxy(time_min=100):
@@ -863,9 +868,10 @@ def styled_plot_ratio(
     log=True,
 ):
     styles = getStyles(labels)
+    pretty_labels = [s.get("label", l) for s, l in zip(styles, labels)]
     fig, axs = plot_ratio(
         hlist,
-        labels,
+        pretty_labels,
         density=density,
         systs=systs,
         xlabel=xlabel,
@@ -876,18 +882,19 @@ def styled_plot_ratio(
         linestyle=[style.get("linestyle", "-") for style in styles],
         fmt=[style.get("fmt", "") for style in styles],
     )
-    axs[0].legend(fontsize="xx-small", loc=(1.01, 0))
+    axs[0].legend(fontsize="x-small", loc=(1.01, 0))
 
     if stacked_hlist:
         if stacked_labels:
             stacked_styles = getStyles(stacked_labels)
+        pretty_stacked_labels = [s.get("label", l) for s, l in zip(stacked_styles, stacked_labels)]
         _default_cmap = plt.cm.jet(np.linspace(0, 1, len(stacked_hlist)))
         cmap = []
         for ic in range(len(_default_cmap)):
             cmap.append(stacked_styles[ic].get("color", _default_cmap[ic]))
         hep.histplot(
             stacked_hlist,
-            label=stacked_labels,
+            label=pretty_stacked_labels,
             ax=axs[0],
             density=density,
             stack=True,
@@ -896,23 +903,23 @@ def styled_plot_ratio(
             zorder=0,
         )
         axs[0].set_xlabel("")
-        if stacked_labels:
+        if pretty_stacked_labels:
             leg_handles, leg_labels = axs[0].get_legend_handles_labels()
             # reverse order to follow the stacking
-            stacked_leg_labels = [l for l in leg_labels if l in stacked_labels][::-1]
+            stacked_leg_labels = [l for l in leg_labels if l in pretty_stacked_labels][::-1]
             stacked_leg_handles = [
                 leg_handles[leg_labels.index(l)] for l in stacked_leg_labels
             ]
             # for unstacked histograms, reorder legend labels and handles to follow the parameter 'labels' order
             # this is already done in plot_ratio, but since we are adding the stacked histograms after the fact, we need to do it again
-            other_leg_labels = labels
+            other_leg_labels = pretty_labels
             other_leg_handles = [
                 leg_handles[leg_labels.index(l)] for l in other_leg_labels
             ]
             # put them back together
             leg_handles = other_leg_handles + stacked_leg_handles
             leg_labels = other_leg_labels + stacked_leg_labels
-            axs[0].legend(leg_handles, leg_labels, fontsize="xx-small", loc=(1.01, 0))
+            axs[0].legend(leg_handles, leg_labels, fontsize="x-small", loc=(1.01, 0))
 
     return fig, axs
 
@@ -949,7 +956,7 @@ def plot_ratio(
     # Set up default values for the optional draw arguments
     if labels is None:
         labels = [None] * len(hlist)
-    _default_cmap = plt.cm.jet(np.linspace(0, 1, len(hlist)))
+    _default_cmap = plt.cm.brg(np.linspace(0, 1, len(hlist)))
     if cmap is None:
         cmap = _default_cmap
     for ic in range(len(cmap)):
@@ -990,6 +997,9 @@ def plot_ratio(
     # set x and y limits, scales
     if log:
         ax1.set_yscale("log")
+        y_max = np.max([max(h.values()) for h in hlist]) * 5
+        y_min = np.min([min(h.values()[h.values() > 0]) for h in hlist]) * 0.5 if density else 5e-1
+        ax1.set_ylim(y_min, y_max)
     if xlim is not None:
         xmin = xlim[0]
         xmax = xlim[1]
@@ -1015,8 +1025,6 @@ def plot_ratio(
         xmax = max(xmaxs)
         xrange = xmax - xmin
         ax1.set_xlim([xmin - xrange * 0.1, xmax + xrange * 0.1])
-    if not density:
-        ax1.set_ylim(1)
 
     # define the ratio axis
     ax2 = plt.subplot2grid((3, 1), (2, 0), sharex=ax1)
@@ -1074,7 +1082,14 @@ def plot_ratio(
             alpha=0.3,
             color="gray",
         )
-        ax1.plot([0, 0], color="gray", label="Systematics")
+        # put legend in a2 in the top right
+        from matplotlib import patches as mpatches
+        ax2.legend(
+            [mpatches.Patch(color="gray", alpha=0.3)],
+            ["Syst."],
+            loc="upper right",
+            fontsize="x-small",
+        )
 
     # set labels, legend
     if density:

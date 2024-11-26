@@ -335,7 +335,7 @@ def prepare_DataFrame(
             return None
         # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
-
+        
     # 2. blind
     if blind and not isMC:
         df = blind_DataFrame(df, label_out, config["SR"])
@@ -346,7 +346,7 @@ def prepare_DataFrame(
     if "new_variables" in config.keys():
         for var in config["new_variables"]:
             try:
-                df = make_new_variable(df, var[0], var[1], *var[2])
+                make_new_variable(df, var[0], var[1], *var[2])
             except KeyError as e:
                 logging.warning(
                     f"Could not make new variable {var[0]} because of KeyError: {e}"
@@ -356,7 +356,7 @@ def prepare_DataFrame(
     if "selections" in config.keys():
 
         # store number of events passing using the event weights into the cutflow dict (this is redundant since the last cutflow value from ntuplemaker already exists)
-        cutflow_label = "cutflow_histmaker_total"
+        cutflow_label = "cutflow_histmaker_total_" + label_out
         if cutflow_label in cutflow.keys():
             cutflow[cutflow_label] += np.sum(df["event_weight"])
         else:
@@ -429,14 +429,13 @@ def is_number(s: str) -> bool:
 
 def make_new_variable(
     df: pd.DataFrame, name: str, function: callable, *columns: list
-) -> pd.DataFrame:
+) -> None:
     """
     Make a new column in the DataFrame df by applying the function to the columns
     passed as *columns. The new column will be named 'name'.
     """
 
-    df[name] = function(*[df[col] for col in columns])
-    return df
+    df.loc[:, name] = function(*[df[col] for col in columns])
 
 
 def fill_ND_distributions(df, output, label_out, input_method: str = ""):
@@ -743,5 +742,5 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
             make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False)
             & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False)
         )
-    ].copy()
+    ]
     return df

@@ -87,7 +87,7 @@ def initialize_new_variables(label: str, options, config: dict):
             ]
 
         if options.channel == "WH":
-
+            
             new_vars += [
                 [
                     "W_SUEP_BV",
@@ -104,9 +104,48 @@ def initialize_new_variables(label: str, options, config: dict):
                     vector_balancing_var,
                     [
                         "W_phi",
-                        "SUEP_phi_HighestPT",
                         "W_pt",
+                        "SUEP_phi_HighestPT",
                         "SUEP_pt_HighestPT",
+                    ],
+                ],
+                [
+                    "ak4jet1_inSUEPcluster_W_BV",
+                    balancing_var,
+                    ["ak4jet1_inSUEPcluster_pt_HighestPT", "W_pt"],
+                ],
+                [
+                    "W_ak4jet1_inSUEPcluster_vBV",
+                    vector_balancing_var,
+                    ["W_phi", "W_pt", "ak4jet1_inSUEPcluster_phi_HighestPT", "ak4jet1_inSUEPcluster_pt_HighestPT"],
+                ],
+
+                [
+                    "sumAK4W_pt",
+                    calc_vector_sum_pt,
+                    [
+                        "jet1_phi",
+                        "jet1_pt",
+                        "jet2_phi",
+                        "jet2_pt",
+                        "jet3_phi",
+                        "jet3_pt",
+                        "W_phi",
+                        "W_pt",
+                    ],
+                ],
+                [
+                    "sumAK4W_W_BV",
+                    vector_balancing_var,
+                    [
+                        "jet1_phi",
+                        "jet1_pt",
+                        "jet2_phi",
+                        "jet2_pt",
+                        "jet3_phi",
+                        "jet3_pt",
+                        "W_phi",
+                        "W_pt",
                     ],
                 ],
                 [
@@ -213,6 +252,11 @@ def initialize_new_variables(label: str, options, config: dict):
 
             new_vars += [
                 [
+                    "photon_WP80",
+                    lambda mvaID, isScEtaEB, isScEtaEE: ((mvaID > 0.42) & isScEtaEB) | ((mvaID > 0.14) & isScEtaEE),
+                    ["photon_mvaID", "photon_isScEtaEB", "photon_isScEtaEE"],
+                ],
+                [
                     "gammaTriggerSel",
                     gammaTriggerSel,
                     ["photon_pt", "WH_gammaTriggerBits"],
@@ -221,6 +265,21 @@ def initialize_new_variables(label: str, options, config: dict):
                     "photon_SUEP_BV",
                     balancing_var,
                     ["photon_pt", "SUEP_pt_HighestPT"],
+                ],
+                [
+                    "ak4jet1_inSUEPcluster_photon_BV",
+                    balancing_var,
+                    ["ak4jet1_inSUEPcluster_pt_HighestPT", "photon_pt"],
+                ],
+                [
+                    "photon_ak4jet1_inSUEPcluster_vBV",
+                    vector_balancing_var,
+                    [
+                        "photon_phi",
+                        "photon_pt",
+                        "ak4jet1_inSUEPcluster_phi_HighestPT",
+                        "ak4jet1_inSUEPcluster_pt_HighestPT",
+                    ],
                 ],
                 [
                     "deltaPhi_SUEP_photon",
@@ -268,28 +327,60 @@ def initialize_new_variables(label: str, options, config: dict):
                         "photon_phi",
                         "WH_MET_phi",
                     ],
+                ],
+                [
+                    "sumAK4PhotonMET_pt",
+                    calc_vector_sum_pt,
+                    [
+                        "jet1_phi",
+                        "jet1_pt",
+                        "jet2_phi",
+                        "jet2_pt",
+                        "jet3_phi",
+                        "jet3_pt",
+                        "photon_phi",
+                        "photon_pt",
+                        "WH_MET_phi",
+                        "WH_MET_pt",
+                    ],
+                ],
+                [
+                    "sumAK4PhotonMET_photon_BV",
+                    vector_balancing_var,
+                    [
+                        "jet1_phi",
+                        "jet1_pt",
+                        "jet2_phi",
+                        "jet2_pt",
+                        "jet3_phi",
+                        "jet3_pt",
+                        "photon_phi",
+                        "photon_pt",
+                        "WH_MET_phi",
+                        "WH_MET_pt",
+                    ],
                 ]
             ]
 
         # deal with MET variations
-        _met_variations = ['JER_up', 'JER_down', 'JES_up', 'JES_down', 'UnclusteredEn_up', 'UnclusteredEn_down'] 
+        _met_variations = ['JER_up', 'JER_down', 'JES_up', 'JES_down', 'Unclustered_up', 'Unclustered_down'] 
         for _var in _met_variations:
             if _var not in label: continue
             new_vars += [
                 [
                     f"W_pt_{_var}",
                     calc_vector_sum_pt,
-                    ["lepton_phi", f"PuppiMET_phi_{_var}", "lepton_pt", f"PuppiMET_pt_{_var}"],
+                    ["lepton_phi", "lepton_pt", f"PuppiMET_phi_{_var}", f"PuppiMET_pt_{_var}"],
                 ],
                 [
                     f"W_phi_{_var}",
                     calc_vector_sum_phi,
-                    ["lepton_phi", f"PuppiMET_phi_{_var}", "lepton_pt", f"PuppiMET_pt_{_var}"],
+                    ["lepton_phi", "lepton_pt", f"PuppiMET_phi_{_var}", f"PuppiMET_pt_{_var}"],
                 ],
                 [
                     f"W_mt_{_var}",
                     calc_mt,
-                    ["lepton_phi", f"PuppiMET_phi_{_var}", "lepton_pt", f"PuppiMET_pt_{_var}"],
+                    ["lepton_phi", "lepton_pt", f"PuppiMET_phi_{_var}", f"PuppiMET_pt_{_var}"],
                 ],
                 [
                     f"deltaPhi_SUEP_MET_{_var}",
@@ -418,51 +509,81 @@ def calc_vector_sum(xphi, yphi, xpt, ypt):
     return x_v + y_v
 
 
-def calc_vector_sum_pt(xphi, yphi, xpt, ypt):
+def calc_vector_sum_pt(*args):
 
-    vector_sum = calc_vector_sum(xphi, yphi, xpt, ypt)
+    if len(args) % 2 != 0:
+        raise ValueError("Arguments must be in pairs of (phi, pt)")
+
+    vectors = []
+    for i in range(0, len(args), 2):
+        phi = np.array(args[i])
+        pt = np.array(args[i + 1])
+        vectors.append(vector.arr({"pt": pt, "phi": phi}))
+
+    vector_sum = vectors[0]
+    for vec in vectors[1:]:
+        vector_sum = vector_sum + vec
     vector_sum_pt = vector_sum.pt
 
     if type(vector_sum_pt) is ak.highlevel.Array:
         vector_sum_pt = vector_sum_pt.to_numpy()
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    vector_sum_pt[xpt < 0] = -999
-    vector_sum_pt[ypt < 0] = -999
+    for i in range(0, len(args), 2):
+        pt = np.array(args[i + 1])
+        vector_sum_pt[pt < 0] = -999
 
     return vector_sum_pt
 
 
-def calc_vector_sum_phi(xphi, yphi, xpt, ypt):
+def calc_vector_sum_phi(*args):
 
-    vector_sum = calc_vector_sum(xphi, yphi, xpt, ypt)
+    if len(args) % 2 != 0:
+        raise ValueError("Arguments must be in pairs of (phi, pt)")
+
+    vectors = []
+    for i in range(0, len(args), 2):
+        phi = np.array(args[i])
+        pt = np.array(args[i + 1])
+        vectors.append(vector.arr({"pt": pt, "phi": phi}))
+
+    vector_sum = vectors[0]
+    for vec in vectors[1:]:
+        vector_sum = vector_sum + vec
     vector_sum_phi = vector_sum.phi
 
     if type(vector_sum_phi) is ak.highlevel.Array:
         vector_sum_phi = vector_sum_phi.to_numpy()
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    vector_sum_phi[xpt < 0] = -999
-    vector_sum_phi[ypt < 0] = -999
+    for i in range(0, len(args), 2):
+        pt = np.array(args[i + 1])
+        vector_sum_phi[pt < 0] = -999
 
     return vector_sum_phi
 
 
-def vector_balancing_var(xphi, yphi, xpt, ypt):
+def vector_balancing_var(*args):
 
-    vector_sum_pt = calc_vector_sum_pt(xphi, yphi, xpt, ypt)
+    if len(args) % 2 != 0:
+        raise ValueError("Arguments must be in pairs of (phi, pt)")
+
+    vector_sum_pt = calc_vector_sum_pt(*args)
+
+    ypt = np.array(args[-1])  # Assuming ypt is the last pt argument
 
     _eps = 1e-10
-    var = np.where(ypt > 0, vector_sum_pt / (ypt + _eps), np.ones(len(xpt)) * -999)
+    var = np.where(ypt > 0, vector_sum_pt / (ypt + _eps), np.ones(len(ypt)) * -999)
 
     # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    var[xpt < 0] = -999
-    var[ypt < 0] = -999
+    for i in range(1, len(args), 2):
+        pt = np.array(args[i])
+        var[pt < 0] = -999
 
     return var
 
 
-def calc_mt(xphi, yphi, xpt, ypt):
+def calc_mt(xphi, xpt, yphi, ypt):
 
     # cast inputs to numpy arrays
     xpt = np.array(xpt)

@@ -60,7 +60,7 @@ def main():
     parser.add_argument("--isMC", type=int, default=1, help="")
     parser.add_argument("--jobNum", type=int, default=1, help="")
     parser.add_argument("--era", type=str, default="2018", help="")
-    parser.add_argument("--doSyst", type=int, default=1, help="")
+    parser.add_argument("--doSyst", type=int, default=0, help="")
     parser.add_argument("--infile", required=True, type=str, default=None, help="")
     parser.add_argument(
         "--outfile",

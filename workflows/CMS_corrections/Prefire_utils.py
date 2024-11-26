@@ -8,8 +8,10 @@ def GetPrefireWeights(self, events):
             prefire_nom = events.L1PreFiringWeight.Nom
             prefire_up = events.L1PreFiringWeight.Up
             prefire_down = events.L1PreFiringWeight.Dn
-    else:
+    elif self.era == "2018":
         prefire_nom = 1.0
         prefire_up = 1.0
         prefire_down = 1.0
+    else: 
+        raise ValueError(f"Unsupported era {self.era}")
     return (prefire_nom, prefire_up, prefire_down)
