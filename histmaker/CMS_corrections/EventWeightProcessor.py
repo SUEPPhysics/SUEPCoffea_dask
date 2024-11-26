@@ -4,7 +4,7 @@ Date: August 2024
 """
 
 import logging
-
+import os
 import numpy as np
 import pandas as pd
 from CMS_corrections import higgs_reweight, pileup_weight, triggerSF
@@ -207,11 +207,9 @@ class EventWeightProcessor:
                     btag_weights = "bTagWeight_central"
                 btag_weights += "_" + self.channel.lower()
                 if btag_weights not in df.keys():
-                    logging.warning(
-                        f"btag weights {btag_weights} not found in DataFrame. Not applying them."
+                    raise Exception(
+                        f"btag weights {btag_weights} not found in DataFrame."
                     )
-                    # TODO this should not be a pass, but a raise exception, but we don't have all weights rn
-                    pass
                 else:
                     df["event_weight"] *= df[btag_weights]
 
@@ -234,12 +232,17 @@ class EventWeightProcessor:
 
             df["event_weight"] = np.ones(df.shape[0])
 
-            # un-prescaling for the gamma triggers
             if self.channel == "WH-VRGJ":
+
+                # un-prescaling for the gamma triggers
                 df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
 
-            # ad hoc weights
-            # print("TEMPORARY: applying ad hoc weights for data to correct suep pT. Meant only for gamma+jets testing.")
-            # df["event_weight"] *= apply_correctionlib("CMS_corrections/suep_pt_corr.json", "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
+                # reewighting based on SUEP pT to match the W+jets
+                _era = self.era.replace("apv", "")
+                pt_corr_file = f"../data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
+                if os.path.exists(pt_corr_file):
+                    df["event_weight"] *= apply_correctionlib(pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
+                else:
+                    logging.warning(f"File {pt_corr_file} not found. Not applying pT reweighting.")
 
         return df
