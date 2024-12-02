@@ -98,7 +98,6 @@ def main():
             flag=False,
             output_location=options.output_location,
             VRGJ=True,
-            storeJetsInfo=True,
         )
     )
 

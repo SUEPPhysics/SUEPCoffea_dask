@@ -22,7 +22,7 @@ import workflows.SUEP_utils as SUEP_utils
 import workflows.WH_utils as WH_utils
 
 # Importing CMS corrections
-from workflows.CMS_corrections.btag_utils import btagcuts, doBTagWeights, getBTagEffs
+from workflows.CMS_corrections.btag_utils import btagcuts
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import METHEMFilter, jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
@@ -51,7 +51,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output_location=None,
         CRQCD: bool = False,
         VRGJ: bool = False,
-        storeJetsInfo: bool = True,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -62,7 +61,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.scouting = 0
         self.CRQCD = CRQCD
         self.VRGJ = VRGJ
-        self.storeJetsInfo = storeJetsInfo  # for the b-tag efficiencies
 
     def HighestPTMethod(
         self,
@@ -451,8 +449,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["nBTight"] = ak.sum(
             (events.WH_jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
         )[:]
-        # store jet information (jet pt, eta, hadronFlavor, btag) in histogram for bjet eff calculation
-        if self.isMC and self.storeJetsInfo:
+        # store jet information (jet pt, eta, hadronFlavor, btag) for bjet eff calculation
+        if self.isMC:
             btag_category = ak.where(
                 (events.WH_jets_jec.btag < btagcuts("Loose", era_int)),
                 0,
@@ -496,27 +494,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["jet" + str(i + 1) + "_mass"] = ak.fill_none(
                 ak.pad_none(jets_pTsorted.mass, i + 1, axis=1, clip=True), -999
             )[:, i]
-
-        # saving kinematic variables for the leading b-tagged jet
-        highbtag_jet = ak.argsort(
-            events.WH_jets_jec.btag, axis=1, ascending=False, stable=True
-        )
-        jets_btag_sorted = events.WH_jets_jec[highbtag_jet]
-        output["vars"]["bjet_pt"] = ak.fill_none(
-            ak.pad_none(jets_btag_sorted.pt, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_phi"] = ak.fill_none(
-            ak.pad_none(jets_btag_sorted.phi, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_eta"] = ak.fill_none(
-            ak.pad_none(jets_btag_sorted.eta, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_qgl"] = ak.fill_none(
-            ak.pad_none(jets_pTsorted.qgl, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_btag"] = ak.fill_none(
-            ak.pad_none(jets_pTsorted.btag, 1, axis=1, clip=True), -999
-        )[:, 0]
 
         # saving kinematic variables for the deltaphi(min(jet,WH MET)) jet
         jets_deltaPhiMET = WH_utils.MET_delta_phi(events.WH_jets_jec, events.WH_MET)
@@ -582,21 +559,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output["vars"]["PSWeight_FSR_down"] = psweights[3]
             else:
                 output["vars"]["PSWeight"] = psweights
-
-            for metaCR in ["wh", "wh-vrgj"]:
-                if self.era == "2018":
-                    bTagWeights = doBTagWeights(
-                        events.WH_jets_jec,
-                        era_int,
-                        wps="TL",
-                        channel=metaCR,
-                    )
-                    for var in bTagWeights.keys():
-                        output["vars"]["bTagWeight_" + var + "_" + metaCR] = (
-                            bTagWeights[var]
-                        )
-                else:
-                    continue
 
             prefireweights = GetPrefireWeights(self, events)  # Prefire weights
             output["vars"]["prefire_nom"] = prefireweights[0]

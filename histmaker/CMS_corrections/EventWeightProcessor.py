@@ -7,7 +7,7 @@ import logging
 import os
 import numpy as np
 import pandas as pd
-from CMS_corrections import higgs_reweight, pileup_weight, triggerSF
+from CMS_corrections import higgs_reweight, pileup_weight, triggerSF, btag_utils
 
 
 def apply_correctionlib(corr_file: str, corr_variable: str, input_variable: np.ndarray):
@@ -207,18 +207,20 @@ class EventWeightProcessor:
                     btag_weights = "bTagWeight_central"
                 btag_weights += "_" + self.channel.lower()
                 if btag_weights not in df.keys():
-                    raise Exception(
-                        f"btag weights {btag_weights} not found in DataFrame."
-                    )
+                    pass
+                    #raise Exception(
+                    #    f"btag weights {btag_weights} not found in DataFrame."
+                    #)
                 else:
                     df["event_weight"] *= df[btag_weights]
 
             # 9) lepton SF
             if self.channel == 'WH':
-                if 'LepSF' in self.variation:
-                    df["event_weight"] *= df[self.variation]
-                else:
-                    df["event_weight"] *= df["LepSF"]
+                pass
+                #if 'LepSF' in self.variation:
+                #    df["event_weight"] *= df[self.variation]
+                #else:
+                #    df["event_weight"] *= df["LepSF"]
 
             # 10) photon SF
             if self.channel == 'WH-VRGJ':
@@ -226,6 +228,29 @@ class EventWeightProcessor:
                     df["event_weight"] *= df[self.variation]
                 else:
                     df["event_weight"] *= df["photon_SF"]
+
+            # 11) btag weights
+            if self.channel == 'WH-VRGJ' or self.channel == 'WH':
+                if self.era == "2016apv":
+                    era_int = 2015
+                else:
+                    era_int = int(self.era)
+                if 'bTagWeight_' in self.variation:
+                    btag_variation = self.variation.replace("bTagWeight_", "")
+                else:
+                    btag_variation = 'central'
+                btag_weights = btag_utils.doBTagWeights(
+                    jets_pt=df['jets_pt'],
+                    jets_eta=df['jets_eta'],
+                    jets_hadronFlavour=df['jets_hadronFlavor'],
+                    jets_btagDeepFlavB=df['jets_btag_category'],
+                    variations=[btag_variation],
+                    era=era_int,
+                    wps='TL',
+                    channel=self.channel.lower(),
+                    base_dir='../'
+                )
+                df["event_weight"] *= btag_weights[btag_variation].to_numpy()
 
         # data
         else:
