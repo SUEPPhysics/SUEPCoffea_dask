@@ -137,7 +137,8 @@ class BaseDaskHistMaker:
             output[sample]["_processing_metadata"]["n_processed"] += 1
 
             try:
-                result = future.result()
+                result = future.result() # grab the result from the future
+                future.release() # get rid of the future to free up worker memory
 
                 for key, value in result.items():
 
