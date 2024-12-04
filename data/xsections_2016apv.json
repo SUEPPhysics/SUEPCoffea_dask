@@ -11674,5 +11674,23 @@
     "kr": 1,
     "xsec": 1.358,
     "signal": 1
+  },
+  "WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xesc": 53330.0,
+    "signal": 0
+  },
+  "WJetsToLNu_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xesc": 8875.0,
+    "signal": 0
+  },
+  "WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16MiniAODAPVv2-106X_mcRun2_asymptotic_preVFP_v11-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xesc": 3338.0,
+    "signal": 0
   }
 }
