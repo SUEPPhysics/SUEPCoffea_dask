@@ -42,8 +42,8 @@ def h5LoadHist(ifile: str, label: str = "hists"):
     with h5py.File(ifile, "r") as hdf5_file:
 
         # Check if the 'hists' group exists
-        if "hists" in hdf5_file:
-            hist_collection = hdf5_file["hists"]
+        if label in hdf5_file:
+            hist_collection = hdf5_file[label]
         else:
             return {}
 

@@ -1185,11 +1185,6 @@ def storeGenZAndDaughtersInfo(events, output):
     )
 
     for i in range(2):
-        print(
-            ak.fill_none(
-                ak.pad_none(daughters.pt, i + 1, axis=1, clip=True)[:, i], -999
-            ).to_numpy()
-        )
         output["vars"][f"genZ_daughter{i}_pt"] = (
             ak.fill_none(
                 ak.pad_none(daughters.pt, i + 1, axis=1, clip=True)[:, i], -999

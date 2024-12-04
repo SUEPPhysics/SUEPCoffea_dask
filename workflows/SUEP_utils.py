@@ -442,7 +442,6 @@ def FastJetReclustering(tracks, r, minPt):
 
     return ak_inclusive_jets, ak_inclusive_cluster
 
-
 def getTopTwoJets(self, tracks, indices, ak_inclusive_jets, ak_inclusive_cluster):
     # order the reclustered jets by pT (will take top 2 for ISR removal method)
     highpt_jet = ak.argsort(ak_inclusive_jets.pt, axis=1, ascending=False, stable=True)

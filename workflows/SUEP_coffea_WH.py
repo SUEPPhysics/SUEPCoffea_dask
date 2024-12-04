@@ -107,8 +107,23 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # make the ak15 clusters
         ak15jets, clusters = SUEP_utils.FastJetReclustering(
-            events.WH_tracks, r=1.5, minPt=60
+            events.WH_tracks, r=1.5, minPt=0
         )
+        output['leading_ak15_pt'].fill(
+            ak.fill_none(
+                ak.max(ak15jets.pt, axis=1), -999
+            )
+        )
+        output['n_ak15'].fill(ak.num(ak15jets, axis=1))
+        ak15_60gev = (ak15jets.pt > 60)
+        ak15jets = ak15jets[ak15_60gev]
+        clusters = clusters[ak15_60gev]
+        output['leading_ak15_pt_60gev'].fill(
+            ak.fill_none(
+                ak.max(ak15jets.pt, axis=1), -999
+            )
+        )
+        output['n_ak15_60gev'].fill(ak.num(ak15jets, axis=1))
         events = ak.with_field(events, ak15jets, "WH_ak15jets")
         events = ak.with_field(events, clusters, "WH_ak15clusters")
 
@@ -1035,6 +1050,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
+                "leading_ak15_pt": Hist.new.Reg(1000,0,1000,name="leading_ak15_pt",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
+                "leading_ak15_pt_60gev": Hist.new.Reg(1000,0,1000,name="leading_ak15_pt_60gev",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
+                "n_ak15": Hist.new.Reg(10,0,10,name="n_ak15",label="$n_{\mathrm{AK15}}$").Weight(),
+                "n_ak15_60gev": Hist.new.Reg(10,0,10,name="n_ak15_60gev",label="$n_{\mathrm{AK15}}$").Weight(),
             }
         )
 

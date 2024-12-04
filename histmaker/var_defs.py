@@ -599,6 +599,9 @@ def calc_mt(xphi, xpt, yphi, ypt):
 
     mt = np.sqrt(2 * xpt * ypt * (1 - np.cos(x_v.deltaphi(y_v))))
 
+    if type(mt) is ak.highlevel.Array:
+        mt = mt.to_numpy()
+
     mt[(xpt < 0)] = -999
     mt[(ypt < 0)] = -999
     mt[(xphi < -100)] = -999

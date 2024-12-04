@@ -355,11 +355,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         for iBatch, (df_name, config_tags) in enumerate(processing_batches.items()):
 
-            logging.debug(f"Processing tags {config_tags} with df_name {df_name}.")            
+            logging.debug(f"Processing tags {config_tags} with df_name {df_name}.")   
 
             # get the file
             df, ntuple_metadata, ntuple_hists = fill_utils.open_ntuple(
-                ifile, redirector=options.redirector, xrootd=options.xrootd, df_name=df_name
+                ifile, redirector=options.redirector, xrootd=options.xrootd, df_name=df_name, hist_name=df_name.replace("vars", "hists")
             )
 
             # check if file is corrupted
@@ -404,13 +404,20 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                             else:
                                 output["cutflow"][k] += v
 
-                # update the ntuple histograms
-                for hist_name, hist in ntuple_hists.items():
-                    logging.debug(f"\tFound histograms {hist_name} in ntuple.")
-                    if hist_name in output["hists"]:
-                        output["hists"][hist_name] += hist
-                    else:
-                        output["hists"][hist_name] = hist
+            # update the ntuple histograms
+            for hist_name, hist in ntuple_hists.items():
+                logging.debug(f"\tFound histograms {hist_name} in ntuple.")
+
+                # for variations, we append the variation to the histogram name
+                variation =  df_name.replace("vars_", "").replace("vars", "")
+             
+                if variation != "":
+                    hist_name = hist_name + "_" + variation
+
+                if hist_name in output["hists"]:
+                    output["hists"][hist_name] += hist
+                else:
+                    output["hists"][hist_name] = hist
 
             # check if any events are in the ntuple dataframe
             if "empty" in list(df.keys()):

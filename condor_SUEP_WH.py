@@ -16,6 +16,11 @@ def form_ntuple(options, output):
     """
     Extract the dataframes from the processor output
     We expect this to have the shape: {variation1: {vars: df, ...}, variation2: {vars: df, ...}, ...}
+    Output is: [df1, df2, ...], [vars_variation1, vars_variation2, ...]
+    These will be saved in the hdf5 as
+        vars_variation1
+        vars_variation2
+        ...
     """
     dfs = []
     variations = output["out"][options.dataset].keys()
@@ -26,7 +31,10 @@ def form_ntuple(options, output):
 def form_metadata(options, output):
     """
     Extract the metadata from the processor output
-    We expect this to have the shape: {variation1: {era: 2018, mc: 1, sample: X, ...}, ...}ll -h
+    We expect this to have the shape: {variation1: {era: 2018, mc: 1, sample: X, ...}, ...}
+    Output is: {era_variation1: 2018, era_variation2: 2018, ..., mc_variation1: 1, mc_variation2: 1, ..., sample_variation1: X, sample_variation2: X, ...}
+    This will be saved in the hdf5 as
+        metadata
     """
     metadata = dict(
         era=options.era,
@@ -47,11 +55,26 @@ def form_metadata(options, output):
 
 
 def form_hists(options, output):
-    hists = {}
-    for key in output["out"][options.dataset].keys():
-        if type(output["out"][options.dataset][key]) is hist.Hist:
-            hists[key] = output["out"][options.dataset][key]
-    return hists
+    """
+    Extract the histograms from the processor output
+    We expect this to have the shape: {variation1: {hist_name1: hist1, ...}, variation2: {hist_name1: hist1, ...}, ...}
+    Output is: [{hist_name1: hist1, ...}, {hist_name1: hist1, ...}, ...], [hists_variation1, hists_variation2, ...]
+    These will be saved in the hdf5 as
+        hists_variation1/hist_name1
+        hists_variation1/hist_name2
+        ...
+        hists_variation2/hist_name1
+        ...
+    """
+    hists = []
+    variations = output["out"][options.dataset].keys()
+    for var in variations:
+        hists_var = {}
+        for key in output["out"][options.dataset][var].keys():
+            if type(output["out"][options.dataset][var][key]) is hist.Hist:
+                hists_var[key] = output["out"][options.dataset][var][key]
+        hists.append(hists_var)
+    return hists, ["hists_" + var if var != "nominal" else "hists" for var in variations]
 
 
 def main():
@@ -121,13 +144,14 @@ def main():
         # format the desired data from the processor output
         dfs, df_names = form_ntuple(options, output)
         metadata = form_metadata(options, output)
-        hists = form_hists(options, output)
+        hists, hist_names = form_hists(options, output)
 
         # save everything to hdf5
         pandas_utils.save_dfs(
             instance, dfs, df_names, options.outfile, metadata=metadata
         )
-        output_utils.add_hists(options.outfile, hists)
+        for h, n in zip(hists, hist_names):
+            output_utils.add_hists(options.outfile, h, group_name=n)
 
         # write out the hdf5 to the output_location
         output_utils.dump_table(
