@@ -11654,19 +11654,19 @@
   "WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16MiniAOD-106X_mcRun2_asymptotic_v13-v2+MINIAODSIM": {
     "br": 1,
     "kr": 1,
-    "xesc": 53330.0,
+    "xsec": 53330.0,
     "signal": 0
   },
   "WJetsToLNu_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16MiniAOD-106X_mcRun2_asymptotic_v13-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
-    "xesc": 8875.0,
+    "xsec": 8875.0,
     "signal": 0
   },
   "WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16MiniAOD-106X_mcRun2_asymptotic_v13-v1+MINIAODSIM": {
     "br": 1,
     "kr": 1,
-    "xesc": 3338.0,
+    "xsec": 3338.0,
     "signal": 0
   }
 }
