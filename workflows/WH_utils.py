@@ -574,15 +574,15 @@ def triggerSelection(
             temp_trig = ak.where(
                 run_mask,
                 (events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT),
-                events.HLT.Photon200,
+                (events.HLT.Photon200),
             )
         else:
-            temp_trig = events.HLT.Photon200
+            temp_trig = (events.HLT.Photon200)
 
         # Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
         filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
-        events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
-
+        events = events[((ak.num(events.TrigObj[filts]) > 0) | temp_trig)]
+    
         if len(events) == 0:
             return events
 
@@ -612,13 +612,15 @@ def triggerSelection(
 
         # remove events that do not have a trig object within dR of 0.1 of an electron
         dR = ak.where(ak.num(dR, axis=-1) == 0, ak.Array([[1.0]]), dR)
-        events = events[(ak.min(dR, axis=-1) < 0.1) | temp_trig]
+        simulated_trigger = ((ak.min(dR, axis=-1) < 0.1) | temp_trig)
+        simulated_trigger = simulated_trigger.to_numpy()
+        events = events[simulated_trigger]
 
         # Do cutflow and return events
         if output:
             output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
         return events
-    elif era == "2016":
+    elif era == "2016" or era == "2016apv":
         triggerElectron = (
             events.HLT.Ele27_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
         )
