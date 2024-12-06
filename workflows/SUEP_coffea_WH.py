@@ -6,7 +6,8 @@ Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
 import warnings
-
+import psutil
+import osimport time
 import awkward as ak
 import numpy as np
 import pandas as pd
@@ -107,7 +108,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # make the ak15 clusters
         ak15jets, clusters = SUEP_utils.FastJetReclustering(
-            events.WH_tracks, r=1.5, minPt=0
+            events.WH_tracks, r=1.5, minPt=5
         )
         output['leading_ak15_pt'].fill(
             ak.fill_none(
@@ -118,11 +119,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ak15_60gev = (ak15jets.pt > 60)
         ak15jets = ak15jets[ak15_60gev]
         clusters = clusters[ak15_60gev]
-        output['leading_ak15_pt_60gev'].fill(
-            ak.fill_none(
-                ak.max(ak15jets.pt, axis=1), -999
-            )
-        )
         output['n_ak15_60gev'].fill(ak.num(ak15jets, axis=1))
         events = ak.with_field(events, ak15jets, "WH_ak15jets")
         events = ak.with_field(events, clusters, "WH_ak15clusters")
@@ -611,7 +607,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if "WH_lepton" in events.fields:
             
             output["vars"]["lepton_pt"] = events.WH_lepton.pt
-            output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
+            if self.isMC: output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
             output["vars"]["lepton_eta"] = events.WH_lepton.eta
             output["vars"]["lepton_phi"] = events.WH_lepton.phi
             output["vars"]["lepton_mass"] = events.WH_lepton.mass
@@ -922,7 +918,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         if not self.CRQCD and not self.VRGJ:
-            events = WH_utils.oneTightLeptonSelection(events, self.era, isMC=self.isMC, variation=variation if 'MuScale' in variation or 'ElScale' in variation else "")
+            events = WH_utils.oneTightLeptonSelection(events, era=self.era, isMC=self.isMC, variation=variation if (('MuScale' in variation) or ('ElScale' in variation)) else "")
             output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
         elif self.VRGJ:
             events = WH_utils.onePhotonSelection(events, self.isMC)
@@ -976,14 +972,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         events = ak.with_field(events, events.PuppiMET, "WH_MET")
         if not self.VRGJ:
+            events = events[events.WH_MET.pt > 20]
+            output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
             events = ak.with_field(
                 events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W"
             )
-            events = events[events.WH_MET.pt > 20]
-            output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
-
-        # TODO do we want this?
-        # eventMETHEMCut = METHEMFilter(self, events.WH_MET, events.run)
 
         #####################################################################################
         # ---- Store event level information
@@ -1050,8 +1043,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
-                "leading_ak15_pt": Hist.new.Reg(1000,0,1000,name="leading_ak15_pt",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
-                "leading_ak15_pt_60gev": Hist.new.Reg(1000,0,1000,name="leading_ak15_pt_60gev",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
+                "leading_ak15_pt": Hist.new.Reg(400,0,400,name="leading_ak15_pt",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
                 "n_ak15": Hist.new.Reg(10,0,10,name="n_ak15",label="$n_{\mathrm{AK15}}$").Weight(),
                 "n_ak15_60gev": Hist.new.Reg(10,0,10,name="n_ak15_60gev",label="$n_{\mathrm{AK15}}$").Weight(),
             }
@@ -1070,6 +1062,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output_nom = deepcopy(blank_output)
         _, output_nom = self.analysis(events, output_nom)
         output['nominal'] = output_nom
+
 
         # run the analysis with the systematic variations applied
         if self.isMC and self.do_syst:
