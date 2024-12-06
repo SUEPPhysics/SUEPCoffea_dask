@@ -7,7 +7,8 @@ Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 
 import warnings
 import psutil
-import osimport time
+import os
+import time
 import awkward as ak
 import numpy as np
 import pandas as pd
@@ -977,6 +978,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             events = ak.with_field(
                 events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W"
             )
+
+        if len(events) == 0:
+            print("\n\nNo events pass MET pt > 20.\n\n")
+            return events, output
 
         #####################################################################################
         # ---- Store event level information
