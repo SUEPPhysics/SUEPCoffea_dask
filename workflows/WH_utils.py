@@ -550,14 +550,6 @@ def triggerSelection(
     # muon trigger
     triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
 
-    # photon trigger
-    if era == "2016" or era == "2016apv":
-        triggerPhoton = events.HLT.Photon175
-    elif era == "2017" or era == "2018":
-        triggerPhoton = events.HLT.Photon200
-    else:
-        raise ValueError
-
     if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
         # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
@@ -569,20 +561,22 @@ def triggerSelection(
         run_start = 299368
         run_end = 306460
         run_mask = (events.run > run_start) & (events.run < run_end)
-
         if "Ele115_CaloIdVT_GsfTrkIdT" in ak.fields(events.HLT):
             temp_trig = ak.where(
                 run_mask,
-                (events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT),
-                (events.HLT.Photon200),
+                events.HLT.Ele115_CaloIdVT_GsfTrkIdT,
+                True,
             )
         else:
-            temp_trig = (events.HLT.Photon200)
+            temp_trig = True
+
+        #events = events[run_mask]
+        #temp_trig = events.HLT.Ele115_CaloIdVT_GsfTrkIdT
 
         # Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
         filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
-        events = events[((ak.num(events.TrigObj[filts]) > 0) | temp_trig)]
-    
+        events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
+
         if len(events) == 0:
             return events
 
@@ -591,11 +585,11 @@ def triggerSelection(
         if "Ele115_CaloIdVT_GsfTrkIdT" in ak.fields(events.HLT):
             temp_trig = ak.where(
                 run_mask,
-                (events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT),
-                events.HLT.Photon200,
+                events.HLT.Ele115_CaloIdVT_GsfTrkIdT,
+                True,
             )
         else:
-            temp_trig = events.HLT.Photon200
+            temp_trig = True
 
         # grab prefiltered events
         trig_obs = getTrigObj(events)
@@ -612,9 +606,7 @@ def triggerSelection(
 
         # remove events that do not have a trig object within dR of 0.1 of an electron
         dR = ak.where(ak.num(dR, axis=-1) == 0, ak.Array([[1.0]]), dR)
-        simulated_trigger = ((ak.min(dR, axis=-1) < 0.1) | temp_trig)
-        simulated_trigger = simulated_trigger.to_numpy()
-        events = events[simulated_trigger]
+        events = events[(ak.min(dR, axis=-1) < 0.1) | temp_trig]
 
         # Do cutflow and return events
         if output:
@@ -638,19 +630,17 @@ def triggerSelection(
         )
         if "SingleMuon" not in sample:
             output["cutflow_triggerEGamma" + out_label] += ak.sum(
-                events[triggerPhoton | triggerElectron].genWeight
+                events[triggerElectron].genWeight
             )
 
     # Apply selection on events
     if isMC:
-        events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+        events = events[triggerElectron | triggerSingleMuon]
     else:
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
         elif ("SingleElectron" in sample) or ("EGamma" in sample):
-            events = events[(triggerElectron | triggerPhoton) & (~triggerSingleMuon)]
-        else:
-            events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+            events = events[(triggerElectron) & (~triggerSingleMuon)]
 
     return events
 
