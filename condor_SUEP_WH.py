@@ -101,7 +101,7 @@ def main():
     )
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
-    parser.add_argument("--chunkSize", type=int, default=100000, help="")
+    parser.add_argument("--chunkSize", type=int, default=10000, help="")
     parser.add_argument(
         "--doInf",
         type=str,

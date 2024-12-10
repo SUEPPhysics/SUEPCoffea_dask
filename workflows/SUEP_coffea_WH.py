@@ -114,13 +114,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output['leading_ak15_pt'].fill(
             ak.fill_none(
                 ak.max(ak15jets.pt, axis=1), -999
-            )
+            ),
+            weight=events.genWeight
         )
-        output['n_ak15'].fill(ak.num(ak15jets, axis=1))
+        output['n_ak15'].fill(ak.num(ak15jets, axis=1),weight=events.genWeight)
         ak15_60gev = (ak15jets.pt > 60)
         ak15jets = ak15jets[ak15_60gev]
         clusters = clusters[ak15_60gev]
-        output['n_ak15_60gev'].fill(ak.num(ak15jets, axis=1))
+        output['n_ak15_60gev'].fill(ak.num(ak15jets, axis=1),weight=events.genWeight)
         events = ak.with_field(events, ak15jets, "WH_ak15jets")
         events = ak.with_field(events, clusters, "WH_ak15clusters")
 
@@ -973,11 +974,11 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         events = ak.with_field(events, events.PuppiMET, "WH_MET")
         if not self.VRGJ:
-            events = events[events.WH_MET.pt > 20]
-            output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
             events = ak.with_field(
                 events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W"
             )
+            events = events[events.WH_MET.pt > 20]
+            output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
 
         if len(events) == 0:
             print("\n\nNo events pass MET pt > 20.\n\n")
@@ -1006,6 +1007,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # cut events that don't have a SUEP candidate
         if "SUEP_nconst_HighestPT" in output["vars"].columns:
+            # if any events have a SUEP candidate
             method_selection = np.any(
                 [
                     ~output["vars"]["SUEP_nconst_HighestPT"+out_label].isnull()
@@ -1015,8 +1017,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"] = output["vars"][method_selection]
             events = events[method_selection]
         else:
+            # no events have a SUEP candidate
             events = events[0:0]
-            output["vars"] = output["vars"][[]]
+            output["vars"] = pandas_accumulator(pd.DataFrame())
 
         return events, output
 

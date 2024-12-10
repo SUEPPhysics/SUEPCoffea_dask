@@ -4,6 +4,7 @@ import vector
 
 from workflows.CMS_corrections.HEM_utils import jetHEMFilter
 from workflows.CMS_corrections.leptonscale_utils import doLeptonScaleVariations
+import psutil
 
 
 def getGenModel(events):
@@ -132,7 +133,6 @@ def getTracks(events, iso_object=None, isolation_deltaR=0):
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass,
-            # "pdgId": events.PFCands.pdgId
         },
         with_name="Momentum4D",
     )
@@ -141,7 +141,6 @@ def getTracks(events, iso_object=None, isolation_deltaR=0):
         & (events.PFCands.trkPt >= 1)
         & (abs(events.PFCands.trkEta) <= 2.5)
         & (abs(events.PFCands.dz) < 0.05)
-        # & (events.PFCands.dzErr < 0.05)
         & (abs(events.PFCands.d0) < 0.05)
         & (events.PFCands.puppiWeight > 0.1)
     )
@@ -164,7 +163,6 @@ def getTracks(events, iso_object=None, isolation_deltaR=0):
         & (abs(events.lostTracks.eta) <= 2.5)
         & (abs(events.lostTracks.dz) < 0.05)
         & (abs(events.lostTracks.d0) < 0.05)
-        # & (events.lostTracks.dzErr < 0.05)
         & (events.lostTracks.puppiWeight > 0.1)
     )
     Lost_Tracks_cands = LostTracks[cut]
@@ -565,10 +563,10 @@ def triggerSelection(
             temp_trig = ak.where(
                 run_mask,
                 events.HLT.Ele115_CaloIdVT_GsfTrkIdT,
-                True,
+                False,
             )
         else:
-            temp_trig = True
+            temp_trig = False
 
         #events = events[run_mask]
         #temp_trig = events.HLT.Ele115_CaloIdVT_GsfTrkIdT
@@ -586,10 +584,10 @@ def triggerSelection(
             temp_trig = ak.where(
                 run_mask,
                 events.HLT.Ele115_CaloIdVT_GsfTrkIdT,
-                True,
+                False,
             )
         else:
-            temp_trig = True
+            temp_trig = False
 
         # grab prefiltered events
         trig_obs = getTrigObj(events)
@@ -606,7 +604,8 @@ def triggerSelection(
 
         # remove events that do not have a trig object within dR of 0.1 of an electron
         dR = ak.where(ak.num(dR, axis=-1) == 0, ak.Array([[1.0]]), dR)
-        events = events[(ak.min(dR, axis=-1) < 0.1) | temp_trig]
+        simulated_trigger = ((ak.min(dR, axis=-1) < 0.1) | (temp_trig)).to_numpy()
+        events = events[simulated_trigger]
 
         # Do cutflow and return events
         if output:
@@ -641,6 +640,8 @@ def triggerSelection(
             events = events[triggerSingleMuon]
         elif ("SingleElectron" in sample) or ("EGamma" in sample):
             events = events[(triggerElectron) & (~triggerSingleMuon)]
+        else:
+            raise ValueError(f"Invalid sample name: {sample}. Expected one of: SingleMuon, SingleElectron, EGamma.")
 
     return events
 
