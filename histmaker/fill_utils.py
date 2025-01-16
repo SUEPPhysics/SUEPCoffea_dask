@@ -307,6 +307,14 @@ def apply_scaling_weights_byregion(
     return df
 
 
+def add_cutflow(df: pd.DataFrame, cutflow: dict, cutflow_label: str, column_name: str = "event_weight") -> None:
+
+    if cutflow_label in cutflow.keys():
+        cutflow[cutflow_label] += np.sum(df[column_name])
+    else:
+        cutflow[cutflow_label] = np.sum(df[column_name])
+
+
 def prepare_DataFrame(
     df: pd.DataFrame,
     config: dict,
@@ -335,12 +343,12 @@ def prepare_DataFrame(
             return None
         # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
+        add_cutflow(df, cutflow, "cutflow_method_var_" + label_out)
         
     # 2. blind
-    if blind and not isMC:
+    if blind:
         df = blind_DataFrame(df, label_out, config["SR"])
-        if "SR2" in config.keys():
-            df = blind_DataFrame(df, label_out, config["SR2"])
+        add_cutflow(df, cutflow, "cutflow_blind_SR_" + label_out)
 
     # 3. make new variables
     if "new_variables" in config.keys():
@@ -355,13 +363,6 @@ def prepare_DataFrame(
 
     # 4. apply selections
     if "selections" in config.keys():
-
-        # store number of events passing using the event weights into the cutflow dict (this is redundant since the last cutflow value from ntuplemaker already exists)
-        cutflow_label = "cutflow_histmaker_total_" + label_out
-        if cutflow_label in cutflow.keys():
-            cutflow[cutflow_label] += np.sum(df["event_weight"])
-        else:
-            cutflow[cutflow_label] = np.sum(df["event_weight"])
 
         # make n-1 plots
         for i, isel in enumerate(config["selections"]):
@@ -415,11 +416,8 @@ def prepare_DataFrame(
             cutflow_label = (
                 "cutflow_" + sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out
             )
-            if cutflow_label in cutflow.keys():
-                cutflow[cutflow_label] += np.sum(df["event_weight"])
-            else:
-                cutflow[cutflow_label] = np.sum(df["event_weight"])
-
+            add_cutflow(df, cutflow, cutflow_label)
+            
     return df
 
 
@@ -564,19 +562,6 @@ def auto_fill(
                 if df_r.shape[0] == 0:
                     iRegion += 1
                     continue
-
-                # double check blinding
-                if (
-                    iRegion == (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
-                    and not isMC
-                ):
-                    if df_r.shape[0] > 0:
-                        sys.exit(
-                            label_out + ": You are not blinding correctly! Exiting."
-                        )
-
-                # by default, we only plot the ABCD variables in each region, to reduce the size of the output
-                # the option do_abcd created a histogram of each variable for each region
 
                 # 3a. fill event wide variables
                 for plot in event_plot_labels:
@@ -741,10 +726,9 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
             For now we only support a two-variable SR, because of the way
             this function was written. Exiting."""
         )
-    df = df.loc[
+    return df.loc[
         ~(
             make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False)
             & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False)
         )
-    ]
-    return df
+    ].copy()
