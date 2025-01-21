@@ -187,7 +187,6 @@ def getTracks(events, iso_object=None, isolation_deltaR=0):
 
 def getLeptons(events, isMC: int):
 
-    ###lepton selection criteria--4momenta collection for plotting
     if isMC:
         muons = ak.zip(
             {
@@ -231,7 +230,7 @@ def getLeptons(events, isMC: int):
                         ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
                         + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
                         + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
-                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA
                     "iso": events.Electron.pfRelIso03_all,
                     "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
                     "miniIso": events.Electron.miniPFRelIso_all,
@@ -260,7 +259,7 @@ def getLeptons(events, isMC: int):
                         ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
                         + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
                         + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
-                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA
                     "iso": events.Electron.pfRelIso03_all,
                     "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
                     "miniIso": events.Electron.miniPFRelIso_all,
@@ -313,7 +312,7 @@ def getLeptons(events, isMC: int):
                     ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
                     + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
                     + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
-                ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
+                ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA
                 "iso": events.Electron.pfRelIso03_all,
                 "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
                 "miniIso": events.Electron.miniPFRelIso_all,

@@ -178,7 +178,7 @@ def monitor(options):
     if regenerate_proxy:
         redone_proxy = False
         while not redone_proxy:
-            status = os.system("voms-proxy-init -voms cms")
+            status = os.system("voms-proxy-init -voms cms --hours 140")
             if os.WEXITSTATUS(status) == 0:
                 redone_proxy = True
         copyfile("/tmp/" + proxy_base, proxy_copy)

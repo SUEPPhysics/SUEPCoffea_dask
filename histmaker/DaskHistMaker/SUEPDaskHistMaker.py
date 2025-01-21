@@ -64,7 +64,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "doSyst": 0,
             "verbose": 0,
             "xrootd": 0,
-            "saveDir": "/ceph/submit/data/user/l/"
+            "saveDir": "/ceph/submit/data/user/"
+            + os.environ["USER"][0] + "/"
             + os.environ["USER"]
             + "/SUEP/outputs/",
             "logDir": "/work/submit/" + os.environ["USER"] + "/SUEP/logs/",
@@ -72,7 +73,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "dataDirLocal": "/data/submit/cms/store/user/"
             + os.environ["USER"]
             + "/SUEP/{}/{}/",
-            "dataDirXRootD": "/cms/store/user/" + os.environ["USER"] + "/SUEP/{}/{}/",
+            "dataDirXRootD": "/data/group/cms/store/user/" + os.environ["USER"] + "/SUEP/{}/{}/",
             "merged": 0,
             "maxFiles": -1,
             "pkl": 1,
@@ -112,10 +113,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         self.logger.debug("Creating futures for sample " + sample)
 
-        futures = [
-            client.submit(self.process_file, ifile, sample, self.config, self.options)
-            for ifile in files
-        ]
+        futures = client.map(self.process_file, files, [sample]*len(files), [self.config]*len(files), [self.options]*len(files))
 
         return futures
 
@@ -336,6 +334,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         Returns: a dictionary of histograms, a dictionary of cutflows, and gensumweight as a float.
         """
 
+        # import time
+        # time.sleep(1)
+
         # organize the configurations that we have to iterate over by the dataframe they need to access
         # that way we can re-use the same dataframe for multiple configurations
         processing_batches = {}
@@ -447,7 +448,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 print("HARD CODED FIX TO REMOVE PHOTON175")
                 mask1 = (df['photon_pt'] > 200) & (df['WH_gammaTriggerBits'] == 1)
                 df.loc[mask1, 'WH_gammaTriggerUnprescaleWeight'] = 0
-            if options.tag == "WH_10_29_2017MC" or options.tag == "WH_11_4_2016MC" or options.tag == "WH_11_5_2016apvMC":
+            if options.tag == "WH_10_29_2017MC" or options.tag == "WH_11_4_2016MC" or options.tag == "WH_11_5_2016apvMC" or options.tag == "WH_12_8_MC_2017":
                 mask = (df['Pileup_nTrueInt'] < 0) | (df['Pileup_nTrueInt'].isna())
                 if any(mask):
                     print("HARD CODED FIX FOR Pileup_nTrueInt")
@@ -501,6 +502,13 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         if options.xrootd:
             fill_utils.close_ntuple(ifile)
 
+        # debugging
+        for hist_name in list(output["hists"].keys()):
+
+            # remove empty histograms
+            if output["hists"][hist_name].sum(flow=False).value <= 0:
+                del output["hists"][hist_name]
+                
         return output
 
     @staticmethod
@@ -535,6 +543,9 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             region=config_tag,
         )
         df_plot = eventWeightProcessor.run(df_plot)
+
+        # count how many events we have after applying weights
+        fill_utils.add_cutflow(df_plot, cutflow, "cutflow_histmaker_total_weighted_" + config_tag)
 
         # prepare the DataFrame for plotting: blind, selections, new variables
         df_plot = fill_utils.prepare_DataFrame(

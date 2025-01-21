@@ -42,7 +42,7 @@ def initialize_histograms(output: dict, label: str, options, config: dict) -> di
             # specific stuff for each region
             if 'WH' == options.channel:
                 init_hists_WH(output, label)
-            elif 'VRGJ' == options.channel:
+            elif 'WH-VRGJ' == options.channel:
                 init_hists_VRGJ(output, label)
 
     return output
@@ -500,27 +500,10 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 name=f"SUEP_pt_{label}",
                 label=r"$p^{\mathrm{SUEP}}_T$ [GeV]",
             ).Weight(),
-            f"otherAK15_maxPT_pt_{label}": Hist.new.Reg(
-                100,
-                0,
-                200,
-                name=f"otherAK15_maxPT_pt_{label}",
-                label=r"$p^{\mathrm{sub-leading~AK15}}_T$ [GeV]",
-            ).Weight(),
-            f"ntracks_{label}": Hist.new.Variable(
-                np.linspace(-0.5, 99.5, 101),
-                name=f"ntracks_{label}",
-                label=r"$n^{\mathrm{event}}_{\mathrm{tracks}}$",
-            ).Weight(),
             f"npfcands_{label}": Hist.new.Variable(
                 np.linspace(-0.5, 99.5, 101),
                 name=f"npfcands_{label}",
                 label=r"$n^{\mathrm{event}}_{\mathrm{pfcands}}$",
-            ).Weight(),
-            f"nlosttracks_{label}": Hist.new.Variable(
-                np.linspace(-0.5, 99.5, 101),
-                name=f"nlosttracks_{label}",
-                label=r"$n^{\mathrm{event}}_{\mathrm{lost tracks}}$",
             ).Weight(),
             f"ngood_fastjets_{label}": Hist.new.Reg(
                 10,
@@ -563,40 +546,19 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
             .Weight(),
-            # f"3D_SUEP_S1_vs_SUEP_nconst_vs_SUEP_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1.0,
-            #     name=f"SUEP_S1_{label}",
-            #     label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
-            # )
-            # .Variable(
-            #     np.linspace(-0.5, 99.5, 100),
-            #     name=f"SUEP_nconst_{label}",
-            #     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-            # )
-            # .Reg(
-            #     100,
-            #     0,
-            #     500,
-            #     name=f"SUEP_pt_{label}",
-            #     label=r"$p^{\mathrm{SUEP}}_T$ [GeV]",
-            # )
-            # .Weight(),
-            f"SUEP_pt_avg_{label}": Hist.new.Reg(
+            f"2D_ak4jet1_inSUEPcluster_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
                 100,
                 0,
-                100,
-                name=f"SUEP_pt_avg_{label}",
-                label="SUEP Components $p_T$ Avg.",
-            ).Weight(),
-            f"SUEP_pt_avg_b_{label}": Hist.new.Reg(
-                100,
-                0,
-                20,
-                name=f"SUEP_pt_avg_b_{label}",
-                label=r"SUEP Components $p_T^{\mathrm{boosted}}$ Avg.",
-            ).Weight(),
+                1000,
+                name=f"ak4jet1_inSUEPcluster_pt_{label}",
+                label=r"$p_T^{\mathrm{leading ak4 in SUEP}}$",
+            )
+            .Variable(
+                np.linspace(-0.5, 199.5, 201),
+                name=f"nconst_{label}",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            )
+            .Weight(),
             f"SUEP_eta_{label}": Hist.new.Reg(
                 100,
                 -5,
@@ -628,178 +590,13 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 name=f"nBLoose_{label}",
                 label=r"$n_{\mathrm{Loose~B-jets}}$",
             ).Weight(),
-            # f"nBMedium_{label}": Hist.new.Reg(
-            #     20,
-            #     0,
-            #     20,
-            #     name=f"nBMedium_{label}",
-            #     label="$n_{\mathrm{Medium~B-jets}$",
-            # ).Weight(),
             f"nBTight_{label}": Hist.new.Reg(
                 20,
                 0,
                 20,
                 name=f"nBTight_{label}",
                 label=r"$n_{\mathrm{Tight~B-jets}}$",
-            ).Weight(),
-            # f"jet1_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1000,
-            #     name=f"jet1_pt_{label}",
-            #     label=r"$p^{\mathrm{jet}}_T$",
-            # ).Weight(),
-            # f"jet2_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1000,
-            #     name=f"jet2_pt_{label}",
-            #     label=r"$p^{\mathrm{jet}}_T$",
-            # ).Weight(),
-            # f"jet1_qgl_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1,
-            #     name=f"jet1_qgl_{label}",
-            #     label=r"$qgl^{\mathrm{jet}}$",
-            # ).Weight(),
-            # f"jet2_qgl_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1,
-            #     name=f"jet2_qgl_{label}",
-            #     label=r"$qgl^{\mathrm{jet}}$",
-            # ).Weight(),
-            f"bjetSel_{label}": Hist.new.Int(
-                0,
-                2,
-                name=f"bjetSel_{label}",
-                label="b-jet selection",
-            ).Weight(),
-            # f"ak4jets_inSUEPcluster_n_{label}": Hist.new.Reg(
-            #     20,
-            #     0,
-            #     20,
-            #     name=f"ak4jets_inSUEPcluster_n_{label}",
-            #     label="# ak4jets in SUEP cluster",
-            # ).Weight(),
-            # f"ak4jets_outsideSUEPcluster_n_{label}": Hist.new.Reg(
-            #     20,
-            #     0,
-            #     20,
-            #     name=f"ak4jets_oustideSUEPcluster_n_{label}",
-            #     label="# ak4jets oustide SUEP cluster",
-            # ).Weight(),
-            # f"deltaPhi_ak4jet1_inSUEPcluster_SUEP_{label}": Hist.new.Reg(
-            #     60,
-            #     0,
-            #     3.2,
-            #     name=f"deltaPhi_ak4jet1_inSUEPcluster_SUEP_{label}",
-            #     label=r"$\Delta\phi(\mathrm{ak4jet1, SUEP})$",
-            # ).Weight(),
-            f"ak4jet1_inSUEPcluster_pt_{label}": Hist.new.Reg(
-                100,
-                0,
-                1000,
-                name=f"ak4jet1_inSUEPcluster_pt_{label}",
-                label="ak4jet1 in SUEP cluster $p_T$",
-            ).Weight(),
-            # f"ak4jet2_inSUEPcluster_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     1000,
-            #     name=f"ak4jet2_inSUEPcluster_pt_{label}",
-            #     label="ak4jet2 in SUEP cluster $p_T$",
-            # ).Weight(),
-            # f"ak4jet1_inSUEPcluster_eta_{label}": Hist.new.Reg(
-            #     100,
-            #     -5,
-            #     5,
-            #     name=f"ak4jet1_inSUEPcluster_eta_{label}",
-            #     label=r"ak4jet1 in SUEP cluster $\eta$",
-            # ).Weight(),
-            # f"deltaPhi_ak4jet1_outsideSUEPcluster_SUEP_{label}": Hist.new.Reg(
-            #     60,
-            #     0,
-            #     3.2,
-            #     name=f"deltaPhi_ak4jet1_outsideSUEPcluster_SUEP_{label}",
-            #     label=r"$\Delta\phi(\mathrm{ak4jet1, SUEP})$",
-            # ).Weight(),
-            # f"ak4jet1_outsideSUEPcluster_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     500,
-            #     name=f"ak4jet1_outsideSUEPcluster_pt_{label}",
-            #     label="ak4jet1 outside SUEP cluster $p_T$",
-            # ).Weight(),
-            # f"ak4jet1_outsideSUEPcluster_eta_{label}": Hist.new.Reg(
-            #     100,
-            #     -5,
-            #     5,
-            #     name=f"ak4jet1_outsideSUEPcluster_eta_{label}",
-            #     label=r"ak4jet1 outside SUEP cluster $\eta$",
-            # ).Weight(),         
-            # f"minDeltaPhiMETJet_pt_{label}": Hist.new.Reg(
-            #     100,
-            #     0,
-            #     2000,
-            #     name=f"minDeltaPhiMETJet_pt_{label}",
-            #     label=r"$\mathrm{jet}^{\mathrm{closest~to~MET}}$ $p_T$",
-            # ).Weight(),
-            # f"minDeltaPhiMETJet_phi_{label}": Hist.new.Reg(
-            #     60,
-            #     -3.2,
-            #     3.2,
-            #     name=f"minDeltaPhiMETJet_phi_{label}",
-            #     label=r"$\mathrm{jet}^{\mathrm{closest~to~MET}}$ $\phi$",
-            # ).Weight(),
-            f"nLooseLeptons_{label}": Hist.new.Reg(
-                10,
-                0,
-                10,
-                name=f"nLooseLeptons_{label}",
-                label="# loose leptons",
-            ).Weight(),
-            # f"nphotons_{label}": Hist.new.Int(
-            #     0,
-            #     10,
-            #     name=f"nphotons_{label}",
-            #     label=r"$n_\gamma$",
-            # ).Weight(),
-            f"deltaPhi_minDeltaPhiMETJet_MET_{label}": Hist.new.Reg(
-                60,
-                0,
-                3.2,
-                name=f"deltaPhi_minDeltaPhiMETJet_MET_{label}",
-                label=r"$\Delta\phi$($\mathrm{jet}^{\mathrm{closest~to~MET}}$, MET)",
-            ).Weight(),
-            f"deltaPhi_SUEP_MET_{label}": Hist.new.Reg(
-                60,
-                0,
-                3.2,
-                name=f"deltaPhi_SUEP_MET_{label}",
-                label=r"$\Delta\phi$(SUEP, MET)",
-            ).Weight(),
-            
-            f"deltaPhi_lepton_SUEP_{label}": Hist.new.Reg(
-                60,
-                0,
-                3.2,
-                name=f"deltaPhi_lepton_SUEP_{label}",
-                label=r"$\Delta\phi$($\ell$, SUEP)",
             ).Weight(),      
-            f"2D_SUEP_pt_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                100,
-                0,
-                1000,
-                name=f"SUEP_pt_{label}",
-                label="SUEP $p_T$ [GeV]",
-            )
-            .Variable(
-                np.linspace(-0.5, 199.5, 201),
-                name=f"SUEP_nconst_{label}",
-                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-            ).Weight(),
         }
     )
 
@@ -834,13 +631,13 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
             #     name=f"SUEP_genMass_{label}",
             #     label="Gen Mass of SUEP ($m_S$) [GeV]",
             # ).Weight(),
-            f"SUEP_delta_mass_genMass_{label}": Hist.new.Reg(
-                100,
-                -2000,
-                2000,
-                name=f"SUEP_delta_mass_genMass_{label}",
-                label="SUEP Mass - genSUEP Mass [GeV]",
-            ).Weight(),
+            # f"SUEP_delta_mass_genMass_{label}": Hist.new.Reg(
+            #     100,
+            #     -2000,
+            #     2000,
+            #     name=f"SUEP_delta_mass_genMass_{label}",
+            #     label="SUEP Mass - genSUEP Mass [GeV]",
+            # ).Weight(),
             f"bTagWeight_central_wh_{label}": Hist.new.Reg(
                 100,
                 0,
@@ -848,19 +645,6 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 name=f"bTagWeight_central_wh_{label}",
                 label="b-tag weight",
             ).Weight(),
-            f"2D_bTagWeight_central_wh_vs_SUEP_nconst_{label}": Hist.new.Reg(
-                100,
-                0,
-                2,
-                name=f"bTagWeight_central_wh_{label}",
-                label="b-tag weight",
-            )
-            .Var(
-                np.linspace(-0.5, 199.5, 21),
-                name=f"SUEP_nconst_{label}",
-                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-            )
-            .Weight(),
             # f"W_genW_BV_{label}": Hist.new.Reg(
             #     100,
             #     -1,
@@ -892,7 +676,7 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
             f"4D_jets_pt_vs_jets_eta_vs_jets_hadronFlavor_vs_jets_btag_category_{label}": Hist.new.Variable(
                 [0, 30, 50, 70, 100, 140, 200, 300, 600, 1000], name="jets_pt"
             )
-            .Variable([0, 1.44, 2.5], name="jets_eta")
+            .Variable([0, 1.44, 2.4], name="jets_eta")
             .IntCategory([0, 4, 5], name="jets_hadronFlavor")
             .Variable([0, 1, 2, 3], name="jets_btag_category")
             .Weight(),  
@@ -910,27 +694,6 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 name=f"genSUEP_SUEP_BV_{label}",
                 label=r"($p^{\mathrm{reco. SUEP}}_T$ - $p^{\mathrm{gen. SUEP}}_T$) / $p^{\mathrm{gen. SUEP}}_T$",
             ).Weight(),
-            f"LepSF_{label}": Hist.new.Reg(
-                100,
-                0.8,
-                1.2,
-                name=f"LepSF_{label}",
-                label="LepSF",
-            ).Weight(),
-            f"LepSFMu_{label}": Hist.new.Reg(
-                100,
-                0.8,
-                1.2,
-                name=f"LepSFMu_{label}",
-                label=r"LepSF ($\mu$)",
-            ).Weight(),
-            f"LepSFEl_{label}": Hist.new.Reg(
-                100,
-                0.8,
-                1.2,
-                name=f"LepSFEl_{label}",
-                label=r"LepSF ($e$)",
-            ).Weight(),
        })
 
 
@@ -938,9 +701,9 @@ def init_hists_WH(output, label):
 
     output.update({
         f"lepton_pt_{label}": Hist.new.Reg(
-            500,
+            1000,
             0,
-            500,
+            1000,
             name=f"lepton_pt_{label}",
             label=r"$p_T^{\ell}$ [GeV]",
         ).Weight(),
@@ -958,13 +721,6 @@ def init_hists_WH(output, label):
             name=f"lepton_eta_{label}",
             label=r"$\eta^{\ell}$",
         ).Weight(),
-        # f"lepton_mass_{label}": Hist.new.Reg(
-        #     100,
-        #     -5,
-        #     5,
-        #     name=f"lepton_mass_{label}",
-        #     label=r"$m^{\ell}$",
-        # ).Weight(),
         # f"lepton_flavor_{label}": Hist.new.Reg(
         #     40,
         #     -20,
@@ -986,13 +742,13 @@ def init_hists_WH(output, label):
         #     name=f"lepton_IDMVA_{label}",
         #     label=r"$\ell$ IDMVA",
         # ).Weight(),
-        f"lepton_iso_{label}": Hist.new.Reg(
-            50,
-            0,
-            1,
-            name=f"lepton_iso_{label}",
-            label=r"$\ell$ iso",
-        ).Weight(),
+        # f"lepton_iso_{label}": Hist.new.Reg(
+        #     50,
+        #     0,
+        #     1,
+        #     name=f"lepton_iso_{label}",
+        #     label=r"$\ell$ iso",
+        # ).Weight(),
         # f"lepton_miniIso_{label}": Hist.new.Reg(
         #     50,
         #     0,
@@ -1016,38 +772,24 @@ def init_hists_WH(output, label):
         # ).Weight(),
         # f"lepton_dz_{label}": Hist.new.Reg(
         #     100,
-        #     -0.2,
-        #     0.2,
+        #     -0.4,
+        #     0.4,
         #     name=f"lepton_dz_{label}",
         #     label=r"$\ell$ dz",
         # ).Weight(),
-        f"deltaPhi_lepton_MET_{label}": Hist.new.Reg(
-            60,
-            0,
-            3.2,
-            name=f"deltaPhi_lepton_MET_{label}",
-            label=r"$\Delta\phi$($\ell$, MET)",
-        ).Weight(),
+        # f"deltaPhi_lepton_MET_{label}": Hist.new.Reg(
+        #     60,
+        #     0,
+        #     3.2,
+        #     name=f"deltaPhi_lepton_MET_{label}",
+        #     label=r"$\Delta\phi$($\ell$, MET)",
+        # ).Weight(),
         f"W_SUEP_BV_{label}": Hist.new.Reg(
             100,
             -1,
             2,
             name=f"W_SUEP_BV_{label}",
             label="($p_T^W - p_T^{SUEP}$)/$p_T^{SUEP}$",
-        ).Weight(),
-        f"ak4jet1_inSUEPcluster_W_BV_{label}": Hist.new.Reg(
-            100,
-            -1,
-            2,
-            name=f"ak4jet1_inSUEPcluster_W_BV_{label}",
-            label=r"($p_T^{ak4jet1} - p_T^{W}$)/$p_T^{W}$",
-        ).Weight(),
-        f"W_ak4jet1_inSUEPcluster_vBV_{label}": Hist.new.Reg(
-            100,
-            -1,
-            2,
-            name=f"W_ak4jet1_inSUEPcluster_vBV_{label}",
-            label=r"|$\vec{p}_T^{W} + \vec{p}_T^{ak4jet1}$| / $p_T^{ak4jet1}$",
         ).Weight(),
         f"W_mt_{label}": Hist.new.Reg(
             200,
@@ -1070,34 +812,20 @@ def init_hists_WH(output, label):
             name=f"PuppiMET_pt_{label}",
             label=r"$p^{\mathrm{PuppiMET}}_T$ [GeV]",
         ).Weight(),
-        f"PuppiMET_phi_{label}": Hist.new.Reg(
-            100,
-            -3,
-            3,
-            name=f"PuppiMET_phi_{label}",
-            label=r"$\phi^{\mathrm{PuppiMET}}$ [GeV]",
-        ).Weight(),
-        f"W_phi_{label}": Hist.new.Reg(
-            60,
-            -3.2,
-            3.2,
-            name=f"W_phi_{label}",
-            label=r"$\phi_W$",
-        ).Weight(),
-        f"W_SUEP_BV_{label}": Hist.new.Reg(
-            100,
-            -1,
-            2,
-            name=f"W_SUEP_BV_{label}",
-            label="($p_T^W - p_T^{SUEP}$)/$p_T^{SUEP}$",
-        ).Weight(),
-        f"SUEP_W_BV_{label}": Hist.new.Reg(
-            200,
-            -1,
-            20,
-            name=f"W_SUEP_BV_{label}",
-            label="($p_T^{SUEP} - p_T^{W}$)/$p_T^{W}$",
-        ).Weight(),
+        # f"PuppiMET_phi_{label}": Hist.new.Reg(
+        #     100,
+        #     -3,
+        #     3,
+        #     name=f"PuppiMET_phi_{label}",
+        #     label=r"$\phi^{\mathrm{PuppiMET}}$ [GeV]",
+        # ).Weight(),
+        # f"W_phi_{label}": Hist.new.Reg(
+        #     60,
+        #     -3.2,
+        #     3.2,
+        #     name=f"W_phi_{label}",
+        #     label=r"$\phi_W$",
+        # ).Weight(),
         f"deltaPhi_SUEP_W_{label}": Hist.new.Reg(
             60,
             0,
@@ -1105,19 +833,61 @@ def init_hists_WH(output, label):
             name=f"deltaPhi_SUEP_W_{label}",
             label=r"$\Delta\phi$(SUEP, W)",
         ).Weight(),
-        f"2D_SUEP_pt_vs_W_pt_{label}": Hist.new.Reg(
-            100,
+        f"deltaPhi_minDeltaPhiMETJet_MET_{label}": Hist.new.Reg(
+            60,
             0,
-            1000,
-            name=f"SUEP_pt_{label}",
-            label=r"$p^{\mathrm{SUEP}}_T$ [GeV]",
-        )
-        .Reg(
-            100,
+            3.2,
+            name=f"deltaPhi_minDeltaPhiMETJet_MET_{label}",
+            label=r"$\Delta\phi$($\mathrm{jet}^{\mathrm{closest~to~MET}}$, MET)",
+        ).Weight(),
+        f"deltaPhi_SUEP_MET_{label}": Hist.new.Reg(
+            60,
             0,
-            1000,
-            name=f"W_pt_{label}",
-            label=r"$p^{\mathrm{W}}_T$ [GeV]",
+            3.2,
+            name=f"deltaPhi_SUEP_MET_{label}",
+            label=r"$\Delta\phi$(SUEP, MET)",
+        ).Weight(),
+        f"deltaPhi_lepton_SUEP_{label}": Hist.new.Reg(
+            60,
+            0,
+            3.2,
+            name=f"deltaPhi_lepton_SUEP_{label}",
+            label=r"$\Delta\phi$($\ell$, SUEP)",
+        ).Weight(),
+        # f"2D_SUEP_pt_vs_W_pt_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     1000,
+        #     name=f"SUEP_pt_{label}",
+        #     label=r"$p^{\mathrm{SUEP}}_T$ [GeV]",
+        # )
+        # .Reg(
+        #     100,
+        #     0,
+        #     1000,
+        #     name=f"W_pt_{label}",
+        #     label=r"$p^{\mathrm{W}}_T$ [GeV]",
+        # ).Weight(),
+        f"LepSF_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"LepSF_{label}",
+            label="LepSF",
+        ).Weight(),
+        f"LepSFMu_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"LepSFMu_{label}",
+            label=r"LepSF ($\mu$)",
+        ).Weight(),
+        f"LepSFEl_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"LepSFEl_{label}",
+            label=r"LepSF ($e$)",
         ).Weight(),
     })
 
@@ -1126,27 +896,6 @@ def init_hists_WH(output, label):
 def init_hists_VRGJ(output, label):
 
     output.update({
-        f"sumAK4PhotonMET_pt_{label}": Hist.new.Reg(
-            100,
-            0,
-            1000,
-            name=f"sumAK4PhotonMET_pt_{label}",
-            label=r"$|\Sigma_{i=0}\vec{p}^{\mathrm{ak4jet,~i}}_T  + \vec{p}^{\mathrm{MET}}_T + \vec{p}^{\gamma}_T|$",
-        ).Weight(),
-        f"sumAK4PhotonMET_phi_{label}": Hist.new.Reg(
-            60,
-            -3.2,
-            3.2,
-            name=f"sumAK4PhotonMET_phi_{label}",
-            label=r"$\phi$ of $\Sigma_{i=0}\vec{p}^{\mathrm{ak4jet,~i}}_T  + \vec{p}^{\mathrm{MET}}_T + \vec{p}^{\gamma}_T$",
-        ).Weight(),
-        f"sumAK4PhotonMET_photon_BV_{label}": Hist.new.Reg(
-            100,
-            -1,
-            2,
-            name=f"sumAK4PhotonMET_photon_BV_{label}",
-            label=r"($|\Sigma_{i=0}\vec{p}^{\mathrm{ak4jet,~i}}_T  + \vec{p}^{\mathrm{MET}}_T + \vec{p}^{\gamma}_T| - p_T^{\gamma}$)/$p_T^{\gamma}$",
-        ).Weight(),
         f"deltaPhi_SUEP_photon_{label}": Hist.new.Reg(
             60,
             0,
@@ -1160,13 +909,6 @@ def init_hists_VRGJ(output, label):
             2,
             name=f"photon_SUEP_BV_{label}",
             label=r"($p_T^{\gamma} - p_T^{SUEP}$)/$p_T^{SUEP}$",
-        ).Weight(),
-        f"SUEP_photon_BV_{label}": Hist.new.Reg(
-            100,
-            -1,
-            20,
-            name=f"SUEP_photon_BV_{label}",
-            label=r"($p_T^{SUEP} - p_T^{\gamma}$)/$p_T^{\gamma}$",
         ).Weight(),
         f"photon_pt_{label}": Hist.new.Reg(
             200,
@@ -1259,48 +1001,48 @@ def init_hists_VRGJ(output, label):
             name=f"photon_isScEtaEE_{label}",
             label=r"$\gamma$ isScEtaEE",
         ).Weight(),
-        f"minDeltaRJetPhoton_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"minDeltaRJetPhoton_{label}",
-            label=r"min($\Delta R$(ak4jets, $\gamma$))",
-        ).Weight(),
-        f"maxDeltaRJetPhoton_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"maxDeltaRJetPhoton_{label}",
-            label=r"max($\Delta R$(ak4jets, $\gamma$))",
-        ).Weight(),
-        f"minDeltaPhiJetPhoton_{label}": Hist.new.Reg(
-            60,
-            0,
-            3.2,
-            name=f"minDeltaPhiJetPhoton_{label}",
-            label=r"min($\Delta\phi$(ak4jets, $\gamma$))",
-        ).Weight(),
-        f"maxDeltaPhiJetPhoton_{label}": Hist.new.Reg(
-            60,
-            0,
-            3.2,
-            name=f"maxDeltaPhiJetPhoton_{label}",
-            label=r"max($\Delta\phi$(ak4jets, $\gamma$))",
-        ).Weight(),
-        f"minDeltaEtaJetPhoton_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"minDeltaEtaJetPhoton_{label}",
-            label=r"min($\Delta\eta$(ak4jets, $\gamma$))",
-        ).Weight(),
-        f"maxDeltaEtaJetPhoton_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"maxDeltaEtaJetPhoton_{label}",
-            label=r"max($\Delta\eta$(ak4jets, $\gamma$))",
-        ).Weight(),
+        # f"minDeltaRJetPhoton_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     6,
+        #     name=f"minDeltaRJetPhoton_{label}",
+        #     label=r"min($\Delta R$(ak4jets, $\gamma$))",
+        # ).Weight(),
+        # f"maxDeltaRJetPhoton_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     6,
+        #     name=f"maxDeltaRJetPhoton_{label}",
+        #     label=r"max($\Delta R$(ak4jets, $\gamma$))",
+        # ).Weight(),
+        # f"minDeltaPhiJetPhoton_{label}": Hist.new.Reg(
+        #     60,
+        #     0,
+        #     3.2,
+        #     name=f"minDeltaPhiJetPhoton_{label}",
+        #     label=r"min($\Delta\phi$(ak4jets, $\gamma$))",
+        # ).Weight(),
+        # f"maxDeltaPhiJetPhoton_{label}": Hist.new.Reg(
+        #     60,
+        #     0,
+        #     3.2,
+        #     name=f"maxDeltaPhiJetPhoton_{label}",
+        #     label=r"max($\Delta\phi$(ak4jets, $\gamma$))",
+        # ).Weight(),
+        # f"minDeltaEtaJetPhoton_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     6,
+        #     name=f"minDeltaEtaJetPhoton_{label}",
+        #     label=r"min($\Delta\eta$(ak4jets, $\gamma$))",
+        # ).Weight(),
+        # f"maxDeltaEtaJetPhoton_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     6,
+        #     name=f"maxDeltaEtaJetPhoton_{label}",
+        #     label=r"max($\Delta\eta$(ak4jets, $\gamma$))",
+        # ).Weight(),
         f"2D_SUEP_pt_vs_photon_pt_{label}": Hist.new.Reg(
             100,
             0,
@@ -1322,26 +1064,19 @@ def init_hists_VRGJ(output, label):
             name=f"WH_gammaTriggerBits_{label}",
             label=r"WH_gammaTriggerBits",
         ).Weight(),
-        f"deltaPhi_photon_MET_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"deltaPhi_photon_MET_{label}",
-            label=r"$\Delta \phi$(photon, MET)",
-        ).Weight(),
+        # f"deltaPhi_photon_MET_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     6,
+        #     name=f"deltaPhi_photon_MET_{label}",
+        #     label=r"$\Delta \phi$(photon, MET)",
+        # ).Weight(),
         f"ak4jet1_inSUEPcluster_photon_BV_{label}": Hist.new.Reg(
             100,
             -1,
             2,
             name=f"ak4jet1_inSUEPcluster_photon_BV_{label}",
             label=r"($p_T^{\mathrm{ak4jet1}} - p_T^{\gamma}$)/$p_T^{\gamma}$",
-        ).Weight(),
-        f"photon_ak4jet1_inSUEPcluster_vBV_{label}": Hist.new.Reg(
-            100,
-            -1,
-            2,
-            name=f"photon_ak4jet1_inSUEPcluster_vBV_{label}",
-            label=r"|$\vec{p}_T^{\gamma} + \vec{p}_T^{\mathrm{ak4jet1}}$| / $p_T^{\mathrm{ak4jet1}}$",
         ).Weight(),
         f"2D_photon_pt_vs_photon_eta_{label}": Hist.new.Reg(
             200,
@@ -1371,58 +1106,48 @@ def init_hists_VRGJ(output, label):
             name=f"minDeltaRGenRecoPhotons_{label}",
             label=r"min $\Delta R(\mathrm{Gen \gamma, Reco \gamma})$",
         ).Weight(),
-        f"looseNotTightLepton1_pt_{label}": Hist.new.Reg(
-            1000,
-            0,
-            1000,
-            name=f"looseNotTightLepton_pt_{label}",
-            label="Loose not tight lepton $p_T$ [GeV]",
-        ).Weight(),
-        f"deltaPhi_photon_hardMET_{label}": Hist.new.Reg(
-            100,
-            0,
-            6,
-            name=f"deltaPhi_photon_hardMET_{label}",
-            label=r"$\Delta \phi$(photon, hard MET)",
-        ).Weight(),
-        f"3D_SUEP_nconst_vs_WH_gammaTriggerBits_vs_WH_gammaTriggerUnprescaleWeight_{label}": Hist.new.Variable(
-            np.linspace(-0.5, 99.5, 101),
-            name=f"SUEP_nconst_{label}",
-            label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
-        )
-        .Reg(
-            20,
-            0,
-            20,
-            name=f"WH_gammaTriggerBits_{label}",
-            label=r"WH_gammaTriggerBits",
-        )
-        .Variable(
-            [0,2,7,9,60,64,245,251,500],
-            name=f"WH_gammaTriggerUnprescaleWeight_{label}",
-            label=r"WH_gammaTriggerUnprescaleWeight",
-        )
-        .Weight(),
-        f"3D_photon_pt_vs_WH_gammaTriggerBits_vs_WH_gammaTriggerUnprescaleWeight_{label}": Hist.new.Reg(
-            100,
-            0,
-            5000,
-            name=f"photon_pt_{label}",
-            label="Photon $p_T$ [GeV]",
-        )
-        .Reg(
-            16,
-            0,
-            16,
-            name=f"WH_gammaTriggerBits_{label}",
-            label=r"WH_gammaTriggerBits",
-        )
-        .Variable(
-            [0,2,7,9,60,64,245,251,500],
-            name=f"WH_gammaTriggerUnprescaleWeight_{label}",
-            label=r"WH_gammaTriggerUnprescaleWeight",
-        )
-        .Weight(),
+        # f"2D_photon_hoe_vs_WH_gammaTriggerBits_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     1,
+        #     name=f"photon_hoe_{label}",
+        #     label="Photon HoE",
+        # )
+        # .Reg(
+        #     20,
+        #     0,
+        #     20,
+        #     name=f"WH_gammaTriggerBits_{label}",
+        #     label="WH_gammaTriggerBits",
+        # ).Weight(),
+        # f"2D_photon_pfRelIso03_all_vs_WH_gammaTriggerBits_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     1,
+        #     name=f"photon_pfRelIso03_all_{label}",
+        #     label="Photon pfRelIso03_all",
+        # )
+        # .Reg(
+        #     20,
+        #     0,
+        #     20,
+        #     name=f"WH_gammaTriggerBits_{label}",
+        #     label="WH_gammaTriggerBits",
+        # ).Weight(),
+        # f"2D_photon_r9_vs_WH_gammaTriggerBits_{label}": Hist.new.Reg(
+        #     100,
+        #     0,
+        #     1.5,
+        #     name=f"photon_r9_{label}",
+        #     label="Photon r9",
+        # )
+        # .Reg(
+        #     20,
+        #     0,
+        #     20,
+        #     name=f"WH_gammaTriggerBits_{label}",
+        #     label="WH_gammaTriggerBits",
+        # ).Weight(),
     })
 
 def init_hists_WHlimits(output, label, regions_list):

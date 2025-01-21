@@ -21,7 +21,7 @@ def check_samples(filelist, tag, path, countCheck=False):
 
     for sample in tqdm(samples):
         sample = sample.split("/")[-1]
-        root_file = f"{path}/{sample}_{tag}.root"
+        root_file = f"{path}/{sample}_{tag}.pkl"
         if not os.path.exists(root_file):
             missing_samples.append(sample)
         elif not countCheck:
@@ -29,7 +29,7 @@ def check_samples(filelist, tag, path, countCheck=False):
         else:
             try:
                 f = uproot.open(root_file)
-                histName = "SUEP_nconst_Cluster70"
+                histName = "SUEP_nconst_NOAK15"
                 eventCount = f[histName].to_hist().sum().value
                 if eventCount == 0:
                     missing_samples.append(sample)
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--path",
         help="Path to the output directory",
-        default="/data/submit/{user}/SUEP/outputs/".format(user=os.environ["USER"]),
+        default="/ceph/submit/data/user/{u}/{user}/SUEP/outputs/".format(u=os.environ['USER'][0], user=os.environ["USER"]),
     )
     parser.add_argument(
         "-c",

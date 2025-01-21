@@ -728,6 +728,9 @@ def openHistFile(infile_name):
 
 def combineSamples(plots: dict, samples: list) -> dict:
     out = {}
+    if any([s not in plots.keys() for s in samples]):
+        print("WARNING: not all samples are in the plots dictionary")
+        return out
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):
             h = plots[sample].get(key, None)
@@ -1099,7 +1102,7 @@ def plot_ratio(
     if labels != [None] * len(hlist):  # manually re-order legend to follow the labels
         leg_handles, leg_labels = ax1.get_legend_handles_labels()
         leg_handles = [leg_handles[leg_labels.index(l)] for l in labels]
-        ax1.legend(leg_handles, labels, loc="best", fontsize="xx-small")
+        ax1.legend(leg_handles, labels, loc="best", fontsize="x-small")
     if xlabel is None:
         xlabel = hlist[0].axes[0].label
         if xlabel == "Axis 0":
