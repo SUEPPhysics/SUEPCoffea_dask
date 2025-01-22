@@ -302,7 +302,7 @@ def initialize_new_variables(label: str, options, config: dict):
                         "WH_MET_phi",
                     ],
                 ],
-                [
+                # [
                 #     "sumAK4PhotonMET_pt",
                 #     calc_vector_sum_pt,
                 #     [

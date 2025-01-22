@@ -196,78 +196,29 @@ def getStyles(samples):
     return styles
 
 
-# https://twiki.cern.ch/twiki/bin/viewauth/CMS/RA2b13TeVProduction#Dataset_luminosities_2016_pb_1
-lumis = {
-    "2016apv": 19497.914,
-    "2016": 16810.813,
-    "2017": 41471.589,
-    "2018": 59817.406,
-    "all": 19497.914 + 16810.813 + 41471.589 + 59817.406,
-}
+def getLumi(
+    era: str,
+    analysis: str
+) -> float:
+    """
+    Open the ../data/lumis.json file, and read from analysis, era.
+    """
 
-lumis_scouting = {
-    "2016apv": 18843.384721292190552,
-    "2016": 16705.324242775104523,
-    "2017": 35718.640387367889404,
-    "2018": 58965.346247952011108,
-    "all": 18843.384721292190552
-    + 16705.324242775104523
-    + 35718.640387367889404
-    + 58965.346247952011108,
-}
+    with open("../data/lumis.json") as f:
+        lumis = json.load(f)
+        return lumis[analysis][era]
 
+def lumiLabelWH(year):
+    return lumiLabel("WH", year)
 
-def lumiLabel(year, scouting=False):
-    if scouting:
-        lumidir = lumis_scouting
-    else:
-        lumidir = lumis
+def lumiLabel(analysis, year):
+    lumi = getLumi(analysis, year)
     if year in ["2017", "2018"]:
-        return round(lumidir[year] / 1000, 1)
+        return round(lumi / 1000, 1)
     elif year == "2016":
-        return round((lumidir[year] + lumidir[year + "apv"]) / 1000, 1)
+        return round((lumi + getLumi(analysis, year + "apv")) / 1000, 1)
     elif year == "all":
-        return round(lumidir[year] / 1000, 1)
-
-
-def findLumiAndEra(year, auto_lumi, infile_name, scouting):
-    if scouting:
-        lumidir = lumis_scouting
-    else:
-        lumidir = lumis
-
-    if auto_lumi and not year:
-        # try to figure it out from sample name
-        if "20UL16MiniAODv2" in infile_name:
-            lumi = lumidir["2016"]
-            era = "2016"
-        elif "20UL17MiniAODv2" in infile_name:
-            lumi = lumidir["2017"]
-            era = "2017"
-        elif "20UL16MiniAODAPVv2" in infile_name:
-            lumi = lumidir["2016apv"]
-            era = "2016apv"
-        elif "20UL18" in infile_name:
-            lumi = lumidir["2018"]
-            era = "2018"
-        elif any([s in infile_name for s in ["JetHT+Run", "ScoutingPFHT+Run"]]):
-            lumi = 1
-            era = infile_name.split("Run")[1][0:4]
-        else:
-            raise Exception(
-                "I cannot find luminosity matched to file name: " + infile_name
-            )
-    elif year and not auto_lumi:
-        lumi = lumidir[str(year)]
-        era = str(year)
-    else:
-        raise Exception(
-            "Apply lumis automatically OR based on a specific year you pass in. One and only one of those should be passed."
-        )
-
-    print(f"Found lumi {lumi} and era {era}")
-
-    return lumi, era
+        return round(lumi / 1000, 1)
 
 def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []

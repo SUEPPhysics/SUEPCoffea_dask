@@ -182,6 +182,19 @@ def getXSection(
     return xsection
 
 
+def getLumi(
+    era: str,
+    analysis: str
+) -> float:
+    """
+    Open the ../data/lumis.json file, and read from analysis, era.
+    """
+
+    with open("../data/lumis.json") as f:
+        lumis = json.load(f)
+        return lumis[analysis][era]
+
+
 def format_selection(selection: str, df: pd.DataFrame = None) -> list:
     """
     Format a selection string into a list of the form [attribute, operator, value].

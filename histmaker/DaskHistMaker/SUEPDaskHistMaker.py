@@ -21,14 +21,12 @@ from dask import delayed
 from dask.distributed import Client, Future
 
 sys.path.append("..")
-import fill_utils
+from utils import fill_utils
 import hist_defs
 import var_defs
-from BaseDaskHistMaker import BaseDaskHistMaker
+from DaskHistMaker.BaseDaskHistMaker import BaseDaskHistMaker
 from CMS_corrections import GNN_syst, track_killing
 from CMS_corrections.EventWeightProcessor import EventWeightProcessor
-
-import plotting.plot_utils as plot_utils
 
 
 class SUEPDaskHistMaker(BaseDaskHistMaker):
@@ -178,8 +176,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 sample, self.options.era, failOnKeyError=True
             )
             self.logger.debug(f"Found cross section x kr x br: {xsection}.")
-            lumi = plot_utils.getLumi(
-                self.options.era, scouting="scout" in self.options.channel
+            lumi = fill_utils.getLumi(
+                era=self.options.era, analysis=self.options.channel
             )
             self.logger.debug(f"Found lumi: {lumi}.")
 
@@ -553,7 +551,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             config_out,
             config_tag,
             isMC=options.isMC,
-            blind=options.blind,
+            blind=options.blind or config_out.get("blind", 0),
             cutflow=cutflow,
             output=histograms,
         )
