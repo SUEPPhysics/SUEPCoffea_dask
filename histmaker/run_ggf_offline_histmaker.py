@@ -8,10 +8,10 @@ import argparse
 import os
 from types import SimpleNamespace
 
-import fill_utils
 import hist_defs
 import var_defs
-from SUEPDaskHistMaker import SUEPDaskHistMaker
+from utils import fill_utils
+from DaskHistMaker.SUEPDaskHistMaker import SUEPDaskHistMaker
 
 
 def getOptions() -> dict:

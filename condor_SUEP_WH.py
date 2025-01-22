@@ -15,11 +15,11 @@ from workflows.utils import output_utils, pandas_utils
 def form_ntuple(options, output):
     """
     Extract the dataframes from the processor output
-    We expect this to have the shape: {variation1: {vars: df, ...}, variation2: {vars: df, ...}, ...}
-    Output is: [df1, df2, ...], [vars_variation1, vars_variation2, ...]
+    We expect this to have the shape: {"variation1": {"vars": df, ...}, "variation2": {"vars": df, ...}, ...}
+    Output is: [df1, df2, ...], ["vars_variation1", "vars_variation2", ...]
     These will be saved in the hdf5 as
-        vars_variation1
-        vars_variation2
+        "vars_variation1"
+        "vars_variation2"
         ...
     """
     dfs = []
