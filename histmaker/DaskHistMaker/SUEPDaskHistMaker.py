@@ -16,11 +16,11 @@ from typing import List
 import numpy as np
 import pandas as pd
 import uproot
-# from coffea.processor import value_accumulator
 from dask import delayed
 from dask.distributed import Client, Future
 
-sys.path.append("..")
+sys.path.append("../")
+sys.path.append("../../")
 from utils import fill_utils
 from utilities import git_utils
 import hist_defs
@@ -233,8 +233,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 f"cd {os.path.dirname(os.path.abspath(__file__))}",
                 f'echo "export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))}"',
                 f"export PYTHONPATH=$PYTHONPATH:{os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))}",
-                'echo "conda activate dask"',
-                f"conda activate dask",
+                'echo "conda activate suephist"',
+                f"conda activate suephist",
                 'echo "which python"',
                 "which python",
                 'echo "Worker environment setup done."',
