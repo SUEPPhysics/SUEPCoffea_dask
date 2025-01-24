@@ -3,6 +3,8 @@ import gc
 import uproot
 import pickle
 import sys
+import hist
+
 sys.path.append("../")
 from data import data_utils
 
@@ -304,9 +306,9 @@ def fillCutflows(
 
 def loader(
     infile_names,
-    by_bin=False,
-    by_year=False,
-    load_cutflows=False,
+    by_bin=True,
+    by_year=True,
+    load_cutflows=True,
     only_cutflows=False,
     verbose=False,
 ):

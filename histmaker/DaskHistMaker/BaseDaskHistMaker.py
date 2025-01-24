@@ -34,13 +34,11 @@ class BaseDaskHistMaker:
 
         self.logger.info(f"Setting up LocalClient with {n_workers} workers.")
         cluster = LocalCluster(
+            n_workers=n_workers,
             threads_per_worker=1,
             dashboard_address="1776",
         )
-        cluster.scale(n_workers)
         client = Client(cluster)
-        self.logger.info(f"Waiting for workers to be ready...")
-        client.wait_for_workers(1)
         self.logger.info(f"Workers ready. LocalClient ready.")
         self.logger.info(client)
 
