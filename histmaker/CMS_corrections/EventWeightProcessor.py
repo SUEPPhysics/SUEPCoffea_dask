@@ -199,36 +199,6 @@ class EventWeightProcessor:
                 )
                 df["event_weight"] *= higgs_weight
 
-            # 8) b-tag weights. These have different values for each event selection
-            if self.channel in ['WH', 'WH-VRGJ'] and self.isMC:
-                if "btag" in self.variation.lower():
-                    btag_weights = self.variation
-                else:
-                    btag_weights = "bTagWeight_central"
-                btag_weights += "_" + self.channel.lower()
-                if btag_weights not in df.keys():
-                    pass
-                    #raise Exception(
-                    #    f"btag weights {btag_weights} not found in DataFrame."
-                    #)
-                else:
-                    df["event_weight"] *= df[btag_weights]
-
-            # 9) lepton SF
-            if self.channel == 'WH':
-                pass
-                #if 'LepSF' in self.variation:
-                #    df["event_weight"] *= df[self.variation]
-                #else:
-                #    df["event_weight"] *= df["LepSF"]
-
-            # 10) photon SF
-            if self.channel == 'WH-VRGJ':
-                if 'photon_SF' in self.variation:
-                    df["event_weight"] *= df[self.variation]
-                else:
-                    df["event_weight"] *= df["photon_SF"]
-
             # 11) btag weights
             if self.channel == 'WH-VRGJ' or self.channel == 'WH':
                 if self.era == "2016apv":
@@ -251,6 +221,28 @@ class EventWeightProcessor:
                     base_dir='../'
                 )
                 df["event_weight"] *= btag_weights[btag_variation].to_numpy()
+
+            # 9) lepton SF
+            if self.channel == 'WH':
+                if 'LepSFMuUp' == self.variation:
+                    # per our muon object review, since we use tighter IP cuts than the cuts that were used
+                    # to derive the SFs, we apply a 2.5% uncertainty to the SFs
+                    df["event_weight"] *= (df[self.variation]**2 + 1.025**2)**0.5
+                elif 'LepSFMuDown' == self.variation:
+                    # per our muon object review, since we use tighter IP cuts than the cuts that were used
+                    # to derive the SFs, we apply a 2.5% uncertainty to the SFs
+                    df["event_weight"] *= (df[self.variation]**2 + 0.975**2)**0.5
+                elif 'LepSF' in self.variation:
+                    df["event_weight"] *= df[self.variation]
+                else:
+                    df["event_weight"] *= df["LepSF"]
+        
+            # 10) photon SF
+            if self.channel == 'WH-VRGJ':
+                if 'photon_SF' in self.variation:
+                    df["event_weight"] *= df[self.variation]
+                else:
+                    df["event_weight"] *= df["photon_SF"]
 
         # data
         else:

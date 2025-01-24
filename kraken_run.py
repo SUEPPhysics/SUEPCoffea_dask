@@ -7,8 +7,8 @@ import shutil
 import subprocess
 import time
 
-from histmaker.fill_utils import write_git_info
-from plotting.plot_utils import check_proxy
+from utilities.git_utils import write_git_info
+from utilities.proxy_utils import check_proxy
 
 script_TEMPLATE = """#!/bin/bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh

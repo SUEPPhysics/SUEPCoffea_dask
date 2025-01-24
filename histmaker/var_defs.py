@@ -271,16 +271,16 @@ def initialize_new_variables(label: str, options, config: dict):
                     balancing_var,
                     ["ak4jet1_inSUEPcluster_pt_HighestPT", "photon_pt"],
                 ],
-                [
-                    "photon_ak4jet1_inSUEPcluster_vBV",
-                    vector_balancing_var,
-                    [
-                        "photon_phi",
-                        "photon_pt",
-                        "ak4jet1_inSUEPcluster_phi_HighestPT",
-                        "ak4jet1_inSUEPcluster_pt_HighestPT",
-                    ],
-                ],
+                # [
+                #     "photon_ak4jet1_inSUEPcluster_vBV",
+                #     vector_balancing_var,
+                #     [
+                #         "photon_phi",
+                #         "photon_pt",
+                #         "ak4jet1_inSUEPcluster_phi_HighestPT",
+                #         "ak4jet1_inSUEPcluster_pt_HighestPT",
+                #     ],
+                # ],
                 [
                     "deltaPhi_SUEP_photon",
                     deltaPhi_x_y,
@@ -295,32 +295,6 @@ def initialize_new_variables(label: str, options, config: dict):
                     ["SUEP_pt_HighestPT", "photon_pt"],
                 ],
                 [
-                    "deltaPhi_photon_looseNotTightLepton",
-                    deltaPhi_x_y,
-                    [
-                        "photon_phi",
-                        "looseNotTightLepton1_phi",
-                    ],
-                ],
-                [
-                    "deltaPhi_photon_looseNotTightHardLepton",
-                    deltaPhi_x_y_pTReq(50),
-                    [
-                        "photon_phi",
-                        "looseNotTightLepton1_phi",
-                        "looseNotTightLepton1_pt",
-                    ],
-                ],
-                [
-                    "deltaPhi_photon_hardMET",
-                    deltaPhi_x_y_pTReq(50),
-                    [
-                        "photon_phi",
-                        "WH_MET_phi",
-                        "WH_MET_pt",
-                    ],
-                ],
-                [
                     "deltaPhi_photon_MET",
                     deltaPhi_x_y,
                     [
@@ -328,38 +302,38 @@ def initialize_new_variables(label: str, options, config: dict):
                         "WH_MET_phi",
                     ],
                 ],
-                [
-                    "sumAK4PhotonMET_pt",
-                    calc_vector_sum_pt,
-                    [
-                        "jet1_phi",
-                        "jet1_pt",
-                        "jet2_phi",
-                        "jet2_pt",
-                        "jet3_phi",
-                        "jet3_pt",
-                        "photon_phi",
-                        "photon_pt",
-                        "WH_MET_phi",
-                        "WH_MET_pt",
-                    ],
-                ],
-                [
-                    "sumAK4PhotonMET_photon_BV",
-                    vector_balancing_var,
-                    [
-                        "jet1_phi",
-                        "jet1_pt",
-                        "jet2_phi",
-                        "jet2_pt",
-                        "jet3_phi",
-                        "jet3_pt",
-                        "photon_phi",
-                        "photon_pt",
-                        "WH_MET_phi",
-                        "WH_MET_pt",
-                    ],
-                ]
+                # [
+                #     "sumAK4PhotonMET_pt",
+                #     calc_vector_sum_pt,
+                #     [
+                #         "jet1_phi",
+                #         "jet1_pt",
+                #         "jet2_phi",
+                #         "jet2_pt",
+                #         "jet3_phi",
+                #         "jet3_pt",
+                #         "photon_phi",
+                #         "photon_pt",
+                #         "WH_MET_phi",
+                #         "WH_MET_pt",
+                #     ],
+                # ],
+                # [
+                #     "sumAK4PhotonMET_photon_BV",
+                #     vector_balancing_var,
+                #     [
+                #         "jet1_phi",
+                #         "jet1_pt",
+                #         "jet2_phi",
+                #         "jet2_pt",
+                #         "jet3_phi",
+                #         "jet3_pt",
+                #         "photon_phi",
+                #         "photon_pt",
+                #         "WH_MET_phi",
+                #         "WH_MET_pt",
+                #     ],
+                # ]
             ]
 
         # deal with MET variations

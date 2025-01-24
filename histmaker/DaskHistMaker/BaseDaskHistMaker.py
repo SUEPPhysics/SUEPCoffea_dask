@@ -13,6 +13,7 @@ from typing import List
 from dask.distributed import Client, Future, LocalCluster, as_completed
 from dask_jobqueue import SLURMCluster
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 
 class BaseDaskHistMaker:
@@ -31,10 +32,16 @@ class BaseDaskHistMaker:
 
     def setupLocalClient(self, n_workers: int = 1) -> Client:
 
-        client = LocalCluster(
-            n_workers=n_workers,
+        self.logger.info(f"Setting up LocalClient with {n_workers} workers.")
+        cluster = LocalCluster(
+            threads_per_worker=1,
             dashboard_address="1776",
-        ).get_client()
+        )
+        cluster.scale(n_workers)
+        client = Client(cluster)
+        self.logger.info(f"Waiting for workers to be ready...")
+        client.wait_for_workers(1)
+        self.logger.info(f"Workers ready. LocalClient ready.")
         self.logger.info(client)
 
         return client
@@ -95,18 +102,65 @@ class BaseDaskHistMaker:
 
         return client
 
+    @staticmethod
+    def merge_samples(input1: dict, input2: dict) -> dict:
+        """
+        Merge two samples efficiently.
+        Returns the merged output.
+        """
+        for key, value in input2.items():
+            # Handle dictionaries
+            if isinstance(value, dict):
+                if key not in input1:
+                    input1[key] = {}
+                for subkey, subvalue in value.items():
+                    input1[key][subkey] = input1[key].get(subkey, 0) + subvalue
+            # Handle numeric values
+            elif isinstance(value, numbers.Number):
+                input1[key] = input1.get(key, 0) + value
+            # Raise an error for unsupported types
+            else:
+                raise TypeError(f"Type {type(value)} not supported for output.")
+        return input1
+
+    @staticmethod
+    def merge_futures(input1: dict, input2: dict) -> dict:
+        """
+        Merges the output of two futures efficiently.
+        Returns the merged output.
+        """
+        try:
+            # Ensure we always iterate over the smaller dictionary
+            if len(input1) > len(input2):
+                input1, input2 = input2, input1
+
+            # Merge dictionaries
+            for sample, value in input1.items():
+                if sample in input2:
+                    input2[sample] = BaseDaskHistMaker.merge_samples(input2[sample], value)
+                else:
+                    input2[sample] = value
+
+            return input2
+
+        except Exception as e:
+            print(f"Failed to merge output: {e}")
+            print(traceback.format_exc())
+            return {}
+
+
     def run(self, client: Client, samples: List[str]) -> dict:
 
-        output = {}
-        output["_processing_metadata"] = {}
+        _metadata = {}
+        _metadata["_processing_metadata"] = {}
 
-        output["_processing_metadata"]["t_start"] = time()
+        _metadata["_processing_metadata"]["t_start"] = time()
 
         self.logger.info(f"Preprocessing samples.")
         for sample in samples:
             self.preprocess_sample(sample)
 
-        output["_processing_metadata"]["t_preprocess"] = time()
+        _metadata["_processing_metadata"]["t_preprocess"] = time()
 
         self.logger.info(f"Processing samples.")
         futures_dict = {}
@@ -122,57 +176,101 @@ class BaseDaskHistMaker:
 
         # add some sample metadata to the output
         for sample in samples:
-            output[sample] = {}
-            output[sample]["_processing_metadata"] = {}
-            output[sample]["_processing_metadata"]["postprocess_status"] = ""
-            output[sample]["_processing_metadata"]["n_processed"] = 0
-            output[sample]["_processing_metadata"]["n_success"] = 0
-            output[sample]["_processing_metadata"]["n_failed"] = 0
+            _metadata[sample] = {}
+            _metadata[sample]["_processing_metadata"] = {}
+            _metadata[sample]["_processing_metadata"]["postprocess_status"] = ""
+            _metadata[sample]["_processing_metadata"]["n_processed"] = 0
+            _metadata[sample]["_processing_metadata"]["n_success"] = 0
+            _metadata[sample]["_processing_metadata"]["n_failed"] = 0
 
+        # multi-threaded merging of future results
+        # (this avoids the possible issue of workers crashing due to memory overload by
+        # freeing up their memory more quickly, and generally speeds up the process)
         self.logger.info(f"Processing and collecting futures.")
-        for future in tqdm(as_completed(futures), total=len(futures)):
+        # with ThreadPoolExecutor(max_workers=10) as executor:
+        #     reading_futures = []
+        #     for future in tqdm(as_completed(futures), total=len(futures)):
+        #         reading_futures.append(executor.submit(self.merge_future, future, output, self.logger))
+        #     for future in reading_futures:
+        #         try:
+        #             if future.result(timeout=60) == 1:
+        #                 self.logger.error(f"Failed to process future.")
+        #         except TimeoutError:
+        #             self.logger.error(f"TimeoutError: Future took too long to complete.")
+        #             output[future._sample]["_processing_metadata"]["n_failed"] += 1
+        #             continue  
+        # 
 
-            sample = future._sample
+        sequence = as_completed(futures)   
 
-            output[sample]["_processing_metadata"]["n_processed"] += 1
+        def grab_next_result(sequence):
+
+            if sequence.count() == 0:
+                return None
 
             try:
-                result = future.result() # grab the result from the future
-                future.release() # get rid of the future to free up worker memory
 
-                for key, value in result.items():
+                future = next(sequence)
+                result = future.result()
+                future.release()
 
-                    # we can add dictionaries (e.g. of hist histograms, cutflows)
-                    if type(value) is dict:
+                # ugly workaround should fix elsewhere
+                if 'merge_futures' not in future.key:
+                    sample = future._sample
+                    result = {sample: result}
+                    future_type = 'process'
+                else:
+                    future_type = 'merge'
 
-                        if key in output[sample].keys():
-                            for subkey in value.keys():
-                                if subkey in output[sample][key].keys():
-                                    output[sample][key][subkey] += value[subkey]
-                                else:
-                                    output[sample][key][subkey] = value[subkey]
-                        else:
-                            output[sample][key] = value
-
-                    # we can also combine numbers
-                    elif isinstance(value, numbers.Number):
-
-                        if key in output[sample].keys():
-                            output[sample][key] += value
-                        else:
-                            output[sample][key] = value
-
-                    else:
-                        raise Exception(f"Type {type(value)} not supported for output.")
-
-                output[sample]["_processing_metadata"]["n_success"] += 1
+                return result, future_type
 
             except Exception as e:
+                
+                print(f"Failed to grab result: {e}")
+                print(traceback.format_exc())
+                return grab_next_result(sequence) 
 
-                self.logger.error(f"Failed to merge output: {e}")
-                self.logger.error(traceback.format_exc())
-                output[sample]["_processing_metadata"]["n_failed"] += 1
-                continue
+        def update_pbar(future_type):
+            
+            if future_type == 'process':
+                # +1 processed, +1 total that need to be merged
+                process_pbar.update(1)
+                completed_so_far = merge_pbar.n
+                merge_pbar.reset(total=merge_pbar.total + 1)
+                merge_pbar.n = completed_so_far
+                merge_pbar.refresh()
+            elif future_type == 'merge':
+                # +1 merged
+                merge_pbar.update(1)
+
+        process_pbar = tqdm(total=sequence.count(), desc="Processing", position=0)
+        merge_pbar = tqdm(total=1, desc="Merging", position=1)
+            
+        while sequence.count() > 1:
+
+            result1, future_type1 = grab_next_result(sequence)
+            update_pbar(future_type1)
+            result2, future_type2 = grab_next_result(sequence)
+            update_pbar(future_type2)
+
+            new = client.submit(
+                self.merge_futures,
+                result1,
+                result2,
+                priority=1000,
+            )
+
+            sequence.add(new)
+
+        process_pbar.close()
+        merge_pbar.close()
+            
+        output, final_future_type = grab_next_result(sequence)
+        if final_future_type != 'merge':
+            raise Exception("Final result is not a merge future.")
+        for sample in samples:
+            output[sample].update(_metadata[sample])
+        output["_processing_metadata"] = _metadata["_processing_metadata"]
 
         output["_processing_metadata"]["t_process"] = time()
 
@@ -189,11 +287,11 @@ class BaseDaskHistMaker:
 
         output["_processing_metadata"]["t_postprocess"] = time()
 
-        self.print_summary(output, samples)
+        self.print_summary(_metadata, samples)
 
         return output
 
-    def print_summary(self, output: dict, samples: list) -> None:
+    def print_summary(self, metadata: dict, samples: list) -> None:
 
         _tot_futures_results = {}
 
@@ -203,7 +301,7 @@ class BaseDaskHistMaker:
         self.logger.debug("")
         for sample in samples:
             self.logger.debug(f"Sample: {sample}")
-            for key, value in output[sample]["_processing_metadata"].items():
+            for key, value in metadata[sample]["_processing_metadata"].items():
                 if key.startswith("n_"):
                     status = key.split("_")[1]
                     self.logger.debug(f" {status}: {value}")
@@ -224,7 +322,7 @@ class BaseDaskHistMaker:
                     [
                         s
                         for s in samples
-                        if output[s]["_processing_metadata"]["postprocess_status"]
+                        if metadata[s]["_processing_metadata"]["postprocess_status"]
                         == "success"
                     ]
                 )
@@ -237,7 +335,7 @@ class BaseDaskHistMaker:
                     [
                         s
                         for s in samples
-                        if output[s]["_processing_metadata"]["postprocess_status"]
+                        if metadata[s]["_processing_metadata"]["postprocess_status"]
                         == "failed"
                     ]
                 )
@@ -246,16 +344,16 @@ class BaseDaskHistMaker:
 
         self.logger.info("")
         self.logger.info(
-            f"Time to preprocess: {output['_processing_metadata']['t_preprocess'] - output['_processing_metadata']['t_start']:.2f} s"
+            f"Time to preprocess: {metadata['_processing_metadata']['t_preprocess'] - metadata['_processing_metadata']['t_start']:.2f} s"
         )
         self.logger.info(
-            f"Time to process: {output['_processing_metadata']['t_process'] - output['_processing_metadata']['t_preprocess']:.2f} s"
+            f"Time to process: {metadata['_processing_metadata']['t_process'] - metadata['_processing_metadata']['t_preprocess']:.2f} s"
         )
         self.logger.info(
-            f"Time to postprocess: {output['_processing_metadata']['t_postprocess'] - output['_processing_metadata']['t_process']:.2f} s"
+            f"Time to postprocess: {metadata['_processing_metadata']['t_postprocess'] - metadata['_processing_metadata']['t_process']:.2f} s"
         )
         self.logger.info(
-            f"Total time: {output['_processing_metadata']['t_postprocess'] - output['_processing_metadata']['t_start']:.2f} s"
+            f"Total time: {metadata['_processing_metadata']['t_postprocess'] - metadata['_processing_metadata']['t_start']:.2f} s"
         )
 
     def preprocess_sample(self, sample: str):

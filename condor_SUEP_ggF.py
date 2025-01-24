@@ -20,6 +20,8 @@ parser.add_argument("--infile", required=True, type=str, default=None, help="")
 parser.add_argument("--dataset", type=str, default="X", help="")
 parser.add_argument("--nevt", type=str, default=-1, help="")
 parser.add_argument("--doInf", type=int, default=0, help="")
+parser.add_argument("--maxChunks", type=int, default=None, help="")
+parser.add_argument("--chunkSize", type=int, default=10000, help="")
 options = parser.parse_args()
 
 out_dir = os.getcwd()
@@ -46,7 +48,8 @@ for instance in modules_era:
         executor=processor.FuturesExecutor(compression=None, workers=1),
         schema=processor.NanoAODSchema,
         xrootdtimeout=60,
-        chunksize=1000000,
+        maxchunks=options.maxChunks,
+        chunksize=options.chunkSize,
     )
 
     runner.automatic_retries(
