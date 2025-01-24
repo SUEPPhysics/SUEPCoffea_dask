@@ -232,8 +232,11 @@ class BaseDaskHistMaker:
         def update_pbar(future_type):
             
             if future_type == 'process':
+                # +1 processed, +1 total that need to be merged
                 process_pbar.update(1)
+                merge_pbar.reset(total=merge_pbar.total + 1)
             elif future_type == 'merge':
+                # +1 merged
                 merge_pbar.update(1)
 
         process_pbar = tqdm(total=sequence.count(), desc="Processing", position=0)

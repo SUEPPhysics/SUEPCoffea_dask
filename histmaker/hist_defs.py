@@ -1179,12 +1179,5 @@ def init_hists_WHlimits(output, label, regions_list):
                     name=f"{r}SUEP_nconst_{label}",
                     label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
                 ).Weight(),
-                f"{r}SUEP_S1_{label}": Hist.new.Reg(
-                    100,
-                    0,
-                    1,
-                    name=f"{r}SUEP_S1_{label}",
-                    label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
-                ).Weight()
             }
         )

@@ -22,6 +22,7 @@ from dask.distributed import Client, Future
 
 sys.path.append("..")
 from utils import fill_utils
+from utilities import git_utils
 import hist_defs
 import var_defs
 from DaskHistMaker.BaseDaskHistMaker import BaseDaskHistMaker
@@ -202,7 +203,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         # print the metadata before filling it with the git info
         self.logger.debug("Metadata:" + json.dumps(metadata, indent=4))
 
-        commit, diff = fill_utils.get_git_info()
+        commit, diff = git_utils.get_git_info()
         metadata["git_commit"] = commit
         metadata["git_diff"] = diff
 
