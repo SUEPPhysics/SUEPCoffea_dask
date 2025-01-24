@@ -32,6 +32,7 @@ class BaseDaskHistMaker:
 
     def setupLocalClient(self, n_workers: int = 1) -> Client:
 
+        self.logger.info(f"Setting up LocalClient with {n_workers} workers.")
         cluster = LocalCluster(
             threads_per_worker=1,
             dashboard_address="1776",
@@ -234,13 +235,16 @@ class BaseDaskHistMaker:
             if future_type == 'process':
                 # +1 processed, +1 total that need to be merged
                 process_pbar.update(1)
+                completed_so_far = merge_pbar.n
                 merge_pbar.reset(total=merge_pbar.total + 1)
+                merge_pbar.n = completed_so_far
+                merge_pbar.refresh()
             elif future_type == 'merge':
                 # +1 merged
                 merge_pbar.update(1)
 
         process_pbar = tqdm(total=sequence.count(), desc="Processing", position=0)
-        merge_pbar = tqdm(total=0, desc="Merging", position=1)
+        merge_pbar = tqdm(total=1, desc="Merging", position=1)
             
         while sequence.count() > 1:
 
@@ -261,7 +265,9 @@ class BaseDaskHistMaker:
         process_pbar.close()
         merge_pbar.close()
             
-        output = next(sequence).result()
+        output, final_future_type = grab_next_result(sequence)
+        if final_future_type != 'merge':
+            raise Exception("Final result is not a merge future.")
         for sample in samples:
             output[sample].update(_metadata[sample])
         output["_processing_metadata"] = _metadata["_processing_metadata"]

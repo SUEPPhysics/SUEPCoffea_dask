@@ -112,7 +112,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
 
         self.logger.debug("Creating futures for sample " + sample)
 
-        futures = client.map(self.process_file, files, [sample]*len(files), [self.config]*len(files), [self.options]*len(files))
+        futures = client.map(self.process_file, files, [sample]*len(files), [self.config]*len(files), [self.options]*len(files), priority=-1000)
 
         return futures
 
