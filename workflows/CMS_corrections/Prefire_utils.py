@@ -12,6 +12,6 @@ def GetPrefireWeights(self, events):
         prefire_nom = 1.0
         prefire_up = 1.0
         prefire_down = 1.0
-    else: 
+    else:
         raise ValueError(f"Unsupported era {self.era}")
     return (prefire_nom, prefire_up, prefire_down)

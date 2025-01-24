@@ -1,7 +1,7 @@
 import sympy
-from sympy import symbols, diff
-
+from sympy import diff, symbols
 from utils.hist_utils import rebin_piecewise
+
 
 def make_ABCD_4regions(hist_abcd, xregions, yregions, sum_var=None):
     if sum_var is not None and sum_var not in ["x", "y"]:

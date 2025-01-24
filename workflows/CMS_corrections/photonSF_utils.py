@@ -6,9 +6,7 @@ import numpy as np
 from correctionlib import _core
 
 
-def getPhotonSFs(
-    photons: ak.Array, era: str, wp: str
-) -> List[float]:
+def getPhotonSFs(photons: ak.Array, era: str, wp: str) -> List[float]:
     """
     Get the photon ID scale factors for an awkward array of photons.
     https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaSFJSON

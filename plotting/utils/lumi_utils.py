@@ -1,11 +1,13 @@
-import json
 import sys
+
 sys.path.append("../")
 sys.path.append("../../")
 from data.data_utils import getLumi
 
+
 def lumiLabelWH(year):
     return lumiLabel("WH", year)
+
 
 def lumiLabel(analysis, year):
     lumi = getLumi(analysis, year)

@@ -5,9 +5,10 @@ Date: August 2024
 
 import logging
 import os
+
 import numpy as np
 import pandas as pd
-from CMS_corrections import higgs_reweight, pileup_weight, triggerSF, btag_utils
+from CMS_corrections import btag_utils, higgs_reweight, pileup_weight, triggerSF
 
 
 def apply_correctionlib(corr_file: str, corr_variable: str, input_variable: np.ndarray):
@@ -200,46 +201,46 @@ class EventWeightProcessor:
                 df["event_weight"] *= higgs_weight
 
             # 11) btag weights
-            if self.channel == 'WH-VRGJ' or self.channel == 'WH':
+            if self.channel == "WH-VRGJ" or self.channel == "WH":
                 if self.era == "2016apv":
                     era_int = 2015
                 else:
                     era_int = int(self.era)
-                if 'bTagWeight_' in self.variation:
+                if "bTagWeight_" in self.variation:
                     btag_variation = self.variation.replace("bTagWeight_", "")
                 else:
-                    btag_variation = 'central'
+                    btag_variation = "central"
                 btag_weights = btag_utils.doBTagWeights(
-                    jets_pt=df['jets_pt'],
-                    jets_eta=df['jets_eta'],
-                    jets_hadronFlavour=df['jets_hadronFlavor'],
-                    jets_btagDeepFlavB=df['jets_btag_category'],
+                    jets_pt=df["jets_pt"],
+                    jets_eta=df["jets_eta"],
+                    jets_hadronFlavour=df["jets_hadronFlavor"],
+                    jets_btagDeepFlavB=df["jets_btag_category"],
                     variations=[btag_variation],
                     era=era_int,
-                    wps='TL',
+                    wps="TL",
                     channel=self.channel.lower(),
-                    base_dir='../'
+                    base_dir="../",
                 )
                 df["event_weight"] *= btag_weights[btag_variation].to_numpy()
 
             # 9) lepton SF
-            if self.channel == 'WH':
-                if 'LepSFMuUp' == self.variation:
+            if self.channel == "WH":
+                if "LepSFMuUp" == self.variation:
                     # per our muon object review, since we use tighter IP cuts than the cuts that were used
                     # to derive the SFs, we apply a 2.5% uncertainty to the SFs
-                    df["event_weight"] *= (df[self.variation]**2 + 1.025**2)**0.5
-                elif 'LepSFMuDown' == self.variation:
+                    df["event_weight"] *= (df[self.variation] ** 2 + 1.025**2) ** 0.5
+                elif "LepSFMuDown" == self.variation:
                     # per our muon object review, since we use tighter IP cuts than the cuts that were used
                     # to derive the SFs, we apply a 2.5% uncertainty to the SFs
-                    df["event_weight"] *= (df[self.variation]**2 + 0.975**2)**0.5
-                elif 'LepSF' in self.variation:
+                    df["event_weight"] *= (df[self.variation] ** 2 + 0.975**2) ** 0.5
+                elif "LepSF" in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
                     df["event_weight"] *= df["LepSF"]
-        
+
             # 10) photon SF
-            if self.channel == 'WH-VRGJ':
-                if 'photon_SF' in self.variation:
+            if self.channel == "WH-VRGJ":
+                if "photon_SF" in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
                     df["event_weight"] *= df["photon_SF"]
@@ -256,10 +257,16 @@ class EventWeightProcessor:
 
                 # reewighting based on SUEP pT to match the W+jets
                 _era = self.era.replace("apv", "")
-                pt_corr_file = f"../data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
+                pt_corr_file = (
+                    f"../data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
+                )
                 if os.path.exists(pt_corr_file):
-                    df["event_weight"] *= apply_correctionlib(pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
+                    df["event_weight"] *= apply_correctionlib(
+                        pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy()
+                    )
                 else:
-                    logging.warning(f"File {pt_corr_file} not found. Not applying pT reweighting.")
+                    logging.warning(
+                        f"File {pt_corr_file} not found. Not applying pT reweighting."
+                    )
 
         return df

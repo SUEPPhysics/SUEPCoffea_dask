@@ -1,5 +1,6 @@
 from coffea.lookup_tools.dense_lookup import dense_lookup
 
+
 def make_btag_effs(
     h, hadron_flavors={0: "L", 4: "C", 5: "B"}, btag_categories={1: "L", 2: "T"}
 ):

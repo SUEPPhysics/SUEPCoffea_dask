@@ -4,16 +4,17 @@ Date: August 2024
 """
 
 import logging
+import numbers
 import os
 import socket
 import traceback
-import numbers
+from concurrent.futures import ThreadPoolExecutor
 from time import time
 from typing import List
+
 from dask.distributed import Client, Future, LocalCluster, as_completed
 from dask_jobqueue import SLURMCluster
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
 
 class BaseDaskHistMaker:
@@ -137,7 +138,9 @@ class BaseDaskHistMaker:
             # Merge dictionaries
             for sample, value in input1.items():
                 if sample in input2:
-                    input2[sample] = BaseDaskHistMaker.merge_samples(input2[sample], value)
+                    input2[sample] = BaseDaskHistMaker.merge_samples(
+                        input2[sample], value
+                    )
                 else:
                     input2[sample] = value
 
@@ -147,7 +150,6 @@ class BaseDaskHistMaker:
             print(f"Failed to merge output: {e}")
             print(traceback.format_exc())
             return {}
-
 
     def run(self, client: Client, samples: List[str]) -> dict:
 
@@ -198,10 +200,10 @@ class BaseDaskHistMaker:
         #         except TimeoutError:
         #             self.logger.error(f"TimeoutError: Future took too long to complete.")
         #             output[future._sample]["_processing_metadata"]["n_failed"] += 1
-        #             continue  
-        # 
+        #             continue
+        #
 
-        sequence = as_completed(futures)   
+        sequence = as_completed(futures)
 
         def grab_next_result(sequence):
 
@@ -215,37 +217,37 @@ class BaseDaskHistMaker:
                 future.release()
 
                 # ugly workaround should fix elsewhere
-                if 'merge_futures' not in future.key:
+                if "merge_futures" not in future.key:
                     sample = future._sample
                     result = {sample: result}
-                    future_type = 'process'
+                    future_type = "process"
                 else:
-                    future_type = 'merge'
+                    future_type = "merge"
 
                 return result, future_type
 
             except Exception as e:
-                
+
                 print(f"Failed to grab result: {e}")
                 print(traceback.format_exc())
-                return grab_next_result(sequence) 
+                return grab_next_result(sequence)
 
         def update_pbar(future_type):
-            
-            if future_type == 'process':
+
+            if future_type == "process":
                 # +1 processed, +1 total that need to be merged
                 process_pbar.update(1)
                 completed_so_far = merge_pbar.n
                 merge_pbar.reset(total=merge_pbar.total + 1)
                 merge_pbar.n = completed_so_far
                 merge_pbar.refresh()
-            elif future_type == 'merge':
+            elif future_type == "merge":
                 # +1 merged
                 merge_pbar.update(1)
 
         process_pbar = tqdm(total=sequence.count(), desc="Processing", position=0)
         merge_pbar = tqdm(total=1, desc="Merging", position=1)
-            
+
         while sequence.count() > 1:
 
             result1, future_type1 = grab_next_result(sequence)
@@ -264,9 +266,9 @@ class BaseDaskHistMaker:
 
         process_pbar.close()
         merge_pbar.close()
-            
+
         output, final_future_type = grab_next_result(sequence)
-        if final_future_type != 'merge':
+        if final_future_type != "merge":
             raise Exception("Final result is not a merge future.")
         for sample in samples:
             output[sample].update(_metadata[sample])

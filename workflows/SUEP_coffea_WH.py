@@ -6,15 +6,14 @@ Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
 import warnings
-import psutil
-import os
-import time
+from copy import deepcopy
+
 import awkward as ak
 import numpy as np
 import pandas as pd
+import psutil
 import vector
 from coffea import processor
-from copy import deepcopy
 from hist import Hist
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -29,11 +28,11 @@ from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import METHEMFilter, jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
+from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
-from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -69,7 +68,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events,
         output,
         out_label=None,
-        variation='',
+        variation="",
     ):
 
         # indices of events, used to keep track which events pass selections for each method
@@ -111,17 +110,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ak15jets, clusters = SUEP_utils.FastJetReclustering(
             events.WH_tracks, r=1.5, minPt=5
         )
-        output['leading_ak15_pt'].fill(
-            ak.fill_none(
-                ak.max(ak15jets.pt, axis=1), -999
-            ),
-            weight=events.genWeight
+        output["leading_ak15_pt"].fill(
+            ak.fill_none(ak.max(ak15jets.pt, axis=1), -999), weight=events.genWeight
         )
-        output['n_ak15'].fill(ak.num(ak15jets, axis=1),weight=events.genWeight)
-        ak15_60gev = (ak15jets.pt > 60)
+        output["n_ak15"].fill(ak.num(ak15jets, axis=1), weight=events.genWeight)
+        ak15_60gev = ak15jets.pt > 60
         ak15jets = ak15jets[ak15_60gev]
         clusters = clusters[ak15_60gev]
-        output['n_ak15_60gev'].fill(ak.num(ak15jets, axis=1),weight=events.genWeight)
+        output["n_ak15_60gev"].fill(ak.num(ak15jets, axis=1), weight=events.genWeight)
         events = ak.with_field(events, ak15jets, "WH_ak15jets")
         events = ak.with_field(events, clusters, "WH_ak15clusters")
 
@@ -338,7 +334,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 )[:, i],
             )
 
-
         # highest nconst non SUEP candidate (validate that highest pT ~= highest nconst)
         other_AK15_nconst = ak.num(events.WH_other_AK15_constituents, axis=-1)
         mostNumerousAK15 = events.WH_other_AK15[
@@ -409,8 +404,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self,
         events,
         output,
-        out_label:str="",
-        variation:str="",
+        out_label: str = "",
+        variation: str = "",
     ):
         """
         Store event variables in the output dictionary.
@@ -552,14 +547,22 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["PuppiMET_pt_JER_down"] = events.PuppiMET.ptJERDown
             output["vars"]["PuppiMET_pt_JES_up"] = events.PuppiMET.ptJESUp
             output["vars"]["PuppiMET_pt_JES_down"] = events.PuppiMET.ptJESDown
-            output["vars"]["PuppiMET_pt_Unclustered_up"] = events.PuppiMET.ptUnclusteredUp
-            output["vars"]["PuppiMET_pt_Unclustered_down"] = events.PuppiMET.ptUnclusteredDown
+            output["vars"][
+                "PuppiMET_pt_Unclustered_up"
+            ] = events.PuppiMET.ptUnclusteredUp
+            output["vars"][
+                "PuppiMET_pt_Unclustered_down"
+            ] = events.PuppiMET.ptUnclusteredDown
             output["vars"]["PuppiMET_phi_JER_up"] = events.PuppiMET.phiJERUp
             output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
             output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
-            output["vars"]["PuppiMET_phi_Unclustered_up"] = events.PuppiMET.phiUnclusteredUp
-            output["vars"]["PuppiMET_phi_Unclustered_down"] = events.PuppiMET.phiUnclusteredDown
+            output["vars"][
+                "PuppiMET_phi_Unclustered_up"
+            ] = events.PuppiMET.phiUnclusteredUp
+            output["vars"][
+                "PuppiMET_phi_Unclustered_down"
+            ] = events.PuppiMET.phiUnclusteredDown
 
         # event weights
         if self.isMC:
@@ -607,9 +610,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # saving tight lepton kinematics
         if "WH_lepton" in events.fields:
-            
+
             output["vars"]["lepton_pt"] = events.WH_lepton.pt
-            if self.isMC: output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
+            if self.isMC:
+                output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
             output["vars"]["lepton_eta"] = events.WH_lepton.eta
             output["vars"]["lepton_phi"] = events.WH_lepton.phi
             output["vars"]["lepton_mass"] = events.WH_lepton.mass
@@ -653,26 +657,32 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
 
             # lepton scale factors
-            unflattened_leptons = ak.unflatten(events.WH_lepton, np.ones(len(events), dtype=int))
+            unflattened_leptons = ak.unflatten(
+                events.WH_lepton, np.ones(len(events), dtype=int)
+            )
             leptonsSFs = doWHLeptonSFs(
                 unflattened_leptons[abs(unflattened_leptons.pdgId) == 11],
                 unflattened_leptons[abs(unflattened_leptons.pdgId) == 13],
-                era=self.era
+                era=self.era,
             )
-            output["vars"]["LepSF"] = leptonsSFs['LepSF']
-            output["vars"]["LepSFElUp"] = leptonsSFs['LepSFElUp']
-            output["vars"]["LepSFElDown"] = leptonsSFs['LepSFElDown']
-            output["vars"]["LepSFMuUp"] = leptonsSFs['LepSFMuUp']
-            output["vars"]["LepSFMuDown"] = leptonsSFs['LepSFMuDown']   
+            output["vars"]["LepSF"] = leptonsSFs["LepSF"]
+            output["vars"]["LepSFElUp"] = leptonsSFs["LepSFElUp"]
+            output["vars"]["LepSFElDown"] = leptonsSFs["LepSFElDown"]
+            output["vars"]["LepSFMuUp"] = leptonsSFs["LepSFMuUp"]
+            output["vars"]["LepSFMuDown"] = leptonsSFs["LepSFMuDown"]
 
         # other loose leptons
-        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events, isMC=self.isMC)
+        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(
+            events, isMC=self.isMC
+        )
         output["vars"]["nLooseLeptons"] = ak.num(looseLeptons).to_list()
         output["vars"]["nLooseMuons"] = ak.num(looseMuons).to_list()
         output["vars"]["nLooseElectrons"] = ak.num(looseElectrons).to_list()
 
         # loose not tight leptons
-        _, _, looseNotTightLeptons = WH_utils.getLooseNotTightLeptons(events, isMC=self.isMC)
+        _, _, looseNotTightLeptons = WH_utils.getLooseNotTightLeptons(
+            events, isMC=self.isMC
+        )
         highpt_looseNotTightLeptons = ak.argsort(
             looseNotTightLeptons.pt, axis=1, ascending=False, stable=True
         )
@@ -819,9 +829,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
 
             # photon scale factors
-            photon_SFs = getPhotonSFs(
-                events.WH_gamma, era=self.era, wp="wp90"
-            )
+            photon_SFs = getPhotonSFs(events.WH_gamma, era=self.era, wp="wp90")
             output["vars"]["photon_SF"] = photon_SFs["nominal"]
             output["vars"]["photon_SF_up"] = photon_SFs["up"]
             output["vars"]["photon_SF_down"] = photon_SFs["down"]
@@ -871,7 +879,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         return events
 
-    def analysis(self, events, output, out_label:str="", variation:str=""):
+    def analysis(self, events, output, out_label: str = "", variation: str = ""):
 
         #####################################################################################
         # ---- Basic event selection
@@ -903,7 +911,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
 
         if self.VRGJ:
-            events = WH_utils.VRGJOrthogonalitySelection(events, era=self.era, isMC=self.isMC)
+            events = WH_utils.VRGJOrthogonalitySelection(
+                events, era=self.era, isMC=self.isMC
+            )
         else:
             events = WH_utils.orthogonalitySelection(events, isMC=self.isMC)
         output["cutflow_orthogonality" + out_label] += ak.sum(events.genWeight)
@@ -920,7 +930,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         if not self.CRQCD and not self.VRGJ:
-            events = WH_utils.oneTightLeptonSelection(events, era=self.era, isMC=self.isMC, variation=variation if (('MuScale' in variation) or ('ElScale' in variation)) else "")
+            events = WH_utils.oneTightLeptonSelection(
+                events,
+                era=self.era,
+                isMC=self.isMC,
+                variation=(
+                    variation
+                    if (("MuScale" in variation) or ("ElScale" in variation))
+                    else ""
+                ),
+            )
             output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
         elif self.VRGJ:
             events = WH_utils.onePhotonSelection(events, self.isMC)
@@ -1009,9 +1028,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         if "SUEP_nconst_HighestPT" in output["vars"].columns:
             # if any events have a SUEP candidate
             method_selection = np.any(
-                [
-                    ~output["vars"]["SUEP_nconst_HighestPT"+out_label].isnull()
-                ],
+                [~output["vars"]["SUEP_nconst_HighestPT" + out_label].isnull()],
                 axis=0,
             )
             output["vars"] = output["vars"][method_selection]
@@ -1051,9 +1068,19 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
-                "leading_ak15_pt": Hist.new.Reg(400,0,400,name="leading_ak15_pt",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
-                "n_ak15": Hist.new.Reg(10,0,10,name="n_ak15",label="$n_{\mathrm{AK15}}$").Weight(),
-                "n_ak15_60gev": Hist.new.Reg(10,0,10,name="n_ak15_60gev",label="$n_{\mathrm{AK15}}$").Weight(),
+                "leading_ak15_pt": Hist.new.Reg(
+                    400,
+                    0,
+                    400,
+                    name="leading_ak15_pt",
+                    label="Leading AK15 cluster $p_T$ [GeV]",
+                ).Weight(),
+                "n_ak15": Hist.new.Reg(
+                    10, 0, 10, name="n_ak15", label=r"$n_{\mathrm{AK15}}$"
+                ).Weight(),
+                "n_ak15_60gev": Hist.new.Reg(
+                    10, 0, 10, name="n_ak15_60gev", label=r"$n_{\mathrm{AK15}}$"
+                ).Weight(),
             }
         )
 
@@ -1069,18 +1096,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # run the analysis
         output_nom = deepcopy(blank_output)
         _, output_nom = self.analysis(events, output_nom)
-        output['nominal'] = output_nom
-
+        output["nominal"] = output_nom
 
         # run the analysis with the systematic variations applied
         if self.isMC and self.do_syst:
 
             # for these, we need to re-run the whole analysis
-            variations = [
-                "MuScaleUp",
-                "MuScaleDown",
-                "track_down"
-            ]
+            variations = ["MuScaleUp", "MuScaleDown", "track_down"]
             for variation in variations:
                 output_var = deepcopy(blank_output)
                 _, output_var = self.analysis(

@@ -1,10 +1,13 @@
-import os
 import gc
-import uproot
+import os
 import pickle
 import sys
+
+import uproot
+
 sys.path.append("../")
 from data import data_utils
+
 
 def formatGluGluToSUEPNaming(file):
     file = file.split("/")[-1]
@@ -302,6 +305,7 @@ def fillCutflows(
 
     return cutflows
 
+
 def loader(
     infile_names,
     by_bin=False,
@@ -404,6 +408,7 @@ def openHistFile(infile_name):
         hists, metadata = openpickle(infile_name)
     return hists, metadata
 
+
 def openpickle(infile_name):
     _plots = {}
     _metadata = {}
@@ -419,6 +424,7 @@ def openpickle(infile_name):
     gc.collect()
     return _plots, _metadata
 
+
 def openroot(infile_name):
     _plots = {}
     _metadata = {}
@@ -432,6 +438,7 @@ def openroot(infile_name):
     gc.collect()
     return _plots, _metadata
 
+
 def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []
     with open(filename) as file:
@@ -444,6 +451,7 @@ def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
                     continue
             hists.append(result_path)
     return hists
+
 
 def combineSamples(plots: dict, samples: list) -> dict:
     out = {}

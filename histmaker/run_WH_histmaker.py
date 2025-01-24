@@ -6,13 +6,13 @@ Date: August 2024
 
 import argparse
 import os
-from types import SimpleNamespace
 from copy import deepcopy
+from types import SimpleNamespace
 
 import hist_defs
 import var_defs
-from utils import fill_utils
 from DaskHistMaker.SUEPDaskHistMaker import SUEPDaskHistMaker
+from utils import fill_utils
 
 
 def getOptions() -> dict:
@@ -38,19 +38,21 @@ def getOptions() -> dict:
     parser.add_argument(
         "--nworkers", "-n", type=int, default=20, help="Number of workers to use"
     )
-    parser.add_argument(
-        "--limits", action="store_true", help="Make hists for limits"
-    )
+    parser.add_argument("--limits", action="store_true", help="Make hists for limits")
 
     # required SUEPDaskHistMaker arguments
     parser.add_argument("--isMC", type=int, default=1, help="isMC")
-    parser.add_argument("--channel", type=str, default="WH", choices=['WH', 'WH-VRGJ'], help="Channel")
+    parser.add_argument(
+        "--channel", type=str, default="WH", choices=["WH", "WH-VRGJ"], help="Channel"
+    )
     parser.add_argument("--era", type=str, required=True, help="Era")
     parser.add_argument("--tag", type=str, required=False, help="Ntuple tag")
     parser.add_argument("--output", type=str, required=True, help="Output tag")
 
     # optional SUEPDaskHistMaker arguments
-    parser.add_argument("--doSyst", type=int, default=0, help="Do systematic variations")
+    parser.add_argument(
+        "--doSyst", type=int, default=0, help="Do systematic variations"
+    )
     parser.add_argument("--verbose", type=int, default=0, help="Verbose")
     parser.add_argument(
         "--xrootd", type=int, default=0, help="Use xrootd to read the ntuples"
@@ -127,11 +129,11 @@ def main():
     ####################################################################################################
     # LIMITS CONFIGURATION
     ####################################################################################################
-    if options['limits']:
-        options['pkl'] = 0 # need .root files for combine
-        options['doABCD'] = 1
-        options['doSyst'] = 1
-        if options['channel'] == "WH":
+    if options["limits"]:
+        options["pkl"] = 0  # need .root files for combine
+        options["doABCD"] = 1
+        options["doSyst"] = 1
+        if options["channel"] == "WH":
             config = {
                 "SR": {
                     "input_method": "HighestPT",
@@ -142,7 +144,7 @@ def main():
                     "yvar_regions": [10, 20, 30, 1000],
                     "SR": [
                         ["SUEP_S1_HighestPT", ">=", 0.5],
-                        ["SUEP_nconst_HighestPT", ">=", 30]
+                        ["SUEP_nconst_HighestPT", ">=", 30],
                     ],
                     "selections": [
                         "SUEP_nconst_HighestPT >= 10",
@@ -157,9 +159,9 @@ def main():
                         "ak4jets_inSUEPcluster_n_HighestPT >= 1",
                         "W_SUEP_BV < 2",
                         "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
-                        "SUEP_S1_HighestPT > 0.3"
+                        "SUEP_S1_HighestPT > 0.3",
                     ],
-                    "syst":  [
+                    "syst": [
                         "puweights_up",
                         "puweights_down",
                         "PSWeight_ISR_up",
@@ -184,9 +186,9 @@ def main():
                         "prefire_down",
                         # TODO: trigger scale factors
                     ],
-                },         
+                },
             }
-        elif options['channel'] == "WH-VRGJ":
+        elif options["channel"] == "WH-VRGJ":
             config = {
                 "VRGJhighS": {
                     "input_method": "HighestPT",
@@ -207,7 +209,7 @@ def main():
                         "photon_SUEP_BV < 2",
                         "SUEP_S1_HighestPT > 0.3",
                     ],
-                    "syst":  [
+                    "syst": [
                         "puweights_up",
                         "puweights_down",
                         "PSWeight_ISR_up",
@@ -264,7 +266,7 @@ def main():
                 "method_var": "SUEP_nconst_HighestPT",
                 "SR": [
                     ["SUEP_S1_HighestPT", ">=", 0.5],
-                    ["SUEP_nconst_HighestPT", ">=", 30]
+                    ["SUEP_nconst_HighestPT", ">=", 30],
                 ],
                 "selections": [
                     "SUEP_nconst_HighestPT >= 10",
@@ -281,7 +283,7 @@ def main():
                     "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
                     "SUEP_S1_HighestPT > 0.3",
                 ],
-                "syst":  [],
+                "syst": [],
             },
             # "SRmu": {
             #     "input_method": "HighestPT",
@@ -359,7 +361,7 @@ def main():
             # }
         }
 
-    elif options['channel'] == 'WH-VRGJ':
+    elif options["channel"] == "WH-VRGJ":
         config = {
             # "VRGJnoB": {
             #     "input_method": "HighestPT",
@@ -404,7 +406,7 @@ def main():
                 "method_var": "SUEP_nconst_HighestPT",
                 "SR": [
                     ["SUEP_S1_HighestPT", ">=", 2.0],
-                    ["SUEP_nconst_HighestPT", ">=", 1000]
+                    ["SUEP_nconst_HighestPT", ">=", 1000],
                 ],
                 "selections": [
                     "photon_r9 > 0.9",
@@ -424,17 +426,13 @@ def main():
     ####################################################################################################
     # SYSTEMATIC VARIATIONS AND NEW VARIABLES
     ####################################################################################################
-    
+
     # automate filling the config dictionary for systematic variations
     if options.get("isMC") and options.get("doSyst"):
 
-        if options['channel'] == "WH":
+        if options["channel"] == "WH":
             # add systematic variations, which are identical, except for the dataframe name
-            variations = [
-                "MuScaleUp",
-                "MuScaleDown",
-                "track_down"
-            ]
+            variations = ["MuScaleUp", "MuScaleDown", "track_down"]
             # systematic variations that change the MET and W selections
             met_variations = [
                 "JER_up",
@@ -442,11 +440,9 @@ def main():
                 "JES_up",
                 "JES_down",
             ]
-        elif options['channel'] == "WH-VRGJ":
+        elif options["channel"] == "WH-VRGJ":
             # add systematic variations, which are identical, except for the dataframe name
-            variations = [
-                "track_down"
-            ]
+            variations = ["track_down"]
             # systematic variations that change the MET and W selections
             met_variations = []
 
@@ -454,8 +450,12 @@ def main():
         for var in variations:
             for tag, config_tag in config.items():
                 _var_config = deepcopy(config_tag)
-                _var_config["syst"] = []    # don't need to run SFs for systematic variations
-                _var_config["df_name"] = "vars_" + var # name of the dataframe in the hdf5 ntuple
+                _var_config["syst"] = (
+                    []
+                )  # don't need to run SFs for systematic variations
+                _var_config["df_name"] = (
+                    "vars_" + var
+                )  # name of the dataframe in the hdf5 ntuple
                 var_config.update({tag + "_" + var: _var_config})
 
         for var in met_variations:
@@ -471,7 +471,7 @@ def main():
                         s = " ".join(s)
                         _var_config["selections"][iSel] = s
                     var_config.update({tag + "_" + var: _var_config})
-                
+
         config.update(var_config)
 
     # automate filling the config dictionary for defining new variables

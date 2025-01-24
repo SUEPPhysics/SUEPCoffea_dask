@@ -61,7 +61,7 @@ This will:
 Histograms are defined in `hist_defs.py`, and filled in `fill_utils.py` with the function `auto_fill()`.
 **All histograms correctly named will be automatically filled by the script.**
 
-"Correctly named" means:  
+"Correctly named" means:
 - `variable1_<label>`
 - `2D_variable1_vs_variable2_<label>`
 - `3D_variable1_vs_variable2_vs_variable3_<label>`

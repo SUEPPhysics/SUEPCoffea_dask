@@ -191,7 +191,6 @@ def doLeptonSFs(electrons, muons, era):
     return lepSF
 
 
-
 def doWHLeptonSFs(electrons, muons, era: str):
 
     if era == "2016apv":
