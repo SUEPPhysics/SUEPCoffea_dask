@@ -81,6 +81,7 @@ class BaseDaskHistMaker:
         cluster = SLURMCluster(
             job_name="dask-histmaker",
             cores=1,
+            walltime="5:00:00",
             memory="4GB",
             scheduler_options={
                 "dashboard_address": "1776",
