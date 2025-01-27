@@ -40,7 +40,7 @@ def getLumi(
     path: str = "../data/"
 ) -> float:
     """
-    Open the ../data/lumis.json file, and read from analysis, era.
+    Open the lumis.json file, and read from analysis, era.
     """
 
     with open(f"{path}/lumis.json") as f:

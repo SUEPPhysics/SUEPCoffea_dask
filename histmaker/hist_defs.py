@@ -181,7 +181,7 @@ def init_hists_cluster(output, label, regions_list=[""]):
                     )
                     .Variable(
                         np.linspace(-0.5, 499.5, 501),
-                        name=f"nconst_{label}",
+                        name=f"SUEP_nconst_{label}",
                         label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
                     )
                     .Weight(),
@@ -542,7 +542,33 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
             )
             .Variable(
                 np.linspace(-0.5, 199.5, 201),
-                name=f"nconst_{label}",
+                name=f"SUEP_nconst_{label}",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            )
+            .Weight(),
+             f"2D_SUEP_S1_mu_vs_SUEP_nconst_mu_{label}": Hist.new.Reg(
+                50,
+                0,
+                1.0,
+                name=f"SUEP_S1_mu_{label}",
+                label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
+            )
+            .Variable(
+                np.linspace(-0.5, 99.5, 101),
+                name=f"SUEP_nconst_mu_{label}",
+                label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
+            )
+            .Weight(),
+            f"2D_SUEP_S1_e_vs_SUEP_nconst_e_{label}": Hist.new.Reg(
+                50,
+                0,
+                1.0,
+                name=f"SUEP_S1_e_{label}",
+                label=r"$S^{\mathrm{SUEP}}_{\mathrm{boosted}}$",
+            )
+            .Variable(
+                np.linspace(-0.5, 99.5, 101),
+                name=f"SUEP_nconst_e_{label}",
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
             .Weight(),
@@ -720,6 +746,48 @@ def init_hists_WH(output, label):
             5,
             name=f"lepton_eta_{label}",
             label=r"$\eta^{\ell}$",
+        ).Weight(),
+        f"electron_pt_{label}": Hist.new.Reg(
+            500,
+            0,
+            500,
+            name=f"electron_pt_{label}",
+            label=r"$p_T^{e}$ [GeV]",
+        ).Weight(),
+        f"muon_pt_{label}": Hist.new.Reg(
+            500,
+            0,
+            500,
+            name=f"muon_pt_{label}",
+            label=r"$p_T^{\mu}$ [GeV]",
+        ).Weight(),
+        f"electron_phi_{label}": Hist.new.Reg(
+            60,
+            -3.2,
+            3.2,
+            name=f"electron_phi_{label}",
+            label=r"$\phi^{e}$",
+        ).Weight(),
+        f"muon_phi_{label}": Hist.new.Reg(
+            60,
+            -3.2,
+            3.2,
+            name=f"muon_phi_{label}",
+            label=r"$\phi^{\mu}$",
+        ).Weight(),
+        f"electron_eta_{label}": Hist.new.Reg(
+            100,
+            -5,
+            5,
+            name=f"electron_eta_{label}",
+            label=r"$\eta^{e}$",
+        ).Weight(),
+        f"muon_eta_{label}": Hist.new.Reg(
+            100,
+            -5,
+            5,
+            name=f"muon_eta_{label}",
+            label=r"$\eta^{\mu}$",
         ).Weight(),
         # f"lepton_flavor_{label}": Hist.new.Reg(
         #     40,
@@ -1163,7 +1231,7 @@ def init_hists_WHlimits(output, label, regions_list):
         )
         .Variable(
             np.linspace(-0.5, 199.5, 201),
-            name=f"nconst_{label}",
+            name=f"SUEP_nconst_{label}",
             label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
         )
         .Weight(),

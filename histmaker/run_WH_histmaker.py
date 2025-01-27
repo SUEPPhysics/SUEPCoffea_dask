@@ -184,7 +184,7 @@ def main():
                         "prefire_down",
                         # TODO: trigger scale factors
                     ],
-                },         
+                }     
             }
         elif options['channel'] == "WH-VRGJ":
             config = {
@@ -266,6 +266,31 @@ def main():
                     ["SUEP_S1_HighestPT", ">=", 0.5],
                     ["SUEP_nconst_HighestPT", ">=", 30]
                 ],
+                "selections": [
+                    "SUEP_nconst_HighestPT >= 10",
+                    "PuppiMET_pt > 30",
+                    "W_pt > 60",
+                    "W_mt < 130",
+                    "W_mt > 30",
+                    "bjetSel == 1",
+                    "deltaPhi_SUEP_W > 1.5",
+                    "deltaPhi_SUEP_MET > 1.5",
+                    "deltaPhi_lepton_SUEP > 1.5",
+                    "ak4jets_inSUEPcluster_n_HighestPT >= 1",
+                    "W_SUEP_BV < 2",
+                    "deltaPhi_minDeltaPhiMETJet_MET > 1.5",
+                    "SUEP_S1_HighestPT > 0.3",
+                ],
+                "syst":  [],
+            },
+            "SRblind": {
+                "input_method": "HighestPT",
+                "method_var": "SUEP_nconst_HighestPT",
+                "SR": [
+                    ["SUEP_S1_HighestPT", ">=", 0.5],
+                    ["SUEP_nconst_HighestPT", ">=", 30]
+                ],
+                "blind": 1,
                 "selections": [
                     "SUEP_nconst_HighestPT >= 10",
                     "PuppiMET_pt > 30",
@@ -492,7 +517,8 @@ def main():
         client = histmaker.setupSlurmClient(
             n_workers=options["nworkers"], min_workers=2, max_workers=200
         )
-    histmaker.run(client, options["samples"])
+    histmaker.print_ssh_command(client)
+    histmaker.run(client, options["samples"], batch_size=100*options["nworkers"])
     client.close()
 
 

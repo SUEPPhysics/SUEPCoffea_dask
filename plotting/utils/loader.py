@@ -449,8 +449,9 @@ def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
 
 def combineSamples(plots: dict, samples: list) -> dict:
     out = {}
-    if any([s not in plots.keys() for s in samples]):
-        print("WARNING: not all samples are in the plots dictionary")
+    missing = [s not in plots.keys() for s in samples]
+    if any(missing):
+        print("WARNING: not all samples are in the plots dictionary: " + ", ".join(samples[missing]))
         return out
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):

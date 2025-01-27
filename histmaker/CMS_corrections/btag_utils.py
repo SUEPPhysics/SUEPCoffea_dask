@@ -13,7 +13,7 @@ def doBTagWeights(
     era: int,
     wps: str,
     channel: str = "zh",
-    base_dir: str = ".",
+    base_dir: str = os.path.join(os.path.dirname(__file__), "../../"),
     variations: list = ['central']
 ) -> dict:
     """

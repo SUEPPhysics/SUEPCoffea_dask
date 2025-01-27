@@ -218,7 +218,6 @@ class EventWeightProcessor:
                     era=era_int,
                     wps='TL',
                     channel=self.channel.lower(),
-                    base_dir='../'
                 )
                 df["event_weight"] *= btag_weights[btag_variation].to_numpy()
 

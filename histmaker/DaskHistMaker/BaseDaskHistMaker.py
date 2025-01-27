@@ -5,13 +5,15 @@ Date: August 2024
 
 import logging
 import os
+import gc
 import socket
 import traceback
 import numbers
 from time import time
 from typing import List
-from dask.distributed import Client, Future, LocalCluster, as_completed
+from dask.distributed import Client, Future, LocalCluster, as_completed, progress
 from dask_jobqueue import SLURMCluster
+from dask import delayed
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
@@ -100,10 +102,25 @@ class BaseDaskHistMaker:
 
         return client
 
-    @staticmethod
-    def merge_samples(input1: dict, input2: dict) -> dict:
+    def print_ssh_command(self, client: Client) -> None:
         """
-        Merge two samples efficiently.
+        Print the ssh command to connect to the dask dashboard
+        to the screen for convenience.
+        """
+
+        dashboard_port = client.scheduler_info()['services']['dashboard']
+        user = os.getenv("USER")
+        hostname = os.getenv("HOSTNAME")
+        ssh_command = f"ssh -L 8000:localhost:{dashboard_port} {user}@{hostname}"
+        print("\nTo connect to the dask dashboard, run the following command in a separate terminal window:")
+        print(ssh_command)
+        print("And connect to http://localhost:8000 in your browser.\n")
+
+    @staticmethod
+    @delayed
+    def merge(input1: dict, input2: dict) -> dict:
+        """
+        Merge two outputs from process_sample() efficiently.
         Returns the merged output.
         """
         for key, value in input2.items():
@@ -122,237 +139,234 @@ class BaseDaskHistMaker:
         return input1
 
     @staticmethod
-    def merge_futures(input1: dict, input2: dict) -> dict:
+    @delayed
+    def _process(function, *args, **kwargs):
         """
-        Merges the output of two futures efficiently.
-        Returns the merged output.
+        A generic function wrapper we use to submit to the client.
         """
-        try:
-            # Ensure we always iterate over the smaller dictionary
-            if len(input1) > len(input2):
-                input1, input2 = input2, input1
+        return function(*args, **kwargs)
 
-            # Merge dictionaries
-            for sample, value in input1.items():
-                if sample in input2:
-                    input2[sample] = BaseDaskHistMaker.merge_samples(input2[sample], value)
-                else:
-                    input2[sample] = value
+    def build_metadata(self, samples: List[str]) -> dict:
 
-            return input2
+        _run_metadata = {}
+        _run_metadata["_processing_metadata"] = {}
+        _run_metadata["_processing_metadata"]["t_start"] = time()
 
-        except Exception as e:
-            print(f"Failed to merge output: {e}")
-            print(traceback.format_exc())
-            return {}
+        for sample in samples:
+            _run_metadata[sample] = {}
+            _run_metadata[sample]["_processing_metadata"] = {}
+            _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = ""
 
+        return _run_metadata
 
-    def run(self, client: Client, samples: List[str]) -> dict:
+    def build_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
+        """
+        Construct the task graph for a given sample.
+        Return the last node of the graph as a Delayed future.
+        """
 
-        _metadata = {}
-        _metadata["_processing_metadata"] = {}
+        self.logger.debug(f"Building graph for sample: {sample}")
+        _run_metadata[sample]["_processing_metadata"]["n_total"] = len(processes)
 
-        _metadata["_processing_metadata"]["t_start"] = time()
+        # Build the graph
+        prev_merge_task = None
+        for process in processes:
+
+            process_task = self._process(process[0], *process[1:]) 
+
+            if prev_merge_task is None:
+                prev_merge_task = process_task
+            else:
+                prev_merge_task = self.merge(prev_merge_task, process_task)
+
+        return prev_merge_task
+
+    def get_batches(self, samples: List[str], _run_metadata: dict, batch_size: int = 1000) -> list:
+        """
+        From the size of each sample's graph, construct a list of batches of samples to be processed.
+        Each batch is a list of samples
+        """
+
+        batches = []
+        batch = []
+        n_processing = 0
+        for sample in samples:
+            
+            try:
+                n_processing += _run_metadata[sample]["_processing_metadata"]["n_total"]
+                batch.append(sample)
+
+            except Exception as e:
+                self.logger.error(f"Failed to process sample {sample}: {e}")
+                self.logger.error(traceback.format_exc())
+                continue
+
+            if (n_processing >= batch_size) or (sample == samples[-1]):
+
+                batches.append(batch)
+                batch = []
+                n_processing = 0
+
+        self.logger.debug(f"Created {len(batches)} batches with sizes:")
+        self.logger.debug([len(batch) for batch in batches])
+
+        return batches
+
+    def run(self, client: Client, samples: List[str], batch_size: int = 1000) -> dict:
+
+        _run_metadata = self.build_metadata(samples)
 
         self.logger.info(f"Preprocessing samples.")
         for sample in samples:
             self.preprocess_sample(sample)
+        _run_metadata["_processing_metadata"]["t_preprocess"] = time()
 
-        _metadata["_processing_metadata"]["t_preprocess"] = time()
-
-        self.logger.info(f"Processing samples.")
-        futures_dict = {}
+        self.logger.info(f"Creating graphs for samples.")
+        graphs = {}
         for sample in samples:
-            sample_futures = self.process_sample(client, sample)
-            # this is used for internal tracking of which sample the output belongs to
-            for future in sample_futures:
-                future._sample = sample
-            futures_dict[sample] = sample_futures
+            self.logger.debug(f"Processing sample: {sample}")
+            processes = self.process_sample(sample)
+            graphs[sample] = self.build_graph(sample, processes, _run_metadata)
 
-        # flatten futures to a list to execute them
-        futures = [future for sublist in futures_dict.values() for future in sublist]
+        self.logger.info(f"Creating batches.")
+        batches = self.get_batches(samples, _run_metadata, batch_size=batch_size)
+        n_batches = int(len(batches))
+        _run_metadata["_processing_metadata"]["t_build"] = time()
 
-        # add some sample metadata to the output
+        self.logger.info(f"Submitting futures to client in {n_batches} batch(es).")
+        output = {sample: {} for sample in samples}
+        with tqdm(total=n_batches, desc="Processing", position=0) as pbar:
+            for i, batch in enumerate(batches):
+                self.logger.debug(f"Processing batch {i+1}/{n_batches}.")
+
+                try: 
+
+                    # submit all samples in the batch
+                    futures_in_progress = []
+                    for sample in batch:
+                        try:
+                            sample_graph = graphs[sample]
+                            futures = client.compute(sample_graph)
+                            futures_in_progress.append(futures)
+                        except Exception as e:
+                            self.logger.error(f"Failed to process sample {sample}: {e}")
+                            self.logger.error(traceback.format_exc())
+                            continue
+
+                    # collect futures
+                    self.logger.debug(f"Collecting futures for batch {i+1}/{n_batches}.")
+                    results = client.gather(futures_in_progress)
+                    
+                    # store output for the samples in the batch
+                    for sample, result in dict(zip(batch, results)).items():
+                        output[sample].update(result)
+
+                except Exception as e:
+                    self.logger.error(f"Failed to process batch {i+1}/{n_batches}: {e}")
+                    self.logger.error(traceback.format_exc())
+                    pbar.update(1)
+                    continue
+
+                pbar.update(1)
+        _run_metadata["_processing_metadata"]["t_process"] = time()
+
+        # add metadata to the output
         for sample in samples:
-            _metadata[sample] = {}
-            _metadata[sample]["_processing_metadata"] = {}
-            _metadata[sample]["_processing_metadata"]["postprocess_status"] = ""
-            _metadata[sample]["_processing_metadata"]["n_processed"] = 0
-            _metadata[sample]["_processing_metadata"]["n_success"] = 0
-            _metadata[sample]["_processing_metadata"]["n_failed"] = 0
-
-        # multi-threaded merging of future results
-        # (this avoids the possible issue of workers crashing due to memory overload by
-        # freeing up their memory more quickly, and generally speeds up the process)
-        self.logger.info(f"Processing and collecting futures.")
-        # with ThreadPoolExecutor(max_workers=10) as executor:
-        #     reading_futures = []
-        #     for future in tqdm(as_completed(futures), total=len(futures)):
-        #         reading_futures.append(executor.submit(self.merge_future, future, output, self.logger))
-        #     for future in reading_futures:
-        #         try:
-        #             if future.result(timeout=60) == 1:
-        #                 self.logger.error(f"Failed to process future.")
-        #         except TimeoutError:
-        #             self.logger.error(f"TimeoutError: Future took too long to complete.")
-        #             output[future._sample]["_processing_metadata"]["n_failed"] += 1
-        #             continue  
-        # 
-
-        sequence = as_completed(futures)   
-
-        def grab_next_result(sequence):
-
-            if sequence.count() == 0:
-                return None
-
-            try:
-
-                future = next(sequence)
-                result = future.result()
-                future.release()
-
-                # ugly workaround should fix elsewhere
-                if 'merge_futures' not in future.key:
-                    sample = future._sample
-                    result = {sample: result}
-                    future_type = 'process'
-                else:
-                    future_type = 'merge'
-
-                return result, future_type
-
-            except Exception as e:
-                
-                print(f"Failed to grab result: {e}")
-                print(traceback.format_exc())
-                return grab_next_result(sequence) 
-
-        def update_pbar(future_type):
-            
-            if future_type == 'process':
-                # +1 processed, +1 total that need to be merged
-                process_pbar.update(1)
-                completed_so_far = merge_pbar.n
-                merge_pbar.reset(total=merge_pbar.total + 1)
-                merge_pbar.n = completed_so_far
-                merge_pbar.refresh()
-            elif future_type == 'merge':
-                # +1 merged
-                merge_pbar.update(1)
-
-        process_pbar = tqdm(total=sequence.count(), desc="Processing", position=0)
-        merge_pbar = tqdm(total=1, desc="Merging", position=1)
-            
-        while sequence.count() > 1:
-
-            result1, future_type1 = grab_next_result(sequence)
-            update_pbar(future_type1)
-            result2, future_type2 = grab_next_result(sequence)
-            update_pbar(future_type2)
-
-            new = client.submit(
-                self.merge_futures,
-                result1,
-                result2,
-                priority=1000,
-            )
-
-            sequence.add(new)
-
-        process_pbar.close()
-        merge_pbar.close()
-            
-        output, final_future_type = grab_next_result(sequence)
-        if final_future_type != 'merge':
-            raise Exception("Final result is not a merge future.")
-        for sample in samples:
-            output[sample].update(_metadata[sample])
-        output["_processing_metadata"] = _metadata["_processing_metadata"]
-
-        output["_processing_metadata"]["t_process"] = time()
+            output[sample].update(_run_metadata[sample])
+        output["_processing_metadata"] = _run_metadata["_processing_metadata"]
 
         self.logger.info(f"Postprocessing samples.")
         for sample in samples:
             try:
                 output[sample].update(self.postprocess_sample(sample, output[sample]))
-                output[sample]["_processing_metadata"]["postprocess_status"] = "success"
+                _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = "success"
             except Exception as e:
                 self.logger.error(f"Failed to postprocess sample {sample}: {e}")
                 self.logger.error(traceback.format_exc())
-                output[sample]["_processing_metadata"]["postprocess_status"] = "failed"
+                _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = "failed"
                 continue
+        _run_metadata["_processing_metadata"]["t_postprocess"] = time()
 
-        output["_processing_metadata"]["t_postprocess"] = time()
-
-        self.print_summary(_metadata, samples)
+        self.print_summary(samples, _run_metadata)
 
         return output
 
-    def print_summary(self, metadata: dict, samples: list) -> None:
+    def print_summary(self, samples: list, _run_metadata: dict) -> None:
+        """
+        Print a summary of the run from the metadata.
+        """
 
-        _tot_futures_results = {}
+        try:
 
-        self.logger.info("")
-        self.logger.info("Run Summary:")
+            _tot_futures_results = {}
 
-        self.logger.debug("")
-        for sample in samples:
-            self.logger.debug(f"Sample: {sample}")
-            for key, value in metadata[sample]["_processing_metadata"].items():
-                if key.startswith("n_"):
-                    status = key.split("_")[1]
-                    self.logger.debug(f" {status}: {value}")
-                    if status not in _tot_futures_results.keys():
-                        _tot_futures_results[status] = 0
-                    _tot_futures_results[status] += value
+            self.logger.info("")
+            self.logger.info("Run Summary:")
 
-        self.logger.info("")
-        for status, value in _tot_futures_results.items():
-            self.logger.info(f"Total futures {status}: {value}")
+            self.logger.debug("")
+            for sample in samples:
+                self.logger.debug(f"Sample: {sample}")
+                for key, value in _run_metadata[sample]["_processing_metadata"].items():
+                    if key.startswith("n_"):
+                        status = key.split("_")[1]
+                        self.logger.debug(f" {status}: {value}")
+                        if status not in _tot_futures_results.keys():
+                            _tot_futures_results[status] = 0
+                        _tot_futures_results[status] += value
 
-        self.logger.info("")
-        self.logger.info(f"Total samples post-processed: {len(samples)}")
-        self.logger.info(
-            "\tSamples succeeded: "
-            + str(
-                len(
-                    [
-                        s
-                        for s in samples
-                        if metadata[s]["_processing_metadata"]["postprocess_status"]
-                        == "success"
-                    ]
+            self.logger.info("")
+            for status, value in _tot_futures_results.items():
+                self.logger.info(f"Total futures {status}: {value}")
+
+            self.logger.info("")
+            self.logger.info(f"Total samples post-processed: {len(samples)}")
+            self.logger.info(
+                "\tSamples succeeded: "
+                + str(
+                    len(
+                        [
+                            s
+                            for s in samples
+                            if _run_metadata[s]["_processing_metadata"]["postprocess_status"]
+                            == "success"
+                        ]
+                    )
                 )
             )
-        )
-        self.logger.info(
-            "\tSamples failed: "
-            + str(
-                len(
-                    [
-                        s
-                        for s in samples
-                        if metadata[s]["_processing_metadata"]["postprocess_status"]
-                        == "failed"
-                    ]
+            self.logger.info(
+                "\tSamples failed: "
+                + str(
+                    len(
+                        [
+                            s
+                            for s in samples
+                            if _run_metadata[s]["_processing_metadata"]["postprocess_status"]
+                            == "failed"
+                        ]
+                    )
                 )
             )
-        )
 
-        self.logger.info("")
-        self.logger.info(
-            f"Time to preprocess: {metadata['_processing_metadata']['t_preprocess'] - metadata['_processing_metadata']['t_start']:.2f} s"
-        )
-        self.logger.info(
-            f"Time to process: {metadata['_processing_metadata']['t_process'] - metadata['_processing_metadata']['t_preprocess']:.2f} s"
-        )
-        self.logger.info(
-            f"Time to postprocess: {metadata['_processing_metadata']['t_postprocess'] - metadata['_processing_metadata']['t_process']:.2f} s"
-        )
-        self.logger.info(
-            f"Total time: {metadata['_processing_metadata']['t_postprocess'] - metadata['_processing_metadata']['t_start']:.2f} s"
-        )
+            self.logger.info("")
+            self.logger.info(
+                f"Time to preprocess: {_run_metadata['_processing_metadata']['t_preprocess'] - _run_metadata['_processing_metadata']['t_start']:.2f} s"
+            )
+            self.logger.info(
+                f"Time to build graphs: {_run_metadata['_processing_metadata']['t_build'] - _run_metadata['_processing_metadata']['t_preprocess']:.2f} s"
+            )
+            self.logger.info(
+                f"Time to process: {_run_metadata['_processing_metadata']['t_process'] - _run_metadata['_processing_metadata']['t_build']:.2f} s"
+            )
+            self.logger.info(
+                f"Time to postprocess: {_run_metadata['_processing_metadata']['t_postprocess'] - _run_metadata['_processing_metadata']['t_process']:.2f} s"
+            )
+            self.logger.info(
+                f"Total time: {_run_metadata['_processing_metadata']['t_postprocess'] - _run_metadata['_processing_metadata']['t_start']:.2f} s"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Failed to print summary: {e}")
+            self.logger.error(traceback.format_exc())
 
     def preprocess_sample(self, sample: str):
         """

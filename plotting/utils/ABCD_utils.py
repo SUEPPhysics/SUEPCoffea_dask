@@ -1,5 +1,6 @@
 import sympy
 from sympy import symbols, diff
+import hist
 
 from utils.hist_utils import rebin_piecewise
 

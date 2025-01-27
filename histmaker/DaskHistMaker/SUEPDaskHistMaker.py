@@ -22,6 +22,7 @@ from dask.distributed import Client, Future
 sys.path.append("../")
 sys.path.append("../../")
 from utils import fill_utils
+from data import data_utils
 from utilities import git_utils
 import hist_defs
 import var_defs
@@ -98,23 +99,22 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         """
         pass
 
-    def process_sample(self, client: Client, sample: str) -> List[Future]:
+    def process_sample(self, sample: str) -> List:
         """
         For a given sample, fetch list of and process all the files.
         """
 
-        self.logger.info("Processing sample: " + sample)
-
         files = self.get_filelist(sample)
         if len(files) == 0:
-            self.logger.error("No files found, exiting.")
+            self.logger.warning(f"No files found for sample: {sample}.")
             return []
 
-        self.logger.debug("Creating futures for sample " + sample)
+        output = []
+        for file in files:
+            output.append([self.process_file, file, sample, self.config, self.options])
+        return output
 
-        futures = client.map(self.process_file, files, [sample]*len(files), [self.config]*len(files), [self.options]*len(files), priority=-1000)
-
-        return futures
+        #return (self.process_file, files, [sample]*len(files), [self.config]*len(files), [self.options]*len(files))
 
     def postprocess_sample(self, sample: str, output: dict) -> dict:
         """
@@ -137,7 +137,7 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             "era": self.options.era,
             "sample": sample,
             "signal": (self.options.isMC)
-            and (fill_utils.isSampleSignal(sample, self.options.era)),
+            and (data_utils.isSampleSignal(sample, self.options.era)),
             "xsec": 1,
             "gensumweight": gensumweight,
             "lumi": 1,
@@ -173,11 +173,11 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
             if gensumweight == 0:
                 gensumweight = 1
                 self.logger.warning("Found gensumweight 0, setting to 1.")
-            xsection = fill_utils.getXSection(
+            xsection = data_utils.getXSection(
                 sample, self.options.era, failOnKeyError=True
             )
             self.logger.debug(f"Found cross section x kr x br: {xsection}.")
-            lumi = fill_utils.getLumi(
+            lumi = data_utils.getLumi(
                 era=self.options.era, analysis=self.options.channel
             )
             self.logger.debug(f"Found lumi: {lumi}.")
@@ -500,13 +500,6 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
         # remove file at the end of loop
         if options.xrootd:
             fill_utils.close_ntuple(ifile)
-
-        # debugging
-        for hist_name in list(output["hists"].keys()):
-
-            # remove empty histograms
-            if output["hists"][hist_name].sum(flow=False).value <= 0:
-                del output["hists"][hist_name]
                 
         return output
 

@@ -8,7 +8,7 @@ def lumiLabelWH(year):
     return lumiLabel("WH", year)
 
 def lumiLabel(analysis, year):
-    lumi = getLumi(analysis, year)
+    lumi = getLumi(analysis=analysis, era=year)
     if year in ["2017", "2018"]:
         return round(lumi / 1000, 1)
     elif year == "2016":

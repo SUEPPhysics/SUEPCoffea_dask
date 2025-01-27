@@ -119,35 +119,6 @@ def initialize_new_variables(label: str, options, config: dict):
                     vector_balancing_var,
                     ["W_phi", "W_pt", "ak4jet1_inSUEPcluster_phi_HighestPT", "ak4jet1_inSUEPcluster_pt_HighestPT"],
                 ],
-
-                [
-                    "sumAK4W_pt",
-                    calc_vector_sum_pt,
-                    [
-                        "jet1_phi",
-                        "jet1_pt",
-                        "jet2_phi",
-                        "jet2_pt",
-                        "jet3_phi",
-                        "jet3_pt",
-                        "W_phi",
-                        "W_pt",
-                    ],
-                ],
-                [
-                    "sumAK4W_W_BV",
-                    vector_balancing_var,
-                    [
-                        "jet1_phi",
-                        "jet1_pt",
-                        "jet2_phi",
-                        "jet2_pt",
-                        "jet3_phi",
-                        "jet3_pt",
-                        "W_phi",
-                        "W_pt",
-                    ],
-                ],
                 [
                     "deltaPhi_SUEP_W",
                     deltaPhi_x_y,
@@ -185,59 +156,88 @@ def initialize_new_variables(label: str, options, config: dict):
                         "SUEP_phi_HighestPT",
                     ],
                 ],
-                # [
-                #     'deltaPhi_ak4jet1_outsideSUEPcluster_SUEP',
-                #     deltaPhi_x_y,
-                #     [
-                #         'ak4jet1_outsideSUEPcluster_phi_HighestPT',
-                #         'SUEP_phi_HighestPT'
-                #     ]
-                # ],
                 ["isMuon", lambda x: abs(x) == 13, ["lepton_flavor"]],
                 ["isElectron", lambda x: abs(x) == 11, ["lepton_flavor"]],
-                # ["new_W_pt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
-                # ["new_W_pt_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_pt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
-                # ["new_W_mt_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_mt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
-                # ["new_W_mt_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_mt(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
-                # ["new_W_phi_PuppiMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_phi(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "PuppiMET_phi", "lepton_pt", "PuppiMET_pt"]],
-                # ["new_W_phi_PFMET", lambda lepton_phi, MET_phi, lepton_pt, MET_pt: calc_vector_sum_phi(lepton_phi, MET_phi, lepton_pt, MET_pt), ["lepton_phi", "MET_phi", "lepton_pt", "MET_pt"]],
-                # [
-                #     "deltaPhi_SUEP_PuppiMET",
-                #     deltaPhi_x_y,
-                #     [
-                #         "SUEP_phi_HighestPT",
-                #         "PuppiMET_phi",
-                #     ],
-                # ],
-                # [
-                #     "deltaPhi_SUEP_PFMET",
-                #     deltaPhi_x_y,
-                #     [
-                #         "SUEP_phi_HighestPT",
-                #         "MET_phi",
-                #     ],
-                # ],
-                # [
-                #     "deltaPhi_SUEP_W_PuppiMET",
-                #     deltaPhi_x_y,
-                #     [
-                #         "SUEP_phi_HighestPT",
-                #         "new_W_phi_PuppiMET",
-                #     ],
-                # ],
-                # [
-                #     "deltaPhi_SUEP_W_PFMET",
-                #     deltaPhi_x_y,
-                #     [
-                #         "SUEP_phi_HighestPT",
-                #         "new_W_phi_PFMET",
-                #     ],
-                # ],
-                # [
-                #     "W_PFMET_SUEP_BV",
-                #     balancing_var,
-                #     ["new_W_pt_PFMET", "SUEP_pt_HighestPT"],
-                # ]
+                [
+                    "electron_pt",
+                    electron_only,
+                    [
+                        "lepton_pt",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "electron_eta",
+                    electron_only,
+                    [
+                        "lepton_eta",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "electron_phi",
+                    electron_only,
+                    [
+                        "lepton_phi",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "muon_pt",
+                    muon_only,
+                    [
+                        "lepton_pt",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "muon_eta",
+                    muon_only,
+                    [
+                        "lepton_eta",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "muon_phi",
+                    muon_only,
+                    [
+                        "lepton_phi",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "SUEP_nconst_mu",
+                    muon_only,
+                    [
+                        "SUEP_nconst_HighestPT",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "SUEP_S1_mu",
+                    muon_only,
+                    [
+                        "SUEP_S1_HighestPT",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "SUEP_nconst_e",
+                    electron_only,
+                    [
+                        "SUEP_nconst_HighestPT",
+                        "lepton_flavor",
+                    ]
+                ],
+                [
+                    "SUEP_S1_e",
+                    electron_only,
+                    [
+                        "SUEP_S1_HighestPT",
+                        "lepton_flavor",
+                    ]
+                ]
             ]
             if options.isMC:
                 new_vars += [
@@ -588,3 +588,9 @@ def gammaTriggerSel(photon_pt, bits):
 
     photon200 = (bits % 2) == 1
     return (photon_pt > 235) & photon200
+
+def electron_only(var, flavor):
+    return np.where(abs(flavor) == 11, var, -999)
+
+def muon_only(var, flavor):
+    return np.where(abs(flavor) == 13, var, -999)
