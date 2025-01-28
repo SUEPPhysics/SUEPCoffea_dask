@@ -39,6 +39,12 @@ def getOptions() -> dict:
         "--nworkers", "-n", type=int, default=20, help="Number of workers to use"
     )
     parser.add_argument(
+        "--minworkers",
+        type=int,
+        default=1,
+        help="Number of workers to start for each job",
+    )
+    parser.add_argument(
         "--limits", action="store_true", help="Make hists for limits"
     )
 
@@ -515,7 +521,7 @@ def main():
         client = histmaker.setupLocalClient(options["nworkers"])
     else:
         client = histmaker.setupSlurmClient(
-            n_workers=options["nworkers"], min_workers=2, max_workers=200
+            n_workers=options["nworkers"], min_workers=options["minworkers"], max_workers=200
         )
     histmaker.print_ssh_command(client)
     histmaker.run(client, options["samples"], batch_size=100*options["nworkers"])

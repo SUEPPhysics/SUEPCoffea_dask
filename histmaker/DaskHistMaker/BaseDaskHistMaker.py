@@ -96,9 +96,10 @@ class BaseDaskHistMaker:
         # cluster.adapt(minimum=min_workers, maximum=max_workers) # this seems to make things very unstable with Slurm
         client = Client(cluster)
 
-        self.logger.info(f"Waiting for workers to be ready...")
-        client.wait_for_workers(1)
-        self.logger.info(f"Workers ready. SLURMClient ready.")
+        self.logger.info(f"Waiting for workers to be ready... will start with {min_workers} workers, or timeout if not available within 2 minutes.")
+        client.wait_for_workers(n_workers=min_workers, timeout=120)
+        active_workers = len(client.scheduler_info()['workers'])
+        self.logger.info(f"Workers ready. SLURMClient ready. Proceeding with {active_workers} workers. Will try to reach {n_workers} workers as more become avaiable.")
         self.logger.info(client)
 
         return client
@@ -159,8 +160,37 @@ class BaseDaskHistMaker:
             _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = ""
 
         return _run_metadata
+    
+    def build_tree_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
 
-    def build_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
+        self.logger.debug(f"Building graph for sample: {sample}")
+        _run_metadata[sample]["_processing_metadata"]["n_total"] = len(processes)
+
+        merged = []
+        for i in range(0, len(processes), 2):
+            if i+1 < len(processes):
+                left = self._process(processes[i][0], *processes[i][1:])
+                right = self._process(processes[i+1][0], *processes[i+1][1:])
+                addition = self.merge(left, right)
+            else:
+                addition = self._process(processes[i][0], *processes[i][1:])
+            merged.append(addition)
+
+        while len(merged) > 1:
+            new_merged = []
+            for i in range(0, len(merged), 2):
+                if i+1 < len(merged):
+                    left = merged[i]
+                    right = merged[i+1]
+                    addition = self.merge(left, right)
+                else:
+                    addition = merged[i]
+                new_merged.append(addition)
+            merged = new_merged
+
+        return merged[0]
+
+    def build_triangle_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
         """
         Construct the task graph for a given sample.
         Return the last node of the graph as a Delayed future.
@@ -227,7 +257,12 @@ class BaseDaskHistMaker:
         for sample in samples:
             self.logger.debug(f"Processing sample: {sample}")
             processes = self.process_sample(sample)
-            graphs[sample] = self.build_graph(sample, processes, _run_metadata)
+            if len(processes) == 0:
+                self.logger.error(f"Skipping {sample}.")
+                samples.remove(sample)
+                continue
+            # choose your fighter! [ build_triangle_graph , build_tree_graph ]
+            graphs[sample] = self.build_tree_graph(sample, processes, _run_metadata)
 
         self.logger.info(f"Creating batches.")
         batches = self.get_batches(samples, _run_metadata, batch_size=batch_size)
@@ -254,7 +289,7 @@ class BaseDaskHistMaker:
                             self.logger.error(traceback.format_exc())
                             continue
 
-                    # collect futures
+                    # collect futures, then delete them to free up worker memory
                     self.logger.debug(f"Collecting futures for batch {i+1}/{n_batches}.")
                     results = client.gather(futures_in_progress)
                     
