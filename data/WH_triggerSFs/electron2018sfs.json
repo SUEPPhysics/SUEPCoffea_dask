@@ -1,0 +1,1326 @@
+{
+  "lep1pt": [
+    {
+      "bin_range": [
+        0.0,
+        2.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        2.0,
+        4.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        4.0,
+        6.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        6.0,
+        8.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        8.0,
+        10.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        10.0,
+        12.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        12.0,
+        14.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        14.0,
+        16.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        16.0,
+        18.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        18.0,
+        20.0
+      ],
+      "scale_factor": 1.309341015539821,
+      "total_uncertainty_low": 3.9233427888360595,
+      "total_uncertainty_up": 4.061660281929417
+    },
+    {
+      "bin_range": [
+        20.0,
+        22.0
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        22.0,
+        24.0
+      ],
+      "scale_factor": 1.1043592552372175,
+      "total_uncertainty_low": 1.9431200605338363,
+      "total_uncertainty_up": 2.503745889397553
+    },
+    {
+      "bin_range": [
+        24.0,
+        26.0
+      ],
+      "scale_factor": 3.5527830243557466,
+      "total_uncertainty_low": 1.1203227375318103,
+      "total_uncertainty_up": 1.412171023950085
+    },
+    {
+      "bin_range": [
+        26.0,
+        28.0
+      ],
+      "scale_factor": 3.8874040620661288,
+      "total_uncertainty_low": 0.7704917422441842,
+      "total_uncertainty_up": 0.8937494142995858
+    },
+    {
+      "bin_range": [
+        28.0,
+        30.0
+      ],
+      "scale_factor": 1.538734366546751,
+      "total_uncertainty_low": 0.3040513870315097,
+      "total_uncertainty_up": 0.3498885735563225
+    },
+    {
+      "bin_range": [
+        30.0,
+        32.0
+      ],
+      "scale_factor": 0.6131825756988657,
+      "total_uncertainty_low": 0.11877820165286737,
+      "total_uncertainty_up": 0.1289109805369542
+    },
+    {
+      "bin_range": [
+        32.0,
+        34.0
+      ],
+      "scale_factor": 1.0171658600092193,
+      "total_uncertainty_low": 0.0361328014500163,
+      "total_uncertainty_up": 0.036420768001314996
+    },
+    {
+      "bin_range": [
+        34.0,
+        36.0
+      ],
+      "scale_factor": 0.9990047765565004,
+      "total_uncertainty_low": 0.01650555458187882,
+      "total_uncertainty_up": 0.016348366123486512
+    },
+    {
+      "bin_range": [
+        36.0,
+        38.0
+      ],
+      "scale_factor": 0.9617876192687818,
+      "total_uncertainty_low": 0.012967552301706277,
+      "total_uncertainty_up": 0.012757687895520176
+    },
+    {
+      "bin_range": [
+        38.0,
+        40.0
+      ],
+      "scale_factor": 0.9657662840130106,
+      "total_uncertainty_low": 0.01225858086872928,
+      "total_uncertainty_up": 0.012021028679358527
+    },
+    {
+      "bin_range": [
+        40.0,
+        50.0
+      ],
+      "scale_factor": 0.9721923453089282,
+      "total_uncertainty_low": 0.0054026395952584795,
+      "total_uncertainty_up": 0.005348119458915326
+    },
+    {
+      "bin_range": [
+        50.0,
+        60.0
+      ],
+      "scale_factor": 0.9726248508693556,
+      "total_uncertainty_low": 0.005583133948934034,
+      "total_uncertainty_up": 0.0055095876982774895
+    },
+    {
+      "bin_range": [
+        60.0,
+        70.0
+      ],
+      "scale_factor": 0.9756343238923165,
+      "total_uncertainty_low": 0.006166876992152603,
+      "total_uncertainty_up": 0.006079015551423554
+    },
+    {
+      "bin_range": [
+        70.0,
+        80.0
+      ],
+      "scale_factor": 0.9790886611223364,
+      "total_uncertainty_low": 0.0058775901456459235,
+      "total_uncertainty_up": 0.005750465877081371
+    },
+    {
+      "bin_range": [
+        80.0,
+        90.0
+      ],
+      "scale_factor": 0.971342029261932,
+      "total_uncertainty_low": 0.006519671842281916,
+      "total_uncertainty_up": 0.0063683184490942145
+    },
+    {
+      "bin_range": [
+        90.0,
+        100.0
+      ],
+      "scale_factor": 0.9683436963587397,
+      "total_uncertainty_low": 0.007286115401036155,
+      "total_uncertainty_up": 0.007097565973841247
+    },
+    {
+      "bin_range": [
+        100.0,
+        120.0
+      ],
+      "scale_factor": 0.9716710287815661,
+      "total_uncertainty_low": 0.005645998543566691,
+      "total_uncertainty_up": 0.005520151802900156
+    },
+    {
+      "bin_range": [
+        120.0,
+        140.0
+      ],
+      "scale_factor": 0.994607460089125,
+      "total_uncertainty_low": 0.004673408333333481,
+      "total_uncertainty_up": 0.004476357652648546
+    },
+    {
+      "bin_range": [
+        140.0,
+        160.0
+      ],
+      "scale_factor": 0.9854339659432723,
+      "total_uncertainty_low": 0.005188608913793386,
+      "total_uncertainty_up": 0.004892718450534989
+    },
+    {
+      "bin_range": [
+        160.0,
+        180.0
+      ],
+      "scale_factor": 0.9824144959160421,
+      "total_uncertainty_low": 0.006296174718195713,
+      "total_uncertainty_up": 0.005864451209121211
+    },
+    {
+      "bin_range": [
+        180.0,
+        200.0
+      ],
+      "scale_factor": 0.9870884646969963,
+      "total_uncertainty_low": 0.008179936597189862,
+      "total_uncertainty_up": 0.007601483143328756
+    }
+  ],
+  "MET": [
+    {
+      "bin_range": [
+        0.0,
+        10.0
+      ],
+      "scale_factor": 0.9834902519466834,
+      "total_uncertainty_low": 0.1488147509305389,
+      "total_uncertainty_up": 0.09345611511601411
+    },
+    {
+      "bin_range": [
+        10.0,
+        20.0
+      ],
+      "scale_factor": 1.0495084264032648,
+      "total_uncertainty_low": 0.03878353600303277,
+      "total_uncertainty_up": 0.02784587554807478
+    },
+    {
+      "bin_range": [
+        20.0,
+        30.0
+      ],
+      "scale_factor": 0.9786143538091381,
+      "total_uncertainty_low": 0.035357635724225456,
+      "total_uncertainty_up": 0.031747882303383004
+    },
+    {
+      "bin_range": [
+        30.0,
+        40.0
+      ],
+      "scale_factor": 0.9704540071346298,
+      "total_uncertainty_low": 0.03320632474428867,
+      "total_uncertainty_up": 0.030561987069720246
+    },
+    {
+      "bin_range": [
+        40.0,
+        50.0
+      ],
+      "scale_factor": 0.9540382338150543,
+      "total_uncertainty_low": 0.033966885014378494,
+      "total_uncertainty_up": 0.03219148870149693
+    },
+    {
+      "bin_range": [
+        50.0,
+        60.0
+      ],
+      "scale_factor": 0.9932475354683801,
+      "total_uncertainty_low": 0.03262096732800124,
+      "total_uncertainty_up": 0.03095235714766612
+    },
+    {
+      "bin_range": [
+        60.0,
+        70.0
+      ],
+      "scale_factor": 0.992951561482759,
+      "total_uncertainty_low": 0.03033050663787727,
+      "total_uncertainty_up": 0.029071214633972872
+    },
+    {
+      "bin_range": [
+        70.0,
+        80.0
+      ],
+      "scale_factor": 1.006371652163413,
+      "total_uncertainty_low": 0.029147843985755876,
+      "total_uncertainty_up": 0.028069485261770555
+    },
+    {
+      "bin_range": [
+        80.0,
+        90.0
+      ],
+      "scale_factor": 1.0059490559446238,
+      "total_uncertainty_low": 0.027054263773031342,
+      "total_uncertainty_up": 0.026261520310800195
+    },
+    {
+      "bin_range": [
+        90.0,
+        100.0
+      ],
+      "scale_factor": 0.9926475291383714,
+      "total_uncertainty_low": 0.023995174023651925,
+      "total_uncertainty_up": 0.023421079907350803
+    },
+    {
+      "bin_range": [
+        100.0,
+        110.0
+      ],
+      "scale_factor": 0.9951266258820085,
+      "total_uncertainty_low": 0.020944724295514108,
+      "total_uncertainty_up": 0.020539621925160307
+    },
+    {
+      "bin_range": [
+        110.0,
+        120.0
+      ],
+      "scale_factor": 1.019951870669362,
+      "total_uncertainty_low": 0.018328885264414462,
+      "total_uncertainty_up": 0.01810014431170443
+    },
+    {
+      "bin_range": [
+        120.0,
+        130.0
+      ],
+      "scale_factor": 0.9767050900484991,
+      "total_uncertainty_low": 0.013496341225301627,
+      "total_uncertainty_up": 0.013352562517908671
+    },
+    {
+      "bin_range": [
+        130.0,
+        140.0
+      ],
+      "scale_factor": 0.9814868278132051,
+      "total_uncertainty_low": 0.011564848054508916,
+      "total_uncertainty_up": 0.011474493833813782
+    },
+    {
+      "bin_range": [
+        140.0,
+        150.0
+      ],
+      "scale_factor": 0.9887212785975248,
+      "total_uncertainty_low": 0.010362649678647045,
+      "total_uncertainty_up": 0.010302937420988948
+    },
+    {
+      "bin_range": [
+        150.0,
+        160.0
+      ],
+      "scale_factor": 0.9565579433677804,
+      "total_uncertainty_low": 0.009297063901885042,
+      "total_uncertainty_up": 0.009256339540130661
+    },
+    {
+      "bin_range": [
+        160.0,
+        170.0
+      ],
+      "scale_factor": 0.9933741561775891,
+      "total_uncertainty_low": 0.03304978673722454,
+      "total_uncertainty_up": 0.03304092112334006
+    },
+    {
+      "bin_range": [
+        170.0,
+        180.0
+      ],
+      "scale_factor": 0.9678704092934151,
+      "total_uncertainty_low": 0.009391366052068764,
+      "total_uncertainty_up": 0.00936457864899038
+    },
+    {
+      "bin_range": [
+        180.0,
+        190.0
+      ],
+      "scale_factor": 0.9652853976278741,
+      "total_uncertainty_low": 0.009247112117575923,
+      "total_uncertainty_up": 0.009221645825142018
+    },
+    {
+      "bin_range": [
+        190.0,
+        200.0
+      ],
+      "scale_factor": 0.9879374329654127,
+      "total_uncertainty_low": 0.014370973061327326,
+      "total_uncertainty_up": 0.014353895388155893
+    },
+    {
+      "bin_range": [
+        200.0,
+        210.0
+      ],
+      "scale_factor": 0.9569290362996209,
+      "total_uncertainty_low": 0.02110597502542126,
+      "total_uncertainty_up": 0.021093518948417118
+    },
+    {
+      "bin_range": [
+        210.0,
+        220.0
+      ],
+      "scale_factor": 1.0139107972986492,
+      "total_uncertainty_low": 0.02160876821735378,
+      "total_uncertainty_up": 0.021593457237948924
+    },
+    {
+      "bin_range": [
+        220.0,
+        230.0
+      ],
+      "scale_factor": 0.9782905087737875,
+      "total_uncertainty_low": 0.012723427936784762,
+      "total_uncertainty_up": 0.012694503093472878
+    },
+    {
+      "bin_range": [
+        230.0,
+        240.0
+      ],
+      "scale_factor": 0.9790676658807387,
+      "total_uncertainty_low": 0.013155033766385398,
+      "total_uncertainty_up": 0.013120585042665257
+    },
+    {
+      "bin_range": [
+        240.0,
+        250.0
+      ],
+      "scale_factor": 0.9974900228768253,
+      "total_uncertainty_low": 0.014694506363837017,
+      "total_uncertainty_up": 0.014654315038681323
+    },
+    {
+      "bin_range": [
+        250.0,
+        260.0
+      ],
+      "scale_factor": 0.9755086881306863,
+      "total_uncertainty_low": 0.014637973848375556,
+      "total_uncertainty_up": 0.014588466088623925
+    },
+    {
+      "bin_range": [
+        260.0,
+        270.0
+      ],
+      "scale_factor": 0.9900900368048883,
+      "total_uncertainty_low": 0.02333512483688982,
+      "total_uncertainty_up": 0.02329401807796105
+    },
+    {
+      "bin_range": [
+        270.0,
+        280.0
+      ],
+      "scale_factor": 0.9881348267794784,
+      "total_uncertainty_low": 0.02141097136942012,
+      "total_uncertainty_up": 0.02135359403589264
+    },
+    {
+      "bin_range": [
+        280.0,
+        290.0
+      ],
+      "scale_factor": 1.0333755537363307,
+      "total_uncertainty_low": 0.03329764248192474,
+      "total_uncertainty_up": 0.033247404565983255
+    },
+    {
+      "bin_range": [
+        290.0,
+        300.0
+      ],
+      "scale_factor": 0.9532694944177752,
+      "total_uncertainty_low": 0.017991554093378218,
+      "total_uncertainty_up": 0.01788991171012585
+    }
+  ],
+  "mT": [
+    {
+      "bin_range": [
+        0.0,
+        10.0
+      ],
+      "scale_factor": 0.9924023081866998,
+      "total_uncertainty_low": 0.007559777661971338,
+      "total_uncertainty_up": 0.007507035324868355
+    },
+    {
+      "bin_range": [
+        10.0,
+        20.0
+      ],
+      "scale_factor": 1.0049436971730668,
+      "total_uncertainty_low": 0.0074379822458749065,
+      "total_uncertainty_up": 0.007380647943097696
+    },
+    {
+      "bin_range": [
+        20.0,
+        30.0
+      ],
+      "scale_factor": 1.0094207770963735,
+      "total_uncertainty_low": 0.008002830224633703,
+      "total_uncertainty_up": 0.007946499246193202
+    },
+    {
+      "bin_range": [
+        30.0,
+        40.0
+      ],
+      "scale_factor": 1.0169562743741851,
+      "total_uncertainty_low": 0.0076566680735143085,
+      "total_uncertainty_up": 0.007596596161281936
+    },
+    {
+      "bin_range": [
+        40.0,
+        50.0
+      ],
+      "scale_factor": 1.01698106090901,
+      "total_uncertainty_low": 0.007295272304157535,
+      "total_uncertainty_up": 0.007233609689927494
+    },
+    {
+      "bin_range": [
+        50.0,
+        60.0
+      ],
+      "scale_factor": 1.0208352487169925,
+      "total_uncertainty_low": 0.006837382641586905,
+      "total_uncertainty_up": 0.006779980536642892
+    },
+    {
+      "bin_range": [
+        60.0,
+        70.0
+      ],
+      "scale_factor": 1.0111586618790198,
+      "total_uncertainty_low": 0.0061276519907741585,
+      "total_uncertainty_up": 0.006074334188273241
+    },
+    {
+      "bin_range": [
+        70.0,
+        80.0
+      ],
+      "scale_factor": 1.027104551768004,
+      "total_uncertainty_low": 0.006801029181864146,
+      "total_uncertainty_up": 0.006755448329749235
+    },
+    {
+      "bin_range": [
+        80.0,
+        90.0
+      ],
+      "scale_factor": 1.0174479518643345,
+      "total_uncertainty_low": 0.007222455756937625,
+      "total_uncertainty_up": 0.007163895921055173
+    },
+    {
+      "bin_range": [
+        90.0,
+        100.0
+      ],
+      "scale_factor": 1.0221945254938543,
+      "total_uncertainty_low": 0.009031446052773371,
+      "total_uncertainty_up": 0.008934224488252051
+    },
+    {
+      "bin_range": [
+        100.0,
+        110.0
+      ],
+      "scale_factor": 1.008175690801224,
+      "total_uncertainty_low": 0.010587827285031678,
+      "total_uncertainty_up": 0.01036675086824885
+    },
+    {
+      "bin_range": [
+        110.0,
+        120.0
+      ],
+      "scale_factor": 0.976793784646983,
+      "total_uncertainty_low": 0.013511328009522665,
+      "total_uncertainty_up": 0.01309812719448162
+    },
+    {
+      "bin_range": [
+        120.0,
+        130.0
+      ],
+      "scale_factor": 0.9746874262476903,
+      "total_uncertainty_low": 0.01679304759951909,
+      "total_uncertainty_up": 0.016050141615032106
+    },
+    {
+      "bin_range": [
+        130.0,
+        140.0
+      ],
+      "scale_factor": 0.9564643586625033,
+      "total_uncertainty_low": 0.020216115924745953,
+      "total_uncertainty_up": 0.01913669464498141
+    },
+    {
+      "bin_range": [
+        140.0,
+        150.0
+      ],
+      "scale_factor": 0.9354384442001212,
+      "total_uncertainty_low": 0.024597525411853775,
+      "total_uncertainty_up": 0.023158349686912435
+    }
+  ],
+  "lep1phi": [
+    {
+      "bin_range": [
+        0.0,
+        0.1
+      ],
+      "scale_factor": 1.0441450844848492,
+      "total_uncertainty_low": 0.023020331941885918,
+      "total_uncertainty_up": 0.022614167060565835
+    },
+    {
+      "bin_range": [
+        0.1,
+        0.2
+      ],
+      "scale_factor": 0.9988259999578135,
+      "total_uncertainty_low": 0.019391213566401697,
+      "total_uncertainty_up": 0.018868238856078582
+    },
+    {
+      "bin_range": [
+        0.2,
+        0.30000000000000004
+      ],
+      "scale_factor": 1.0169306922884875,
+      "total_uncertainty_low": 0.022640114186308524,
+      "total_uncertainty_up": 0.022260767928283416
+    },
+    {
+      "bin_range": [
+        0.30000000000000004,
+        0.4
+      ],
+      "scale_factor": 1.0320372224244,
+      "total_uncertainty_low": 0.01754339291858393,
+      "total_uncertainty_up": 0.017109782187403996
+    },
+    {
+      "bin_range": [
+        0.4,
+        0.5
+      ],
+      "scale_factor": 1.062686217145887,
+      "total_uncertainty_low": 0.025333781955985374,
+      "total_uncertainty_up": 0.02494510058800788
+    },
+    {
+      "bin_range": [
+        0.5,
+        0.6000000000000001
+      ],
+      "scale_factor": 0.9681135050066221,
+      "total_uncertainty_low": 0.02592375978580132,
+      "total_uncertainty_up": 0.02542895020639054
+    },
+    {
+      "bin_range": [
+        0.6000000000000001,
+        0.7000000000000001
+      ],
+      "scale_factor": 0.9490628735673119,
+      "total_uncertainty_low": 0.025274907423978615,
+      "total_uncertainty_up": 0.024797143449161452
+    },
+    {
+      "bin_range": [
+        0.7000000000000001,
+        0.8
+      ],
+      "scale_factor": 0.9650527044634601,
+      "total_uncertainty_low": 0.023466485162688004,
+      "total_uncertainty_up": 0.02297898225739137
+    },
+    {
+      "bin_range": [
+        0.8,
+        0.9
+      ],
+      "scale_factor": 1.0079797063921119,
+      "total_uncertainty_low": 0.019293232774424865,
+      "total_uncertainty_up": 0.018783929906657396
+    },
+    {
+      "bin_range": [
+        0.9,
+        1.0
+      ],
+      "scale_factor": 1.003540205866315,
+      "total_uncertainty_low": 0.01880531995256434,
+      "total_uncertainty_up": 0.018310942612252752
+    },
+    {
+      "bin_range": [
+        1.0,
+        1.1
+      ],
+      "scale_factor": 1.0011311501985578,
+      "total_uncertainty_low": 0.019568084879066503,
+      "total_uncertainty_up": 0.019073552807704102
+    },
+    {
+      "bin_range": [
+        1.1,
+        1.2000000000000002
+      ],
+      "scale_factor": 1.0064575118392762,
+      "total_uncertainty_low": 0.017921886691355474,
+      "total_uncertainty_up": 0.017422969005379884
+    },
+    {
+      "bin_range": [
+        1.2000000000000002,
+        1.3
+      ],
+      "scale_factor": 0.9908027374471179,
+      "total_uncertainty_low": 0.02376931206730897,
+      "total_uncertainty_up": 0.02338631067019025
+    },
+    {
+      "bin_range": [
+        1.3,
+        1.4000000000000001
+      ],
+      "scale_factor": 0.9896860194402618,
+      "total_uncertainty_low": 0.01843614786683808,
+      "total_uncertainty_up": 0.017948041737817666
+    },
+    {
+      "bin_range": [
+        1.4000000000000001,
+        1.5
+      ],
+      "scale_factor": 0.9832059529124068,
+      "total_uncertainty_low": 0.023807481904921046,
+      "total_uncertainty_up": 0.023411452981941475
+    },
+    {
+      "bin_range": [
+        1.5,
+        1.6
+      ],
+      "scale_factor": 1.0264163364566694,
+      "total_uncertainty_low": 0.021319777827048976,
+      "total_uncertainty_up": 0.02073620075770718
+    },
+    {
+      "bin_range": [
+        1.6,
+        1.7000000000000002
+      ],
+      "scale_factor": 1.0193371012071297,
+      "total_uncertainty_low": 0.019027546534720007,
+      "total_uncertainty_up": 0.018498200163050666
+    },
+    {
+      "bin_range": [
+        1.7000000000000002,
+        1.8
+      ],
+      "scale_factor": 1.044095531896631,
+      "total_uncertainty_low": 0.024666213719236146,
+      "total_uncertainty_up": 0.02418729343569708
+    },
+    {
+      "bin_range": [
+        1.8,
+        1.9000000000000001
+      ],
+      "scale_factor": 1.0309632414908976,
+      "total_uncertainty_low": 0.019209831538988677,
+      "total_uncertainty_up": 0.018600221818441284
+    },
+    {
+      "bin_range": [
+        1.9000000000000001,
+        2.0
+      ],
+      "scale_factor": 1.024626048765789,
+      "total_uncertainty_low": 0.019735687271335386,
+      "total_uncertainty_up": 0.01917954710528911
+    },
+    {
+      "bin_range": [
+        2.0,
+        2.1
+      ],
+      "scale_factor": 1.0144938069354295,
+      "total_uncertainty_low": 0.01947274139703271,
+      "total_uncertainty_up": 0.018940967826008206
+    },
+    {
+      "bin_range": [
+        2.1,
+        2.2
+      ],
+      "scale_factor": 1.0471266792075384,
+      "total_uncertainty_low": 0.018312659015877274,
+      "total_uncertainty_up": 0.01774454728298029
+    },
+    {
+      "bin_range": [
+        2.2,
+        2.3000000000000003
+      ],
+      "scale_factor": 1.016023935003728,
+      "total_uncertainty_low": 0.019685705950548783,
+      "total_uncertainty_up": 0.01907682493671123
+    },
+    {
+      "bin_range": [
+        2.3000000000000003,
+        2.4000000000000004
+      ],
+      "scale_factor": 1.011222044818684,
+      "total_uncertainty_low": 0.018437617626540878,
+      "total_uncertainty_up": 0.01788156112267019
+    },
+    {
+      "bin_range": [
+        2.4000000000000004,
+        2.5
+      ],
+      "scale_factor": 1.0239797293578552,
+      "total_uncertainty_low": 0.01773833676991097,
+      "total_uncertainty_up": 0.017168453416707332
+    },
+    {
+      "bin_range": [
+        2.5,
+        2.6
+      ],
+      "scale_factor": 1.0103732072953993,
+      "total_uncertainty_low": 0.01958431108068975,
+      "total_uncertainty_up": 0.018973213189269946
+    },
+    {
+      "bin_range": [
+        2.6,
+        2.7
+      ],
+      "scale_factor": 1.0335788166229312,
+      "total_uncertainty_low": 0.02565714948185472,
+      "total_uncertainty_up": 0.025128125976036843
+    },
+    {
+      "bin_range": [
+        2.7,
+        2.8000000000000003
+      ],
+      "scale_factor": 1.0180577799694646,
+      "total_uncertainty_low": 0.01913677236549383,
+      "total_uncertainty_up": 0.018557325755767285
+    },
+    {
+      "bin_range": [
+        2.8000000000000003,
+        2.9000000000000004
+      ],
+      "scale_factor": 1.0201745715904027,
+      "total_uncertainty_low": 0.01878187300704181,
+      "total_uncertainty_up": 0.018213721478581146
+    },
+    {
+      "bin_range": [
+        2.9000000000000004,
+        3.0
+      ],
+      "scale_factor": 1.021328911447011,
+      "total_uncertainty_low": 0.021354539494223702,
+      "total_uncertainty_up": 0.02066173560053509
+    },
+    {
+      "bin_range": [
+        3.0,
+        3.1
+      ],
+      "scale_factor": 1.0158300290416327,
+      "total_uncertainty_low": 0.021194484370404124,
+      "total_uncertainty_up": 0.020629740579133696
+    },
+    {
+      "bin_range": [
+        3.1,
+        3.2
+      ],
+      "scale_factor": 1.0352552630533187,
+      "total_uncertainty_low": 0.03326512243252611,
+      "total_uncertainty_up": 0.03172055567532736
+    },
+    {
+      "bin_range": [
+        3.2,
+        3.3000000000000003
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        3.3000000000000003,
+        3.4000000000000004
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        3.4000000000000004,
+        3.5
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    }
+  ],
+  "MET phi": [
+    {
+      "bin_range": [
+        0.0,
+        0.1
+      ],
+      "scale_factor": 1.0298599385688034,
+      "total_uncertainty_low": 0.024953564562082486,
+      "total_uncertainty_up": 0.024642584238334597
+    },
+    {
+      "bin_range": [
+        0.1,
+        0.2
+      ],
+      "scale_factor": 0.9958223851866725,
+      "total_uncertainty_low": 0.01881525113298201,
+      "total_uncertainty_up": 0.018358032763712083
+    },
+    {
+      "bin_range": [
+        0.2,
+        0.30000000000000004
+      ],
+      "scale_factor": 0.9885645310819686,
+      "total_uncertainty_low": 0.018926517484828445,
+      "total_uncertainty_up": 0.018476722592775118
+    },
+    {
+      "bin_range": [
+        0.30000000000000004,
+        0.4
+      ],
+      "scale_factor": 0.9837831270380376,
+      "total_uncertainty_low": 0.019038245601905576,
+      "total_uncertainty_up": 0.018601101244744015
+    },
+    {
+      "bin_range": [
+        0.4,
+        0.5
+      ],
+      "scale_factor": 1.0075837998075763,
+      "total_uncertainty_low": 0.021428226663459823,
+      "total_uncertainty_up": 0.021044853761783135
+    },
+    {
+      "bin_range": [
+        0.5,
+        0.6000000000000001
+      ],
+      "scale_factor": 1.0013124964915023,
+      "total_uncertainty_low": 0.017402218765838737,
+      "total_uncertainty_up": 0.01697592001381224
+    },
+    {
+      "bin_range": [
+        0.6000000000000001,
+        0.7000000000000001
+      ],
+      "scale_factor": 0.990069789744883,
+      "total_uncertainty_low": 0.017683483942022758,
+      "total_uncertainty_up": 0.01726044193499916
+    },
+    {
+      "bin_range": [
+        0.7000000000000001,
+        0.8
+      ],
+      "scale_factor": 0.99277546922299,
+      "total_uncertainty_low": 0.01858447354588077,
+      "total_uncertainty_up": 0.018127684463081457
+    },
+    {
+      "bin_range": [
+        0.8,
+        0.9
+      ],
+      "scale_factor": 1.0003331792504022,
+      "total_uncertainty_low": 0.021550483033613586,
+      "total_uncertainty_up": 0.02115490513483664
+    },
+    {
+      "bin_range": [
+        0.9,
+        1.0
+      ],
+      "scale_factor": 1.0115006809355047,
+      "total_uncertainty_low": 0.025157370508268526,
+      "total_uncertainty_up": 0.024794984582473832
+    },
+    {
+      "bin_range": [
+        1.0,
+        1.1
+      ],
+      "scale_factor": 0.9962783266411639,
+      "total_uncertainty_low": 0.01923443329937492,
+      "total_uncertainty_up": 0.018730049193936928
+    },
+    {
+      "bin_range": [
+        1.1,
+        1.2000000000000002
+      ],
+      "scale_factor": 0.9846217365135124,
+      "total_uncertainty_low": 0.02342969890024956,
+      "total_uncertainty_up": 0.023021067317242894
+    },
+    {
+      "bin_range": [
+        1.2000000000000002,
+        1.3
+      ],
+      "scale_factor": 1.0007771675658477,
+      "total_uncertainty_low": 0.019629020663963208,
+      "total_uncertainty_up": 0.01910465049960223
+    },
+    {
+      "bin_range": [
+        1.3,
+        1.4000000000000001
+      ],
+      "scale_factor": 1.0411796621409064,
+      "total_uncertainty_low": 0.02311813724987866,
+      "total_uncertainty_up": 0.02264762094175167
+    },
+    {
+      "bin_range": [
+        1.4000000000000001,
+        1.5
+      ],
+      "scale_factor": 1.0233493554579192,
+      "total_uncertainty_low": 0.019144156588018605,
+      "total_uncertainty_up": 0.01859615382985958
+    },
+    {
+      "bin_range": [
+        1.5,
+        1.6
+      ],
+      "scale_factor": 1.0292904229698863,
+      "total_uncertainty_low": 0.0195587562982389,
+      "total_uncertainty_up": 0.01901420997636855
+    },
+    {
+      "bin_range": [
+        1.6,
+        1.7000000000000002
+      ],
+      "scale_factor": 0.9961420929087391,
+      "total_uncertainty_low": 0.020479243329463537,
+      "total_uncertainty_up": 0.01997525288386272
+    },
+    {
+      "bin_range": [
+        1.7000000000000002,
+        1.8
+      ],
+      "scale_factor": 1.0179025175008578,
+      "total_uncertainty_low": 0.019766038999525427,
+      "total_uncertainty_up": 0.01923837373931442
+    },
+    {
+      "bin_range": [
+        1.8,
+        1.9000000000000001
+      ],
+      "scale_factor": 1.018492196184024,
+      "total_uncertainty_low": 0.019675475793953096,
+      "total_uncertainty_up": 0.01912400612025253
+    },
+    {
+      "bin_range": [
+        1.9000000000000001,
+        2.0
+      ],
+      "scale_factor": 1.0281121618492608,
+      "total_uncertainty_low": 0.019577779787673947,
+      "total_uncertainty_up": 0.018987623894567845
+    },
+    {
+      "bin_range": [
+        2.0,
+        2.1
+      ],
+      "scale_factor": 1.0607616473501327,
+      "total_uncertainty_low": 0.01951240394906442,
+      "total_uncertainty_up": 0.01888423239641695
+    },
+    {
+      "bin_range": [
+        2.1,
+        2.2
+      ],
+      "scale_factor": 1.0227409672637058,
+      "total_uncertainty_low": 0.020286050767175,
+      "total_uncertainty_up": 0.019728410376323672
+    },
+    {
+      "bin_range": [
+        2.2,
+        2.3000000000000003
+      ],
+      "scale_factor": 1.0389737198274736,
+      "total_uncertainty_low": 0.019677686864051382,
+      "total_uncertainty_up": 0.019034303605632415
+    },
+    {
+      "bin_range": [
+        2.3000000000000003,
+        2.4000000000000004
+      ],
+      "scale_factor": 1.0091388695981913,
+      "total_uncertainty_low": 0.020953367333940643,
+      "total_uncertainty_up": 0.02036489993919566
+    },
+    {
+      "bin_range": [
+        2.4000000000000004,
+        2.5
+      ],
+      "scale_factor": 1.0434518995195672,
+      "total_uncertainty_low": 0.020399880284102286,
+      "total_uncertainty_up": 0.01977618614163803
+    },
+    {
+      "bin_range": [
+        2.5,
+        2.6
+      ],
+      "scale_factor": 0.9996405117078796,
+      "total_uncertainty_low": 0.021048859907194014,
+      "total_uncertainty_up": 0.0204571945703314
+    },
+    {
+      "bin_range": [
+        2.6,
+        2.7
+      ],
+      "scale_factor": 1.0308691534980259,
+      "total_uncertainty_low": 0.02075559418687444,
+      "total_uncertainty_up": 0.02014967103324479
+    },
+    {
+      "bin_range": [
+        2.7,
+        2.8000000000000003
+      ],
+      "scale_factor": 1.0446660966508483,
+      "total_uncertainty_low": 0.02045355003042697,
+      "total_uncertainty_up": 0.019814931186755275
+    },
+    {
+      "bin_range": [
+        2.8000000000000003,
+        2.9000000000000004
+      ],
+      "scale_factor": 1.0286317910496634,
+      "total_uncertainty_low": 0.019593406088529403,
+      "total_uncertainty_up": 0.018997883222219656
+    },
+    {
+      "bin_range": [
+        2.9000000000000004,
+        3.0
+      ],
+      "scale_factor": 1.0330096201840637,
+      "total_uncertainty_low": 0.02049353728272109,
+      "total_uncertainty_up": 0.01984218315524873
+    },
+    {
+      "bin_range": [
+        3.0,
+        3.1
+      ],
+      "scale_factor": 1.0087050521021717,
+      "total_uncertainty_low": 0.020489576807212938,
+      "total_uncertainty_up": 0.01986623006511349
+    },
+    {
+      "bin_range": [
+        3.1,
+        3.2
+      ],
+      "scale_factor": 1.0585080928452921,
+      "total_uncertainty_low": 0.03168132076142995,
+      "total_uncertainty_up": 0.03004082907873584
+    },
+    {
+      "bin_range": [
+        3.2,
+        3.3000000000000003
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        3.3000000000000003,
+        3.4000000000000004
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    },
+    {
+      "bin_range": [
+        3.4000000000000004,
+        3.5
+      ],
+      "scale_factor": 0.0,
+      "total_uncertainty_low": 0.0,
+      "total_uncertainty_up": 0.0
+    }
+  ]
+}

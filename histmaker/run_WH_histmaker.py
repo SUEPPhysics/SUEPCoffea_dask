@@ -458,8 +458,6 @@ def main():
         if options['channel'] == "WH":
             # add systematic variations, which are identical, except for the dataframe name
             variations = [
-                "MuScaleUp",
-                "MuScaleDown",
                 "track_down"
             ]
             # systematic variations that change the MET and W selections
