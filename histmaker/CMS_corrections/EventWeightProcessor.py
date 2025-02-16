@@ -172,14 +172,22 @@ class EventWeightProcessor:
                     trig_weights_down,
                 )
                 df["event_weight"] *= trigSF
+
             elif self.channel == "ggF-scout":
                 trigSF = triggerSF.get_scout_trigSF_weight(
                     np.array(df["ht"]).astype(int), self.variation, self.era
                 )
                 df["event_weight"] *= trigSF
-            elif self.channel in ["WH", "WH-VRGJ"]:
-                # TODO add WH triggerSF
-                pass
+
+            elif self.channel == "WH":
+
+                lepton_pt = df["lepton_pt"].to_numpy()
+                pdgids = df["lepton_flavor"].to_numpy()
+
+                trigSF = triggerSF.WH(lepton_pt, pdgids, self.variation, self.era)
+
+                df["event_weight"] *= trigSF
+                
 
             # 5) Higgs_pt weights
             if "mS125" in self.sample:
