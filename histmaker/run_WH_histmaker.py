@@ -108,7 +108,7 @@ def getOptions() -> dict:
         type=str,
         help="Ntuple single filename, in case you don't want to process a whole sample",
     )
-    parser.add_argument("--blind", type=int, default=1, help="Blind")
+    parser.add_argument("--blind", type=int, default=0, help="Blind")
 
     options = parser.parse_args()
     options = vars(options)
@@ -172,8 +172,6 @@ def main():
                         "PSWeight_ISR_down",
                         "PSWeight_FSR_up",
                         "PSWeight_FSR_down",
-                        "higgs_weights_up",
-                        "higgs_weights_down",
                         "LepSFElUp",
                         "LepSFElDown",
                         "LepSFMuUp",
@@ -220,8 +218,6 @@ def main():
                         "PSWeight_ISR_down",
                         "PSWeight_FSR_up",
                         "PSWeight_FSR_down",
-                        "higgs_weights_up",
-                        "higgs_weights_down",
                         "bTagWeight_HFcorrelated_Up",
                         "bTagWeight_HFcorrelated_Dn",
                         "bTagWeight_HFuncorrelated_Up",

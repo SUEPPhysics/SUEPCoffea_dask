@@ -223,14 +223,13 @@ class EventWeightProcessor:
 
             # 9) lepton SF
             if self.channel == 'WH':
-                if 'LepSFMuUp' == self.variation:
+                if 'LepSFMuUp' == self.variation or "LepSFMuDown" == self.variation:
                     # per our muon object review, since we use tighter IP cuts than the cuts that were used
-                    # to derive the SFs, we apply a 2.5% uncertainty to the SFs
-                    df["event_weight"] *= (df[self.variation]**2 + 1.025**2)**0.5
-                elif 'LepSFMuDown' == self.variation:
-                    # per our muon object review, since we use tighter IP cuts than the cuts that were used
-                    # to derive the SFs, we apply a 2.5% uncertainty to the SFs
-                    df["event_weight"] *= (df[self.variation]**2 + 0.975**2)**0.5
+                    # to derive the SFs, we apply a 2% uncertainty to the SFs
+                    mu_var = df[self.variation].to_numpy()
+                    mu_var[mu_var > df["LepSF"]] = mu_var[mu_var > df["LepSF"]] + 0.02
+                    mu_var[mu_var < df["LepSF"]] = mu_var[mu_var < df["LepSF"]] - 0.02
+                    df["event_weight"] *= mu_var
                 elif 'LepSF' in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
