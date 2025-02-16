@@ -188,8 +188,8 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 normalization = xsection * lumi / gensumweight
 
             self.logger.info(f"Applying normalization: {normalization}.")
-            histograms = fill_utils.apply_normalization(histograms, normalization)
-            cutflow = fill_utils.apply_normalization(cutflow, normalization)
+            histograms = data_utils.apply_normalization(histograms, normalization)
+            cutflow = data_utils.apply_normalization(cutflow, normalization)
 
             # update metadata
             metadata["xsec"] = xsection
@@ -372,11 +372,12 @@ class SUEPDaskHistMaker(BaseDaskHistMaker):
                 # check sample consistency
                 if sample != "" and ntuple_metadata.get("sample", False):
                     if sample != ntuple_metadata["sample"]:
-                        raise Exception(
-                            "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
-                                ntuple_metadata["sample"], sample
-                            )
-                        )
+                        sample = ntuple_metadata["sample"]
+                        # raise Exception(
+                        #     "This script should only run on one sample at a time. Found {} in ntuple metadata, and passed sample {}".format(
+                        #         ntuple_metadata["sample"], sample
+                        #     )
+                        # )
                 # check era consistency
                 if options.era != ntuple_metadata.get("era", False):
                     raise Exception(

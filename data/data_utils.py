@@ -46,3 +46,12 @@ def getLumi(
     with open(f"{path}/lumis.json") as f:
         lumis = json.load(f)
         return lumis[analysis][era]
+
+
+def apply_normalization(plots: dict, norm: float) -> dict:
+    if norm > 0.0:
+        for plot in list(plots.keys()):
+            plots[plot] = plots[plot] * norm
+    else:
+        logging.warning("Norm is 0, not applying normalization.")
+    return plots

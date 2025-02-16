@@ -1,12 +1,21 @@
 import re
 import hist
 import hist.intervals
+import matplotlib
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
+import warnings
 
 from utils import hist_utils
+
+warnings.filterwarnings('ignore')
+matplotlib.rcParams.update({'figure.max_open_warning': 0})
+matplotlib.rcParams['figure.facecolor'] = 'white'
+plt.rcParams['figure.dpi'] = 70
+plt.style.use(hep.style.CMS)
+hep.style.use("CMS")
 
 def styled_plot_ratio(
     hlist,

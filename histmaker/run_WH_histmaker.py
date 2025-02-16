@@ -186,7 +186,8 @@ def main():
                         "bTagWeight_LFuncorrelated_Dn",
                         "prefire_up",
                         "prefire_down",
-                        # TODO: trigger scale factors
+                        "trigSF_up",
+                        "trigSF_down",
                     ],
                 }     
             }
@@ -458,7 +459,9 @@ def main():
         if options['channel'] == "WH":
             # add systematic variations, which are identical, except for the dataframe name
             variations = [
-                "track_down"
+                "track_down",
+                "MuScaleUp",
+                "MuScaleDown",
             ]
             # systematic variations that change the MET and W selections
             met_variations = [

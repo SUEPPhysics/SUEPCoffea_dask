@@ -1,5 +1,5 @@
 """
-Author: Luca Lavezzo
+Author: Luca Lavezzo, Pietro Lugato
 Date: August 2024
 """
 
@@ -162,6 +162,12 @@ class BaseDaskHistMaker:
         return _run_metadata
     
     def build_tree_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
+        """
+        Construct the task graph for a given sample.
+        Return the last node of the graph as a Delayed future.
+
+        Seems to work better than build_triangle_graph.
+        """
 
         self.logger.debug(f"Building graph for sample: {sample}")
         _run_metadata[sample]["_processing_metadata"]["n_total"] = len(processes)
@@ -189,28 +195,6 @@ class BaseDaskHistMaker:
             merged = new_merged
 
         return merged[0]
-
-    def build_triangle_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
-        """
-        Construct the task graph for a given sample.
-        Return the last node of the graph as a Delayed future.
-        """
-
-        self.logger.debug(f"Building graph for sample: {sample}")
-        _run_metadata[sample]["_processing_metadata"]["n_total"] = len(processes)
-
-        # Build the graph
-        prev_merge_task = None
-        for process in processes:
-
-            process_task = self._process(process[0], *process[1:]) 
-
-            if prev_merge_task is None:
-                prev_merge_task = process_task
-            else:
-                prev_merge_task = self.merge(prev_merge_task, process_task)
-
-        return prev_merge_task
 
     def get_batches(self, samples: List[str], _run_metadata: dict, batch_size: int = 1000) -> list:
         """
@@ -261,7 +245,6 @@ class BaseDaskHistMaker:
                 self.logger.error(f"Skipping {sample}.")
                 samples.remove(sample)
                 continue
-            # choose your fighter! [ build_triangle_graph , build_tree_graph ]
             graphs[sample] = self.build_tree_graph(sample, processes, _run_metadata)
 
         self.logger.info(f"Creating batches.")

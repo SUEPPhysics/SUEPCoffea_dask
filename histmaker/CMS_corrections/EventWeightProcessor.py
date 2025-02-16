@@ -260,7 +260,7 @@ class EventWeightProcessor:
                 # un-prescaling for the gamma triggers
                 df["event_weight"] *= df["WH_gammaTriggerUnprescaleWeight"]
 
-                # reewighting based on SUEP pT to match the W+jets
+                # reweighting based on SUEP pT to match the W+jets
                 _era = self.era.replace("apv", "")
                 pt_corr_file = f"../data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
                 if os.path.exists(pt_corr_file):

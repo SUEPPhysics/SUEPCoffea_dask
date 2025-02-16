@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import uproot
 import json
@@ -56,8 +57,10 @@ def get_scout_trigSF_weight(htarray, sys, era="2018"):
 
 def WH(leptonpt, pdgids, sys, era):
 
-    mu_filename = f"../data/WH_triggerSFs/muon{era}sfs.json"
-    ele_filename = f"../data/WH_triggerSFs/electron{era}sfs.json"
+    data_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+    mu_filename = f"{data_dir}/data/WH_triggerSFs/muon{era}sfs.json"
+    ele_filename = f"{data_dir}/data/WH_triggerSFs/electron{era}sfs.json"
 
     with open(mu_filename) as f:
         muSF_dict = json.load(f)

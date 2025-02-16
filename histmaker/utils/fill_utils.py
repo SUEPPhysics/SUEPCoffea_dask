@@ -568,15 +568,6 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 
-def apply_normalization(plots: dict, norm: float) -> dict:
-    if norm > 0.0:
-        for plot in list(plots.keys()):
-            plots[plot] = plots[plot] * norm
-    else:
-        logging.warning("Norm is 0, not applying normalization.")
-    return plots
-
-
 def get_track_killing_config(config: dict) -> dict:
     new_config = {}
     for label_out, _config_out in config.items():
