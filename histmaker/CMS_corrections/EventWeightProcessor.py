@@ -190,7 +190,7 @@ class EventWeightProcessor:
                 
 
             # 5) Higgs_pt weights
-            if "mS125" in self.sample:
+            if "mS125" in self.sample and "ggF" in self.channel:
                 (
                     higgs_bins,
                     higgs_weights,

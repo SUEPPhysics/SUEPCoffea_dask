@@ -460,8 +460,6 @@ def main():
             # add systematic variations, which are identical, except for the dataframe name
             variations = [
                 "track_down",
-                "MuScaleUp",
-                "MuScaleDown",
             ]
             # systematic variations that change the MET and W selections
             met_variations = [
