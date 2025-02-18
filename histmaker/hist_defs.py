@@ -957,6 +957,20 @@ def init_hists_WH(output, label):
             name=f"LepSFEl_{label}",
             label=r"LepSF ($e$)",
         ).Weight(),
+        f"TriggerSFMu_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"TriggerSFMu_{label}",
+            label=r"TriggerSF ($\mu$)",
+        ).Weight(),
+        f"TriggerSFEl_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"TriggerSFEl_{label}",
+            label=r"TriggerSF ($e$)",
+        ).Weight(),
     })
 
     return output
