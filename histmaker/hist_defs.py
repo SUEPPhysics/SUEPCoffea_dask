@@ -546,7 +546,7 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
             .Weight(),
-             f"2D_SUEP_S1_mu_vs_SUEP_nconst_mu_{label}": Hist.new.Reg(
+            f"2D_SUEP_S1_mu_vs_SUEP_nconst_mu_{label}": Hist.new.Reg(
                 50,
                 0,
                 1.0,
@@ -880,20 +880,20 @@ def init_hists_WH(output, label):
             name=f"PuppiMET_pt_{label}",
             label=r"$p^{\mathrm{PuppiMET}}_T$ [GeV]",
         ).Weight(),
-        # f"PuppiMET_phi_{label}": Hist.new.Reg(
-        #     100,
-        #     -3,
-        #     3,
-        #     name=f"PuppiMET_phi_{label}",
-        #     label=r"$\phi^{\mathrm{PuppiMET}}$ [GeV]",
-        # ).Weight(),
-        # f"W_phi_{label}": Hist.new.Reg(
-        #     60,
-        #     -3.2,
-        #     3.2,
-        #     name=f"W_phi_{label}",
-        #     label=r"$\phi_W$",
-        # ).Weight(),
+        f"PuppiMET_phi_{label}": Hist.new.Reg(
+            100,
+            -3,
+            3,
+            name=f"PuppiMET_phi_{label}",
+            label=r"$\phi^{\mathrm{PuppiMET}}$ [GeV]",
+        ).Weight(),
+        f"W_phi_{label}": Hist.new.Reg(
+            60,
+            -3.2,
+            3.2,
+            name=f"W_phi_{label}",
+            label=r"$\phi_W$",
+        ).Weight(),
         f"deltaPhi_SUEP_W_{label}": Hist.new.Reg(
             60,
             0,
