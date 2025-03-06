@@ -546,7 +546,7 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 label=r"$n^{\mathrm{SUEP}}_{\mathrm{constituent}}$",
             )
             .Weight(),
-             f"2D_SUEP_S1_mu_vs_SUEP_nconst_mu_{label}": Hist.new.Reg(
+            f"2D_SUEP_S1_mu_vs_SUEP_nconst_mu_{label}": Hist.new.Reg(
                 50,
                 0,
                 1.0,
@@ -1012,6 +1012,20 @@ def init_hists_WH(output, label):
             1.2,
             name=f"LepSFEl_{label}",
             label=r"LepSF ($e$)",
+        ).Weight(),
+        f"TriggerSFMu_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"TriggerSFMu_{label}",
+            label=r"TriggerSF ($\mu$)",
+        ).Weight(),
+        f"TriggerSFEl_{label}": Hist.new.Reg(
+            100,
+            0.8,
+            1.2,
+            name=f"TriggerSFEl_{label}",
+            label=r"TriggerSF ($e$)",
         ).Weight(),
     })
 

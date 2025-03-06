@@ -267,6 +267,8 @@ def fillSample(this_hists: dict, sample: str, plots: dict, norm: int = 1) -> dic
         for plot in list(plotsToAdd.keys()):
             try:
                 plots[sample][plot] = plots[sample][plot] + plotsToAdd[plot]
+            except ValueError:
+                print(f"WARNING: could not merge histogram {plot} in sample {sample}.")
             except KeyError:
                 print(f"WARNING: could not find histogram {plot} in sample {sample}.")
 
@@ -449,9 +451,10 @@ def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
 
 def combineSamples(plots: dict, samples: list) -> dict:
     out = {}
-    missing = [s for s in samples if s not in plots.keys()]
-    if len(missing) > 0:
-        print("ERROR: not all samples are in the plots dictionary: " + ", ".join(missing))
+    missing = [s not in plots.keys() for s in samples]  
+    missing_samples = [s for s, m in zip(samples, missing) if m]
+    if missing_samples:
+        print("WARNING: not all samples are in the plots dictionary: " + ", ".join(missing_samples))
         return out
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):

@@ -12,6 +12,7 @@ def lumiLabel(analysis, year):
     if year in ["2017", "2018"]:
         return round(lumi / 1000, 1)
     elif year == "2016":
-        return round((lumi + getLumi(analysis=analysis, era=year + "apv")) / 1000, 1)
+        apv = year+"apv"
+        return round((lumi + getLumi(analysis=analysis, era=apv)) / 1000, 1)
     elif year == "all":
         return round(lumi / 1000, 1)

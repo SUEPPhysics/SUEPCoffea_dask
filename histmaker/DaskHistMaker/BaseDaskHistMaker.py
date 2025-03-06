@@ -96,8 +96,9 @@ class BaseDaskHistMaker:
         # cluster.adapt(minimum=min_workers, maximum=max_workers) # this seems to make things very unstable with Slurm
         client = Client(cluster)
 
-        self.logger.info(f"Waiting for workers to be ready... will start with {min_workers} workers, or timeout if not available within 2 minutes.")
-        client.wait_for_workers(n_workers=min_workers, timeout=120)
+        timeout = 600
+        self.logger.info(f"Waiting for workers to be ready... will start with {min_workers} workers, or timeout if not available within {timeout / 60} minutes.")
+        client.wait_for_workers(n_workers=min_workers, timeout=timeout)
         active_workers = len(client.scheduler_info()['workers'])
         self.logger.info(f"Workers ready. SLURMClient ready. Proceeding with {active_workers} workers. Will try to reach {n_workers} workers as more become avaiable.")
         self.logger.info(client)

@@ -187,7 +187,9 @@ class EventWeightProcessor:
                 trigSF = triggerSF.WH(lepton_pt, pdgids, self.variation, self.era)
                 df['trigSF'] = trigSF
                 df["event_weight"] *= trigSF
-
+                df["TriggerSFMu"] = np.where(np.isin(np.abs(pdgids), [13]), trigSF, 0.0)
+                df["TriggerSFEl"] = np.where(np.isin(np.abs(pdgids), [11]), trigSF, 0.0)
+                
             # 5) Higgs_pt weights
             if "mS125" in self.sample and "ggF" in self.channel:
                 (
