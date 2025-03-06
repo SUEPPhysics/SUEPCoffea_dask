@@ -609,6 +609,20 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
             f"ht_JEC_{label}": Hist.new.Reg(
                 100, 0, 10000, name=f"ht_JEC_{label}", label="HT"
             ).Weight(),  
+            f"SUEP_pt_avg_{label}": Hist.new.Reg(
+                100,
+                0,
+                100,
+                name=f"SUEP_pt_avg_{label}",
+                label="SUEP Components $p_T$ Avg.",
+            ).Weight(),
+            f"SUEP_pt_avg_b_{label}": Hist.new.Reg(
+                100,
+                0,
+                20,
+                name=f"SUEP_pt_avg_b_{label}",
+                label=r"SUEP Components $p_T^{\mathrm{boosted}}$ Avg.",
+            ).Weight(),
             f"nBLoose_{label}": Hist.new.Reg(
                 20,
                 0,
@@ -664,6 +678,41 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
             #     name=f"SUEP_delta_mass_genMass_{label}",
             #     label="SUEP Mass - genSUEP Mass [GeV]",
             # ).Weight(),
+            f"genweight_{label}": Hist.new.Reg(
+                1000,
+                -500,
+                500,
+                name=f"genweight_{label}",
+                label="Gen Weight",
+            ).Weight(),
+            f'pileup_weight_{label}': Hist.new.Reg(
+                100,
+                0,
+                2,
+                name=f'pileup_weight_{label}',
+                label='Pileup weight',
+            ).Weight(),
+            f"prefire_nom_{label}": Hist.new.Reg(
+                100,
+                0,
+                2,
+                name=f"prefire_nom_{label}",
+                label="Prefire Nominal",
+            ).Weight(),
+            f"trigSF_{label}": Hist.new.Reg(
+                100,
+                0.9,
+                1.1,
+                name=f"trigSF_{label}",
+                label="Trigger SF",
+            ).Weight(),
+            f"bTagWeight_central_{label}": Hist.new.Reg(
+                100,
+                0,
+                2,
+                name=f"bTagWeight_central_{label}",
+                label="b-tag weight",
+            ).Weight(),
             f"bTagWeight_central_wh_{label}": Hist.new.Reg(
                 100,
                 0,
@@ -678,13 +727,13 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
             #     name=f"W_genW_BV_{label}",
             #     label="($p_T^W - p_T^{genW}$)/$p_T^{genW}$",
             # ).Weight(),
-            # f"genW_pt_{label}": Hist.new.Reg(
-            #     200,
-            #     0,
-            #     2000,
-            #     name=f"genW_pt_{label}",
-            #     label=r"$p^{\mathrm{genW}}_T$",
-            # ).Weight(),
+            f"genW_pt_{label}": Hist.new.Reg(
+                200,
+                0,
+                2000,
+                name=f"genW_pt_{label}",
+                label=r"$p^{\mathrm{genW}}_T$",
+            ).Weight(),
             # f"genW_phi_{label}": Hist.new.Reg(
             #     60,
             #     -3.2,
@@ -712,6 +761,13 @@ def init_hists_highestPT(output, label, options, regions_list=[""]):
                 6,
                 name=f"deltaR_genSUEP_SUEP_{label}",
                 label=r"$\Delta R$(gen. SUEP, reco. SUEP)",
+            ).Weight(),
+            f"SUEP_genPt_{label}": Hist.new.Reg(
+                100,
+                0,
+                1000,
+                name=f"SUEP_genPt_{label}",
+                label=r"$p^{\mathrm{gen. SUEP}}_T$",
             ).Weight(),
             f"SUEP_genSUEP_BV_{label}": Hist.new.Reg(
                 100,
@@ -880,20 +936,20 @@ def init_hists_WH(output, label):
             name=f"PuppiMET_pt_{label}",
             label=r"$p^{\mathrm{PuppiMET}}_T$ [GeV]",
         ).Weight(),
-        # f"PuppiMET_phi_{label}": Hist.new.Reg(
-        #     100,
-        #     -3,
-        #     3,
-        #     name=f"PuppiMET_phi_{label}",
-        #     label=r"$\phi^{\mathrm{PuppiMET}}$ [GeV]",
-        # ).Weight(),
-        # f"W_phi_{label}": Hist.new.Reg(
-        #     60,
-        #     -3.2,
-        #     3.2,
-        #     name=f"W_phi_{label}",
-        #     label=r"$\phi_W$",
-        # ).Weight(),
+        f"PuppiMET_phi_{label}": Hist.new.Reg(
+            100,
+            -3,
+            3,
+            name=f"PuppiMET_phi_{label}",
+            label=r"$\phi^{\mathrm{PuppiMET}}$ [GeV]",
+        ).Weight(),
+        f"W_phi_{label}": Hist.new.Reg(
+            60,
+            -3.2,
+            3.2,
+            name=f"W_phi_{label}",
+            label=r"$\phi_W$",
+        ).Weight(),
         f"deltaPhi_SUEP_W_{label}": Hist.new.Reg(
             60,
             0,

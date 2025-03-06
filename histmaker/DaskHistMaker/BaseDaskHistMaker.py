@@ -81,8 +81,8 @@ class BaseDaskHistMaker:
         cluster = SLURMCluster(
             job_name="dask-histmaker",
             cores=1,
-            walltime="5:00:00",
-            memory="4GB",
+            walltime="2:00:00",
+            memory="2GB",
             scheduler_options={
                 "dashboard_address": "1776",
                 "host": socket.gethostname(),
@@ -146,7 +146,12 @@ class BaseDaskHistMaker:
         """
         A generic function wrapper we use to submit to the client.
         """
-        return function(*args, **kwargs)
+        try:
+            return function(*args, **kwargs)
+        except Exception as e:
+            logging.error(f"Failed to process: {e}")
+            logging.error(traceback.format_exc())
+            return {}
 
     def build_metadata(self, samples: List[str]) -> dict:
 
@@ -171,6 +176,9 @@ class BaseDaskHistMaker:
 
         self.logger.debug(f"Building graph for sample: {sample}")
         _run_metadata[sample]["_processing_metadata"]["n_total"] = len(processes)
+
+        if len(processes) == 1:
+            return self._process(processes[0][0], *processes[0][1:])
 
         merged = []
         for i in range(0, len(processes), 2):

@@ -33,6 +33,21 @@ def getGenModel(events):
         genModels.append(genModel[0])
     return genModels
 
+def getSignalDecayMode(sample):
+
+    import re
+
+    pattern = r'SUEP_mS(\d+\.\d+)_mPhi(\d+\.\d+)_T(\d+\.\d+)_mode(\w+)'
+
+    # Use re.search to find the first occurrence of the pattern in the sample name
+    match = re.search(pattern, sample)
+
+    if match:
+        decay = match.group(4)
+        return decay
+    else:
+        raise ValueError(f"Could not find decay mode in sample name {sample}.")
+
 
 def getAK4Jets(Jets, runs, iso=None, isMC: bool = 1):
     """
@@ -818,7 +833,7 @@ def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
 def doubleCountingGenPhotonsSelection(events, sample: str):
     """
     Orthogonalize the QCD_HT samples to the GJets_HT samples.
-    Should only matters for gamma+jets control region.f
+    Should only matters for gamma+jets control region.
     """
 
     if "QCD_HT" in sample or "QCD_Pt" in sample:

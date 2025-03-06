@@ -474,9 +474,9 @@
     "signal": 0
   },
   "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v2+MINIAODSIM": {
+    "kr": 0.922,
     "br": 1,
-    "kr": 1,
-    "xsec": 67350.0,
+    "xsec": 66680.0,
     "signal": 0
   },
   "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM": {
@@ -630,27 +630,27 @@
     "signal": 0
   },
   "WJetsToLNu_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM": {
+    "kr": 0.922,
     "br": 1,
-    "kr": 1,
-    "xsec": 763.7,
+    "xsec": 733.1,
     "signal": 0
   },
   "WJetsToLNu_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM": {
+    "kr": 0.922,
     "br": 1,
-    "kr": 1,
-    "xsec": 27.55,
+    "xsec": 27.92,
     "signal": 0
   },
   "WJetsToLNu_Pt-400To600_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM": {
+    "kr": 0.922,
     "br": 1,
-    "kr": 1,
-    "xsec": 3.477,
+    "xsec": 3.547,
     "signal": 0
   },
   "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1+MINIAODSIM": {
+    "kr": 0.922,
     "br": 1,
-    "kr": 1,
-    "xsec": 0.5415,
+    "xsec": 0.5371,
     "signal": 0
   },
   "WWTo1L1Nu2Q_4f_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v2+MINIAODSIM": {

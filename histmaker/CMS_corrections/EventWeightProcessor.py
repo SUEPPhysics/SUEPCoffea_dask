@@ -142,6 +142,7 @@ class EventWeightProcessor:
             pu = pileup_weight.get_pileup_weights(
                 df, self.variation, puweights, puweights_up, puweights_down
             )
+            df['pileup_weight'] = pu
             df["event_weight"] *= pu
 
             # 2) PS weights
@@ -183,11 +184,9 @@ class EventWeightProcessor:
 
                 lepton_pt = df["lepton_pt"].to_numpy()
                 pdgids = df["lepton_flavor"].to_numpy()
-
                 trigSF = triggerSF.WH(lepton_pt, pdgids, self.variation, self.era)
-
+                df['trigSF'] = trigSF
                 df["event_weight"] *= trigSF
-                
 
             # 5) Higgs_pt weights
             if "mS125" in self.sample and "ggF" in self.channel:
@@ -227,6 +226,7 @@ class EventWeightProcessor:
                     wps='TL',
                     channel=self.channel.lower(),
                 )
+                df['bTagWeight_'+btag_variation] = btag_weights[btag_variation].to_numpy()
                 df["event_weight"] *= btag_weights[btag_variation].to_numpy()
 
             # 9) lepton SF
@@ -262,10 +262,7 @@ class EventWeightProcessor:
 
                 # reweighting based on SUEP pT to match the W+jets
                 _era = self.era.replace("apv", "")
-                pt_corr_file = f"../data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
-                if os.path.exists(pt_corr_file):
-                    df["event_weight"] *= apply_correctionlib(pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
-                else:
-                    logging.warning(f"File {pt_corr_file} not found. Not applying pT reweighting.")
+                pt_corr_file = f"{os.path.dirname(os.path.dirname(os.path.dirname(__file__)))}/data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
+                df["event_weight"] *= apply_correctionlib(pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
 
         return df

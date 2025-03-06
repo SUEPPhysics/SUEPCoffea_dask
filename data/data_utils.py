@@ -1,3 +1,4 @@
+import os
 import json
 
 def isSampleSignal(sample: str, year: str, path: str = "../data/") -> bool:
@@ -37,7 +38,7 @@ def getXSection(
 def getLumi(
     era: str,
     analysis: str,
-    path: str = "../data/"
+    path: str = os.path.dirname(__file__),
 ) -> float:
     """
     Open the lumis.json file, and read from analysis, era.

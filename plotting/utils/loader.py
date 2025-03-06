@@ -148,7 +148,7 @@ def getSampleNameAndBin(sample_name):
 
     elif "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8" in sample_name:
         sample = "WJetsToLNu"
-        bin = None
+        bin = "WJetsToLNu_incl"
 
     elif "DYJetsToLL_LHEFilterPtZ-" in sample_name:
         sample = "DYJetsToLL"
@@ -449,9 +449,9 @@ def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
 
 def combineSamples(plots: dict, samples: list) -> dict:
     out = {}
-    missing = [s not in plots.keys() for s in samples]
-    if any(missing):
-        print("WARNING: not all samples are in the plots dictionary: " + ", ".join(samples[missing]))
+    missing = [s for s in samples if s not in plots.keys()]
+    if len(missing) > 0:
+        print("ERROR: not all samples are in the plots dictionary: " + ", ".join(missing))
         return out
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):

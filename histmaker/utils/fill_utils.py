@@ -114,7 +114,7 @@ def close_ntuple(file: str, xrootd_tmp_path: str = "/tmp/") -> None:
     logging.debug(f"Deleted {local_file}")
 
 
-def format_selection(selection: str, df: pd.DataFrame = None) -> list:
+def format_selection(selection, df: pd.DataFrame = None) -> list:
     """
     Format a selection string into a list of the form [attribute, operator, value].
     Converts value to a float, if needed.
@@ -125,6 +125,8 @@ def format_selection(selection: str, df: pd.DataFrame = None) -> list:
         type(selection) is str
     ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
         selection = selection.split(" ")
+    if not (type(selection) is list):
+        raise Exception("Selection is not a list")
     if df is not None:
         if (
             selection[0] not in df.keys()
@@ -339,9 +341,10 @@ def prepare_DataFrame(
         # now, apply selections
         for isel, sel in enumerate(config["selections"]):
 
+            sel = format_selection(sel, df)
+
             # apply selections, unless there are no events left already!
             if df.shape[0] > 0:
-                sel = format_selection(sel, df)
                 df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
             # store number of events passing using the event weights into the cutflow dict

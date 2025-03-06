@@ -90,7 +90,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             isolation_deltaR=0.4,
         )
         if self.isMC and "track_down" in variation:
-            tracks = track_killing(self, tracks)
+            tracks = track_killing(tracks, WH_utils.getSignalDecayMode(self.sample))
         events = ak.with_field(events, tracks, "WH_tracks")
 
         # save tracks variables
@@ -1077,8 +1077,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
             # for these, we need to re-run the whole analysis
             variations = [
-                "MuScaleUp",
-                "MuScaleDown",
                 "track_down"
             ]
             for variation in variations:
@@ -1094,3 +1092,4 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
     def postprocess(self, accumulator):
         return accumulator
+                                                                                   

@@ -9,6 +9,7 @@ import numpy as np
 import warnings
 
 from utils import hist_utils
+from utils.style_utils import getStyles, getColor
 
 warnings.filterwarnings('ignore')
 matplotlib.rcParams.update({'figure.max_open_warning': 0})

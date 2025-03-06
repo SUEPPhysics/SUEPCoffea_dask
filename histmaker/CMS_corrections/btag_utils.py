@@ -256,7 +256,7 @@ def doBTagWeights(
 
 
 def getBTagEffs(
-    jets, era: int, wp: str = "L", channel: str = "zh", base_dir: str = "."
+    jets, era: int, wp: str = "L", channel: str = "zh", base_dir: str = os.path.join(os.path.dirname(__file__), "../../")
 ) -> dict:
     """
     Get the efficiencies of b-tagging for a given jet collection,
