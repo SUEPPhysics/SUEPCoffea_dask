@@ -40,6 +40,9 @@ from workflows import SUEP_utils
 
 vector.register_awkward()
 
+hep.style.use("CMS")
+plt.style.use(hep.style.CMS)
+
 
 decaysLabels = {
     "hadronic": r"$A^' \rightarrow e^{+}e^{-}$ ($15\%$), $\mu^{+}\mu^{-}$ ($15\%$), $\pi^{+}\pi^{-}$ ($70\%$)",
@@ -48,7 +51,7 @@ decaysLabels = {
 }
 
 
-def get_dr_ring(dr, phi_c=0, eta_c=0, n_points=600):
+def get_dr_ring(dr, phi_c=0, eta_c=0, n_points=10000):
     deta = np.linspace(-dr, +dr, n_points)
     dphi = np.sqrt(dr**2 - np.square(deta))
     deta = eta_c + np.concatenate((deta, deta[::-1]))
@@ -399,19 +402,20 @@ def drawJetCone(ax, jet_eta, jet_phi, R=1.5, color="red"):
     phis, etas = get_dr_ring(R, jet_phi, jet_eta)
     phis = phis[1:]
     etas = etas[1:]
+    linestyle = "-." if R == 1.5 else "--"
     ax.plot(
         phis[phis > pi] - 2 * pi,
         etas[phis > pi],
         color=color,
-        linestyle="--",
+        linestyle=linestyle
     )
     ax.plot(
         phis[phis < -pi] + 2 * pi,
         etas[phis < -pi],
         color=color,
-        linestyle="--",
+        linestyle=linestyle
     )
-    ax.plot(phis[phis < pi], etas[phis < pi], color=color, linestyle="--")
+    ax.plot(phis[phis < pi], etas[phis < pi], color=color, linestyle=linestyle)
     return ax
 
 
@@ -469,8 +473,9 @@ def plot(
     showMET=True,
     showLegend=True,
 ):
+
     if ax is None:
-        fig = plt.figure(figsize=(12, 8))
+        fig = plt.figure(figsize=(9, 6))
         ax = fig.addsubplot()
 
     normParticle = getNormParticle(genParticles)
@@ -506,7 +511,7 @@ def plot(
     if not boost and False:
         # Add jet info to the plot
         for jet in jetsAK15:
-            ax = drawJetCone(ax, jet.eta, jet.phi, R=1.5, color="xkcd:green")
+            ax = drawJetCone(ax, jet.eta, jet.phi, R=1.5, color="#b9ac70")
 
     if showSUEPCandidate and channel in ["WH", "WH-VRGJ"]:
         highpt_jet = ak.argsort(jetsAK15.pt, axis=0, ascending=False, stable=True)
@@ -521,12 +526,12 @@ def plot(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
                 s=scale(SUEP_cluster_tracks, normParticle),
-                c="xkcd:red",
+                c="#e42536",
                 marker="o",
             )
 
         else:  # draw SUEP and ISR ak15 candidates
-            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
+            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="#e42536")
 
     if showSUEPCandidate and channel == "ggF":
         _, _, topTwoJets = SUEP_utils.getTopTwoJets(
@@ -547,25 +552,25 @@ def plot(
                 SUEP_cluster_tracks.phi,
                 SUEP_cluster_tracks.eta,
                 s=scale(SUEP_cluster_tracks, normParticle),
-                c="xkcd:red",
+                c="#e42536",
                 marker="o",
             )
             ax.scatter(
                 ISR_cluster_tracks.phi,
                 ISR_cluster_tracks.eta,
                 s=scale(ISR_cluster_tracks, normParticle),
-                c="xkcd:blue",
+                c="#5790fc",
                 marker="o",
             )
 
         else:  # draw SUEP and ISR ak15 candidates
-            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="xkcd:red")
-            ax = drawJetCone(ax, ISR_cand.eta, ISR_cand.phi, color="xkcd:blue")
+            ax = drawJetCone(ax, SUEP_cand.eta, SUEP_cand.phi, color="#e42536")
+            ax = drawJetCone(ax, ISR_cand.eta, ISR_cand.phi, color="#5790fc")
 
     # show AK4jets
     if showAK4:
         for jet in this_jetsAK4:
-            ax = drawJetCone(ax, jet.eta, jet.phi, R=0.4, color="xkcd:orange")
+            ax = drawJetCone(ax, jet.eta, jet.phi, R=0.4, color="#f89c20")
 
     # Boost everything to scalar's rest frame
     if boost:
@@ -601,9 +606,9 @@ def plot(
     # Plot parameters
     ax.set_xlim(-pi, pi)
     ax.set_ylim(-4, 4)
-    ax.set_xlabel(r"$\phi$", fontsize=18)
-    ax.set_ylabel(r"$\eta$", fontsize=18)
-    ax.tick_params(axis="both", which="major", labelsize=12)
+    ax.set_xlabel(r"$\phi$")
+    ax.set_ylabel(r"$\eta$")
+    ax.tick_params(axis="both", which="major")
 
     # Add scatters to figure
     if showGen:  # gen particles
@@ -611,63 +616,63 @@ def plot(
             fromScalarParticles_e.phi,
             fromScalarParticles_e.eta,
             s=scale(fromScalarParticles_e, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="^",
         )
         ax.scatter(
             fromScalarParticles_mu.phi,
             fromScalarParticles_mu.eta,
             s=scale(fromScalarParticles_mu, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="v",
         )
         ax.scatter(
             fromScalarParticles_nu.phi,
             fromScalarParticles_nu.eta,
             s=scale(fromScalarParticles_nu, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="1",
         )
         ax.scatter(
             fromScalarParticles_gamma.phi,
             fromScalarParticles_gamma.eta,
             s=scale(fromScalarParticles_gamma, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="s",
         )
         ax.scatter(
             fromScalarParticles_pi.phi,
             fromScalarParticles_pi.eta,
             s=scale(fromScalarParticles_pi, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="P",
         )
         ax.scatter(
             fromScalarParticles_hadron.phi,
             fromScalarParticles_hadron.eta,
             s=scale(fromScalarParticles_hadron, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="*",
         )
         ax.scatter(
             fromScalarParticles_top.phi,
             fromScalarParticles_top.eta,
             s=scale(fromScalarParticles_top, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="$t$",
         )
         ax.scatter(
             fromScalarParticles_W.phi,
             fromScalarParticles_W.eta,
             s=scale(fromScalarParticles_W, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="$W$",
         )
         ax.scatter(
             other_genParticles.phi,
             other_genParticles.eta,
             s=scale(other_genParticles, normParticle),
-            c="xkcd:light blue",
+            c="#92dadd",
             marker="o",
         )
         if channel == "ggF":
@@ -712,7 +717,7 @@ def plot(
             tracks.phi,
             tracks.eta,
             s=scale(tracks, normParticle),
-            c="xkcd:gray",
+            c="#9c9ca1",
             marker="o",
         )
 
@@ -724,7 +729,7 @@ def plot(
             width=width,
             height=8,
             alpha=0.5,
-            color="darkorange",
+            color="#e76300",
         )
         ax.add_patch(rectangle)
 
@@ -734,7 +739,7 @@ def plot(
             leptons.eta,
             s=scale(leptons, normParticle),
             marker="o",
-            color="darkcyan",
+            color="#832db6",
         )
 
     if channel == 'WH-VRGJ':
@@ -743,7 +748,7 @@ def plot(
             photons.eta,
             s=scale(photons, normParticle),
             marker="o",
-            color="xkcd:yellow",
+            color="#b9ac70",
         )
 
     if not boost:
@@ -753,7 +758,7 @@ def plot(
             scalarParticle.eta,
             s=scale(scalarParticle, normParticle),
             marker="x",
-            color="xkcd:red",
+            color="#e42536",
         )
 
     if showRingOfFire:
@@ -762,7 +767,7 @@ def plot(
             scalarParticle.eta + 1.0,
             xmin=-pi,
             xmax=pi,
-            color="xkcd:red",
+            color="#e42536",
             alpha=0.7,
             linestyle="dotted",
         )
@@ -770,7 +775,7 @@ def plot(
             scalarParticle.eta - 1.0,
             xmin=-pi,
             xmax=pi,
-            color="xkcd:red",
+            color="#e42536",
             alpha=0.7,
             linestyle="dotted",
         )
@@ -792,10 +797,11 @@ def plot(
         [-100],
         label="Scalar mediator",
         marker="x",
-        color="xkcd:red",
+        s=80,
+        color="#e42536",
     )
     line7 = ax.plot(
-        [-100], [-100], label='"Ring of fire"', linestyle="dotted", c="xkcd:red"
+        [-100], [-100], label='"Ring of fire"', linestyle="dotted", c="#e42536"
     )[0]
     line8 = ax.scatter(
         [-100],
@@ -805,24 +811,26 @@ def plot(
         ),
         marker="o",
         facecolors="none",
-        edgecolors="xkcd:green",
+        edgecolors="#b9ac70",
     )
     line15 = ax.scatter(
         [-100],
         [-100],
-        label="AK4 jets",
-        marker="o",
-        facecolors="none",
-        edgecolors="xkcd:orange",
+        label="Jets",
+        facecolor="none",
+        linestyle="--",
+        s=120,
+        edgecolors="#f89c20",
     )
     if showSUEPCandidate:
         line9 = ax.scatter(
             [-100],
             [-100],
-            label="AK15 SUEP Candidate\n($p_T$ = " + str(round(SUEP_pt)) + " GeV)",
+            label="SUEP candidate\n($p_{\mathrm{T}}$ = " + str(round(SUEP_pt)) + " GeV)",
             facecolor="none",
-            linestyle="--",
-            edgecolors="xkcd:red",
+            linestyle="-.",
+            s=120,
+            edgecolors="#e42536",
         )
     if showSUEPCandidate and channel == "ggF":
         line10 = ax.scatter(
@@ -831,26 +839,26 @@ def plot(
             label="AK15 ISR Candidate\n($p_T$ = " + str(round(ISR_pt)) + " GeV)",
             facecolor="none",
             linestyle="--",
-            edgecolors="xkcd:blue",
+            edgecolors="#5790fc",
         )
 
     if showLegend:
-        light_blue_patch = mpatches.Patch(color="xkcd:light blue", label="from scalar")
+        light_blue_patch = mpatches.Patch(color="#92dadd", label="from scalar")
         magenta_patch = mpatches.Patch(color="xkcd:magenta", label="not from scalar")
-        gray_patch = Line2D([0], [0], marker='o', color='w', markerfacecolor="xkcd:gray", markersize=10, label="Tracks")
-        red_patch = mpatches.Patch(color="xkcd:red", label="SUEP Candidate tracks")
-        blue_patch = mpatches.Patch(color="xkcd:blue", label="ISR Candidate tracks")
+        gray_patch = Line2D([0], [0], marker='o', color='w', markerfacecolor="#9c9ca1", markersize=10, label="Tracks")
+        red_patch = mpatches.Patch(color="#e42536", label="SUEP Candidate tracks")
+        blue_patch = mpatches.Patch(color="#5790fc", label="ISR Candidate tracks")
         bloodorange_patch = mpatches.Patch(
-            color="darkorange", label="MET\n($p_T$ = " + str(round(MET.pt)) + " GeV)"
+            color="#e76300", label="$\\vec{p}_{\mathrm{T}}^{\mathrm{miss}}$\n($p_{\mathrm{T}}$ = " + str(round(MET.pt)) + " GeV)", alpha=0.5
         )
         if channel == 'WH-VRGJ':
-            yellow_patch = mpatches.Patch(color="xkcd:yellow",label="$\gamma$\n($p_T$ = " + str(round(photons[0].pt)) + " GeV)")
+            yellow_patch = mpatches.Patch(color="#b9ac70",label="$\gamma$\n($p_T$ = " + str(round(photons[0].pt)) + " GeV)")
         if showLeptons and len(leptons) == 1:
-            darkcyan_patch = Line2D([0], [0], marker='o', color='w', markerfacecolor="darkcyan", markersize=10,
-                label="Lepton\n($p_T$ = " + str(round(leptons[0].pt)) + " GeV)",
+            darkcyan_patch = Line2D([0], [0], marker='o', color='w', markerfacecolor="#832db6", markersize=10,
+                label="Lepton\n($p_{\mathrm{T}}$ = " + str(round(leptons[0].pt)) + " GeV)",
             )
         elif showLeptons:
-            darkcyan_patch = mpatches.Patch(color="darkcyan", label="Lepton")
+            darkcyan_patch = mpatches.Patch(color="#832db6", label="Lepton")
         if showGen:
             handles = [
                 line1,
@@ -896,7 +904,7 @@ def plot(
         if channel == 'WH-VRGJ':
             handles.append(yellow_patch)
 
-        ax.legend(handles=handles, loc=(1.01, 0), fontsize=10)
+        ax.legend(handles=handles, loc=(1.01, 0))
 
     # build a rectangle in axes coords
     left, width = 0.0, 1.0
@@ -920,7 +928,6 @@ def plot(
         horizontalalignment="left",
         verticalalignment="bottom",
         transform=ax.transAxes,
-        fontsize=12,
     )
     if params:
         mS, mPhi, temp, decay = params
@@ -1106,9 +1113,9 @@ def main():
 
         # show boosted only
         elif args.boostOnly:
-            fig = plt.figure(figsize=(9, 7))
+            fig = plt.figure(figsize=(12, 8))
             ax1 = fig.subplots(1)
-            hep.cms.label(llabel="Preliminary", data=False, ax=ax1)
+            hep.cms.label(llabel="Simulation Preliminary", data=False, ax=ax1)
             plot(
                 i,
                 this_tracks,
@@ -1133,9 +1140,9 @@ def main():
 
         # show unboosted only
         else:
-            fig = plt.figure(figsize=(9, 7))
+            fig = plt.figure(figsize=(12, 9))
             ax1 = fig.subplots(1)
-            hep.cms.label(llabel="Preliminary", data=False, ax=ax1)
+            hep.cms.label(llabel="Simulation Preliminary", data=False, ax=ax1)
             plot(
                 i,
                 this_tracks,
@@ -1178,6 +1185,8 @@ def main():
                     *params, eventNumbers[i], runNumbers[i], luminosityBlocks[i]
                 ),
                 bbox_inches="tight",
+                dpi=300,
+                transparent=True
             )
         else:
             fig.savefig(
@@ -1189,6 +1198,8 @@ def main():
                 args.output
                 + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png",
                 bbox_inches="tight",
+                dpi=300,
+                transparent=True
             )
 
         plt.close(fig)

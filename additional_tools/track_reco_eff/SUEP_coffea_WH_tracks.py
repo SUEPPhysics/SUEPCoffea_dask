@@ -427,86 +427,46 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             is_mu = (abs(gen_pdgId) == 13)
             is_e = (abs(gen_pdgId) == 11)
             is_pi = (abs(gen_pdgId) == 211)
-            is_what = (~is_mu & ~is_e & ~is_pi)
-            # print()
-            # print(set(gen_pdgId))
-            # print()
-
+            is_kaon = (abs(gen_pdgId) == 321)
+            is_what = (~is_mu & ~is_e & ~is_pi & ~is_kaon)
+           
             output["unexpected_pdgId"].fill(gen_pdgId[is_what], weight=event.genWeight)
 
-            matched_mu = is_matched & is_mu
-            unmatched_mu = ~is_matched & is_mu
-            matched_e = is_matched & is_e
-            unmatched_e = ~is_matched & is_e
-            matched_pi = is_matched & is_pi
-            unmatched_pi = ~is_matched & is_pi
+            particle_types = {
+                "mu": is_mu,
+                "e": is_e,
+                "pi": is_pi,
+                "kaon": is_kaon,
+            }
 
-            matched_mu_pt = gen_pt[matched_mu]
-            matched_mu_phi = gen_phi[matched_mu]
-            matched_mu_eta = gen_eta[matched_mu]
-            matched_mu_minDeltaR = best_dR[matched_mu]
-            matched_mu_deltaPt = best_pts[matched_mu]
-            unmatched_mu_pt = gen_pt[unmatched_mu]
-            unmatched_mu_phi = gen_phi[unmatched_mu]
-            unmatched_mu_eta = gen_eta[unmatched_mu]
-            unmatched_mu_minDeltaR = best_dR[unmatched_mu]
-            unmatched_mu_deltaPt = best_pts[unmatched_mu]
+            for particle, mask in particle_types.items():
+                matched = is_matched & mask
+                unmatched = ~is_matched & mask
 
-            matched_e_pt = gen_pt[matched_e]
-            matched_e_phi = gen_phi[matched_e]
-            matched_e_eta = gen_eta[matched_e]
-            matched_e_minDeltaR = best_dR[matched_e]
-            matched_e_deltaPt = best_pts[matched_e]
-            unmatched_e_pt = gen_pt[unmatched_e]
-            unmatched_e_phi = gen_phi[unmatched_e]
-            unmatched_e_eta = gen_eta[unmatched_e]
-            unmatched_e_minDeltaR = best_dR[unmatched_e]
-            unmatched_e_deltaPt = best_pts[unmatched_e]
+                matched_pt = gen_pt[matched]
+                matched_phi = gen_phi[matched]
+                matched_eta = gen_eta[matched]
+                matched_minDeltaR = best_dR[matched]
+                matched_deltaPt = best_pts[matched]
 
-            matched_pi_pt = gen_pt[matched_pi]
-            matched_pi_phi = gen_phi[matched_pi]
-            matched_pi_eta = gen_eta[matched_pi]
-            matched_pi_minDeltaR = best_dR[matched_pi]
-            matched_pi_deltaPt = best_pts[matched_pi]
-            unmatched_pi_pt = gen_pt[unmatched_pi]
-            unmatched_pi_phi = gen_phi[unmatched_pi]
-            unmatched_pi_eta = gen_eta[unmatched_pi]
-            unmatched_pi_minDeltaR = best_dR[unmatched_pi]
-            unmatched_pi_deltaPt = best_pts[unmatched_pi]
-            
-            # Fill histograms
-            output[f'pt_mu_matched'].fill(matched_mu_pt, weight=event.genWeight)
-            output[f'phi_mu_matched'].fill(matched_mu_phi, weight=event.genWeight)
-            output[f'eta_mu_matched'].fill(matched_mu_eta, weight=event.genWeight)
-            output[f'minDeltaR_mu_matched'].fill(matched_mu_minDeltaR, weight=event.genWeight)
-            output[f'deltaPt_mu_matched'].fill(matched_mu_deltaPt, weight=event.genWeight)
-            output[f'pt_mu_unmatched'].fill(unmatched_mu_pt, weight=event.genWeight)
-            output[f'phi_mu_unmatched'].fill(unmatched_mu_phi, weight=event.genWeight)
-            output[f'eta_mu_unmatched'].fill(unmatched_mu_eta, weight=event.genWeight)
-            output[f'minDeltaR_mu_unmatched'].fill(unmatched_mu_minDeltaR, weight=event.genWeight)
-            output[f'deltaPt_mu_unmatched'].fill(unmatched_mu_deltaPt, weight=event.genWeight)
+                unmatched_pt = gen_pt[unmatched]
+                unmatched_phi = gen_phi[unmatched]
+                unmatched_eta = gen_eta[unmatched]
+                unmatched_minDeltaR = best_dR[unmatched]
+                unmatched_deltaPt = best_pts[unmatched]
 
-            output[f'pt_e_matched'].fill(matched_e_pt, weight=event.genWeight)
-            output[f'phi_e_matched'].fill(matched_e_phi, weight=event.genWeight)
-            output[f'eta_e_matched'].fill(matched_e_eta, weight=event.genWeight)
-            output[f'minDeltaR_e_matched'].fill(matched_e_minDeltaR, weight=event.genWeight)
-            output[f'deltaPt_e_matched'].fill(matched_e_deltaPt, weight=event.genWeight)
-            output[f'pt_e_unmatched'].fill(unmatched_e_pt, weight=event.genWeight)
-            output[f'phi_e_unmatched'].fill(unmatched_e_phi, weight=event.genWeight)
-            output[f'eta_e_unmatched'].fill(unmatched_e_eta, weight=event.genWeight)
-            output[f'minDeltaR_e_unmatched'].fill(unmatched_e_minDeltaR, weight=event.genWeight)
-            output[f'deltaPt_e_unmatched'].fill(unmatched_e_deltaPt, weight=event.genWeight)
+                # Fill histograms
+                output[f'pt_{particle}_matched'].fill(matched_pt, weight=event.genWeight)
+                output[f'phi_{particle}_matched'].fill(matched_phi, weight=event.genWeight)
+                output[f'eta_{particle}_matched'].fill(matched_eta, weight=event.genWeight)
+                output[f'minDeltaR_{particle}_matched'].fill(matched_minDeltaR, weight=event.genWeight)
+                output[f'deltaPt_{particle}_matched'].fill(matched_deltaPt, weight=event.genWeight)
 
-            output[f'pt_pi_matched'].fill(matched_pi_pt, weight=event.genWeight)
-            output[f'phi_pi_matched'].fill(matched_pi_phi, weight=event.genWeight)
-            output[f'eta_pi_matched'].fill(matched_pi_eta, weight=event.genWeight)
-            output[f'minDeltaR_pi_matched'].fill(matched_pi_minDeltaR, weight=event.genWeight)
-            output[f'deltaPt_pi_matched'].fill(matched_pi_deltaPt, weight=event.genWeight)
-            output[f'pt_pi_unmatched'].fill(unmatched_pi_pt, weight=event.genWeight)
-            output[f'phi_pi_unmatched'].fill(unmatched_pi_phi, weight=event.genWeight)
-            output[f'eta_pi_unmatched'].fill(unmatched_pi_eta, weight=event.genWeight)
-            output[f'minDeltaR_pi_unmatched'].fill(unmatched_pi_minDeltaR, weight=event.genWeight)
-            output[f'deltaPt_pi_unmatched'].fill(unmatched_pi_deltaPt, weight=event.genWeight)
+                output[f'pt_{particle}_unmatched'].fill(unmatched_pt, weight=event.genWeight)
+                output[f'phi_{particle}_unmatched'].fill(unmatched_phi, weight=event.genWeight)
+                output[f'eta_{particle}_unmatched'].fill(unmatched_eta, weight=event.genWeight)
+                output[f'minDeltaR_{particle}_unmatched'].fill(unmatched_minDeltaR, weight=event.genWeight)
+                output[f'deltaPt_{particle}_unmatched'].fill(unmatched_deltaPt, weight=event.genWeight)
 
         except Exception as e:
             import traceback
@@ -755,6 +715,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 'minDeltaR_pi_unmatched': Hist.new.Reg(1000, 0, 0.5, name='pi_unmatched_minDeltaR', label='min $\Delta R$').Weight(),
                 'deltaPt_pi_matched': Hist.new.Reg(1000,-20, 20, name='pi_matched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
                 'deltaPt_pi_unmatched': Hist.new.Reg(1000,-20, 20, name='pi_unmatched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
+                'pt_kaon_matched': Hist.new.Reg(300, 0, 100, name='kaon_matched_pt', label='$p_T$ [GeV]').Weight(),
+                'pt_kaon_unmatched': Hist.new.Reg(300, 0, 100, name='kaon_unmatched_pt', label='$p_T$ [GeV]').Weight(),
+                'phi_kaon_matched': Hist.new.Reg(100, -6, 6, name='kaon_matched_phi', label='$\phi$ [GeV]').Weight(),
+                'phi_kaon_unmatched': Hist.new.Reg(100, -6, 6, name='kaon_unmatched_phi', label='$\phi$ [GeV]').Weight(),
+                'eta_kaon_matched': Hist.new.Reg(100, -6, 6, name='kaon_matched_eta', label='$η$ [GeV]').Weight(),
+                'eta_kaon_unmatched': Hist.new.Reg(100, -6, 6, name='kaon_unmatched_eta', label='$η$ [GeV]').Weight(),
+                'minDeltaR_kaon_matched': Hist.new.Reg(1000, 0, 0.5, name='kaon_matched_minDeltaR', label='min $\Delta R$').Weight(),
+                'minDeltaR_kaon_unmatched': Hist.new.Reg(1000, 0, 0.5, name='kaon_unmatched_minDeltaR', label='min $\Delta R$').Weight(),
+                'deltaPt_kaon_matched': Hist.new.Reg(1000,-20, 20, name='kaon_matched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
+                'deltaPt_kaon_unmatched': Hist.new.Reg(1000,-20, 20, name='kaon_unmatched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
                 'unexpected_pdgId': Hist.new.Reg(100, -50, 50, name='unexpected_pdgId', label='Unexpected pdgId').Weight(),
                 'nGenDaughters': Hist.new.Reg(100, 0, 100, name='nGenDaughters', label='Number of gen daughters').Weight(),
                 'nGenDaughtersMuons': Hist.new.Reg(100, 0, 100, name='nGenDaughtersMuons', label='Number of gen muon daughters').Weight(),

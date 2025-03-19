@@ -1,8 +1,9 @@
 import argparse
 import os
-
+import sys
 import h5py
 import hist
+sys.path.append("../../")
 
 # Import coffea specific features
 from coffea import processor
@@ -10,7 +11,7 @@ from dask.distributed import Client, LocalCluster
 from dask_jobqueue import SLURMCluster
 
 # SUEP Repo Specific
-from workflows import SUEP_coffea_WH_tracks
+import SUEP_coffea_WH_tracks
 from workflows.utils import output_utils, pandas_utils
 import pickle
 
