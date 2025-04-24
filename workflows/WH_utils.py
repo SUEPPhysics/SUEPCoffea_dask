@@ -881,7 +881,7 @@ def orthogonalitySelection(events, isMC: int):
         & (ak.max(looseElectrons.pt, axis=1, mask_identity=False) >= 25)
         & (ak.sum(looseElectrons.charge, axis=1) == 0)
     )
-    cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) < 4
+    cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) == 2
     cutHasTwoLeps = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
 
     # apply orthogonality condition

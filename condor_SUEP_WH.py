@@ -102,6 +102,7 @@ def main():
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
     parser.add_argument("--chunkSize", type=int, default=10000, help="")
+    parser.add_argument("--nworkers", type=int, default=1, help="")
     parser.add_argument(
         "--doInf",
         type=str,
@@ -125,7 +126,7 @@ def main():
 
     for instance in modules_era:
         runner = processor.Runner(
-            executor=processor.FuturesExecutor(compression=None, workers=1),
+            executor=processor.FuturesExecutor(compression=None, workers=options.nworkers),
             schema=processor.NanoAODSchema,
             xrootdtimeout=120,
             chunksize=options.chunkSize,
