@@ -45,8 +45,14 @@ def getSignalDecayMode(sample):
     if match:
         decay = match.group(4)
         return decay
-    else:
-        raise ValueError(f"Could not find decay mode in sample name {sample}.")
+
+    pattern2 = r'WHleptonicpythia_(\w+)_M125.0_MD(\d+\.\d+)_T(\d+\.\d+)_HT-1_'
+    match2 = re.search(pattern2, sample)
+    if match2:
+        decay = match2.group(1)
+        return decay
+
+    raise ValueError(f"Could not find decay mode in sample name {sample}.")
 
 
 def getAK4Jets(Jets, runs, iso=None, isMC: bool = 1):
