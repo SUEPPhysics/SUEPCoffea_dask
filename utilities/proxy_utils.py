@@ -1,6 +1,7 @@
+import logging
 import os
 import subprocess
-import logging
+
 
 def check_proxy(time_min=100):
     """

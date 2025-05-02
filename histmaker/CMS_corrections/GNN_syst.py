@@ -1,7 +1,9 @@
 import json
 import logging
 import sys
+
 import utils
+
 
 def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
     """
@@ -52,10 +54,8 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
                 continue
 
             if model in plot and len(plot.axes) < 2:
-                GNN_syst_plots[plot + "_GNNsyst_down"] = (
-                    apply_binwise_scaling(
-                        plots[plot].copy(), bins, [1 - s for s in scales]
-                    )
+                GNN_syst_plots[plot + "_GNNsyst_down"] = apply_binwise_scaling(
+                    plots[plot].copy(), bins, [1 - s for s in scales]
                 )
                 GNN_syst_plots[plot + "_GNNsyst_up"] = apply_binwise_scaling(
                     plots[plot].copy(), bins, [1 + s for s in scales]
@@ -67,10 +67,8 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
                     dim = "x"
                 elif model in var2:
                     dim = "y"
-                GNN_syst_plots[plot + "_GNNsyst_down"] = (
-                    apply_binwise_scaling(
-                        plots[plot].copy(), bins, [1 - s for s in scales], dim=dim
-                    )
+                GNN_syst_plots[plot + "_GNNsyst_down"] = apply_binwise_scaling(
+                    plots[plot].copy(), bins, [1 - s for s in scales], dim=dim
                 )
                 GNN_syst_plots[plot + "_GNNsyst_up"] = apply_binwise_scaling(
                     plots[plot].copy(), bins, [1 + s for s in scales], dim=dim

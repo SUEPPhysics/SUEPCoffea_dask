@@ -1,12 +1,14 @@
-import os
 import gc
-import uproot
+import os
 import pickle
 import sys
+
 import hist
+import uproot
 
 sys.path.append("../")
 from data import data_utils
+
 
 def formatGluGluToSUEPNaming(file):
     file = file.split("/")[-1]
@@ -306,6 +308,7 @@ def fillCutflows(
 
     return cutflows
 
+
 def loader(
     infile_names,
     by_bin=True,
@@ -408,6 +411,7 @@ def openHistFile(infile_name):
         hists, metadata = openpickle(infile_name)
     return hists, metadata
 
+
 def openpickle(infile_name):
     _plots = {}
     _metadata = {}
@@ -423,6 +427,7 @@ def openpickle(infile_name):
     gc.collect()
     return _plots, _metadata
 
+
 def openroot(infile_name):
     _plots = {}
     _metadata = {}
@@ -435,6 +440,7 @@ def openroot(infile_name):
                 _plots[k.split(";")[0]] = _infile[k].to_hist()
     gc.collect()
     return _plots, _metadata
+
 
 def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
     hists = []
@@ -449,12 +455,16 @@ def getHistList(plotDir, tag, filename, filters=None, file_ext=".root"):
             hists.append(result_path)
     return hists
 
+
 def combineSamples(plots: dict, samples: list) -> dict:
     out = {}
-    missing = [s not in plots.keys() for s in samples]  
+    missing = [s not in plots.keys() for s in samples]
     missing_samples = [s for s, m in zip(samples, missing) if m]
     if missing_samples:
-        print("WARNING: not all samples are in the plots dictionary: " + ", ".join(missing_samples))
+        print(
+            "WARNING: not all samples are in the plots dictionary: "
+            + ", ".join(missing_samples)
+        )
         return out
     for key in plots[samples[0]].keys():
         for i, sample in enumerate(samples):

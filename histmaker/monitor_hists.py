@@ -53,7 +53,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--path",
         help="Path to the output directory",
-        default="/ceph/submit/data/user/{u}/{user}/SUEP/outputs/".format(u=os.environ['USER'][0], user=os.environ["USER"]),
+        default="/ceph/submit/data/user/{u}/{user}/SUEP/outputs/".format(
+            u=os.environ["USER"][0], user=os.environ["USER"]
+        ),
     )
     parser.add_argument(
         "-c",

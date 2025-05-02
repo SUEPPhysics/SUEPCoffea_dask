@@ -1,6 +1,7 @@
-import numpy as np
-import hist
 import boost_histogram as bh
+import hist
+import numpy as np
+
 
 def apply_binwise_scaling(h_in, bins, scales, dim="x"):
     """

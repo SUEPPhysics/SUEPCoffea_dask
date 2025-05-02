@@ -25,6 +25,7 @@ from tqdm import tqdm
 sys.path.append("..")
 import fill_utils
 import hist_defs
+import plotting.plot_utils as plot_utils
 import var_defs
 from CMS_corrections import (
     GNN_syst,
@@ -33,8 +34,6 @@ from CMS_corrections import (
     track_killing,
     triggerSF,
 )
-
-import plotting.plot_utils as plot_utils
 
 
 ### Parser #######################################################################################################

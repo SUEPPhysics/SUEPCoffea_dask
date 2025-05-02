@@ -30,7 +30,6 @@ import numpy as np
 sys.path.append("..")
 from make_hists import makeParser as makeHistsParser
 from merge_ntuples import makeParser as makeMergeParser
-
 from plotting.plot_utils import check_proxy
 
 # SLURM script template

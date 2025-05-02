@@ -31,9 +31,10 @@ runs = {
     "WH": {
         "commands": [
             "cd histmaker",
-            "python run_WH_histmaker.py --sample SingleMuon+Run2018A-UL2018_MiniAODv2_GT36-v2+MINIAOD --client local --isMC 0 --channel WH --era 2018 -n 10 --tag WH_1_14_data_GT36_@018 --doSyst 0 --output debug --dataDirLocal $CMSDIR/SUEP/{}/{}/ --maxFiles 100 --blind 0 --saveDir ./"
+            "python run_WH_histmaker.py --sample SingleMuon+Run2018A-UL2018_MiniAODv2_GT36-v2+MINIAOD --client local --isMC 0 --channel WH --era 2018 -n 10 --tag WH_1_14_data_GT36_@018 --doSyst 0 --output debug --dataDirLocal $CMSDIR/SUEP/{}/{}/ --maxFiles 100 --blind 0 --saveDir ./",
         ],
-        "out_file": os.environ['PWD']+"/histmaker/debug/SingleMuon+Run2018A-UL2018_MiniAODv2_GT36-v2+MINIAOD.pkl"
+        "out_file": os.environ["PWD"]
+        + "/histmaker/debug/SingleMuon+Run2018A-UL2018_MiniAODv2_GT36-v2+MINIAOD.pkl",
     }
 }
 
@@ -76,7 +77,7 @@ def test_histmaker(run, config):
         sys.exit()
 
     # delete output and log files if everything was successful
-    #os.system("rm -rf " + output_file)
+    # os.system("rm -rf " + output_file)
     os.system("rm " + run + ".out")
     os.system("rm " + run + ".err")
 

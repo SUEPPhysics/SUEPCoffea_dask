@@ -74,11 +74,7 @@ def initialize_new_variables(label: str, options, config: dict):
                         "SUEP_phi_HighestPT",
                     ],
                 ],
-                [
-                    'SUEP_genSUEP_BV',
-                    balancing_var,
-                    ['SUEP_pt_HighestPT', 'SUEP_genPt']
-                ],
+                ["SUEP_genSUEP_BV", balancing_var, ["SUEP_pt_HighestPT", "SUEP_genPt"]],
                 [
                     "percent_darkphis_inTracker",
                     lambda x, y: x / y,
@@ -87,7 +83,7 @@ def initialize_new_variables(label: str, options, config: dict):
             ]
 
         if options.channel == "WH":
-            
+
             new_vars += [
                 [
                     "W_SUEP_BV",
@@ -117,7 +113,12 @@ def initialize_new_variables(label: str, options, config: dict):
                 [
                     "W_ak4jet1_inSUEPcluster_vBV",
                     vector_balancing_var,
-                    ["W_phi", "W_pt", "ak4jet1_inSUEPcluster_phi_HighestPT", "ak4jet1_inSUEPcluster_pt_HighestPT"],
+                    [
+                        "W_phi",
+                        "W_pt",
+                        "ak4jet1_inSUEPcluster_phi_HighestPT",
+                        "ak4jet1_inSUEPcluster_pt_HighestPT",
+                    ],
                 ],
                 [
                     "deltaPhi_SUEP_W",
@@ -164,7 +165,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "lepton_pt",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "electron_eta",
@@ -172,7 +173,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "lepton_eta",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "electron_phi",
@@ -180,7 +181,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "lepton_phi",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "muon_pt",
@@ -188,7 +189,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "lepton_pt",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "muon_eta",
@@ -196,7 +197,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "lepton_eta",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "muon_phi",
@@ -204,7 +205,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "lepton_phi",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "SUEP_nconst_mu",
@@ -212,7 +213,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "SUEP_nconst_HighestPT",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "SUEP_S1_mu",
@@ -220,7 +221,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "SUEP_S1_HighestPT",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "SUEP_nconst_e",
@@ -228,7 +229,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "SUEP_nconst_HighestPT",
                         "lepton_flavor",
-                    ]
+                    ],
                 ],
                 [
                     "SUEP_S1_e",
@@ -236,16 +237,16 @@ def initialize_new_variables(label: str, options, config: dict):
                     [
                         "SUEP_S1_HighestPT",
                         "lepton_flavor",
-                    ]
-                ]
+                    ],
+                ],
             ]
             if options.isMC:
                 new_vars += [
-                    #["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
-                    #["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
+                    # ["deltaPhi_W_genW", deltaPhi_x_y, ["genW_phi", "W_phi"]],
+                    # ["deltaPt_W_genW", lambda x, y: x - y, ["genW_pt", "W_pt"]],
                     ["W_genW_BV", balancing_var, ["W_pt", "genW_pt"]],
-                    #['LepSFMu', lambda x, y: x * y, ['LepSF', 'isMuon']],
-                    #['LepSFEl', lambda x, y: x * y, ['LepSF', 'isElectron']],
+                    # ['LepSFMu', lambda x, y: x * y, ['LepSF', 'isMuon']],
+                    # ['LepSFEl', lambda x, y: x * y, ['LepSF', 'isElectron']],
                 ]
 
         if options.channel == "WH-VRGJ":
@@ -253,7 +254,8 @@ def initialize_new_variables(label: str, options, config: dict):
             new_vars += [
                 [
                     "photon_WP80",
-                    lambda mvaID, isScEtaEB, isScEtaEE: ((mvaID > 0.42) & isScEtaEB) | ((mvaID > 0.14) & isScEtaEE),
+                    lambda mvaID, isScEtaEB, isScEtaEE: ((mvaID > 0.42) & isScEtaEB)
+                    | ((mvaID > 0.14) & isScEtaEE),
                     ["photon_mvaID", "photon_isScEtaEB", "photon_isScEtaEE"],
                 ],
                 [
@@ -337,24 +339,47 @@ def initialize_new_variables(label: str, options, config: dict):
             ]
 
         # deal with MET variations
-        _met_variations = ['JER_up', 'JER_down', 'JES_up', 'JES_down', 'Unclustered_up', 'Unclustered_down'] 
+        _met_variations = [
+            "JER_up",
+            "JER_down",
+            "JES_up",
+            "JES_down",
+            "Unclustered_up",
+            "Unclustered_down",
+        ]
         for _var in _met_variations:
-            if _var not in label: continue
+            if _var not in label:
+                continue
             new_vars += [
                 [
                     f"W_pt_{_var}",
                     calc_vector_sum_pt,
-                    ["lepton_phi", "lepton_pt", f"PuppiMET_phi_{_var}", f"PuppiMET_pt_{_var}"],
+                    [
+                        "lepton_phi",
+                        "lepton_pt",
+                        f"PuppiMET_phi_{_var}",
+                        f"PuppiMET_pt_{_var}",
+                    ],
                 ],
                 [
                     f"W_phi_{_var}",
                     calc_vector_sum_phi,
-                    ["lepton_phi", "lepton_pt", f"PuppiMET_phi_{_var}", f"PuppiMET_pt_{_var}"],
+                    [
+                        "lepton_phi",
+                        "lepton_pt",
+                        f"PuppiMET_phi_{_var}",
+                        f"PuppiMET_pt_{_var}",
+                    ],
                 ],
                 [
                     f"W_mt_{_var}",
                     calc_mt,
-                    ["lepton_phi", "lepton_pt", f"PuppiMET_phi_{_var}", f"PuppiMET_pt_{_var}"],
+                    [
+                        "lepton_phi",
+                        "lepton_pt",
+                        f"PuppiMET_phi_{_var}",
+                        f"PuppiMET_pt_{_var}",
+                    ],
                 ],
                 [
                     f"deltaPhi_SUEP_MET_{_var}",
@@ -376,7 +401,7 @@ def initialize_new_variables(label: str, options, config: dict):
                     f"W_SUEP_BV_{_var}",
                     balancing_var,
                     [f"W_pt_{_var}", "SUEP_pt_HighestPT"],
-                ]
+                ],
             ]
 
     config["new_variables"] = new_vars
@@ -401,6 +426,7 @@ def deltaPhi_x_y(xphi, yphi):
     abs_dphi[(yphi < -2 * np.pi)] = -999
 
     return abs_dphi
+
 
 def deltaPhi_x_y_pTReq(ypt_threshold):
 
@@ -427,7 +453,7 @@ def deltaPhi_x_y_pTReq(ypt_threshold):
         abs_dphi[(ypt < ypt_threshold)] = -999
 
         return abs_dphi
-    
+
     return deltaPhi_x_y_pTReq_inner
 
 
@@ -589,8 +615,10 @@ def gammaTriggerSel(photon_pt, bits):
     photon200 = (bits % 2) == 1
     return (photon_pt > 235) & photon200
 
+
 def electron_only(var, flavor):
     return np.where(abs(flavor) == 11, var, -999)
+
 
 def muon_only(var, flavor):
     return np.where(abs(flavor) == 13, var, -999)

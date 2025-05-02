@@ -1,7 +1,9 @@
+import json
 import os
+
 import numpy as np
 import uproot
-import json
+
 
 def triggerSF(era):
     if era == "2018":
@@ -55,6 +57,7 @@ def get_scout_trigSF_weight(htarray, sys, era="2018"):
             scaleFactor = scaleFactorNom
     return scaleFactor
 
+
 def WH(leptonpt, pdgids, sys, era):
 
     data_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -66,7 +69,7 @@ def WH(leptonpt, pdgids, sys, era):
         muSF_dict = json.load(f)
     with open(ele_filename) as f:
         eleSF_dict = json.load(f)
-        
+
     ele_bins = eleSF_dict["lep1pt"]
     mu_bins = muSF_dict["lep1pt"]
 
@@ -78,8 +81,18 @@ def WH(leptonpt, pdgids, sys, era):
     mu_bin_edges.append(mu_bins[-1]["bin_range"][1])
     mu_bin_edges = np.array(mu_bin_edges)
 
-    ele_SFs = np.array([entry["scale_factor"] if entry["scale_factor"] > 0.0 else 1.0 for entry in ele_bins])
-    mu_SFs = np.array([entry["scale_factor"] if entry["scale_factor"] > 0.0 else 1.0 for entry in mu_bins])
+    ele_SFs = np.array(
+        [
+            entry["scale_factor"] if entry["scale_factor"] > 0.0 else 1.0
+            for entry in ele_bins
+        ]
+    )
+    mu_SFs = np.array(
+        [
+            entry["scale_factor"] if entry["scale_factor"] > 0.0 else 1.0
+            for entry in mu_bins
+        ]
+    )
 
     ele_SFs_up = np.array([entry["total_uncertainty_up"] for entry in ele_bins])
     mu_SFs_up = np.array([entry["total_uncertainty_up"] for entry in mu_bins])
@@ -107,6 +120,4 @@ def WH(leptonpt, pdgids, sys, era):
         SFs[is_electron] = ele_SFs[ele_indices]
         SFs[is_muon] = mu_SFs[mu_indices]
 
-
     return SFs
-

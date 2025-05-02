@@ -1,6 +1,7 @@
-import numpy as np
-import hist
 import boost_histogram as bh
+import hist
+import numpy as np
+
 
 def slice_hist2d(hist, regions_list, slice_var="y"):
     """
@@ -19,6 +20,7 @@ def slice_hist2d(hist, regions_list, slice_var="y"):
             h = hist[regions[0] : regions[1] : sum, :]
         hist_list.append(h)
     return hist_list
+
 
 def rebin_piecewise(h_in, bins, histtype="hist"):
     """
@@ -74,6 +76,7 @@ def rebin_piecewise(h_in, bins, histtype="hist"):
 
     return h_out
 
+
 def hist_mean(hist):
     """
     Calculates the mean of a 1-dimensional Hist histogram.
@@ -99,6 +102,7 @@ def hist_std_dev(hist, axis=0):
     standard_deviation = np.sqrt(squared_diff_sum / np.sum(bin_values))
 
     return standard_deviation
+
 
 def hist2d_correlation(h):
     """

@@ -6,7 +6,6 @@ import logging
 import pickle
 
 import cloudpickle
-
 from distributed.protocol.serialize import dask_deserialize, dask_serialize
 
 HIGHEST_PROTOCOL = pickle.HIGHEST_PROTOCOL
@@ -85,12 +84,13 @@ def dumps(x, *, buffer_callback=None, protocol=HIGHEST_PROTOCOL):
 
 
 def loads(x, *, buffers=()):
-    
+
     # Luca, 1/22/2025
     # it appears that, occasionally, dask uses pandas' version of
     # pickle.loads, which doesn't support buffers. We overwrite this
     # forcefully here to use the correct version.
     import pickle
+
     pickle.loads = pickle._loads
 
     try:

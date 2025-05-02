@@ -1,9 +1,11 @@
 import os
 import pickle
 import sys
+
 import awkward as ak
 import correctionlib
 import numpy as np
+
 
 def doBTagWeights(
     jets_pt,
@@ -14,7 +16,7 @@ def doBTagWeights(
     wps: str,
     channel: str = "zh",
     base_dir: str = os.path.join(os.path.dirname(__file__), "../../"),
-    variations: list = ['central']
+    variations: list = ["central"],
 ) -> dict:
     """
     Compute btagging weights for a given jet collection.
@@ -25,13 +27,15 @@ def doBTagWeights(
         raise ValueError(f"Invalid WP: {wp}")
     if era not in (2015, 2016, 2017, 2018):
         raise ValueError(f"Invalid era: {era}")
-    
-    jetsPre = ak.zip({
-        "pt": jets_pt,
-        "eta": jets_eta,
-        "hadronFlavour": jets_hadronFlavour,
-        "btag": jets_btagDeepFlavB,
-    })
+
+    jetsPre = ak.zip(
+        {
+            "pt": jets_pt,
+            "eta": jets_eta,
+            "hadronFlavour": jets_hadronFlavour,
+            "btag": jets_btagDeepFlavB,
+        }
+    )
 
     # some jet pre selection
     jetsPre = jetsPre[jetsPre.pt > 15]
@@ -76,8 +80,8 @@ def doBTagWeights(
             ),
             SF[wp]["central"],
         )
-        
-        if 'HFcorrelated_Up' in variations:
+
+        if "HFcorrelated_Up" in variations:
             SF[wp]["HFcorrelated_Up"] = np.where(
                 (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
                 corrector["deepJet_comb"].evaluate(
@@ -90,7 +94,7 @@ def doBTagWeights(
                 SF[wp]["central"],
             )
 
-        if 'HFcorrelated_Dn' in variations:
+        if "HFcorrelated_Dn" in variations:
             SF[wp]["HFcorrelated_Dn"] = np.where(
                 (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
                 corrector["deepJet_comb"].evaluate(
@@ -103,7 +107,7 @@ def doBTagWeights(
                 SF[wp]["central"],
             )
 
-        if 'HFuncorrelated_Up' in variations:
+        if "HFuncorrelated_Up" in variations:
             SF[wp]["HFuncorrelated_Up"] = np.where(
                 (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
                 corrector["deepJet_comb"].evaluate(
@@ -115,8 +119,8 @@ def doBTagWeights(
                 ),
                 SF[wp]["central"],
             )
-        
-        if 'HFuncorrelated_Dn' in variations:
+
+        if "HFuncorrelated_Dn" in variations:
             SF[wp]["HFuncorrelated_Dn"] = np.where(
                 (abs(jets.hadronFlavour) == 4) | (abs(jets.hadronFlavour) == 5),
                 corrector["deepJet_comb"].evaluate(
@@ -128,8 +132,8 @@ def doBTagWeights(
                 ),
                 SF[wp]["central"],
             )
-        
-        if 'LFcorrelated_Up' in variations:
+
+        if "LFcorrelated_Up" in variations:
             SF[wp]["LFcorrelated_Up"] = np.where(
                 abs(jets.hadronFlavour) == 0,
                 correctorL["deepJet_incl"].evaluate(
@@ -142,7 +146,7 @@ def doBTagWeights(
                 SF[wp]["central"],
             )
 
-        if 'LFcorrelated_Dn' in variations:
+        if "LFcorrelated_Dn" in variations:
             SF[wp]["LFcorrelated_Dn"] = np.where(
                 abs(jets.hadronFlavour) == 0,
                 correctorL["deepJet_incl"].evaluate(
@@ -154,8 +158,8 @@ def doBTagWeights(
                 ),
                 SF[wp]["central"],
             )
-        
-        if 'LFuncorrelated_Up' in variations:
+
+        if "LFuncorrelated_Up" in variations:
             SF[wp]["LFuncorrelated_Up"] = np.where(
                 abs(jets.hadronFlavour) == 0,
                 correctorL["deepJet_incl"].evaluate(
@@ -167,8 +171,8 @@ def doBTagWeights(
                 ),
                 SF[wp]["central"],
             )
-        
-        if 'LFuncorrelated_Dn' in variations:
+
+        if "LFuncorrelated_Dn" in variations:
             SF[wp]["LFuncorrelated_Dn"] = np.where(
                 abs(jets.hadronFlavour) == 0,
                 correctorL["deepJet_incl"].evaluate(
@@ -256,7 +260,11 @@ def doBTagWeights(
 
 
 def getBTagEffs(
-    jets, era: int, wp: str = "L", channel: str = "zh", base_dir: str = os.path.join(os.path.dirname(__file__), "../../")
+    jets,
+    era: int,
+    wp: str = "L",
+    channel: str = "zh",
+    base_dir: str = os.path.join(os.path.dirname(__file__), "../../"),
 ) -> dict:
     """
     Get the efficiencies of b-tagging for a given jet collection,

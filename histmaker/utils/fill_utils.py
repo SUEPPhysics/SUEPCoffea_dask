@@ -241,7 +241,12 @@ def apply_scaling_weights_byregion(
     return df
 
 
-def add_cutflow(df: pd.DataFrame, cutflow: dict, cutflow_label: str, column_name: str = "event_weight") -> None:
+def add_cutflow(
+    df: pd.DataFrame,
+    cutflow: dict,
+    cutflow_label: str,
+    column_name: str = "event_weight",
+) -> None:
 
     if cutflow_label in cutflow.keys():
         cutflow[cutflow_label] += np.sum(df[column_name])
@@ -278,7 +283,7 @@ def prepare_DataFrame(
         # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
         add_cutflow(df, cutflow, "cutflow_method_var_" + label_out)
-        
+
     # 2. blind
     if blind:
         df = blind_DataFrame(df, label_out, config["SR"])
@@ -352,7 +357,7 @@ def prepare_DataFrame(
                 "cutflow_" + sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out
             )
             add_cutflow(df, cutflow, cutflow_label)
-            
+
     return df
 
 

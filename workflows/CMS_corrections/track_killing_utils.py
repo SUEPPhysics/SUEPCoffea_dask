@@ -1,6 +1,7 @@
 import awkward as ak
-import numpy as np
 import numba as nb
+import numpy as np
+
 
 @nb.njit
 def generate_random_akarray(builder, lengths):
@@ -15,14 +16,10 @@ def generate_random_akarray(builder, lengths):
         builder.end_list()
 
 
-def track_killing(tracks, decay_mode:str):
-    
+def track_killing(tracks, decay_mode: str):
+
     pt_bin_edges = [1, 1e10]
-    percents = {
-        'generic': 0.03,
-        'hadronic': 0.034,
-        'leptonic': 0.042
-    }
+    percents = {"generic": 0.03, "hadronic": 0.034, "leptonic": 0.042}
 
     event_bool = ak.zeros_like(tracks.pt, dtype=bool)
 
@@ -33,7 +30,7 @@ def track_killing(tracks, decay_mode:str):
 
     # iterate over the pt bins
     for j in range(len(pt_bin_edges) - 1):
-        
+
         # get a mask for all tracks in the pt bin
         pt_bin = (tracks.pt >= pt_bin_edges[j]) & (tracks.pt < pt_bin_edges[j + 1])
 
