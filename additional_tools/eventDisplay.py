@@ -606,7 +606,8 @@ def plot(
     # Plot parameters
     ax.set_xlim(-pi, pi)
     ax.set_ylim(-4, 4)
-    ax.set_xlabel(r"$\phi$")
+    ax.set_xlabel(r"$\
+        phi$")
     ax.set_ylabel(r"$\eta$")
     ax.tick_params(axis="both", which="major")
 
@@ -795,7 +796,7 @@ def plot(
     line6 = ax.scatter(
         [-100],
         [-100],
-        label="Scalar mediator",
+        label="Higgs boson",
         marker="x",
         s=80,
         color="#e42536",

@@ -104,8 +104,8 @@ echo " ------ THE END (everyone dies !) ----- "
 # the following have been dropped due to high failure rates with xrootd: T2_IT_Bari,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_BR_SPRACE,T2_AT_Vienna,T2_US_Vanderbilt,T2_ES_IFCA,T2_FI_HIP
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 4GB
-request_memory        = 4GB
+request_disk          = 8GB
+request_memory        = 8GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -211,7 +211,7 @@ def main():
     if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.WARNING)
 
     # define which file you want to run, the output file name and extension that it produces
     # these will be transferred back to the output directory
@@ -286,23 +286,60 @@ def main():
 
             logging.info("-- sample : " + sample_name)
 
+            # create the output directory for this sample if it doesn't exist
+            fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
+            _sample_path = "/" + fin_outdir_condor.split("//")[-1]
+            _tokens = options.output.split("//")
+            _redirector = _tokens[0] + "//" + _tokens[1] + "//"
+            check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
+            _sample_dir_exists = subprocess.call(check_dir_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+            if not _sample_dir_exists:
+                logging.info(f"Creating output directory {_redirector+_sample_path}")
+                os.system(f"mkdir -p /ceph/submit/{_sample_path}")
+                #os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
+            else:
+                logging.warning(f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten.")
+
             # set up the logs directory
             jobs_dir = "/".join([options.logs, options.tag, sample_name])
-            if os.path.isdir(jobs_dir):
-                if not options.force:
-                    logging.error(" " + jobs_dir + " already exists !")
-                    continue
-                else:
-                    logging.warning(
-                        " " + jobs_dir + " already exists, forcing its deletion!"
-                    )
-                    shutil.rmtree(jobs_dir)
-                    os.makedirs(jobs_dir)
-            else:
+
+            # the directory doesn't exist
+            if not os.path.isdir(jobs_dir):
                 os.makedirs(jobs_dir)
 
+            # we are forcing the creation
+            elif options.force: 
+                logging.warning(
+                    " " + jobs_dir + " exists, forcing its deletion!"
+                )
+                shutil.rmtree(jobs_dir)
+                os.makedirs(jobs_dir)
+
+            # if the input file doesn't exist
+            elif not os.path.exists(os.path.join(jobs_dir, "inputfiles.dat")):
+                logging.warning(
+                    " " + os.path.join(jobs_dir, "inputfiles.dat") + " doesn't exist! Clearing log directory."
+                )
+                shutil.rmtree(jobs_dir)
+                os.makedirs(jobs_dir)
+                
+            # or exists, but is empty, delete it and recreate\
+            elif os.path.getsize(os.path.join(jobs_dir, "inputfiles.dat")) == 0:
+                logging.warning(
+                    " " + os.path.join(jobs_dir, "inputfiles.dat") + " exists but is empty! Clearing log directory."
+                )
+                shutil.rmtree(jobs_dir)
+                os.makedirs(jobs_dir)
+
+            else:
+                logging.error(" Log directory " + jobs_dir + " already exists, and input file list seems correct. Will not submit this sample!")
+                continue                        
+                
             # get the filelist with xrootd
             Raw_list = []
+            logging.debug(
+                "xrdfs {} ls {}".format(sample_input_redirector, sample_path)
+            )
             comm = subprocess.Popen(
                 ["xrdfs", sample_input_redirector, "ls", sample_path],
                 stdout=subprocess.PIPE,
@@ -324,18 +361,6 @@ def main():
                     infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
                 infiles.close()
-
-            # create the output directory for this sample if it doesn't exist
-            fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
-            _sample_path = "/" + fin_outdir_condor.split("//")[-1]
-            _tokens = options.output.split("//")
-            _redirector = _tokens[0] + "//" + _tokens[1] + "//"
-            check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
-            _sample_dir_exists = subprocess.call(check_dir_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
-            if not _sample_dir_exists:
-                os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
-            else:
-                logging.warning(f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten.")
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
@@ -377,10 +402,14 @@ def main():
                 condorfile.close()
 
             # write the git info to a file in the output directory where the ntuples will be stored
-            gitfile = write_git_info()
-            os.system(f"xrdcp -s {gitfile} {fin_outdir_condor}/{gitfile}")
-            os.system(f"rm {gitfile}")
-
+            try:
+                gitfile = write_git_info()
+                os.system(f"xrdcp -s {gitfile} {fin_outdir_condor}/{gitfile}")
+                os.system(f"rm {gitfile}")
+            except Exception as e:
+                logging.error(f"Error writing git info: {e}")
+                logging.error("Git info not written to output directory.")
+                
             # don't submit if it's a dryrun
             if options.dryrun:
                 continue
