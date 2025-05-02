@@ -108,40 +108,39 @@ default_style = {
     "ggf-mS1000": {
         "color": "red",
     },
-    'SUEP-WH-mS125_T2.0_mPhi2.0_generic': {
+    "SUEP-WH-mS125_T2.0_mPhi2.0_generic": {
         "color": "cyan",
         "linewidth": 3,
         "linestyle": "--",
     },
-    'SUEP-WH-mS125_T3.0_mPhi3.0_generic': {
+    "SUEP-WH-mS125_T3.0_mPhi3.0_generic": {
         "color": "lime",
         "linewidth": 3,
         "linestyle": "--",
     },
-    'SUEP-WH-mS125_T4.0_mPhi4.0_generic': {
+    "SUEP-WH-mS125_T4.0_mPhi4.0_generic": {
         "color": "dimgray",
         "linewidth": 3,
         "linestyle": "--",
     },
-    'SUEP-WH-mS125_T8.0_mPhi8.0_generic': {
+    "SUEP-WH-mS125_T8.0_mPhi8.0_generic": {
         "color": "silver",
         "linewidth": 3,
         "linestyle": "--",
     },
 }
 
-mA_map = {
-    'leptonic':0.5,
-    'hadronic':0.7,
-    'generic':1.0
-}
+mA_map = {"leptonic": 0.5, "hadronic": 0.7, "generic": 1.0}
+
 
 def getStyle(sample: str) -> dict:
 
-    if any([sample.endswith(f"_{year}") for year in ["2016apv", "2016", "2017", "2018"]]):
-        sample = '_'.join(sample.split("_")[:-1])
+    if any(
+        [sample.endswith(f"_{year}") for year in ["2016apv", "2016", "2017", "2018"]]
+    ):
+        sample = "_".join(sample.split("_")[:-1])
 
-    if "GluGluToSUEP"  in sample and "mS" in sample:
+    if "GluGluToSUEP" in sample and "mS" in sample:
         sample = sample[sample.find("mS") + 2 :]
         sample = sample.split("_")[0]
         return default_style["ggf-mS" + sample]
@@ -154,9 +153,11 @@ def getStyle(sample: str) -> dict:
         mode = match.group("mode")
         mA = mA_map[mode]
         _style = default_style.get(sample, {"linewidth": 3, "linestyle": "--"})
-        _style["label"] = f"$T_D$={temp} GeV, $m_{{\phi}}$={mPhi} GeV, $m_{{A'}}$={mA} GeV"
+        _style["label"] = (
+            f"$T_D$={temp} GeV, $m_{{\phi}}$={mPhi} GeV, $m_{{A'}}$={mA} GeV"
+        )
         return _style
-    
+
     if sample in default_style.keys():
         return default_style[sample]
 

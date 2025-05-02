@@ -25,12 +25,12 @@ from math import pi
 import awkward as ak
 import fastjet
 import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import uproot
 import vector
+from matplotlib.lines import Line2D
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
@@ -218,14 +218,19 @@ def getMET(tree):
 
 
 def getPhotons(tree):
-    photons = ak.zip({
-        "pt": get_branch(tree, "Photon_pt"),
-        "phi": get_branch(tree, "Photon_phi"),
-        "eta": get_branch(tree, "Photon_eta"),
-        "mass": get_branch(tree, "Photon_mass"),
-    }, with_name="Momentum4D")
+    photons = ak.zip(
+        {
+            "pt": get_branch(tree, "Photon_pt"),
+            "phi": get_branch(tree, "Photon_phi"),
+            "eta": get_branch(tree, "Photon_eta"),
+            "mass": get_branch(tree, "Photon_mass"),
+        },
+        with_name="Momentum4D",
+    )
     cutPhotons = (
-        (get_branch(tree, "Photon_mvaID_WP90")) # don't change this without changing the photon SFs
+        (
+            get_branch(tree, "Photon_mvaID_WP90")
+        )  # don't change this without changing the photon SFs
         & (abs(get_branch(tree, "Photon_eta")) <= 2.5)
         & (get_branch(tree, "Photon_electronVeto"))
         & (get_branch(tree, "Photon_pt") >= 30)
@@ -235,6 +240,7 @@ def getPhotons(tree):
         & (get_branch(tree, "Photon_pfRelIso03_all") < 0.1)
     )
     return photons[cutPhotons]
+
 
 def getJets(tree, lepton=None):
     Jets_awk = ak.zip(
@@ -403,17 +409,9 @@ def drawJetCone(ax, jet_eta, jet_phi, R=1.5, color="red"):
     phis = phis[1:]
     etas = etas[1:]
     linestyle = "-." if R == 1.5 else "--"
+    ax.plot(phis[phis > pi] - 2 * pi, etas[phis > pi], color=color, linestyle=linestyle)
     ax.plot(
-        phis[phis > pi] - 2 * pi,
-        etas[phis > pi],
-        color=color,
-        linestyle=linestyle
-    )
-    ax.plot(
-        phis[phis < -pi] + 2 * pi,
-        etas[phis < -pi],
-        color=color,
-        linestyle=linestyle
+        phis[phis < -pi] + 2 * pi, etas[phis < -pi], color=color, linestyle=linestyle
     )
     ax.plot(phis[phis < pi], etas[phis < pi], color=color, linestyle=linestyle)
     return ax
@@ -743,7 +741,7 @@ def plot(
             color="#832db6",
         )
 
-    if channel == 'WH-VRGJ':
+    if channel == "WH-VRGJ":
         ax.scatter(
             photons.phi,
             photons.eta,
@@ -827,7 +825,9 @@ def plot(
         line9 = ax.scatter(
             [-100],
             [-100],
-            label="SUEP candidate\n($p_{\mathrm{T}}$ = " + str(round(SUEP_pt)) + " GeV)",
+            label="SUEP candidate\n($p_{\\mathrm{T}}$ = "
+            + str(round(SUEP_pt))
+            + " GeV)",
             facecolor="none",
             linestyle="-.",
             s=120,
@@ -846,17 +846,40 @@ def plot(
     if showLegend:
         light_blue_patch = mpatches.Patch(color="#92dadd", label="from scalar")
         magenta_patch = mpatches.Patch(color="xkcd:magenta", label="not from scalar")
-        gray_patch = Line2D([0], [0], marker='o', color='w', markerfacecolor="#9c9ca1", markersize=10, label="Tracks")
+        gray_patch = Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="#9c9ca1",
+            markersize=10,
+            label="Tracks",
+        )
         red_patch = mpatches.Patch(color="#e42536", label="SUEP Candidate tracks")
         blue_patch = mpatches.Patch(color="#5790fc", label="ISR Candidate tracks")
         bloodorange_patch = mpatches.Patch(
-            color="#e76300", label="$\\vec{p}_{\mathrm{T}}^{\mathrm{miss}}$\n($p_{\mathrm{T}}$ = " + str(round(MET.pt)) + " GeV)", alpha=0.5
+            color="#e76300",
+            label="$\\vec{p}_{\\mathrm{T}}^{\\mathrm{miss}}$\n($p_{\\mathrm{T}}$ = "
+            + str(round(MET.pt))
+            + " GeV)",
+            alpha=0.5,
         )
-        if channel == 'WH-VRGJ':
-            yellow_patch = mpatches.Patch(color="#b9ac70",label="$\gamma$\n($p_T$ = " + str(round(photons[0].pt)) + " GeV)")
+        if channel == "WH-VRGJ":
+            yellow_patch = mpatches.Patch(
+                color="#b9ac70",
+                label="$\\gamma$\n($p_T$ = " + str(round(photons[0].pt)) + " GeV)",
+            )
         if showLeptons and len(leptons) == 1:
-            darkcyan_patch = Line2D([0], [0], marker='o', color='w', markerfacecolor="#832db6", markersize=10,
-                label="Lepton\n($p_{\mathrm{T}}$ = " + str(round(leptons[0].pt)) + " GeV)",
+            darkcyan_patch = Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                markerfacecolor="#832db6",
+                markersize=10,
+                label="Lepton\n($p_{\\mathrm{T}}$ = "
+                + str(round(leptons[0].pt))
+                + " GeV)",
             )
         elif showLeptons:
             darkcyan_patch = mpatches.Patch(color="#832db6", label="Lepton")
@@ -880,7 +903,13 @@ def plot(
             handles.append(line6)
         if showSUEPCandidate and channel == "ggF" and len(jetsAK15) > 2 and not boost:
             handles.append(line8)
-        if showSUEPCandidate and "WH" in channel and len(jetsAK15) > 1 and not boost and False:
+        if (
+            showSUEPCandidate
+            and "WH" in channel
+            and len(jetsAK15) > 1
+            and not boost
+            and False
+        ):
             handles.append(line8)
         if showRingOfFire and boost:
             handles.append(line7)
@@ -902,7 +931,7 @@ def plot(
             handles.append(bloodorange_patch)
         if showLeptons:
             handles.append(darkcyan_patch)
-        if channel == 'WH-VRGJ':
+        if channel == "WH-VRGJ":
             handles.append(yellow_patch)
 
         ax.legend(handles=handles, loc=(1.01, 0))
@@ -1058,7 +1087,7 @@ def main():
         this_jetsAK4 = jetsAK4[i]
         this_gamma = gammas[i]
 
-        if len(this_jetsAK15) < 1: 
+        if len(this_jetsAK15) < 1:
             print("No AK15 jets in event", i)
             continue
 
@@ -1187,7 +1216,7 @@ def main():
                 ),
                 bbox_inches="tight",
                 dpi=300,
-                transparent=True
+                transparent=True,
             )
         else:
             fig.savefig(
@@ -1200,7 +1229,7 @@ def main():
                 + f"/Event{eventNumbers[i]:d}_Run{runNumbers[i]:d}_Lumi{luminosityBlocks[i]:d}.png",
                 bbox_inches="tight",
                 dpi=300,
-                transparent=True
+                transparent=True,
             )
 
         plt.close(fig)

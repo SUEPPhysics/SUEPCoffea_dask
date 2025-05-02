@@ -1,4 +1,6 @@
 import re
+import warnings
+
 import hist
 import hist.intervals
 import matplotlib
@@ -6,17 +8,16 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
-import warnings
-
 from utils import hist_utils
-from utils.style_utils import getStyles, getColor
+from utils.style_utils import getColor, getStyles
 
-warnings.filterwarnings('ignore')
-matplotlib.rcParams.update({'figure.max_open_warning': 0})
-matplotlib.rcParams['figure.facecolor'] = 'white'
-plt.rcParams['figure.dpi'] = 70
+warnings.filterwarnings("ignore")
+matplotlib.rcParams.update({"figure.max_open_warning": 0})
+matplotlib.rcParams["figure.facecolor"] = "white"
+plt.rcParams["figure.dpi"] = 70
 plt.style.use(hep.style.CMS)
 hep.style.use("CMS")
+
 
 def styled_plot_ratio(
     hlist,
@@ -49,7 +50,9 @@ def styled_plot_ratio(
     if stacked_hlist:
         if stacked_labels:
             stacked_styles = getStyles(stacked_labels)
-        pretty_stacked_labels = [s.get("label", l) for s, l in zip(stacked_styles, stacked_labels)]
+        pretty_stacked_labels = [
+            s.get("label", l) for s, l in zip(stacked_styles, stacked_labels)
+        ]
         _default_cmap = plt.cm.jet(np.linspace(0, 1, len(stacked_hlist)))
         cmap = []
         for ic in range(len(_default_cmap)):
@@ -68,7 +71,9 @@ def styled_plot_ratio(
         if pretty_stacked_labels:
             leg_handles, leg_labels = axs[0].get_legend_handles_labels()
             # reverse order to follow the stacking
-            stacked_leg_labels = [l for l in leg_labels if l in pretty_stacked_labels][::-1]
+            stacked_leg_labels = [l for l in leg_labels if l in pretty_stacked_labels][
+                ::-1
+            ]
             stacked_leg_handles = [
                 leg_handles[leg_labels.index(l)] for l in stacked_leg_labels
             ]
@@ -160,7 +165,11 @@ def plot_ratio(
     if log:
         ax1.set_yscale("log")
         y_max = np.max([max(h.values()) for h in hlist]) * 5
-        y_min = np.min([min(h.values()[h.values() > 0]) for h in hlist]) * 0.5 if density else 5e-1
+        y_min = (
+            np.min([min(h.values()[h.values() > 0]) for h in hlist]) * 0.5
+            if density
+            else 5e-1
+        )
         ax1.set_ylim(y_min, y_max)
     if xlim is not None:
         xmin = xlim[0]
@@ -246,6 +255,7 @@ def plot_ratio(
         )
         # put legend in a2 in the top right
         from matplotlib import patches as mpatches
+
         ax2.legend(
             [mpatches.Patch(color="gray", alpha=0.3)],
             ["Syst."],
@@ -473,6 +483,7 @@ def plot_sys_variations(plots_sample, plot_label, sys, rebin=1j):
     axs[1].set_ylim(0.9, 1.1)
     return fig, axs
 
+
 def plot_sliced_hist2d(
     hist,
     regions_list,
@@ -541,6 +552,7 @@ def plot_sliced_hist2d(
         axs[0].set_yscale("log")
 
     return fig, axs
+
 
 def make_cutflow_table(
     cutflow_dict, samples, selections, efficiencies=False, relative_efficiencies=False
@@ -746,5 +758,3 @@ def make_n1_plots(
         figs.append(fig)
 
     return figs
-
-

@@ -5,16 +5,17 @@ https://github.com/scikit-hep/fastjet
 Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
-import warnings
-import psutil
 import os
 import time
+import warnings
+from copy import deepcopy
+
 import awkward as ak
 import numpy as np
 import pandas as pd
+import psutil
 import vector
 from coffea import processor
-from copy import deepcopy
 from hist import Hist
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
@@ -29,11 +30,11 @@ from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import METHEMFilter, jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
+from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
-from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -607,7 +608,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         # saving tight lepton kinematics
         if "WH_lepton" in events.fields:
-            
+
             output["vars"]["lepton_pt"] = events.WH_lepton.pt
             if self.isMC: output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
             output["vars"]["lepton_eta"] = events.WH_lepton.eta
@@ -663,7 +664,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["vars"]["LepSFElUp"] = leptonsSFs['LepSFElUp']
             output["vars"]["LepSFElDown"] = leptonsSFs['LepSFElDown']
             output["vars"]["LepSFMuUp"] = leptonsSFs['LepSFMuUp']
-            output["vars"]["LepSFMuDown"] = leptonsSFs['LepSFMuDown']   
+            output["vars"]["LepSFMuDown"] = leptonsSFs['LepSFMuDown']
 
         # other loose leptons
         looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events, isMC=self.isMC)

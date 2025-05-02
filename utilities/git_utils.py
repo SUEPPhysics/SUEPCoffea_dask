@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+
 def get_git_info(path="."):
     """
     Get the current commit and git diff.
@@ -13,7 +14,11 @@ def get_git_info(path="."):
     commit = (
         subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
     )
-    diff = subprocess.check_output(["git", "diff", "--", ".", "':(exclude)*.ipynb'"]).strip().decode("utf-8")
+    diff = (
+        subprocess.check_output(["git", "diff", "--", ".", "':(exclude)*.ipynb'"])
+        .strip()
+        .decode("utf-8")
+    )
 
     return commit, diff
 

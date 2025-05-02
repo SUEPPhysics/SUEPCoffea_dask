@@ -1,19 +1,23 @@
 import argparse
 import os
 import sys
+
 import h5py
 import hist
+
 sys.path.append("../../")
+
+import pickle
+
+# SUEP Repo Specific
+import SUEP_coffea_WH_tracks
 
 # Import coffea specific features
 from coffea import processor
 from dask.distributed import Client, LocalCluster
 from dask_jobqueue import SLURMCluster
 
-# SUEP Repo Specific
-import SUEP_coffea_WH_tracks
 from workflows.utils import output_utils, pandas_utils
-import pickle
 
 
 def form_ntuple(options, output):
@@ -29,8 +33,13 @@ def form_ntuple(options, output):
     dfs = []
     variations = output["out"][options.dataset].keys()
     for var in variations:
-        dfs.append(pandas_utils.format_dataframe(output["out"][options.dataset][var]["vars"].value))
+        dfs.append(
+            pandas_utils.format_dataframe(
+                output["out"][options.dataset][var]["vars"].value
+            )
+        )
     return dfs, ["vars_" + var if var != "nominal" else "vars" for var in variations]
+
 
 def form_metadata(options, output):
     """
@@ -49,9 +58,12 @@ def form_metadata(options, output):
     for var in variations:
         metadata.update(
             {
-                "_".join(filter(None, [key, var])): output["out"][options.dataset][var][key]
+                "_".join(filter(None, [key, var])): output["out"][options.dataset][var][
+                    key
+                ]
                 for key in output["out"][options.dataset][var].keys()
-                if type(output["out"][options.dataset][var][key]) is processor.value_accumulator
+                if type(output["out"][options.dataset][var][key])
+                is processor.value_accumulator
             }
         )
     metadata = pandas_utils.format_metadata(metadata)
@@ -78,7 +90,9 @@ def form_hists(options, output):
             if type(output["out"][options.dataset][var][key]) is hist.Hist:
                 hists_var[key] = output["out"][options.dataset][var][key]
         hists.append(hists_var)
-    return hists, ["hists_" + var if var != "nominal" else "hists" for var in variations]
+    return hists, [
+        "hists_" + var if var != "nominal" else "hists" for var in variations
+    ]
 
 
 def main():
@@ -171,18 +185,18 @@ def main():
 
     cluster = LocalCluster(
         n_workers=options.n,
-        #threads_per_worker=1,
+        # threads_per_worker=1,
         dashboard_address="1776",
     )
 
     client = Client(cluster)
     for instance in modules_era:
-        
+
         runner = processor.Runner(
             executor=processor.DaskExecutor(client=client),
             schema=processor.NanoAODSchema,
             xrootdtimeout=120,
-            #chunksize=100,
+            # chunksize=100,
             chunksize=options.chunkSize,
             maxchunks=options.maxChunks,
         )
@@ -190,7 +204,9 @@ def main():
         infiles = options.infile
         # if the infile is a dir, list it
         if os.path.isdir(infiles):
-            infiles = [os.path.join(infiles, f) for f in os.listdir(infiles) if '.root' in f]
+            infiles = [
+                os.path.join(infiles, f) for f in os.listdir(infiles) if ".root" in f
+            ]
         else:
             infiles = [infiles]
 
@@ -208,10 +224,11 @@ def main():
 
         # Save histograms to a pkl file
         hist_output = {name: hist for name, hist in zip(hist_names, hists)}
-        with open(options.outfile, 'wb') as f:
+        with open(options.outfile, "wb") as f:
             pickle.dump(hist_output, f)
 
     client.close()
+
 
 if __name__ == "__main__":
     main()

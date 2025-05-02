@@ -5,9 +5,10 @@ Date: August 2024
 
 import logging
 import os
+
 import numpy as np
 import pandas as pd
-from CMS_corrections import higgs_reweight, pileup_weight, triggerSF, btag_utils
+from CMS_corrections import btag_utils, higgs_reweight, pileup_weight, triggerSF
 
 
 def apply_correctionlib(corr_file: str, corr_variable: str, input_variable: np.ndarray):
@@ -142,7 +143,7 @@ class EventWeightProcessor:
             pu = pileup_weight.get_pileup_weights(
                 df, self.variation, puweights, puweights_up, puweights_down
             )
-            df['pileup_weight'] = pu
+            df["pileup_weight"] = pu
             df["event_weight"] *= pu
 
             # 2) PS weights
@@ -185,11 +186,11 @@ class EventWeightProcessor:
                 lepton_pt = df["lepton_pt"].to_numpy()
                 pdgids = df["lepton_flavor"].to_numpy()
                 trigSF = triggerSF.WH(lepton_pt, pdgids, self.variation, self.era)
-                df['trigSF'] = trigSF
+                df["trigSF"] = trigSF
                 df["event_weight"] *= trigSF
                 df["TriggerSFMu"] = np.where(np.isin(np.abs(pdgids), [13]), trigSF, 0.0)
                 df["TriggerSFEl"] = np.where(np.isin(np.abs(pdgids), [11]), trigSF, 0.0)
-                
+
             # 5) Higgs_pt weights
             if "mS125" in self.sample and "ggF" in self.channel:
                 (
@@ -209,45 +210,47 @@ class EventWeightProcessor:
                 df["event_weight"] *= higgs_weight
 
             # 11) btag weights
-            if self.channel == 'WH-VRGJ' or self.channel == 'WH':
+            if self.channel == "WH-VRGJ" or self.channel == "WH":
                 if self.era == "2016apv":
                     era_int = 2015
                 else:
                     era_int = int(self.era)
-                if 'bTagWeight_' in self.variation:
+                if "bTagWeight_" in self.variation:
                     btag_variation = self.variation.replace("bTagWeight_", "")
                 else:
-                    btag_variation = 'central'
+                    btag_variation = "central"
                 btag_weights = btag_utils.doBTagWeights(
-                    jets_pt=df['jets_pt'],
-                    jets_eta=df['jets_eta'],
-                    jets_hadronFlavour=df['jets_hadronFlavor'],
-                    jets_btagDeepFlavB=df['jets_btag_category'],
+                    jets_pt=df["jets_pt"],
+                    jets_eta=df["jets_eta"],
+                    jets_hadronFlavour=df["jets_hadronFlavor"],
+                    jets_btagDeepFlavB=df["jets_btag_category"],
                     variations=[btag_variation],
                     era=era_int,
-                    wps='TL',
+                    wps="TL",
                     channel=self.channel.lower(),
                 )
-                df['bTagWeight_'+btag_variation] = btag_weights[btag_variation].to_numpy()
+                df["bTagWeight_" + btag_variation] = btag_weights[
+                    btag_variation
+                ].to_numpy()
                 df["event_weight"] *= btag_weights[btag_variation].to_numpy()
 
             # 9) lepton SF
-            if self.channel == 'WH':
-                if 'LepSFMuUp' == self.variation or "LepSFMuDown" == self.variation:
+            if self.channel == "WH":
+                if "LepSFMuUp" == self.variation or "LepSFMuDown" == self.variation:
                     # per our muon object review, since we use tighter IP cuts than the cuts that were used
                     # to derive the SFs, we apply a 2% uncertainty to the SFs
                     mu_var = df[self.variation].to_numpy()
                     mu_var[mu_var > df["LepSF"]] = mu_var[mu_var > df["LepSF"]] + 0.02
                     mu_var[mu_var < df["LepSF"]] = mu_var[mu_var < df["LepSF"]] - 0.02
                     df["event_weight"] *= mu_var
-                elif 'LepSF' in self.variation:
+                elif "LepSF" in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
                     df["event_weight"] *= df["LepSF"]
-        
+
             # 10) photon SF
-            if self.channel == 'WH-VRGJ':
-                if 'photon_SF' in self.variation:
+            if self.channel == "WH-VRGJ":
+                if "photon_SF" in self.variation:
                     df["event_weight"] *= df[self.variation]
                 else:
                     df["event_weight"] *= df["photon_SF"]
@@ -265,6 +268,8 @@ class EventWeightProcessor:
                 # reweighting based on SUEP pT to match the W+jets
                 _era = self.era.replace("apv", "")
                 pt_corr_file = f"{os.path.dirname(os.path.dirname(os.path.dirname(__file__)))}/data/WGammaSUEPpT/suep_pt_corr_{self.region}_{_era}.json"
-                df["event_weight"] *= apply_correctionlib(pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy())
+                df["event_weight"] *= apply_correctionlib(
+                    pt_corr_file, "ptweight", df["SUEP_pt_HighestPT"].to_numpy()
+                )
 
         return df

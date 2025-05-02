@@ -362,6 +362,28 @@ def main():
                     nfiles += 1
                 infiles.close()
 
+            # create the output directory for this sample if it doesn't exist
+            fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
+            _sample_path = "/" + fin_outdir_condor.split("//")[-1]
+            _tokens = options.output.split("//")
+            _redirector = _tokens[0] + "//" + _tokens[1] + "//"
+            check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
+            _sample_dir_exists = (
+                subprocess.call(
+                    check_dir_command,
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                == 0
+            )
+            if not _sample_dir_exists:
+                os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
+            else:
+                logging.warning(
+                    f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten."
+                )
+
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 extras = ""

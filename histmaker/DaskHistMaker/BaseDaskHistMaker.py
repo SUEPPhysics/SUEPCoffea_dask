@@ -3,19 +3,20 @@ Author: Luca Lavezzo, Pietro Lugato
 Date: August 2024
 """
 
-import logging
-import os
 import gc
+import logging
+import numbers
+import os
 import socket
 import traceback
-import numbers
+from concurrent.futures import ThreadPoolExecutor
 from time import time
 from typing import List
+
+from dask import delayed
 from dask.distributed import Client, Future, LocalCluster, as_completed, progress
 from dask_jobqueue import SLURMCluster
-from dask import delayed
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
 
 class BaseDaskHistMaker:
@@ -97,10 +98,14 @@ class BaseDaskHistMaker:
         client = Client(cluster)
 
         timeout = 600
-        self.logger.info(f"Waiting for workers to be ready... will start with {min_workers} workers, or timeout if not available within {timeout / 60} minutes.")
+        self.logger.info(
+            f"Waiting for workers to be ready... will start with {min_workers} workers, or timeout if not available within {timeout / 60} minutes."
+        )
         client.wait_for_workers(n_workers=min_workers, timeout=timeout)
-        active_workers = len(client.scheduler_info()['workers'])
-        self.logger.info(f"Workers ready. SLURMClient ready. Proceeding with {active_workers} workers. Will try to reach {n_workers} workers as more become avaiable.")
+        active_workers = len(client.scheduler_info()["workers"])
+        self.logger.info(
+            f"Workers ready. SLURMClient ready. Proceeding with {active_workers} workers. Will try to reach {n_workers} workers as more become avaiable."
+        )
         self.logger.info(client)
 
         return client
@@ -111,11 +116,13 @@ class BaseDaskHistMaker:
         to the screen for convenience.
         """
 
-        dashboard_port = client.scheduler_info()['services']['dashboard']
+        dashboard_port = client.scheduler_info()["services"]["dashboard"]
         user = os.getenv("USER")
         hostname = os.getenv("HOSTNAME")
         ssh_command = f"ssh -L 8000:localhost:{dashboard_port} {user}@{hostname}"
-        print("\nTo connect to the dask dashboard, run the following command in a separate terminal window:")
+        print(
+            "\nTo connect to the dask dashboard, run the following command in a separate terminal window:"
+        )
         print(ssh_command)
         print("And connect to http://localhost:8000 in your browser.\n")
 
@@ -166,8 +173,10 @@ class BaseDaskHistMaker:
             _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = ""
 
         return _run_metadata
-    
-    def build_tree_graph(self, sample: str, processes: list, _run_metadata: dict) -> Future:
+
+    def build_tree_graph(
+        self, sample: str, processes: list, _run_metadata: dict
+    ) -> Future:
         """
         Construct the task graph for a given sample.
         Return the last node of the graph as a Delayed future.
@@ -183,9 +192,9 @@ class BaseDaskHistMaker:
 
         merged = []
         for i in range(0, len(processes), 2):
-            if i+1 < len(processes):
+            if i + 1 < len(processes):
                 left = self._process(processes[i][0], *processes[i][1:])
-                right = self._process(processes[i+1][0], *processes[i+1][1:])
+                right = self._process(processes[i + 1][0], *processes[i + 1][1:])
                 addition = self.merge(left, right)
             else:
                 addition = self._process(processes[i][0], *processes[i][1:])
@@ -194,9 +203,9 @@ class BaseDaskHistMaker:
         while len(merged) > 1:
             new_merged = []
             for i in range(0, len(merged), 2):
-                if i+1 < len(merged):
+                if i + 1 < len(merged):
                     left = merged[i]
-                    right = merged[i+1]
+                    right = merged[i + 1]
                     addition = self.merge(left, right)
                 else:
                     addition = merged[i]
@@ -205,7 +214,9 @@ class BaseDaskHistMaker:
 
         return merged[0]
 
-    def get_batches(self, samples: List[str], _run_metadata: dict, batch_size: int = 1000) -> list:
+    def get_batches(
+        self, samples: List[str], _run_metadata: dict, batch_size: int = 1000
+    ) -> list:
         """
         From the size of each sample's graph, construct a list of batches of samples to be processed.
         Each batch is a list of samples
@@ -215,7 +226,7 @@ class BaseDaskHistMaker:
         batch = []
         n_processing = 0
         for sample in samples:
-            
+
             try:
                 n_processing += _run_metadata[sample]["_processing_metadata"]["n_total"]
                 batch.append(sample)
@@ -267,7 +278,7 @@ class BaseDaskHistMaker:
             for i, batch in enumerate(batches):
                 self.logger.debug(f"Processing batch {i+1}/{n_batches}.")
 
-                try: 
+                try:
 
                     # submit all samples in the batch
                     futures_in_progress = []
@@ -282,9 +293,11 @@ class BaseDaskHistMaker:
                             continue
 
                     # collect futures, then delete them to free up worker memory
-                    self.logger.debug(f"Collecting futures for batch {i+1}/{n_batches}.")
+                    self.logger.debug(
+                        f"Collecting futures for batch {i+1}/{n_batches}."
+                    )
                     results = client.gather(futures_in_progress)
-                    
+
                     # store output for the samples in the batch
                     for sample, result in dict(zip(batch, results)).items():
                         output[sample].update(result)
@@ -307,11 +320,15 @@ class BaseDaskHistMaker:
         for sample in samples:
             try:
                 output[sample].update(self.postprocess_sample(sample, output[sample]))
-                _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = "success"
+                _run_metadata[sample]["_processing_metadata"][
+                    "postprocess_status"
+                ] = "success"
             except Exception as e:
                 self.logger.error(f"Failed to postprocess sample {sample}: {e}")
                 self.logger.error(traceback.format_exc())
-                _run_metadata[sample]["_processing_metadata"]["postprocess_status"] = "failed"
+                _run_metadata[sample]["_processing_metadata"][
+                    "postprocess_status"
+                ] = "failed"
                 continue
         _run_metadata["_processing_metadata"]["t_postprocess"] = time()
 
@@ -355,7 +372,9 @@ class BaseDaskHistMaker:
                         [
                             s
                             for s in samples
-                            if _run_metadata[s]["_processing_metadata"]["postprocess_status"]
+                            if _run_metadata[s]["_processing_metadata"][
+                                "postprocess_status"
+                            ]
                             == "success"
                         ]
                     )
@@ -368,7 +387,9 @@ class BaseDaskHistMaker:
                         [
                             s
                             for s in samples
-                            if _run_metadata[s]["_processing_metadata"]["postprocess_status"]
+                            if _run_metadata[s]["_processing_metadata"][
+                                "postprocess_status"
+                            ]
                             == "failed"
                         ]
                     )

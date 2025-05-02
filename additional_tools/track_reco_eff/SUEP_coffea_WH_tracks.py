@@ -5,16 +5,17 @@ https://github.com/scikit-hep/fastjet
 Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
-import warnings
-import psutil
 import os
 import time
+import warnings
+from copy import deepcopy
+
 import awkward as ak
 import numpy as np
 import pandas as pd
+import psutil
 import vector
 from coffea import processor
-from copy import deepcopy
 from hist import Hist
 from numba import njit, prange, typed
 
@@ -30,11 +31,11 @@ from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
 from workflows.CMS_corrections.HEM_utils import METHEMFilter, jetHEMFilter
 from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
 from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
+from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
 from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
-from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 
 # IO utils
 from workflows.utils.pandas_accumulator import pandas_accumulator
@@ -42,19 +43,21 @@ from workflows.utils.pandas_accumulator import pandas_accumulator
 # Set vector behavior
 vector.register_awkward()
 
+
 @staticmethod
 @njit
 def deltaPhi_x_y(xphi, yphi):
     abs_dphi = np.zeros(len(xphi))
-    
+
     for i in range(len(xphi)):
         if abs(xphi[i]) > 2 * np.pi or abs(yphi[i]) > 2 * np.pi:
             abs_dphi[i] = -999
         else:
             dphi = (xphi[i] - yphi[i] + np.pi) % (2 * np.pi) - np.pi
             abs_dphi[i] = abs(dphi)
-    
+
     return abs_dphi
+
 
 @njit
 def find_minDeltaR(phis, etas):
@@ -62,24 +65,36 @@ def find_minDeltaR(phis, etas):
     for i, (iphi, ieta) in enumerate(zip(phis, etas)):
         minDeltaR = 1e6
         for j, (jphi, jeta) in enumerate(zip(phis, etas)):
-            if i == j: continue
+            if i == j:
+                continue
             dphi = (iphi - jphi + np.pi) % (2 * np.pi) - np.pi
             deta = ieta - jeta
-            deltaR = np.sqrt(dphi ** 2 + deta ** 2)
+            deltaR = np.sqrt(dphi**2 + deta**2)
             if deltaR < minDeltaR:
                 minDeltaR = deltaR
         minDeltaRs.append(minDeltaR)
     return minDeltaRs
 
-@njit
-def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen_pdgIds,
-          minDeltaR=0.1, sigma_pt=0.05, sigmaDeltaR=0.01):
 
-    sigmaDeltaR_squared = sigmaDeltaR ** 2
-    minDeltaR_squared = minDeltaR ** 2
-    
+@njit
+def match(
+    tracks_pts,
+    tracks_phis,
+    tracks_etas,
+    gen_pts,
+    gen_phis,
+    gen_etas,
+    gen_pdgIds,
+    minDeltaR=0.1,
+    sigma_pt=0.05,
+    sigmaDeltaR=0.01,
+):
+
+    sigmaDeltaR_squared = sigmaDeltaR**2
+    minDeltaR_squared = minDeltaR**2
+
     # Sort indices by pT (descending order for efficiency)
-    reco_ptorder = np.argsort(tracks_pts)[::-1]  
+    reco_ptorder = np.argsort(tracks_pts)[::-1]
     gen_ptorder = np.argsort(gen_pts)[::-1]
 
     # Boolean masks to track used indices (instead of Python sets)
@@ -87,10 +102,12 @@ def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen
     reco_used = np.zeros(tracks_pts.shape[0], dtype=np.bool_)
     best_dR2s = np.full(gen_pts.shape[0], 1e6, dtype=np.float64)
     best_pts = np.full(gen_pts.shape[0], 1e6, dtype=np.float64)
-    reco_matched = np.full(tracks_pts.shape[0], -1, dtype=np.int64)  # Initialize output with -1 (no match)
+    reco_matched = np.full(
+        tracks_pts.shape[0], -1, dtype=np.int64
+    )  # Initialize output with -1 (no match)
 
     for iGen in gen_ptorder:
-    
+
         gen_pt = gen_pts[iGen]
         gen_phi = gen_phis[iGen]
         gen_eta = gen_etas[iGen]
@@ -107,15 +124,15 @@ def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen
             track_pt = tracks_pts[iReco]
             track_phi = tracks_phis[iReco]
             track_eta = tracks_etas[iReco]
-            
+
             dphi = (track_phi - gen_phi + np.pi) % (2 * np.pi) - np.pi
-            deta = (track_eta - gen_eta)
-            deltaR2 = dphi ** 2 + deta ** 2
-            if deltaR2 > minDeltaR_squared:  
+            deta = track_eta - gen_eta
+            deltaR2 = dphi**2 + deta**2
+            if deltaR2 > minDeltaR_squared:
                 continue  # Skip if out of range
-            
+
             pt_bal_var = (track_pt - gen_pt) / (track_pt)
-            chi2 = ( pt_bal_var / sigma_pt) ** 2 + (deltaR2 / sigmaDeltaR_squared) **2
+            chi2 = (pt_bal_var / sigma_pt) ** 2 + (deltaR2 / sigmaDeltaR_squared) ** 2
             if best_ireco == -1 or chi2 < best_chi2:
                 best_ireco = iReco
                 best_chi2 = chi2
@@ -123,7 +140,7 @@ def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen
                 best_pt = pt_bal_var
 
         # Store match
-        #reco_matched[iReco] = best_igen
+        # reco_matched[iReco] = best_igen
         if best_ireco != -1:
             reco_used[best_ireco] = True  # Mark as used
             gen_used[iGen] = True
@@ -132,15 +149,16 @@ def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen
 
     return gen_used, reco_matched, best_dR2s**0.5, best_pts
 
+
 # @njit
 # def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen_pdgIds,
 #           minDeltaR=0.05, sigma_pt=0.05, sigmaDeltaR=0.01):
 
 #     sigmaDeltaR_squared = sigmaDeltaR ** 2
 #     minDeltaR_squared = minDeltaR ** 2
-    
+
 #     # Sort indices by pT (descending order for efficiency)
-#     reco_ptorder = np.argsort(tracks_pts)[::-1]  
+#     reco_ptorder = np.argsort(tracks_pts)[::-1]
 #     gen_ptorder = np.argsort(gen_pts)[::-1]
 
 #     # Boolean masks to track used indices (instead of Python sets)
@@ -169,13 +187,13 @@ def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen
 #             gen_pt = gen_pts[iGen]
 #             gen_phi = gen_phis[iGen]
 #             gen_eta = gen_etas[iGen]
-            
+
 #             dphi = (track_phi - gen_phi + np.pi) % (2 * np.pi) - np.pi
 #             deta = (track_eta - gen_eta)
 #             deltaR2 = dphi ** 2 + deta ** 2
-#             if deltaR2 > minDeltaR_squared:  
+#             if deltaR2 > minDeltaR_squared:
 #                 continue  # Skip if out of range
-            
+
 #             pt_bal_var = (track_pt - gen_pt) / (track_pt)
 #             chi2 = ( pt_bal_var / sigma_pt) ** 2 + (deltaR2 / sigmaDeltaR_squared) **2
 #             if best_igen == -1 or chi2 < best_chi2:
@@ -192,6 +210,7 @@ def match(tracks_pts, tracks_phis, tracks_etas, gen_pts, gen_phis, gen_etas, gen
 #         best_pts[best_igen] = best_pt
 
 #     return gen_used, reco_matched, best_dR2s**0.5, best_pts
+
 
 class SUEP_cluster_WH(processor.ProcessorABC):
     def __init__(
@@ -220,7 +239,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         events,
         output,
         out_label=None,
-        variation='',
+        variation="",
     ):
 
         # indices of events, used to keep track which events pass selections for each method
@@ -237,13 +256,15 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         tracks, pfcands, lost_tracks = WH_utils.getTracks(
             events,
-            #iso_object=events.WH_lepton if not self.VRGJ else events.WH_gamma,
-            #isolation_deltaR=0.4,
+            # iso_object=events.WH_lepton if not self.VRGJ else events.WH_gamma,
+            # isolation_deltaR=0.4,
         )
         if self.isMC and "track_down" == variation:
             tracks = track_killing(self, tracks)
         elif self.isMC and "track_down_mod" == variation:
-            tracks = modified_track_killing(tracks, WH_utils.getSignalDecayMode(self.sample))
+            tracks = modified_track_killing(
+                tracks, WH_utils.getSignalDecayMode(self.sample)
+            )
         events = ak.with_field(events, tracks, "WH_tracks")
 
         #####################################################################################
@@ -255,13 +276,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ak15jets, clusters = SUEP_utils.FastJetReclustering(
             events.WH_tracks, r=1.5, minPt=5
         )
-        output['leading_ak15_pt'].fill(
-            ak.fill_none(
-                ak.max(ak15jets.pt, axis=1), -999
-            ),
-            weight=events.genWeight
+        output["leading_ak15_pt"].fill(
+            ak.fill_none(ak.max(ak15jets.pt, axis=1), -999), weight=events.genWeight
         )
-        ak15_60gev = (ak15jets.pt > 60)
+        ak15_60gev = ak15jets.pt > 60
         ak15jets = ak15jets[ak15_60gev]
         clusters = clusters[ak15_60gev]
         events = ak.with_field(events, ak15jets, "WH_ak15jets")
@@ -336,7 +354,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         eigs = SUEP_utils.sphericity(
             SUEP_cand_constituents_b, 1.0
         )  # Set r=1.0 for IRC safe
-        sphericity =  1.5 * (eigs[:, 1] + eigs[:, 0])
+        sphericity = 1.5 * (eigs[:, 1] + eigs[:, 0])
         events = ak.with_field(events, sphericity, "WH_SUEP_sphericity")
 
         # JEC corrected ak4jets inside SUEP cluster
@@ -349,21 +367,38 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         ## some selections
         events = events[ak.num(ak4jets_inSUEPcluster) > 0]
         events = events[events.WH_SUEP_sphericity > 0.3]
-        events = events[events.WH_W.pt/events.WH_SUEP_cand.pt < 3]
-        events = events[deltaPhi_x_y(ak.to_numpy(events.WH_SUEP_cand.phi), ak.to_numpy(events.WH_MET.phi)) > 1.5]
-        events = events[deltaPhi_x_y(ak.to_numpy(events.WH_SUEP_cand.phi), ak.to_numpy(events.WH_W.phi)) > 1.5]
-        events = events[deltaPhi_x_y(ak.to_numpy(events.WH_SUEP_cand.phi), ak.to_numpy(events.WH_lepton.phi)) > 1.5]
+        events = events[events.WH_W.pt / events.WH_SUEP_cand.pt < 3]
+        events = events[
+            deltaPhi_x_y(
+                ak.to_numpy(events.WH_SUEP_cand.phi), ak.to_numpy(events.WH_MET.phi)
+            )
+            > 1.5
+        ]
+        events = events[
+            deltaPhi_x_y(
+                ak.to_numpy(events.WH_SUEP_cand.phi), ak.to_numpy(events.WH_W.phi)
+            )
+            > 1.5
+        ]
+        events = events[
+            deltaPhi_x_y(
+                ak.to_numpy(events.WH_SUEP_cand.phi), ak.to_numpy(events.WH_lepton.phi)
+            )
+            > 1.5
+        ]
 
-        output['SUEP_nconst'].fill(ak.num(events.WH_SUEP_cand_constituents), weight=events.genWeight)
-        output['SUEP_S1'].fill(events.WH_SUEP_sphericity, weight=events.genWeight)
-        
+        output["SUEP_nconst"].fill(
+            ak.num(events.WH_SUEP_cand_constituents), weight=events.genWeight
+        )
+        output["SUEP_S1"].fill(events.WH_SUEP_sphericity, weight=events.genWeight)
+
         return events
 
     def find_daughters(self, event, pdgId=25):
         """
         Find all daughters of a given particle by recursively searching through the genPartIdxMother array
         """
-        
+
         daugtherIdxs = []
         for i in range(len(event.GenPart.pdgId)):
             status = event.GenPart.status[i]
@@ -381,7 +416,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             id = event.GenPart.pdgId[i]
             motherIdx = event.GenPart.genPartIdxMother[i]
             while True:
-                #print(f'Particle {i} with pgdId {id} is a daughter of pdgId {event.GenPart.pdgId[motherIdx]} with index {motherIdx}')
+                # print(f'Particle {i} with pgdId {id} is a daughter of pdgId {event.GenPart.pdgId[motherIdx]} with index {motherIdx}')
                 if motherIdx == -1:
                     break
                 if event.GenPart.pdgId[motherIdx] == pdgId:
@@ -410,8 +445,12 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             track_eta = ak.to_numpy(event.WH_tracks.eta)
 
             output["nGenDaughters"].fill(len(event_daughters), weight=event.genWeight)
-            output["nGenDaughtersMuons"].fill(len(gen_pdgId[abs(gen_pdgId)==13]), weight=event.genWeight)
-            output["nGenDaughtersElectrons"].fill(len(gen_pdgId[abs(gen_pdgId)==11]), weight=event.genWeight)
+            output["nGenDaughtersMuons"].fill(
+                len(gen_pdgId[abs(gen_pdgId) == 13]), weight=event.genWeight
+            )
+            output["nGenDaughtersElectrons"].fill(
+                len(gen_pdgId[abs(gen_pdgId) == 11]), weight=event.genWeight
+            )
 
             minDeltaRs = find_minDeltaR(gen_phi, gen_eta)
             output["gentracks_minDeltaR"].fill(minDeltaRs, weight=event.genWeight)
@@ -419,17 +458,25 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             output["reco_minDeltaR"].fill(reco_minDeltaRs, weight=event.genWeight)
 
             gen_used, reco_matched, best_dR, best_pts = match(
-                track_pt, track_phi, track_eta, gen_pt, gen_phi, gen_eta, gen_pdgId,
-                minDeltaR=0.2, sigma_pt=0.05, sigmaDeltaR=0.05
+                track_pt,
+                track_phi,
+                track_eta,
+                gen_pt,
+                gen_phi,
+                gen_eta,
+                gen_pdgId,
+                minDeltaR=0.2,
+                sigma_pt=0.05,
+                sigmaDeltaR=0.05,
             )
 
-            is_matched = (gen_used)
-            is_mu = (abs(gen_pdgId) == 13)
-            is_e = (abs(gen_pdgId) == 11)
-            is_pi = (abs(gen_pdgId) == 211)
-            is_kaon = (abs(gen_pdgId) == 321)
-            is_what = (~is_mu & ~is_e & ~is_pi & ~is_kaon)
-           
+            is_matched = gen_used
+            is_mu = abs(gen_pdgId) == 13
+            is_e = abs(gen_pdgId) == 11
+            is_pi = abs(gen_pdgId) == 211
+            is_kaon = abs(gen_pdgId) == 321
+            is_what = ~is_mu & ~is_e & ~is_pi & ~is_kaon
+
             output["unexpected_pdgId"].fill(gen_pdgId[is_what], weight=event.genWeight)
 
             particle_types = {
@@ -456,25 +503,46 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 unmatched_deltaPt = best_pts[unmatched]
 
                 # Fill histograms
-                output[f'pt_{particle}_matched'].fill(matched_pt, weight=event.genWeight)
-                output[f'phi_{particle}_matched'].fill(matched_phi, weight=event.genWeight)
-                output[f'eta_{particle}_matched'].fill(matched_eta, weight=event.genWeight)
-                output[f'minDeltaR_{particle}_matched'].fill(matched_minDeltaR, weight=event.genWeight)
-                output[f'deltaPt_{particle}_matched'].fill(matched_deltaPt, weight=event.genWeight)
+                output[f"pt_{particle}_matched"].fill(
+                    matched_pt, weight=event.genWeight
+                )
+                output[f"phi_{particle}_matched"].fill(
+                    matched_phi, weight=event.genWeight
+                )
+                output[f"eta_{particle}_matched"].fill(
+                    matched_eta, weight=event.genWeight
+                )
+                output[f"minDeltaR_{particle}_matched"].fill(
+                    matched_minDeltaR, weight=event.genWeight
+                )
+                output[f"deltaPt_{particle}_matched"].fill(
+                    matched_deltaPt, weight=event.genWeight
+                )
 
-                output[f'pt_{particle}_unmatched'].fill(unmatched_pt, weight=event.genWeight)
-                output[f'phi_{particle}_unmatched'].fill(unmatched_phi, weight=event.genWeight)
-                output[f'eta_{particle}_unmatched'].fill(unmatched_eta, weight=event.genWeight)
-                output[f'minDeltaR_{particle}_unmatched'].fill(unmatched_minDeltaR, weight=event.genWeight)
-                output[f'deltaPt_{particle}_unmatched'].fill(unmatched_deltaPt, weight=event.genWeight)
+                output[f"pt_{particle}_unmatched"].fill(
+                    unmatched_pt, weight=event.genWeight
+                )
+                output[f"phi_{particle}_unmatched"].fill(
+                    unmatched_phi, weight=event.genWeight
+                )
+                output[f"eta_{particle}_unmatched"].fill(
+                    unmatched_eta, weight=event.genWeight
+                )
+                output[f"minDeltaR_{particle}_unmatched"].fill(
+                    unmatched_minDeltaR, weight=event.genWeight
+                )
+                output[f"deltaPt_{particle}_unmatched"].fill(
+                    unmatched_deltaPt, weight=event.genWeight
+                )
 
         except Exception as e:
             import traceback
+
             print(f"Error processing event: {e}")
             traceback.print_exc()
             return {}
-      
-    def analysis(self, events, output, out_label:str="", variation:str=""):
+
+    def analysis(self, events, output, out_label: str = "", variation: str = ""):
 
         #####################################################################################
         # ---- Basic event selection
@@ -483,7 +551,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         genW = WH_utils.getGenW(events)
-        output["genW_pt_0"].fill(genW.pt[:,0])
+        output["genW_pt_0"].fill(genW.pt[:, 0])
 
         output["cutflow_total" + out_label] += ak.sum(events.genWeight)
 
@@ -509,7 +577,9 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
 
         if self.VRGJ:
-            events = WH_utils.VRGJOrthogonalitySelection(events, era=self.era, isMC=self.isMC)
+            events = WH_utils.VRGJOrthogonalitySelection(
+                events, era=self.era, isMC=self.isMC
+            )
         else:
             events = WH_utils.orthogonalitySelection(events, isMC=self.isMC)
         output["cutflow_orthogonality" + out_label] += ak.sum(events.genWeight)
@@ -526,7 +596,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         if not self.CRQCD and not self.VRGJ:
-            events = WH_utils.oneTightLeptonSelection(events, era=self.era, isMC=self.isMC, variation=variation if (('MuScale' in variation) or ('ElScale' in variation)) else "")
+            events = WH_utils.oneTightLeptonSelection(
+                events,
+                era=self.era,
+                isMC=self.isMC,
+                variation=(
+                    variation
+                    if (("MuScale" in variation) or ("ElScale" in variation))
+                    else ""
+                ),
+            )
             output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
         elif self.VRGJ:
             events = WH_utils.onePhotonSelection(events, self.isMC)
@@ -579,10 +658,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         genW = WH_utils.getGenW(events)
-        output["genW_pt_3"].fill(genW.pt[:,0])
+        output["genW_pt_3"].fill(genW.pt[:, 0])
 
-        output['muon_pt_1'].fill(events.WH_lepton[abs(events.WH_lepton.pdgId) == 13].pt, weight=events.genWeight[abs(events.WH_lepton.pdgId) == 13])
-        output['electron_pt_1'].fill(events.WH_lepton[abs(events.WH_lepton.pdgId) == 11].pt, weight=events.genWeight[abs(events.WH_lepton.pdgId) == 11])
+        output["muon_pt_1"].fill(
+            events.WH_lepton[abs(events.WH_lepton.pdgId) == 13].pt,
+            weight=events.genWeight[abs(events.WH_lepton.pdgId) == 13],
+        )
+        output["electron_pt_1"].fill(
+            events.WH_lepton[abs(events.WH_lepton.pdgId) == 11].pt,
+            weight=events.genWeight[abs(events.WH_lepton.pdgId) == 11],
+        )
 
         events = ak.with_field(events, events.PuppiMET, "WH_MET")
         if not self.VRGJ:
@@ -601,7 +686,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         genW = WH_utils.getGenW(events)
-        output["genW_pt_4"].fill(genW.pt[:,0])
+        output["genW_pt_4"].fill(genW.pt[:, 0])
 
         events = events[events.WH_W.pt > 60]
         events = events[events.WH_W.mt < 130]
@@ -613,7 +698,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         nBLoose = ak.sum(
             (events.WH_jets_jec.btag >= btagcuts("Loose", era_int)), axis=1
         )[:]
-      
+
         nBTight = ak.sum(
             (events.WH_jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
         )[:]
@@ -627,7 +712,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         genW = WH_utils.getGenW(events)
-        output["genW_pt_1"].fill(genW.pt[:,0])
+        output["genW_pt_1"].fill(genW.pt[:, 0])
 
         events = self.HighestPTMethod(
             events,
@@ -640,13 +725,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             return events, output
 
         genW = WH_utils.getGenW(events)
-        output["genW_pt_2"].fill(genW.pt[:,0])
+        output["genW_pt_2"].fill(genW.pt[:, 0])
 
         # print()
         # print()
         # for e in events:
         #     print(e.run, e.luminosityBlock, e.event)
-        # print() 
+        # print()
         # print()
 
         for iEvent, event in enumerate(events):
@@ -682,65 +767,231 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
-                "leading_ak15_pt": Hist.new.Reg(400,0,400,name="leading_ak15_pt",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
-                "n_ak15": Hist.new.Reg(10,0,10,name="n_ak15",label="$n_{\mathrm{AK15}}$").Weight(),
-                "n_ak15_60gev": Hist.new.Reg(10,0,10,name="n_ak15_60gev",label="$n_{\mathrm{AK15}}$").Weight(),
-                'pt_e_matched': Hist.new.Reg(300, 0, 100, name='e_matched_pt', label='$p_T$ [GeV]').Weight(),
-                'pt_e_unmatched': Hist.new.Reg(300, 0, 100, name='e_unmatched_pt', label='$p_T$ [GeV]').Weight(),
-                'pt_mu_matched': Hist.new.Reg(300, 0, 100, name='mu_matched_pt', label='$p_T$ [GeV]').Weight(),
-                'pt_mu_unmatched': Hist.new.Reg(300, 0, 100, name='mu_unmatched_pt', label='$p_T$ [GeV]').Weight(),
-                'phi_e_matched': Hist.new.Reg(100, -6, 6, name='e_matched_phi', label='$\phi$ [GeV]').Weight(),
-                'phi_e_unmatched': Hist.new.Reg(100, -6, 6, name='e_unmatched_phi', label='$\phi$ [GeV]').Weight(),
-                'phi_mu_matched': Hist.new.Reg(100, -6, 6, name='mu_matched_phi', label='$\phi$ [GeV]').Weight(),
-                'phi_mu_unmatched': Hist.new.Reg(100, -6, 6, name='mu_unmatched_phi', label='$\phi$ [GeV]').Weight(),
-                'eta_e_matched': Hist.new.Reg(100, -6, 6, name='e_matched_eta', label='$\eta$ [GeV]').Weight(),
-                'eta_e_unmatched': Hist.new.Reg(100, -6, 6, name='e_unmatched_eta', label='$η$ [GeV]').Weight(),
-                'eta_mu_matched': Hist.new.Reg(100, -6, 6, name='mu_matched_eta', label='$η$ [GeV]').Weight(),
-                'eta_mu_unmatched': Hist.new.Reg(100, -6, 6, name='mu_unmatched_eta', label='$η$ [GeV]').Weight(),
-                'minDeltaR_e_matched': Hist.new.Reg(1000, 0, 0.5, name='e_matched_minDeltaR', label='min $\Delta R$').Weight(),
-                'minDeltaR_e_unmatched': Hist.new.Reg(1000, 0, 0.5, name='e_unmatched_minDeltaR', label='min $\Delta R$').Weight(),
-                'minDeltaR_mu_matched': Hist.new.Reg(1000, 0, 0.5, name='mu_matched_minDeltaR', label='min $\Delta R$').Weight(),
-                'minDeltaR_mu_unmatched': Hist.new.Reg(1000, 0, 0.5, name='mu_unmatched_minDeltaR', label='min $\Delta R$').Weight(),
-                'deltaPt_e_matched': Hist.new.Reg(1000,-20, 20, name='e_matched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'deltaPt_e_unmatched': Hist.new.Reg(1000,-20, 20, name='e_unmatched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'deltaPt_mu_matched': Hist.new.Reg(1000,-20, 20, name='mu_matched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'deltaPt_mu_unmatched': Hist.new.Reg(1000,-20, 20, name='mu_unmatched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'pt_pi_matched': Hist.new.Reg(300, 0, 100, name='pi_matched_pt', label='$p_T$ [GeV]').Weight(),
-                'pt_pi_unmatched': Hist.new.Reg(300, 0, 100, name='pi_unmatched_pt', label='$p_T$ [GeV]').Weight(),
-                'phi_pi_matched': Hist.new.Reg(100, -6, 6, name='pi_matched_phi', label='$\phi$ [GeV]').Weight(),
-                'phi_pi_unmatched': Hist.new.Reg(100, -6, 6, name='pi_unmatched_phi', label='$\phi$ [GeV]').Weight(),
-                'eta_pi_matched': Hist.new.Reg(100, -6, 6, name='pi_matched_eta', label='$η$ [GeV]').Weight(),
-                'eta_pi_unmatched': Hist.new.Reg(100, -6, 6, name='pi_unmatched_eta', label='$η$ [GeV]').Weight(),
-                'minDeltaR_pi_matched': Hist.new.Reg(1000, 0, 0.5, name='pi_matched_minDeltaR', label='min $\Delta R$').Weight(),
-                'minDeltaR_pi_unmatched': Hist.new.Reg(1000, 0, 0.5, name='pi_unmatched_minDeltaR', label='min $\Delta R$').Weight(),
-                'deltaPt_pi_matched': Hist.new.Reg(1000,-20, 20, name='pi_matched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'deltaPt_pi_unmatched': Hist.new.Reg(1000,-20, 20, name='pi_unmatched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'pt_kaon_matched': Hist.new.Reg(300, 0, 100, name='kaon_matched_pt', label='$p_T$ [GeV]').Weight(),
-                'pt_kaon_unmatched': Hist.new.Reg(300, 0, 100, name='kaon_unmatched_pt', label='$p_T$ [GeV]').Weight(),
-                'phi_kaon_matched': Hist.new.Reg(100, -6, 6, name='kaon_matched_phi', label='$\phi$ [GeV]').Weight(),
-                'phi_kaon_unmatched': Hist.new.Reg(100, -6, 6, name='kaon_unmatched_phi', label='$\phi$ [GeV]').Weight(),
-                'eta_kaon_matched': Hist.new.Reg(100, -6, 6, name='kaon_matched_eta', label='$η$ [GeV]').Weight(),
-                'eta_kaon_unmatched': Hist.new.Reg(100, -6, 6, name='kaon_unmatched_eta', label='$η$ [GeV]').Weight(),
-                'minDeltaR_kaon_matched': Hist.new.Reg(1000, 0, 0.5, name='kaon_matched_minDeltaR', label='min $\Delta R$').Weight(),
-                'minDeltaR_kaon_unmatched': Hist.new.Reg(1000, 0, 0.5, name='kaon_unmatched_minDeltaR', label='min $\Delta R$').Weight(),
-                'deltaPt_kaon_matched': Hist.new.Reg(1000,-20, 20, name='kaon_matched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'deltaPt_kaon_unmatched': Hist.new.Reg(1000,-20, 20, name='kaon_unmatched_deltaPt', label='$p^{reco}_T - p^{gen}_T / p^{reco}_T$').Weight(),
-                'unexpected_pdgId': Hist.new.Reg(100, -50, 50, name='unexpected_pdgId', label='Unexpected pdgId').Weight(),
-                'nGenDaughters': Hist.new.Reg(100, 0, 100, name='nGenDaughters', label='Number of gen daughters').Weight(),
-                'nGenDaughtersMuons': Hist.new.Reg(100, 0, 100, name='nGenDaughtersMuons', label='Number of gen muon daughters').Weight(),
-                'nGenDaughtersElectrons': Hist.new.Reg(100, 0, 100, name='nGenDaughtersElectrons', label='Number of gen electron daughters').Weight(),
-                'SUEP_nconst': Hist.new.Reg(100, 0, 100, name='SUEP_nconst', label='Number of constituents').Weight(),
-                'SUEP_S1': Hist.new.Reg(100, 0, 1, name='SUEP_S1', label='Sphericity').Weight(),
-                'gentracks_minDeltaR': Hist.new.Reg(1000, 0, 3.0, name='gentracks_minDeltaR', label='min $\Delta R$').Weight(),
-                'reco_minDeltaR': Hist.new.Reg(1000, 0, 3.0, name='reco_minDeltaR', label='min $\Delta R$').Weight(),
-                'genW_pt_0': Hist.new.Reg(400,0,400,name="genW_pt_0",label="Gen W $p_T$ [GeV]").Weight(),
-                'genW_pt_1': Hist.new.Reg(400,0,400,name="genW_pt_1",label="Gen W $p_T$ [GeV]").Weight(),
-                'genW_pt_2': Hist.new.Reg(400,0,400,name="genW_pt_2",label="Gen W $p_T$ [GeV]").Weight(),
-                'genW_pt_3': Hist.new.Reg(400,0,400,name="genW_pt_3",label="Gen W $p_T$ [GeV]").Weight(),
-                'genW_pt_4': Hist.new.Reg(400,0,400,name="genW_pt_4",label="Gen W $p_T$ [GeV]").Weight(),
-                'lepton_pt': Hist.new.Reg(400,0,400,name="lepton_pt",label="Lepton $p_T$ [GeV]").Weight(),
-                'muon_pt_1': Hist.new.Reg(400,0,400,name="muon_pt_1",label="Muon $p_T$ [GeV]").Weight(),
-                'electron_pt_1': Hist.new.Reg(400,0,400,name="electron_pt_1",label="Electron $p_T$ [GeV]").Weight(),
+                "leading_ak15_pt": Hist.new.Reg(
+                    400,
+                    0,
+                    400,
+                    name="leading_ak15_pt",
+                    label="Leading AK15 cluster $p_T$ [GeV]",
+                ).Weight(),
+                "n_ak15": Hist.new.Reg(
+                    10, 0, 10, name="n_ak15", label="$n_{\mathrm{AK15}}$"
+                ).Weight(),
+                "n_ak15_60gev": Hist.new.Reg(
+                    10, 0, 10, name="n_ak15_60gev", label="$n_{\mathrm{AK15}}$"
+                ).Weight(),
+                "pt_e_matched": Hist.new.Reg(
+                    300, 0, 100, name="e_matched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "pt_e_unmatched": Hist.new.Reg(
+                    300, 0, 100, name="e_unmatched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "pt_mu_matched": Hist.new.Reg(
+                    300, 0, 100, name="mu_matched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "pt_mu_unmatched": Hist.new.Reg(
+                    300, 0, 100, name="mu_unmatched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "phi_e_matched": Hist.new.Reg(
+                    100, -6, 6, name="e_matched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "phi_e_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="e_unmatched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "phi_mu_matched": Hist.new.Reg(
+                    100, -6, 6, name="mu_matched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "phi_mu_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="mu_unmatched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "eta_e_matched": Hist.new.Reg(
+                    100, -6, 6, name="e_matched_eta", label="$\eta$ [GeV]"
+                ).Weight(),
+                "eta_e_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="e_unmatched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "eta_mu_matched": Hist.new.Reg(
+                    100, -6, 6, name="mu_matched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "eta_mu_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="mu_unmatched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "minDeltaR_e_matched": Hist.new.Reg(
+                    1000, 0, 0.5, name="e_matched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "minDeltaR_e_unmatched": Hist.new.Reg(
+                    1000, 0, 0.5, name="e_unmatched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "minDeltaR_mu_matched": Hist.new.Reg(
+                    1000, 0, 0.5, name="mu_matched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "minDeltaR_mu_unmatched": Hist.new.Reg(
+                    1000, 0, 0.5, name="mu_unmatched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "deltaPt_e_matched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="e_matched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "deltaPt_e_unmatched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="e_unmatched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "deltaPt_mu_matched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="mu_matched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "deltaPt_mu_unmatched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="mu_unmatched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "pt_pi_matched": Hist.new.Reg(
+                    300, 0, 100, name="pi_matched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "pt_pi_unmatched": Hist.new.Reg(
+                    300, 0, 100, name="pi_unmatched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "phi_pi_matched": Hist.new.Reg(
+                    100, -6, 6, name="pi_matched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "phi_pi_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="pi_unmatched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "eta_pi_matched": Hist.new.Reg(
+                    100, -6, 6, name="pi_matched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "eta_pi_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="pi_unmatched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "minDeltaR_pi_matched": Hist.new.Reg(
+                    1000, 0, 0.5, name="pi_matched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "minDeltaR_pi_unmatched": Hist.new.Reg(
+                    1000, 0, 0.5, name="pi_unmatched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "deltaPt_pi_matched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="pi_matched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "deltaPt_pi_unmatched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="pi_unmatched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "pt_kaon_matched": Hist.new.Reg(
+                    300, 0, 100, name="kaon_matched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "pt_kaon_unmatched": Hist.new.Reg(
+                    300, 0, 100, name="kaon_unmatched_pt", label="$p_T$ [GeV]"
+                ).Weight(),
+                "phi_kaon_matched": Hist.new.Reg(
+                    100, -6, 6, name="kaon_matched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "phi_kaon_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="kaon_unmatched_phi", label="$\phi$ [GeV]"
+                ).Weight(),
+                "eta_kaon_matched": Hist.new.Reg(
+                    100, -6, 6, name="kaon_matched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "eta_kaon_unmatched": Hist.new.Reg(
+                    100, -6, 6, name="kaon_unmatched_eta", label="$η$ [GeV]"
+                ).Weight(),
+                "minDeltaR_kaon_matched": Hist.new.Reg(
+                    1000, 0, 0.5, name="kaon_matched_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "minDeltaR_kaon_unmatched": Hist.new.Reg(
+                    1000,
+                    0,
+                    0.5,
+                    name="kaon_unmatched_minDeltaR",
+                    label="min $\Delta R$",
+                ).Weight(),
+                "deltaPt_kaon_matched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="kaon_matched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "deltaPt_kaon_unmatched": Hist.new.Reg(
+                    1000,
+                    -20,
+                    20,
+                    name="kaon_unmatched_deltaPt",
+                    label="$p^{reco}_T - p^{gen}_T / p^{reco}_T$",
+                ).Weight(),
+                "unexpected_pdgId": Hist.new.Reg(
+                    100, -50, 50, name="unexpected_pdgId", label="Unexpected pdgId"
+                ).Weight(),
+                "nGenDaughters": Hist.new.Reg(
+                    100, 0, 100, name="nGenDaughters", label="Number of gen daughters"
+                ).Weight(),
+                "nGenDaughtersMuons": Hist.new.Reg(
+                    100,
+                    0,
+                    100,
+                    name="nGenDaughtersMuons",
+                    label="Number of gen muon daughters",
+                ).Weight(),
+                "nGenDaughtersElectrons": Hist.new.Reg(
+                    100,
+                    0,
+                    100,
+                    name="nGenDaughtersElectrons",
+                    label="Number of gen electron daughters",
+                ).Weight(),
+                "SUEP_nconst": Hist.new.Reg(
+                    100, 0, 100, name="SUEP_nconst", label="Number of constituents"
+                ).Weight(),
+                "SUEP_S1": Hist.new.Reg(
+                    100, 0, 1, name="SUEP_S1", label="Sphericity"
+                ).Weight(),
+                "gentracks_minDeltaR": Hist.new.Reg(
+                    1000, 0, 3.0, name="gentracks_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "reco_minDeltaR": Hist.new.Reg(
+                    1000, 0, 3.0, name="reco_minDeltaR", label="min $\Delta R$"
+                ).Weight(),
+                "genW_pt_0": Hist.new.Reg(
+                    400, 0, 400, name="genW_pt_0", label="Gen W $p_T$ [GeV]"
+                ).Weight(),
+                "genW_pt_1": Hist.new.Reg(
+                    400, 0, 400, name="genW_pt_1", label="Gen W $p_T$ [GeV]"
+                ).Weight(),
+                "genW_pt_2": Hist.new.Reg(
+                    400, 0, 400, name="genW_pt_2", label="Gen W $p_T$ [GeV]"
+                ).Weight(),
+                "genW_pt_3": Hist.new.Reg(
+                    400, 0, 400, name="genW_pt_3", label="Gen W $p_T$ [GeV]"
+                ).Weight(),
+                "genW_pt_4": Hist.new.Reg(
+                    400, 0, 400, name="genW_pt_4", label="Gen W $p_T$ [GeV]"
+                ).Weight(),
+                "lepton_pt": Hist.new.Reg(
+                    400, 0, 400, name="lepton_pt", label="Lepton $p_T$ [GeV]"
+                ).Weight(),
+                "muon_pt_1": Hist.new.Reg(
+                    400, 0, 400, name="muon_pt_1", label="Muon $p_T$ [GeV]"
+                ).Weight(),
+                "electron_pt_1": Hist.new.Reg(
+                    400, 0, 400, name="electron_pt_1", label="Electron $p_T$ [GeV]"
+                ).Weight(),
             }
         )
 
@@ -756,17 +1007,13 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # run the analysis
         output_nom = deepcopy(blank_output)
         _, output_nom = self.analysis(events, output_nom)
-        output['nominal'] = output_nom
-
+        output["nominal"] = output_nom
 
         # run the analysis with the systematic variations applied
         if self.isMC and self.do_syst:
 
             # for these, we need to re-run the whole analysis
-            variations = [
-                "track_down",
-                "track_down_mod"
-            ]
+            variations = ["track_down", "track_down_mod"]
             for variation in variations:
                 output_var = deepcopy(blank_output)
                 _, output_var = self.analysis(

@@ -25,8 +25,13 @@ def form_ntuple(options, output):
     dfs = []
     variations = output["out"][options.dataset].keys()
     for var in variations:
-        dfs.append(pandas_utils.format_dataframe(output["out"][options.dataset][var]["vars"].value))
+        dfs.append(
+            pandas_utils.format_dataframe(
+                output["out"][options.dataset][var]["vars"].value
+            )
+        )
     return dfs, ["vars_" + var if var != "nominal" else "vars" for var in variations]
+
 
 def form_metadata(options, output):
     """
@@ -45,9 +50,12 @@ def form_metadata(options, output):
     for var in variations:
         metadata.update(
             {
-                "_".join(filter(None, [key, var])): output["out"][options.dataset][var][key]
+                "_".join(filter(None, [key, var])): output["out"][options.dataset][var][
+                    key
+                ]
                 for key in output["out"][options.dataset][var].keys()
-                if type(output["out"][options.dataset][var][key]) is processor.value_accumulator
+                if type(output["out"][options.dataset][var][key])
+                is processor.value_accumulator
             }
         )
     metadata = pandas_utils.format_metadata(metadata)
@@ -74,7 +82,9 @@ def form_hists(options, output):
             if type(output["out"][options.dataset][var][key]) is hist.Hist:
                 hists_var[key] = output["out"][options.dataset][var][key]
         hists.append(hists_var)
-    return hists, ["hists_" + var if var != "nominal" else "hists" for var in variations]
+    return hists, [
+        "hists_" + var if var != "nominal" else "hists" for var in variations
+    ]
 
 
 def main():
@@ -126,7 +136,9 @@ def main():
 
     for instance in modules_era:
         runner = processor.Runner(
-            executor=processor.FuturesExecutor(compression=None, workers=options.nworkers),
+            executor=processor.FuturesExecutor(
+                compression=None, workers=options.nworkers
+            ),
             schema=processor.NanoAODSchema,
             xrootdtimeout=120,
             chunksize=options.chunkSize,

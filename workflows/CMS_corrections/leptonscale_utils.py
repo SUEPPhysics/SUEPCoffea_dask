@@ -1,4 +1,5 @@
 import os
+
 import awkward as ak
 import numpy as np
 from coffea import lookup_tools
@@ -9,7 +10,9 @@ def doLeptonScaleVariations(events, leptons, era):
     muonIndexes = abs(leptons.pdgId) == 13
     muons = leptons[muonIndexes]
     rochester_data = lookup_tools.txt_converters.convert_rochester_file(
-        "{0}/../../data/MuScale/roccor.Run2.v3/RoccoR{1}.txt".format( os.path.join(os.path.dirname(__file__)),  (era if era != 2015 else 2016)),
+        "{}/../../data/MuScale/roccor.Run2.v3/RoccoR{}.txt".format(
+            os.path.join(os.path.dirname(__file__)), (era if era != 2015 else 2016)
+        ),
         loaduncs=True,
     )
     rochester = lookup_tools.rochester_lookup.rochester_lookup(rochester_data)

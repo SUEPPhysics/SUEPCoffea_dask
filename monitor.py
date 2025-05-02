@@ -4,10 +4,11 @@ import os
 import subprocess
 import time
 from shutil import copyfile
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from termcolor import colored
-import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.INFO)
 
@@ -20,20 +21,21 @@ def isFileGood(fname, label="ch"):
     except:
         return 0
 
+
 def auto_mode(options):
 
     logging.basicConfig(level=logging.ERROR)
     completion_data = {}
     start_time = time.time()
     max_runtime = 7 * 24 * 60 * 60  # 1 week in seconds
-    
+
     while True:
         # Check if the runtime has exceeded the maximum allowed time
         if time.time() - start_time > max_runtime:
             logging.info("Maximum runtime of 1 week exceeded. Exiting auto_mode.")
             break
 
-        samples_data = monitor(options) 
+        samples_data = monitor(options)
 
         # Capture the current time and the completion rates
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -52,42 +54,67 @@ def plot_completion(options, completion_data):
     Plot the completion progress over time.
     """
     times = list(completion_data.keys())
-    formatted_times = pd.to_datetime(list(completion_data.keys()), format="%Y-%m-%d %H:%M:%S")
-    
+    formatted_times = pd.to_datetime(
+        list(completion_data.keys()), format="%Y-%m-%d %H:%M:%S"
+    )
+
     total_completion = [
-        sum([sample.get('completed', 0) for sample in completion_data[t].values()]) * 100 / sum([sample.get('total', 1) for sample in completion_data[t].values()]) for t in times
+        sum([sample.get("completed", 0) for sample in completion_data[t].values()])
+        * 100
+        / sum([sample.get("total", 1) for sample in completion_data[t].values()])
+        for t in times
     ]
-    
+
     fig = plt.figure(figsize=(15, 6))
     ax = fig.add_subplot(111)
-    
+
     # Plot individual sample completion rates
     sample_names = list(next(iter(completion_data.values())).keys())
-    
+
     for sample in sample_names:
         sample_completion = [
-            completion_data[t][sample].get('completed', 0) * 100 / completion_data[t][sample].get('total', 1) for t in times
+            completion_data[t][sample].get("completed", 0)
+            * 100
+            / completion_data[t][sample].get("total", 1)
+            for t in times
         ]
-        ax.plot(formatted_times, sample_completion, label=sample[:30] + f" ({round(sample_completion[-1], 2)}%)")
+        ax.plot(
+            formatted_times,
+            sample_completion,
+            label=sample[:30] + f" ({round(sample_completion[-1], 2)}%)",
+        )
 
-    ax.plot(formatted_times, total_completion, label=f"Total ({round(total_completion[-1], 2)}%)", linewidth=3, color='black')
+    ax.plot(
+        formatted_times,
+        total_completion,
+        label=f"Total ({round(total_completion[-1], 2)}%)",
+        linewidth=3,
+        color="black",
+    )
 
     # Format the x-axis to show date and time
-    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%d-%m\n%H:%M'))
+    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%d-%m\n%H:%M"))
 
     # Plot settings
     # Set xticks to be at most 10 in number
     if len(formatted_times) > 10:
-        xticks = [formatted_times[i] for i in np.linspace(0, len(formatted_times) - 1, 10, dtype=int)]
+        xticks = [
+            formatted_times[i]
+            for i in np.linspace(0, len(formatted_times) - 1, 10, dtype=int)
+        ]
     else:
         xticks = formatted_times
     ax.set_xticks(xticks)
     ax.set_xlabel("Time")
     ax.set_ylabel("Percent Completed")
     ax.set_title("NTuple Tag: " + options.tag)
-    ax.legend(loc=(1.01, 0), fontsize='small')
+    ax.legend(loc=(1.01, 0), fontsize="small")
     fig.tight_layout()
-    fig.savefig("/home/submit/lavezzo/public_html/monitoring/" + options.tag + ".pdf", bbox_inches="tight")
+    fig.savefig(
+        "/home/submit/lavezzo/public_html/monitoring/" + options.tag + ".pdf",
+        bbox_inches="tight",
+    )
+
 
 def main():
 
@@ -129,7 +156,7 @@ def main():
     parser.add_argument(
         "--auto",
         type=int,
-        help="Automatically rerun every N minutes and plot completion rates."
+        help="Automatically rerun every N minutes and plot completion rates.",
     )
     options = parser.parse_args()
 
@@ -138,9 +165,10 @@ def main():
     else:
         monitor(options)
 
+
 def monitor(options):
 
-    data = {} # this is the output
+    data = {}  # this is the output
 
     proxy_base = f"x509up_u{os.getuid()}"
     home_base = os.environ["HOME"]
@@ -241,8 +269,8 @@ def monitor(options):
             complete_list = [f for f in complete_list if not f.startswith("gitinfo")]
             nfile = len(complete_list)
 
-            data[sample_name]['total'] = njobs
-            data[sample_name]['completed'] = nfile
+            data[sample_name]["total"] = njobs
+            data[sample_name]["completed"] = nfile
 
             if njobs == 0:
                 missing_samples.append(sample)

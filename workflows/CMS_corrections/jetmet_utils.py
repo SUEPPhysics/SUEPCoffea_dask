@@ -4,7 +4,9 @@ Follow the latest recommendations: https://cms-jerc.web.cern.ch/Recommendations/
 
 Authors: Chad Freer, Luca Lavezzo
 """
+
 import os
+
 import awkward as ak
 import cachetools
 import numpy as np
@@ -15,7 +17,13 @@ from coffea.lookup_tools import extractor
 vector.register_awkward()
 
 
-def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix: str = os.path.join(os.path.dirname(__file__), "..", "../")):
+def makeJECStack(
+    Sample: str,
+    isMC: int,
+    era: str,
+    jer: bool = False,
+    prefix: str = os.path.join(os.path.dirname(__file__), "..", "../"),
+):
     """
     Define the set of weights to use for JECs and JERs based on sample, isMC, and era.
     """
@@ -140,7 +148,13 @@ def makeJECStack(Sample: str, isMC: int, era: str, jer: bool = False, prefix: st
     return JECStack(jec_inputs_ak4)
 
 
-def getCorrectedJetsFactory(Sample, isMC, era, jer=False, prefix=os.path.join(os.path.dirname(__file__), "..", "../")):
+def getCorrectedJetsFactory(
+    Sample,
+    isMC,
+    era,
+    jer=False,
+    prefix=os.path.join(os.path.dirname(__file__), "..", "../"),
+):
 
     jec_stack_ak4 = makeJECStack(Sample, isMC, era, jer=jer, prefix=prefix)
 
