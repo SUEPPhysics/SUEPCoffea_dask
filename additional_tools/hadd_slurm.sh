@@ -55,7 +55,7 @@ for subdir in "$parent_dir"/*/; do
             rm "$merged_file"
             ((bad_count++))
         fi
-        
+
     fi
 
     echo "Submitting job"

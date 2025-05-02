@@ -24,4 +24,3 @@ for dataset in "${datasets[@]}"; do
     echo "$diff_output" | awk '/^>/ || /^</ {print}'
     echo
 done
-

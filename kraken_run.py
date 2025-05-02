@@ -292,13 +292,23 @@ def main():
             _tokens = options.output.split("//")
             _redirector = _tokens[0] + "//" + _tokens[1] + "//"
             check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
-            _sample_dir_exists = subprocess.call(check_dir_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+            _sample_dir_exists = (
+                subprocess.call(
+                    check_dir_command,
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                == 0
+            )
             if not _sample_dir_exists:
                 logging.info(f"Creating output directory {_redirector+_sample_path}")
                 os.system(f"mkdir -p /ceph/submit/{_sample_path}")
-                #os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
+                # os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
             else:
-                logging.warning(f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten.")
+                logging.warning(
+                    f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten."
+                )
 
             # set up the logs directory
             jobs_dir = "/".join([options.logs, options.tag, sample_name])
@@ -308,38 +318,42 @@ def main():
                 os.makedirs(jobs_dir)
 
             # we are forcing the creation
-            elif options.force: 
-                logging.warning(
-                    " " + jobs_dir + " exists, forcing its deletion!"
-                )
+            elif options.force:
+                logging.warning(" " + jobs_dir + " exists, forcing its deletion!")
                 shutil.rmtree(jobs_dir)
                 os.makedirs(jobs_dir)
 
             # if the input file doesn't exist
             elif not os.path.exists(os.path.join(jobs_dir, "inputfiles.dat")):
                 logging.warning(
-                    " " + os.path.join(jobs_dir, "inputfiles.dat") + " doesn't exist! Clearing log directory."
+                    " "
+                    + os.path.join(jobs_dir, "inputfiles.dat")
+                    + " doesn't exist! Clearing log directory."
                 )
                 shutil.rmtree(jobs_dir)
                 os.makedirs(jobs_dir)
-                
+
             # or exists, but is empty, delete it and recreate\
             elif os.path.getsize(os.path.join(jobs_dir, "inputfiles.dat")) == 0:
                 logging.warning(
-                    " " + os.path.join(jobs_dir, "inputfiles.dat") + " exists but is empty! Clearing log directory."
+                    " "
+                    + os.path.join(jobs_dir, "inputfiles.dat")
+                    + " exists but is empty! Clearing log directory."
                 )
                 shutil.rmtree(jobs_dir)
                 os.makedirs(jobs_dir)
 
             else:
-                logging.error(" Log directory " + jobs_dir + " already exists, and input file list seems correct. Will not submit this sample!")
-                continue                        
-                
+                logging.error(
+                    " Log directory "
+                    + jobs_dir
+                    + " already exists, and input file list seems correct. Will not submit this sample!"
+                )
+                continue
+
             # get the filelist with xrootd
             Raw_list = []
-            logging.debug(
-                "xrdfs {} ls {}".format(sample_input_redirector, sample_path)
-            )
+            logging.debug(f"xrdfs {sample_input_redirector} ls {sample_path}")
             comm = subprocess.Popen(
                 ["xrdfs", sample_input_redirector, "ls", sample_path],
                 stdout=subprocess.PIPE,
@@ -431,7 +445,7 @@ def main():
             except Exception as e:
                 logging.error(f"Error writing git info: {e}")
                 logging.error("Git info not written to output directory.")
-                
+
             # don't submit if it's a dryrun
             if options.dryrun:
                 continue
