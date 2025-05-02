@@ -2,10 +2,7 @@ import json
 import logging
 import sys
 
-import hist
-
-sys.path.append("../../")
-import plotting.plot_utils
+import utils
 
 
 def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
@@ -56,13 +53,11 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
             if not plot.endswith(out_label):
                 continue
 
-            if model in plot and "2D" not in plot:
-                GNN_syst_plots[plot + "_GNNsyst_down"] = (
-                    plot_utils.apply_binwise_scaling(
-                        plots[plot].copy(), bins, [1 - s for s in scales]
-                    )
+            if model in plot and len(plot.axes) < 2:
+                GNN_syst_plots[plot + "_GNNsyst_down"] = apply_binwise_scaling(
+                    plots[plot].copy(), bins, [1 - s for s in scales]
                 )
-                GNN_syst_plots[plot + "_GNNsyst_up"] = plot_utils.apply_binwise_scaling(
+                GNN_syst_plots[plot + "_GNNsyst_up"] = apply_binwise_scaling(
                     plots[plot].copy(), bins, [1 + s for s in scales]
                 )
             if model in plot and "2D" in plot:
@@ -72,12 +67,10 @@ def apply_GNN_syst(plots, fGNNsyst, models, bins, era, out_label="GNN"):
                     dim = "x"
                 elif model in var2:
                     dim = "y"
-                GNN_syst_plots[plot + "_GNNsyst_down"] = (
-                    plot_utils.apply_binwise_scaling(
-                        plots[plot].copy(), bins, [1 - s for s in scales], dim=dim
-                    )
+                GNN_syst_plots[plot + "_GNNsyst_down"] = apply_binwise_scaling(
+                    plots[plot].copy(), bins, [1 - s for s in scales], dim=dim
                 )
-                GNN_syst_plots[plot + "_GNNsyst_up"] = plot_utils.apply_binwise_scaling(
+                GNN_syst_plots[plot + "_GNNsyst_up"] = apply_binwise_scaling(
                     plots[plot].copy(), bins, [1 + s for s in scales], dim=dim
                 )
         plots.update(GNN_syst_plots)

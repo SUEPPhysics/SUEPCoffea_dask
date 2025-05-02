@@ -1,35 +1,90 @@
 import argparse
 import os
 
+import h5py
+import hist
+
 # Import coffea specific features
 from coffea import processor
 
 # SUEP Repo Specific
 from workflows import SUEP_coffea_WH
-from workflows.utils import pandas_utils
+from workflows.utils import output_utils, pandas_utils
 
 
 def form_ntuple(options, output):
-    df = pandas_utils.format_dataframe(output["out"][options.dataset]["vars"].value)
-    return df
+    """
+    Extract the dataframes from the processor output
+    We expect this to have the shape: {"variation1": {"vars": df, ...}, "variation2": {"vars": df, ...}, ...}
+    Output is: [df1, df2, ...], ["vars_variation1", "vars_variation2", ...]
+    These will be saved in the hdf5 as
+        "vars_variation1"
+        "vars_variation2"
+        ...
+    """
+    dfs = []
+    variations = output["out"][options.dataset].keys()
+    for var in variations:
+        dfs.append(
+            pandas_utils.format_dataframe(
+                output["out"][options.dataset][var]["vars"].value
+            )
+        )
+    return dfs, ["vars_" + var if var != "nominal" else "vars" for var in variations]
 
 
 def form_metadata(options, output):
+    """
+    Extract the metadata from the processor output
+    We expect this to have the shape: {variation1: {era: 2018, mc: 1, sample: X, ...}, ...}
+    Output is: {era_variation1: 2018, era_variation2: 2018, ..., mc_variation1: 1, mc_variation2: 1, ..., sample_variation1: X, sample_variation2: X, ...}
+    This will be saved in the hdf5 as
+        metadata
+    """
     metadata = dict(
         era=options.era,
         mc=options.isMC,
         sample=options.dataset,
     )
-    metadata.update(
-        {
-            key: output["out"][options.dataset][key]
-            for key in output["out"][options.dataset].keys()
-            if key != "vars"
-        }
-    )
+    variations = output["out"][options.dataset].keys()
+    for var in variations:
+        metadata.update(
+            {
+                "_".join(filter(None, [key, var])): output["out"][options.dataset][var][
+                    key
+                ]
+                for key in output["out"][options.dataset][var].keys()
+                if type(output["out"][options.dataset][var][key])
+                is processor.value_accumulator
+            }
+        )
     metadata = pandas_utils.format_metadata(metadata)
-
     return metadata
+
+
+def form_hists(options, output):
+    """
+    Extract the histograms from the processor output
+    We expect this to have the shape: {variation1: {hist_name1: hist1, ...}, variation2: {hist_name1: hist1, ...}, ...}
+    Output is: [{hist_name1: hist1, ...}, {hist_name1: hist1, ...}, ...], [hists_variation1, hists_variation2, ...]
+    These will be saved in the hdf5 as
+        hists_variation1/hist_name1
+        hists_variation1/hist_name2
+        ...
+        hists_variation2/hist_name1
+        ...
+    """
+    hists = []
+    variations = output["out"][options.dataset].keys()
+    for var in variations:
+        hists_var = {}
+        for key in output["out"][options.dataset][var].keys():
+            if type(output["out"][options.dataset][var][key]) is hist.Hist:
+                hists_var[key] = output["out"][options.dataset][var][key]
+        hists.append(hists_var)
+    return hists, [
+        "hists_" + var if var != "nominal" else "hists" for var in variations
+    ]
 
 
 def main():
@@ -38,18 +93,26 @@ def main():
     parser.add_argument("--isMC", type=int, default=1, help="")
     parser.add_argument("--jobNum", type=int, default=1, help="")
     parser.add_argument("--era", type=str, default="2018", help="")
-    parser.add_argument("--doSyst", type=int, default=1, help="")
+    parser.add_argument("--doSyst", type=int, default=0, help="")
     parser.add_argument("--infile", required=True, type=str, default=None, help="")
     parser.add_argument(
-        "--output",
-        "-o",
+        "--outfile",
+        "-f",
         default="out.hdf5",
-        help="Output file, can be a path or xrootd path.",
+        help="Output file name.",
+        type=str,
+    )
+    parser.add_argument(
+        "--output_location",
+        "-o",
+        default=os.getcwd(),
+        help="Path to output directory, can be xrootd or local",
         type=str,
     )
     parser.add_argument("--dataset", type=str, default="X", help="")
     parser.add_argument("--maxChunks", type=int, default=None, help="")
-    parser.add_argument("--chunkSize", type=int, default=100000, help="")
+    parser.add_argument("--chunkSize", type=int, default=10000, help="")
+    parser.add_argument("--nworkers", type=int, default=1, help="")
     parser.add_argument(
         "--doInf",
         type=str,
@@ -67,13 +130,15 @@ def main():
             do_syst=options.doSyst,
             sample=options.dataset,
             flag=False,
-            output_location=os.getcwd(),
+            output_location=options.output_location,
         )
     )
 
     for instance in modules_era:
         runner = processor.Runner(
-            executor=processor.FuturesExecutor(compression=None, workers=1),
+            executor=processor.FuturesExecutor(
+                compression=None, workers=options.nworkers
+            ),
             schema=processor.NanoAODSchema,
             xrootdtimeout=120,
             chunksize=options.chunkSize,
@@ -89,11 +154,21 @@ def main():
             processor_instance=instance,
         )
 
-        # save output
-        df = form_ntuple(options, output)
+        # format the desired data from the processor output
+        dfs, df_names = form_ntuple(options, output)
         metadata = form_metadata(options, output)
+        hists, hist_names = form_hists(options, output)
+
+        # save everything to hdf5
         pandas_utils.save_dfs(
-            instance, [df], ["vars"], options.output, metadata=metadata
+            instance, dfs, df_names, options.outfile, metadata=metadata
+        )
+        for h, n in zip(hists, hist_names):
+            output_utils.add_hists(options.outfile, h, group_name=n)
+
+        # write out the hdf5 to the output_location
+        output_utils.dump_table(
+            fname=options.outfile, location=instance.output_location
         )
 
 

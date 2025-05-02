@@ -401,12 +401,6 @@
     "xsec": 3.289,
     "signal": 0
   },
-  "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
-    "br": 1,
-    "kr": 1,
-    "xsec": 66680.0,
-    "signal": 0
-  },
   "WWTo2L2Nu_TuneCP5_13TeV-powheg-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
     "br": 1,
     "kr": 1,
@@ -569,27 +563,33 @@
     "xsec": 4.926,
     "signal": 0
   },
+  "WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 0.922,
+    "xsec": 66680.0,
+    "signal": 0
+  },
   "WJetsToLNu_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 733.1,
     "signal": 0
   },
   "WJetsToLNu_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 27.92,
     "signal": 0
   },
   "WJetsToLNu_Pt-400To600_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 3.547,
     "signal": 0
   },
   "WJetsToLNu_Pt-600ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
     "br": 1,
-    "kr": 1,
+    "kr": 0.922,
     "xsec": 0.5371,
     "signal": 0
   },
@@ -633,6 +633,18 @@
     "br": 1,
     "kr": 1,
     "xsec": 0.5269,
+    "signal": 0
+  },
+  "WGammaToJJGamma_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 8.635,
+    "signal": 0
+  },
+  "ZGammaToJJGamma_TuneCP5_13TeV-amcatnloFXFX-pythia8+RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 4.144,
     "signal": 0
   },
   "GJets_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL18MiniAODv2-4cores5k_106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
@@ -2621,6 +2633,12 @@
     "xsec": 0.185,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS125.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.00259608107509008,
+    "xsec": 45.2,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS125.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.00259608107509008,
@@ -2637,6 +2655,12 @@
     "br": 1,
     "kr": 0.00259608107509008,
     "xsec": 45.2,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.0048232274473043275,
+    "xsec": 16.9,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2657,6 +2681,12 @@
     "xsec": 16.9,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS300.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.009035833057989004,
+    "xsec": 6.59,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS300.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.009035833057989004,
@@ -2673,6 +2703,12 @@
     "br": 1,
     "kr": 0.009035833057989004,
     "xsec": 6.59,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS400.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.01466909822798684,
+    "xsec": 3.16,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS400.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2693,6 +2729,12 @@
     "xsec": 3.16,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS500.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.021723022957297833,
+    "xsec": 1.71,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS500.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.021723022957297833,
@@ -2709,6 +2751,12 @@
     "br": 1,
     "kr": 0.021723022957297833,
     "xsec": 1.71,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS600.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.030197607245921985,
+    "xsec": 1.0,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS600.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2729,6 +2777,12 @@
     "xsec": 1.0,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS700.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.0400928510938593,
+    "xsec": 0.621,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS700.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.0400928510938593,
@@ -2745,6 +2799,12 @@
     "br": 1,
     "kr": 0.0400928510938593,
     "xsec": 0.621,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS800.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.051408754501109766,
+    "xsec": 0.402,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS800.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2765,6 +2825,12 @@
     "xsec": 0.402,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS900.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.0641453174676734,
+    "xsec": 0.269,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS900.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.0641453174676734,
@@ -2781,6 +2847,12 @@
     "br": 1,
     "kr": 0.0641453174676734,
     "xsec": 0.269,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS1000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.07830253999355018,
+    "xsec": 0.185,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T3p00_mS1000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -2979,6 +3051,12 @@
     "br": 1,
     "kr": 0.009035833057989004,
     "xsec": 6.59,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T4p00_mS400.000_mPhi2.000_T4.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.01466909822798684,
+    "xsec": 3.16,
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T4p00_mS400.000_mPhi2.000_T4.000_modegeneric_TuneCP5_13TeV-pythia8": {
@@ -9293,6 +9371,12 @@
     "xsec": 0.0096,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS2000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 1.00000,
+    "xsec": 0.0096,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS2000.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 1.00000,
@@ -9713,6 +9797,12 @@
     "xsec": 0.0926,
     "signal": 1
   },
+  "GluGluToSUEP_HT1000_T3p00_mS1200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
+    "br": 1,
+    "kr": 0.19190,
+    "xsec": 0.0926,
+    "signal": 1
+  },
   "GluGluToSUEP_HT1000_T3p00_mS1200.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV-pythia8": {
     "br": 1,
     "kr": 0.19190,
@@ -10128,6 +10218,12 @@
     "signal": 1
   },
   "GluGluToSUEP_HT1000_T2p80_mS1500.000_mPhi1.400_T2.800_modehadronic_TuneCP5_13TeV-pythia8": {
+    "br": 1,
+    "kr": 0.58560,
+    "xsec": 0.0369,
+    "signal": 1
+  },
+  "GluGluToSUEP_HT1000_T3p00_mS1500.000_mPhi3.000_T3.000_modegeneric_TuneCP5_13TeV": {
     "br": 1,
     "kr": 0.58560,
     "xsec": 0.0369,
@@ -11589,6 +11685,1266 @@
     "br": 0.3177,
     "kr": 1,
     "xsec": 1.358,
+    "signal": 1
+  },
+  "WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 52780.0,
+    "signal": 0
+  },
+  "WJetsToLNu_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 8832.0,
+    "signal": 0
+  },
+  "WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2+MINIAODSIM": {
+    "br": 1,
+    "kr": 1,
+    "xsec": 3276.0,
+    "signal": 0
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T0.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T0.71_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD2.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T0.75_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T1.06_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T1.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T12.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T2.12_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T3.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T4.24_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T6.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD3.00_T8.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T11.31_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T16.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD4.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T1.25_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T1.77_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T10.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T14.14_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T2.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T20.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T3.54_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T5.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD5.00_T7.07_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T1.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T12.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T16.97_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T2.12_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T24.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T3.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T4.24_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T6.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD6.00_T8.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T1.75_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T14.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T19.80_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T2.47_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T28.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T3.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T4.95_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T7.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD7.00_T9.90_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T11.31_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T16.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T22.63_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T32.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_generic_M125.0_MD8.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T0.35_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T0.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T0.70_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T0.99_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T1.40_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T1.98_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T2.80_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T3.96_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD1.40_T5.60_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T0.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T0.71_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD2.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T0.75_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T1.06_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T1.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T12.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T2.12_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T3.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T4.24_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T6.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD3.00_T8.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T11.31_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T16.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD4.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T1.25_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T1.77_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T10.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T14.14_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T2.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T20.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T3.54_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T5.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD5.00_T7.07_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T1.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T12.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T16.97_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T2.12_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T24.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T3.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T4.24_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T6.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD6.00_T8.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T1.75_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T14.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T19.80_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T2.47_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T28.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T3.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T4.95_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T7.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD7.00_T9.90_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T11.31_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T16.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T22.63_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T32.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_hadronic_M125.0_MD8.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T0.25_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T0.35_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T0.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T0.71_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD1.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T0.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T0.71_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD2.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T0.75_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T1.06_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T1.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T12.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T2.12_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T3.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T4.24_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T6.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD3.00_T8.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T1.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T1.41_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T11.31_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T16.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD4.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T1.25_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T1.77_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T10.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T14.14_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T2.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T20.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T3.54_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T5.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD5.00_T7.07_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T1.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T12.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T16.97_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T2.12_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T24.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T3.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T4.24_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T6.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD6.00_T8.49_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T1.75_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T14.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T19.80_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T2.47_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T28.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T3.50_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T4.95_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T7.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD7.00_T9.90_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T11.31_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T16.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T2.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T2.83_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T22.63_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T32.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T4.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T5.66_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
+    "signal": 1
+  },
+  "WHleptonicpythia_leptonic_M125.0_MD8.00_T8.00_HT-1_": {
+    "br": 0.3177,
+    "xsec": 1.358,
+    "kr": 1,
     "signal": 1
   }
 }

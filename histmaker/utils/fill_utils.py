@@ -7,12 +7,14 @@ from collections import defaultdict
 from copy import deepcopy
 
 import awkward as ak
+import h5py
+import hist
 import numpy as np
 import pandas as pd
 import vector
 
 
-def h5load(ifile: str, label: str):
+def h5LoadDf(ifile: str, label: str = "vars"):
     """
     Load a pandas DataFrame from a HDF5 file, including metadata.
     Nota bene: metadata is unstable, we have found that using pandas==1.4.1 and pytables==3.7.0 works.
@@ -32,84 +34,87 @@ def h5load(ifile: str, label: str):
         return 0, 0
 
 
+def h5LoadHist(ifile: str, label: str = "hists"):
+    """
+    Load a histogram from a HDF5 file.
+    """
+    histograms = {}
+    with h5py.File(ifile, "r") as hdf5_file:
+
+        # Check if the 'hists' group exists
+        if label in hdf5_file:
+            hist_collection = hdf5_file[label]
+        else:
+            return {}
+
+        # Iterate through each subgroup under 'hists'
+        for hist_name in hist_collection:
+            hist_group = hist_collection[hist_name]
+
+            # Read attributes
+            name = hist_group.attrs.get("name", hist_name)
+
+            # read axes info
+            axes = []
+            i = 0
+            while f"axis{i}_name" in hist_group:
+                axis_name = hist_group[f"axis{i}_name"][()].decode("utf-8")
+                axis_edges = hist_group[f"axis{i}_edges"][:]
+                axes.append(hist.axis.Variable(axis_edges, name=axis_name))
+                i += 1
+
+            # Read values and variances
+            values = hist_group["values"][:]
+            variances = hist_group["variances"][:]
+
+            # Create hist.Hist object and fill it
+            h = hist.Hist(*axes, storage="Weight", name=name)
+            h[...] = np.stack([values, variances], axis=-1)
+
+            # Store in dictionary
+            histograms[name] = h
+
+    return histograms
+
+
 def open_ntuple(
-    ifile: str, redirector: str = "root://submit50.mit.edu/", xrootd: bool = False
+    ifile: str,
+    redirector: str = "root://submit50.mit.edu/",
+    xrootd: bool = False,
+    xrootd_tmp_path: str = "/tmp/",
+    df_name: str = "vars",
+    hist_name: str = "hists",
 ):
     """
     Open a ntuple, either locally or on xrootd.
     """
     if not xrootd and "root://" not in ifile:
-        return h5load(ifile, "vars")
+        local_file = ifile
     else:
         if "root://" in ifile:
             xrd_file = ifile
         else:
             xrd_file = redirector + ifile
         just_file = ifile.split("/")[-1].split(".")[0]
-        os.system(f"xrdcp -s {xrd_file} {just_file}.hdf5")
-        return h5load(just_file + ".hdf5", "vars")
+        local_file = f"{xrootd_tmp_path}{just_file}.hdf5"
+        os.system(f"xrdcp -s {xrd_file} {local_file}")
+        logging.debug(f"Copied {xrd_file} to {local_file}")
+
+    logging.debug(f"Opening {local_file}")
+    return *h5LoadDf(local_file, df_name), h5LoadHist(local_file, hist_name)
 
 
-def close_ntuple(ifile: str) -> None:
+def close_ntuple(file: str, xrootd_tmp_path: str = "/tmp/") -> None:
     """
     Delete the ntuple after it has been copied over via xrootd (see open_ntuple).
     """
-    just_file = ifile.split("/")[-1].split(".")[0]
-    os.system(f"rm {just_file}.hdf5")
+    just_file = file.split("/")[-1].split(".")[0]
+    local_file = f"{xrootd_tmp_path}{just_file}.hdf5"
+    os.system(f"rm {local_file}")
+    logging.debug(f"Deleted {local_file}")
 
 
-def get_git_info(path="."):
-    """
-    Get the current commit and git diff.
-    """
-
-    # Change directory to the git repo
-    os.chdir(path)
-
-    # Get the current commit and diff
-    commit = (
-        subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
-    )
-    diff = subprocess.check_output(["git", "diff"]).strip().decode("utf-8")
-
-    return commit, diff
-
-
-def isSampleSignal(sample: str, year: str, path: str = "../data/") -> bool:
-    """
-    Check the xsections json database to see if a sample is signal or not.
-    """
-    xsecs_database = f"{path}/xsections_{year}.json"
-    with open(xsecs_database) as file:
-        MC_xsecs = json.load(file)
-        return bool(MC_xsecs[sample]["signal"])
-
-
-def getXSection(
-    dataset: str, year, path: str = "../data/", failOnKeyError: bool = True
-) -> float:
-    xsection = 1
-
-    xsec_file = f"{path}/xsections_{year}.json"
-    with open(xsec_file) as file:
-        MC_xsecs = json.load(file)
-        try:
-            xsection *= MC_xsecs[dataset]["xsec"]
-            xsection *= MC_xsecs[dataset]["kr"]
-            xsection *= MC_xsecs[dataset]["br"]
-        except KeyError:
-            logging.warning(
-                f"WARNING: I did not find the xsection for {dataset} in {xsec_file}. Check the dataset name and the relevant yaml file."
-            )
-            if failOnKeyError:
-                raise KeyError(f"Could not find xsection for {dataset} in {xsec_file}")
-            else:
-                return 1
-
-    return xsection
-
-
-def format_selection(selection: str, df: pd.DataFrame) -> list:
+def format_selection(selection, df: pd.DataFrame = None) -> list:
     """
     Format a selection string into a list of the form [attribute, operator, value].
     Converts value to a float, if needed.
@@ -120,12 +125,15 @@ def format_selection(selection: str, df: pd.DataFrame) -> list:
         type(selection) is str
     ):  # converts "attribute operator value" to ["attribute", "operator", "value"] to pass to make_selection()
         selection = selection.split(" ")
-    if (
-        selection[0] not in df.keys()
-    ):  # error out if variable doesn't exist in the DataFrame
-        raise Exception(
-            f"Trying to apply a cut on a variable {selection[0]} that does not exist in the DataFrame"
-        )
+    if not (type(selection) is list):
+        raise Exception("Selection is not a list")
+    if df is not None:
+        if (
+            selection[0] not in df.keys()
+        ):  # error out if variable doesn't exist in the DataFrame
+            raise Exception(
+                f"Trying to apply a cut on a variable {selection[0]} that does not exist in the DataFrame"
+            )
     if type(selection[2]) is str and is_number(selection[2]):
         selection[2] = float(
             selection[2]
@@ -180,7 +188,7 @@ def make_selection(
         raise Exception("Couldn't find operator requested " + operator)
 
 
-def apply_scaling_weights(
+def apply_scaling_weights_byregion(
     df,
     scaling_weights,
     abcd,
@@ -233,6 +241,19 @@ def apply_scaling_weights(
     return df
 
 
+def add_cutflow(
+    df: pd.DataFrame,
+    cutflow: dict,
+    cutflow_label: str,
+    column_name: str = "event_weight",
+) -> None:
+
+    if cutflow_label in cutflow.keys():
+        cutflow[cutflow_label] += np.sum(df[column_name])
+    else:
+        cutflow[cutflow_label] = np.sum(df[column_name])
+
+
 def prepare_DataFrame(
     df: pd.DataFrame,
     config: dict,
@@ -261,18 +282,19 @@ def prepare_DataFrame(
             return None
         # N.B.: this is the pandas-suggested way to do this, changing it gives performance warnings
         df = df[(~df[config["method_var"]].isnull())].copy()
+        add_cutflow(df, cutflow, "cutflow_method_var_" + label_out)
 
     # 2. blind
-    if blind and not isMC:
+    if blind:
         df = blind_DataFrame(df, label_out, config["SR"])
-        if "SR2" in config.keys():
-            df = blind_DataFrame(df, label_out, config["SR2"])
+        add_cutflow(df, cutflow, "cutflow_blind_SR_" + label_out)
 
     # 3. make new variables
     if "new_variables" in config.keys():
         for var in config["new_variables"]:
+            make_new_variable(df, var[0], var[1], *var[2])
             try:
-                df = make_new_variable(df, var[0], var[1], *var[2])
+                make_new_variable(df, var[0], var[1], *var[2])
             except KeyError as e:
                 logging.warning(
                     f"Could not make new variable {var[0]} because of KeyError: {e}"
@@ -281,13 +303,6 @@ def prepare_DataFrame(
     # 4. apply selections
     if "selections" in config.keys():
 
-        # store number of events passing using the event weights into the cutflow dict (this is redundant since the last cutflow value from ntuplemaker already exists)
-        cutflow_label = "cutflow_histmaker_total"
-        if cutflow_label in cutflow.keys():
-            cutflow[cutflow_label] += np.sum(df["event_weight"])
-        else:
-            cutflow[cutflow_label] = np.sum(df["event_weight"])
-
         # make n-1 plots
         for i, isel in enumerate(config["selections"]):
             isel = format_selection(isel, df)
@@ -295,7 +310,9 @@ def prepare_DataFrame(
             # if the histogram is already initialized for this variable, make the N-1 histogram
             histName = isel[0] + "_" + label_out
             if histName not in output.keys():
-                continue
+                histName = isel[0].replace(config.get("input_method"), label_out)
+                if histName not in output.keys():
+                    continue
 
             n1HistName = (
                 isel[0]
@@ -312,7 +329,10 @@ def prepare_DataFrame(
                 output[n1HistName] = output[histName].copy()
 
             # apply all but the ith selection
-            mask = ~df[config["method_var"]].isnull()
+            if config.get("method_var"):
+                mask = ~df[config["method_var"]].isnull()
+            else:
+                mask = np.ones(df.shape[0], dtype=bool)
             for j, jsel in enumerate(config["selections"]):
                 if j == i:
                     continue
@@ -325,17 +345,18 @@ def prepare_DataFrame(
 
         # now, apply selections
         for isel, sel in enumerate(config["selections"]):
+
             sel = format_selection(sel, df)
-            df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
+
+            # apply selections, unless there are no events left already!
+            if df.shape[0] > 0:
+                df = make_selection(df, sel[0], sel[1], sel[2], apply=True)
 
             # store number of events passing using the event weights into the cutflow dict
             cutflow_label = (
                 "cutflow_" + sel[0] + "_" + sel[1] + "_" + str(sel[2]) + "_" + label_out
             )
-            if cutflow_label in cutflow.keys():
-                cutflow[cutflow_label] += np.sum(df["event_weight"])
-            else:
-                cutflow[cutflow_label] = np.sum(df["event_weight"])
+            add_cutflow(df, cutflow, cutflow_label)
 
     return df
 
@@ -350,17 +371,16 @@ def is_number(s: str) -> bool:
 
 def make_new_variable(
     df: pd.DataFrame, name: str, function: callable, *columns: list
-) -> pd.DataFrame:
+) -> None:
     """
     Make a new column in the DataFrame df by applying the function to the columns
     passed as *columns. The new column will be named 'name'.
     """
 
-    df[name] = function(*[df[col] for col in columns])
-    return df
+    df.loc[:, name] = function(*[df[col] for col in columns])
 
 
-def fill_ND_distributions(df, output, label_out, input_method):
+def fill_ND_distributions(df, output, label_out, input_method: str = ""):
     """
     Fill all N>1 dimensional histograms.
     To do, we expect that they are named as follows:
@@ -382,7 +402,7 @@ def fill_ND_distributions(df, output, label_out, input_method):
         # if the input method is not in the variable name, add it
         skip = False
         for ivar, var in enumerate(variables):
-            if var not in df_keys:
+            if var not in df_keys and type(input_method) is str:
                 var += "_" + input_method
                 if var not in df_keys:
                     skip = True
@@ -390,7 +410,9 @@ def fill_ND_distributions(df, output, label_out, input_method):
         if skip:
             continue
 
-        output[key].fill(*[df[var] for var in variables], weight=df["event_weight"])
+        fill_histogram(
+            output[key], [df[var] for var in variables], weight=df["event_weight"]
+        )
 
 
 def auto_fill(
@@ -401,7 +423,7 @@ def auto_fill(
     isMC: bool = False,
     do_abcd: bool = False,
 ) -> None:
-    input_method = config["input_method"]
+    input_method = config.get("input_method", None)
 
     #####################################################################################
     # ---- Fill Histograms
@@ -410,26 +432,37 @@ def auto_fill(
 
     # 1. fill the distributions as they are saved in the dataframes
     # 1a. fill event wide variables
+    # e.g. 'ht' in the dataframe will be filled in the histogram 'ht_<label_out>'
     event_plot_labels = [
         key for key in df.keys() if key + "_" + label_out in list(output.keys())
     ]
     for plot in event_plot_labels:
-        output[plot + "_" + label_out].fill(df[plot], weight=df["event_weight"])
-
-    # 1b. fill method variables
-    method_plot_labels = [
-        key
-        for key in df.keys()
-        if key.replace(input_method, label_out) in list(output.keys())
-        and key.endswith(input_method)
-    ]
-    for plot in method_plot_labels:
-        output[plot.replace(input_method, label_out)].fill(
-            df[plot], weight=df["event_weight"]
+        fill_histogram(
+            output[plot + "_" + label_out], df[plot], weight=df["event_weight"]
         )
 
+    # 1b. fill method variables
+    # e.g. 'SUEP_nconst_<input_method>' in the dataframe will be filled in the histogram 'SUEP_nconst_<label_out>'
+    if input_method:
+        method_plot_labels = [
+            key
+            for key in df.keys()
+            if key.replace(input_method, label_out) in list(output.keys())
+            and key.endswith(input_method)
+        ]
+        method_plot_labels = list(set(method_plot_labels) - set(event_plot_labels))
+
+        for plot in method_plot_labels:
+            fill_histogram(
+                output[plot.replace(input_method, label_out)],
+                df[plot],
+                weight=df["event_weight"],
+            )
+
     # 2. fill some ND distributions
-    fill_ND_distributions(df, output, label_out, input_method)
+    fill_ND_distributions(
+        df, output, label_out, input_method=input_method if input_method else ""
+    )
 
     # 3. divide the dfs by region
     if do_abcd:
@@ -465,25 +498,19 @@ def auto_fill(
                     == 0
                 )
 
-                # double check blinding
-                if (
-                    iRegion == (len(xvar_regions) - 1) * (len(yvar_regions) - 1)
-                    and not isMC
-                ):
-                    if df_r.shape[0] > 0:
-                        sys.exit(
-                            label_out + ": You are not blinding correctly! Exiting."
-                        )
-
-                # by default, we only plot the ABCD variables in each region, to reduce the size of the output
-                # the option do_abcd created a histogram of each variable for each region
+                # skip if empty
+                if df_r.shape[0] == 0:
+                    iRegion += 1
+                    continue
 
                 # 3a. fill event wide variables
                 for plot in event_plot_labels:
                     if r + plot + "_" + label_out not in list(output.keys()):
                         continue
-                    output[r + plot + "_" + label_out].fill(
-                        df_r[plot], weight=df_r["event_weight"]
+                    fill_histogram(
+                        output[r + plot + "_" + label_out],
+                        df_r[plot],
+                        weight=df_r["event_weight"],
                     )
 
                 # 3b. fill method variables
@@ -492,20 +519,61 @@ def auto_fill(
                         output.keys()
                     ):
                         continue
-                    output[r + plot.replace(input_method, label_out)].fill(
-                        df_r[plot], weight=df_r["event_weight"]
+                    fill_histogram(
+                        output[r + plot.replace(input_method, label_out)],
+                        df_r[plot],
+                        weight=df_r["event_weight"],
                     )
 
                 iRegion += 1
 
 
-def apply_normalization(plots: dict, norm: float) -> dict:
-    if norm > 0.0:
-        for plot in list(plots.keys()):
-            plots[plot] = plots[plot] * norm
+def fill_histogram(hist, payload, weight):
+    """
+    Fill in a histogram with a payload.
+    Supports payloads that are pd.Series or lists of pd.Series.
+    Each pd.Series will fill one axis of the histogram, in the same order they are passed.
+    If the type of each item in the pd.Series is a list, it will be flattened before filling.
+    """
+    if type(payload) in (list, tuple):
+        isWeightFlattened = False
+        final_payload = []
+        for p in payload:
+            if type(p) is pd.Series:
+                if len(p) == 0:
+                    raise Exception(
+                        f"Payload {p} for hist {hist} is an empty pd.Series."
+                    )
+                if type(p.iloc[0]) is list:
+                    if (
+                        not isWeightFlattened
+                    ):  # flatten weights in case of multiple entries per event, needs to be done once per histogram
+                        weight = [
+                            weight.iloc[iEvent]
+                            for iEvent in range(len(weight))
+                            for iObject in range(len(p.iloc[iEvent]))
+                        ]
+                        isWeightFlattened = True
+                    p = flatten(p)
+                final_payload.append(p)
+            else:
+                raise Exception("Payload is not a pd.Series")
+        hist.fill(*final_payload, weight=weight)
+    elif type(payload) is pd.Series:
+        if len(payload) == 0:
+            raise Exception(f"Payload {payload} for hist {hist} is an empty pd.Series.")
+        if type(payload.iloc[0]) is list:
+            payload = flatten(payload)
+        hist.fill(payload, weight=weight)
     else:
-        logging.warning("Norm is 0, not applying normalization.")
-    return plots
+        raise Exception("Payload is not a pd.Series, nor a list of pd.Series")
+
+
+def flatten(l):
+    """
+    Flatten a list of lists.
+    """
+    return [item for sublist in l for item in sublist]
 
 
 def get_track_killing_config(config: dict) -> dict:
@@ -525,15 +593,16 @@ def get_track_killing_config(config: dict) -> dict:
                 new_config[label_out_new]["SR"][iSel][0] += "_track_down"
         if "selections" in new_config[label_out_new].keys():
             for iSel in range(len(new_config[label_out_new]["selections"])):
-                if type(new_config[label_out_new]["selections"][iSel]) is str:
-                    new_config[label_out_new]["selections"][iSel] = new_config[
-                        label_out_new
-                    ]["selections"][iSel].split(" ")
-                if new_config[label_out_new]["selections"][iSel][0] in [
-                    "ht",
-                    "ngood_ak4jets",
-                    "ht_JEC",
-                ]:
+                new_config[label_out_new]["selections"][iSel] = format_selection(
+                    new_config[label_out_new]["selections"][iSel]
+                )
+                # only convert the variable name if it's part of the method. The other variables won't change
+                # e.g. SUEP_nconst_HighestPT changes to SUEP_nconst_HighestPT_track_down
+                # but ht doesn't change to ht_track_down
+                if (
+                    config[label_out]["input_method"]
+                    not in new_config[label_out_new]["selections"][iSel][0]
+                ):
                     continue
                 new_config[label_out_new]["selections"][iSel][0] += "_track_down"
         if "new_variables" in new_config[label_out_new].keys():
@@ -541,7 +610,8 @@ def get_track_killing_config(config: dict) -> dict:
                 vars = new_config[label_out_new]["new_variables"][iVar][2]
                 new_vars = []
                 for var in vars:
-                    if var in ["ht", "ngood_ak4jets", "ht_JEC"]:
+                    # same as with the selections, only variables that are part of the method change
+                    if config[label_out]["input_method"] not in var:
                         continue
                     new_vars.append(var + "_track_down")
 
@@ -549,16 +619,22 @@ def get_track_killing_config(config: dict) -> dict:
 
 
 def get_jet_correction_config(config: dict, jet_correction: str) -> dict:
-    new_config = {}
     for label_out, _config_out in config.items():
-        label_out_new = label_out
-        new_config[label_out_new] = deepcopy(config[label_out])
-        for iSel in range(len(new_config[label_out_new]["selections"])):
-            if "ht" == new_config[label_out_new]["selections"][iSel][0]:
-                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
-            elif "ht_JEC" == new_config[label_out_new]["selections"][iSel][0]:
-                new_config[label_out_new]["selections"][iSel][0] += "_" + jet_correction
-    return new_config
+        label_out_new = label_out + "_" + jet_correction
+        temp_config = deepcopy(config[label_out])
+        found = False
+        for iSel in range(len(temp_config[label_out_new]["selections"])):
+            temp_config[label_out_new]["selections"][iSel] = format_selection(
+                temp_config[label_out_new]["selections"][iSel]
+            )
+            if temp_config[label_out_new]["selections"][iSel][0] in ["ht", "ht_JEC"]:
+                temp_config[label_out_new]["selections"][iSel][0] += (
+                    "_" + jet_correction
+                )
+                found = True
+        if found:
+            config[label_out_new] = temp_config
+    return config
 
 
 def read_in_weights(fweights):
@@ -581,120 +657,9 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
             For now we only support a two-variable SR, because of the way
             this function was written. Exiting."""
         )
-    df = df.loc[
+    return df.loc[
         ~(
             make_selection(df, SR[0][0], SR[0][1], SR[0][2], apply=False)
             & make_selection(df, SR[1][0], SR[1][1], SR[1][2], apply=False)
         )
-    ]
-    return df
-
-
-def deltaPhi_x_y(xphi, yphi):
-
-    # cast inputs to numpy arrays
-    yphi = np.array(yphi)
-
-    x_v = vector.arr({"pt": np.ones(len(xphi)), "phi": xphi})
-    y_v = vector.arr({"pt": np.ones(len(yphi)), "phi": yphi})
-
-    signed_dphi = x_v.deltaphi(y_v)
-    abs_dphi = np.abs(signed_dphi.tolist())
-
-    # deal with the cases where phi was initialized to a moot value like -999
-    abs_dphi[xphi > 2 * np.pi] = -999
-    abs_dphi[yphi > 2 * np.pi] = -999
-    abs_dphi[xphi < -2 * np.pi] = -999
-    abs_dphi[yphi < -2 * np.pi] = -999
-
-    return abs_dphi
-
-
-def deltaR(xEta, yEta, xPhi, yPhi):
-
-    # cast inputs to numpy arrays
-    xEta = np.array(xEta)
-    yEta = np.array(yEta)
-    xPhi = np.array(xPhi)
-    yPhi = np.array(yPhi)
-
-    x_v = vector.arr({"eta": xEta, "phi": xPhi, "pt": np.ones(len(xEta))})
-    y_v = vector.arr({"eta": yEta, "phi": yPhi, "pt": np.ones(len(yEta))})
-
-    dR = x_v.deltaR(y_v)
-
-    if type(dR) is ak.highlevel.Array:
-        dR = dR.to_numpy()
-
-    # deal with the cases where eta and phi were initialized to a moot value like -999
-    dR[xEta < -100] = -999
-    dR[yEta < -100] = -999
-    dR[xPhi < -100] = -999
-    dR[yPhi < -100] = -999
-
-    return dR
-
-
-def balancing_var(xpt, ypt):
-
-    # cast inputs to numpy arrays
-    xpt = np.array(xpt)
-    ypt = np.array(ypt)
-
-    var = np.where(ypt > 0, (xpt - ypt) / ypt, np.ones(len(xpt)) * -999)
-
-    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    var[xpt < 0] = -999
-    var[ypt < 0] = -999
-
-    return var
-
-
-def vector_balancing_var(xphi, yphi, xpt, ypt):
-
-    # cast inputs to numpy arrays
-    xpt = np.array(xpt)
-    ypt = np.array(ypt)
-    xphi = np.array(xphi)
-    yphi = np.array(yphi)
-
-    x_v = vector.arr({"pt": xpt, "phi": xphi})
-    y_v = vector.arr({"pt": ypt, "phi": yphi})
-
-    vector_sum_pt = (x_v + y_v).pt
-
-    if type(vector_sum_pt) is ak.highlevel.Array:
-        vector_sum_pt = vector_sum_pt.to_numpy()
-
-    var = np.where(ypt > 0, vector_sum_pt / ypt, np.ones(len(xpt)) * -999)
-
-    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    var[xpt < 0] = -999
-    var[ypt < 0] = -999
-
-    return var
-
-
-def vector_balancing_var2(xphi, yphi, xpt, ypt):
-
-    # cast inputs to numpy arrays
-    xpt = np.array(xpt)
-    ypt = np.array(ypt)
-    xphi = np.array(xphi)
-    yphi = np.array(yphi)
-
-    x_v = vector.arr({"pt": xpt, "phi": xphi})
-    y_v = vector.arr({"pt": ypt, "phi": yphi})
-
-    vector_sum_pt = (x_v + y_v).pt
-
-    if type(vector_sum_pt) is ak.highlevel.Array:
-        vector_sum_pt = vector_sum_pt.to_numpy()
-
-    var = np.where(ypt > 0, vector_sum_pt, np.ones(len(xpt)) * -999)
-
-    # deal with the cases where pt was initialized to a moot value, and set it to a moot value of -999
-    var[xpt < 0] = -999
-    var[ypt < 0] = -999
-
-    return var
+    ].copy()

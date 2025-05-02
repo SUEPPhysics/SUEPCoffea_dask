@@ -125,7 +125,7 @@ def main():
         if result == 0:
             sys.exit("Result of xrootd transfer was 0: " + xrd_file)
 
-        df, metadata = fill_utils.h5load(options.sample + ".hdf5", "vars")
+        df, metadata = fill_utils.h5LoadHist(options.sample + ".hdf5", "vars")
 
         # corrupted
         if type(df) == int:

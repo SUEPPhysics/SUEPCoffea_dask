@@ -5,13 +5,18 @@ https://github.com/scikit-hep/fastjet
 Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
+import os
+import time
 import warnings
+from copy import deepcopy
 
 import awkward as ak
 import numpy as np
 import pandas as pd
+import psutil
 import vector
 from coffea import processor
+from hist import Hist
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
@@ -20,11 +25,14 @@ import workflows.SUEP_utils as SUEP_utils
 import workflows.WH_utils as WH_utils
 
 # Importing CMS corrections
-from workflows.CMS_corrections.btag_utils import btagcuts, doBTagWeights, getBTagEffs
+from workflows.CMS_corrections.btag_utils import btagcuts
 from workflows.CMS_corrections.golden_jsons_utils import applyGoldenJSON
-from workflows.CMS_corrections.HEM_utils import jetHEMFilter
-from workflows.CMS_corrections.jetmet_utils import apply_jecs
+from workflows.CMS_corrections.HEM_utils import METHEMFilter, jetHEMFilter
+from workflows.CMS_corrections.jetmet_utils import applyJECStoJets
+from workflows.CMS_corrections.jetvetomap_utils import JetVetoMap
+from workflows.CMS_corrections.leptonsf_utils import doWHLeptonSFs
 from workflows.CMS_corrections.PartonShower_utils import GetPSWeights
+from workflows.CMS_corrections.photonSF_utils import getPhotonSFs
 from workflows.CMS_corrections.Prefire_utils import GetPrefireWeights
 from workflows.CMS_corrections.track_killing_utils import track_killing
 
@@ -44,6 +52,8 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         do_syst: bool,
         flag: bool,
         output_location=None,
+        CRQCD: bool = False,
+        VRGJ: bool = False,
     ) -> None:
         self._flag = flag
         self.do_syst = do_syst
@@ -52,14 +62,22 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         self.sample = sample
         self.output_location = output_location
         self.scouting = 0
+        self.CRQCD = CRQCD
+        self.VRGJ = VRGJ
 
     def HighestPTMethod(
         self,
-        indices,
         events,
         output,
         out_label=None,
+        variation='',
     ):
+
+        # indices of events, used to keep track which events pass selections for each method
+        # and only fill those rows of the DataFrame (e.g. track killing).
+        # from now on, if any cuts are applied, the indices should be updated, and the df
+        # should be filled with the updated indices.
+        indices = np.arange(0, len(events))
 
         #####################################################################################
         # ---- Track selection
@@ -67,33 +85,22 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # cut on tracks from the selected lepton.
         #####################################################################################
 
-        tracks, _ = WH_utils.getTracks(events, lepton=self.lepton, leptonIsolation=0.4)
-        if self.isMC and "track_down" in out_label:
-            tracks = track_killing(self, tracks)
+        tracks, pfcands, lost_tracks = WH_utils.getTracks(
+            events,
+            iso_object=events.WH_lepton if not self.VRGJ else events.WH_gamma,
+            isolation_deltaR=0.4,
+        )
+        if self.isMC and "track_down" in variation:
+            tracks = track_killing(tracks, WH_utils.getSignalDecayMode(self.sample))
+        events = ak.with_field(events, tracks, "WH_tracks")
 
         # save tracks variables
-        output["vars"].loc(indices, "ntracks" + out_label, ak.num(tracks).to_list())
-        deltaPhi_tracks_W = np.abs(tracks.deltaphi(self.W))
         output["vars"].loc(
-            indices,
-            "ntracks_dPhiW0p2" + out_label,
-            ak.num(deltaPhi_tracks_W[deltaPhi_tracks_W < 0.2], axis=1),
+            indices, "ntracks" + out_label, ak.num(events.WH_tracks).to_list()
         )
+        output["vars"].loc(indices, "npfcands" + out_label, ak.num(pfcands).to_list())
         output["vars"].loc(
-            indices,
-            "trackspt_dPhiW0p2" + out_label,
-            ak.sum(tracks.pt[deltaPhi_tracks_W < 0.2], axis=1),
-        )
-        deltaPhi_tracks_MET = np.abs(tracks.deltaphi(self.MET))
-        output["vars"].loc(
-            indices,
-            "ntracks_dPhiMET0p2" + out_label,
-            ak.num(deltaPhi_tracks_MET[deltaPhi_tracks_MET < 0.2], axis=1),
-        )
-        output["vars"].loc(
-            indices,
-            "trackspt_dPhiMET0p2" + out_label,
-            ak.sum(tracks.pt[deltaPhi_tracks_MET < 0.2], axis=1),
+            indices, "nlosttracks" + out_label, ak.num(lost_tracks).to_list()
         )
 
         #####################################################################################
@@ -102,7 +109,22 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         # make the ak15 clusters
-        ak15jets, clusters = SUEP_utils.FastJetReclustering(tracks, r=1.5, minPt=60)
+        ak15jets, clusters = SUEP_utils.FastJetReclustering(
+            events.WH_tracks, r=1.5, minPt=5
+        )
+        output['leading_ak15_pt'].fill(
+            ak.fill_none(
+                ak.max(ak15jets.pt, axis=1), -999
+            ),
+            weight=events.genWeight
+        )
+        output['n_ak15'].fill(ak.num(ak15jets, axis=1),weight=events.genWeight)
+        ak15_60gev = (ak15jets.pt > 60)
+        ak15jets = ak15jets[ak15_60gev]
+        clusters = clusters[ak15_60gev]
+        output['n_ak15_60gev'].fill(ak.num(ak15jets, axis=1),weight=events.genWeight)
+        events = ak.with_field(events, ak15jets, "WH_ak15jets")
+        events = ak.with_field(events, clusters, "WH_ak15clusters")
 
         # same some variables before making any selections on the ak15 clusters
         output["vars"].loc(
@@ -116,42 +138,40 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         #####################################################################################
 
         # remove events with less than 1 cluster (i.e. need at least SUEP candidate cluster)
-        clusterCut = ak.num(ak15jets, axis=1) > 0
-        clusters = clusters[clusterCut]
-        ak15jets = ak15jets[clusterCut]
-        tracks = tracks[clusterCut]
+        clusterCut = ak.num(events.WH_ak15clusters, axis=1) > 0
         indices = indices[clusterCut]
         events = events[clusterCut]
         output["cutflow_oneCluster" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
-        if len(tracks) == 0:
-            print("No events pass clusterCut.")
+        if len(events) == 0:
+            print("\n\nNo events pass clusterCut.\n\n")
             return
 
         # choose highest pT jet
-        highpt_jet = ak.argsort(ak15jets.pt, axis=1, ascending=False, stable=True)
-        ak15jets_pTsorted = ak15jets[highpt_jet]
-        clusters_pTsorted = clusters[highpt_jet]
-        SUEP_cand = ak15jets_pTsorted[:, 0]
-        SUEP_cand_constituents = clusters_pTsorted[:, 0]
-        other_AK15 = ak15jets_pTsorted[:, 1:]
-        other_AK15_constituents = clusters_pTsorted[:, 1:]
+        highpt_jet = ak.argsort(
+            events.WH_ak15jets.pt, axis=1, ascending=False, stable=True
+        )
+        ak15jets_pTsorted = events.WH_ak15jets[highpt_jet]
+        clusters_pTsorted = events.WH_ak15clusters[highpt_jet]
+        events = ak.with_field(events, ak15jets_pTsorted[:, 0], "WH_SUEP_cand")
+        events = ak.with_field(
+            events, clusters_pTsorted[:, 0], "WH_SUEP_cand_constituents"
+        )
+        events = ak.with_field(events, ak15jets_pTsorted[:, 1:], "WH_other_AK15")
+        events = ak.with_field(
+            events, clusters_pTsorted[:, 1:], "WH_other_AK15_constituents"
+        )
 
         # at least 2 tracks
-        singleTrackCut = ak.num(SUEP_cand_constituents) > 1
-        SUEP_cand = SUEP_cand[singleTrackCut]
-        SUEP_cand_constituents = SUEP_cand_constituents[singleTrackCut]
-        tracks = tracks[singleTrackCut]
+        singleTrackCut = ak.num(events.WH_SUEP_cand_constituents) > 1
         indices = indices[singleTrackCut]
         events = events[singleTrackCut]
-        other_AK15 = other_AK15[singleTrackCut]
-        other_AK15_constituents = other_AK15_constituents[singleTrackCut]
         output["cutflow_twoTracksInCluster" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
-        if len(indices) == 0:
-            print("No events pass singleTrackCut.")
+        if len(events) == 0:
+            print("\n\nNo events pass singleTrackCut.\n\n")
             return
 
         ######################################################################################
@@ -162,17 +182,17 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         # boost into frame of SUEP
         boost_SUEP = ak.zip(
             {
-                "px": SUEP_cand.px * -1,
-                "py": SUEP_cand.py * -1,
-                "pz": SUEP_cand.pz * -1,
-                "mass": SUEP_cand.mass,
+                "px": events.WH_SUEP_cand.px * -1,
+                "py": events.WH_SUEP_cand.py * -1,
+                "pz": events.WH_SUEP_cand.pz * -1,
+                "mass": events.WH_SUEP_cand.mass,
             },
             with_name="Momentum4D",
         )
 
         # SUEP tracks for this method are defined to be the ones from the cluster
         # that was picked to be the SUEP jet
-        SUEP_cand_constituents_b = SUEP_cand_constituents.boost_p4(
+        SUEP_cand_constituents_b = events.WH_SUEP_cand_constituents.boost_p4(
             boost_SUEP
         )  ### boost the SUEP tracks to their restframe
 
@@ -198,31 +218,40 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"].loc(
             indices,
             "SUEP_pt_avg_HighestPT" + out_label,
-            ak.mean(SUEP_cand_constituents.pt, axis=-1),
+            ak.mean(events.WH_SUEP_cand_constituents.pt, axis=-1),
         )
         output["vars"].loc(
             indices,
             "SUEP_highestPTtrack_HighestPT" + out_label,
-            ak.max(SUEP_cand_constituents.pt, axis=-1),
+            ak.max(events.WH_SUEP_cand_constituents.pt, axis=-1),
         )
-        output["vars"].loc(indices, "SUEP_pt_HighestPT" + out_label, SUEP_cand.pt)
-        output["vars"].loc(indices, "SUEP_eta_HighestPT" + out_label, SUEP_cand.eta)
-        output["vars"].loc(indices, "SUEP_phi_HighestPT" + out_label, SUEP_cand.phi)
-        output["vars"].loc(indices, "SUEP_mass_HighestPT" + out_label, SUEP_cand.mass)
+        output["vars"].loc(
+            indices, "SUEP_pt_HighestPT" + out_label, events.WH_SUEP_cand.pt
+        )
+        output["vars"].loc(
+            indices, "SUEP_eta_HighestPT" + out_label, events.WH_SUEP_cand.eta
+        )
+        output["vars"].loc(
+            indices, "SUEP_phi_HighestPT" + out_label, events.WH_SUEP_cand.phi
+        )
+        output["vars"].loc(
+            indices, "SUEP_mass_HighestPT" + out_label, events.WH_SUEP_cand.mass
+        )
 
         # JEC corrected ak4jets inside SUEP cluster
-        dR_ak4_SUEP = self.jets_jec[indices].deltaR(
-            SUEP_cand
+        dR_ak4_SUEP = events.WH_jets_jec.deltaR(
+            events.WH_SUEP_cand
         )  # delta R between jets (selecting events that pass the HighestPT selections) and the SUEP cluster
-        ak4jets_inSUEPcluster = self.jets_jec[indices][dR_ak4_SUEP < 1.5]
+        ak4jets_inSUEPcluster = events.WH_jets_jec[dR_ak4_SUEP < 1.5]
+        ak4jets_outsideSUEPcluster = events.WH_jets_jec[dR_ak4_SUEP > 1.5]
         output["vars"].loc(
             indices,
-            "ak4jets_inSUEPcluster_n_HighestPT",
+            "ak4jets_inSUEPcluster_n_HighestPT" + out_label,
             ak.num(ak4jets_inSUEPcluster, axis=1),
         )
         output["vars"].loc(
             indices,
-            "ak4jets_inSUEPcluster_pt_HighestPT",
+            "ak4jets_inSUEPcluster_pt_HighestPT" + out_label,
             ak.sum(ak4jets_inSUEPcluster.pt, axis=1),
         )
         ak4jets_inSUEPcluster_ptargsort = ak.argsort(
@@ -234,7 +263,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         for i in range(2):
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_pt_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_pt_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True
@@ -244,7 +273,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_phi_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_phi_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True
@@ -254,7 +283,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             )
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_eta_HighestPT",
+                "ak4jet" + str(i + 1) + "_inSUEPcluster_eta_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
                         ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True
@@ -262,133 +291,127 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     -999,
                 )[:, i],
             )
+        output["vars"].loc(
+            indices,
+            "ak4jets_outsideSUEPcluster_n_HighestPT" + out_label,
+            ak.num(ak4jets_outsideSUEPcluster, axis=1),
+        )
+        output["vars"].loc(
+            indices,
+            "ak4jets_outsideSUEPcluster_pt_HighestPT" + out_label,
+            ak.sum(ak4jets_outsideSUEPcluster.pt, axis=1),
+        )
+        ak4jets_outsideSUEPcluster_ptargsort = ak.argsort(
+            ak4jets_outsideSUEPcluster.pt, axis=1, ascending=False, stable=True
+        )  # sort by pt to save some of these jets
+        ak4jets_outsideSUEPcluster_ptsort = ak4jets_outsideSUEPcluster[
+            ak4jets_outsideSUEPcluster_ptargsort
+        ]
+        for i in range(2):
             output["vars"].loc(
                 indices,
-                "ak4jet" + str(i + 1) + "_inSUEPcluster_mass_HighestPT",
+                "ak4jet" + str(i + 1) + "_outsideSUEPcluster_pt_HighestPT" + out_label,
                 ak.fill_none(
                     ak.pad_none(
-                        ak4jets_inSUEPcluster_ptsort.mass, i + 1, axis=1, clip=True
+                        ak4jets_outsideSUEPcluster_ptsort.pt, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_outsideSUEPcluster_phi_HighestPT" + out_label,
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_outsideSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i],
+            )
+            output["vars"].loc(
+                indices,
+                "ak4jet" + str(i + 1) + "_outsideSUEPcluster_eta_HighestPT" + out_label,
+                ak.fill_none(
+                    ak.pad_none(
+                        ak4jets_outsideSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True
                     ),
                     -999,
                 )[:, i],
             )
 
-        # leading ak4jet tracks
-        leadingAK4_phi = ak.fill_none(
-            ak.pad_none(ak4jets_inSUEPcluster_ptsort.phi, i + 1, axis=1, clip=True),
-            -999,
-        )[:, 0]
-        leadingAK4_eta = ak.fill_none(
-            ak.pad_none(ak4jets_inSUEPcluster_ptsort.eta, i + 1, axis=1, clip=True),
-            -999,
-        )[:, 0]
-        dR_tracks_leadingAK4 = tracks.deltaR(
-            ak.zip(
-                {
-                    "phi": leadingAK4_phi,
-                    "eta": leadingAK4_eta,
-                    "pt": ak.ones_like(leadingAK4_eta),
-                },
-                with_name="Momentum4D",
-            )
-        )
-        leadingAK4_tracks = tracks[dR_tracks_leadingAK4 < 0.4]
-        output["vars"].loc(
-            indices,
-            "leadingAK4_inSUEPcluster_ntracks_HighestPT",
-            ak.num(leadingAK4_tracks, axis=1),
-        )
-        output["vars"].loc(
-            indices,
-            "leadingAK4_inSUEPcluster_scalarpt_HighestPT",
-            ak.sum(leadingAK4_tracks.pt, axis=-1),
-        )
-        output["vars"].loc(
-            indices,
-            "leadingAK4_inSUEPcluster_vectorpt_HighestPT",
-            (
-                ak.sum(leadingAK4_tracks.px, axis=-1) ** 2
-                + ak.sum(leadingAK4_tracks.py, axis=-1) ** 2
-            )
-            ** 0.5,
-        )
 
-        # jets outside of the SUEP cluster
-        output["vars"].loc(
-            indices,
-            "minDeltaR_ak4jets_outsideSUEPcluster_HighestPT",
-            ak.fill_none(ak.min(np.abs(dR_ak4_SUEP[dR_ak4_SUEP > 1.5]), axis=1), -999),
-        )
-        output["vars"].loc(
-            indices,
-            "maxDeltaR_ak4jets_outsideSUEPcluster_HighestPT",
-            ak.fill_none(ak.max(np.abs(dR_ak4_SUEP[dR_ak4_SUEP > 1.5]), axis=1), -999),
-        )
-
-        # select tracks outside the AK15 SUEP cluster
-        tracks_outside_SUEP = tracks[tracks.deltaR(SUEP_cand) > 1.5]
-        twoTracksOutsideSUEP = ak.num(tracks_outside_SUEP) > 1
-        tracks_outside_SUEP = tracks_outside_SUEP[twoTracksOutsideSUEP]
-        nonSUEP_eigs = SUEP_utils.sphericity(tracks_outside_SUEP, 1.0)
-        output["vars"].loc(
-            indices[twoTracksOutsideSUEP], "nonSUEP_eig0_HighestPT", nonSUEP_eigs[:, 0]
-        )
-        output["vars"].loc(
-            indices[twoTracksOutsideSUEP], "nonSUEP_eig1_HighestPT", nonSUEP_eigs[:, 1]
-        )
-        output["vars"].loc(
-            indices[twoTracksOutsideSUEP], "nonSUEP_eig2_HighestPT", nonSUEP_eigs[:, 2]
-        )
-
-        # other AK15 jets info
-        output["vars"].loc(
-            indices, "otherAK15_pt_HighestPT", ak.sum(other_AK15.pt, axis=1)
-        )
-        other_AK15_nconst = ak.num(other_AK15_constituents, axis=-1)
-        mostNumerousAK15 = other_AK15[
+        # highest nconst non SUEP candidate (validate that highest pT ~= highest nconst)
+        other_AK15_nconst = ak.num(events.WH_other_AK15_constituents, axis=-1)
+        mostNumerousAK15 = events.WH_other_AK15[
             ak.argmax(other_AK15_nconst, axis=-1, keepdims=True)
+        ]
+        highestPT_otherAK15 = events.WH_other_AK15[
+            ak.argmax(events.WH_other_AK15.pt, axis=-1, keepdims=True)
         ]
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_pt_HighestPT",
-            mostNumerousAK15.pt.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.pt, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_eta_HighestPT",
-            mostNumerousAK15.eta.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.eta, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_phi_HighestPT",
-            mostNumerousAK15.phi.to_numpy(allow_missing=True),
+            ak.fill_none(mostNumerousAK15.phi, 0).to_list(),
         )
         output["vars"].loc(
             indices,
             "otherAK15_maxConst_nconst_HighestPT",
-            ak.max(other_AK15_nconst, axis=-1).to_numpy(allow_missing=True),
+            ak.fill_none(ak.max(other_AK15_nconst, axis=-1), 0).to_list(),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxPT_pt_HighestPT",
+            ak.fill_none(highestPT_otherAK15.pt, 0),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxPT_eta_HighestPT",
+            ak.fill_none(highestPT_otherAK15.eta, 0).to_list(),
+        )
+        output["vars"].loc(
+            indices,
+            "otherAK15_maxPT_phi_HighestPT",
+            ak.fill_none(highestPT_otherAK15.phi, 0).to_list(),
         )
 
         # WH system
-        WH_system = SUEP_cand + self.W[indices]
-        output["vars"].loc(indices, "WH_system_mass_HighestPT", WH_system.mass)
-        output["vars"].loc(indices, "WH_system_pt_HighestPT", WH_system.pt)
-        output["vars"].loc(indices, "WH_system_phi_HighestPT", WH_system.phi)
-        WH_system_PuppiMET = SUEP_cand + self.W_PuppiMET[indices]
-        output["vars"].loc(
-            indices, "WH_system_PuppiMET_mass_HighestPT", WH_system_PuppiMET.mass
-        )
-        output["vars"].loc(
-            indices, "WH_system_PuppiMET_pt_HighestPT", WH_system_PuppiMET.pt
-        )
-        output["vars"].loc(
-            indices, "WH_system_PuppiMET_phi_HighestPT", WH_system_PuppiMET.phi
-        )
+        if "WH_W" in events.fields:
+            VH_system = events.WH_SUEP_cand + events.WH_W
+            output["vars"].loc(indices, "VH_system_mass_HighestPT", VH_system.mass)
+            output["vars"].loc(indices, "VH_system_pt_HighestPT", VH_system.pt)
+            output["vars"].loc(indices, "VH_system_phi_HighestPT", VH_system.phi)
+            VH_system_PuppiMET = events.WH_SUEP_cand + events.WH_W_PuppiMET
+            output["vars"].loc(
+                indices, "VH_system_PuppiMET_mass_HighestPT", VH_system_PuppiMET.mass
+            )
+            output["vars"].loc(
+                indices, "VH_system_PuppiMET_pt_HighestPT", VH_system_PuppiMET.pt
+            )
+            output["vars"].loc(
+                indices, "VH_system_PuppiMET_phi_HighestPT", VH_system_PuppiMET.phi
+            )
+        if "WH_gamma" in events.fields:
+            GH_system = events.WH_SUEP_cand + events.WH_gamma
+            output["vars"].loc(indices, "GH_system_mass_HighestPT", GH_system.mass)
+            output["vars"].loc(indices, "GH_system_pt_HighestPT", GH_system.pt)
+            output["vars"].loc(indices, "GH_system_phi_HighestPT", GH_system.phi)
 
     def storeEventVars(
         self,
         events,
         output,
+        out_label:str="",
+        variation:str="",
     ):
         """
         Store event variables in the output dictionary.
@@ -407,53 +430,23 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["luminosityBlock"] = events.luminosityBlock
         output["vars"]["PV_npvs"] = events.PV.npvs
         output["vars"]["PV_npvsGood"] = events.PV.npvsGood
+        output["vars"]["ngood_ak4jets"] = ak.num(events.WH_jets_jec).to_list()
+        output["vars"]["ht_JEC"] = ak.sum(events.WH_jets_jec.pt, axis=-1).to_list()
 
-        # select out ak4jets
-        uncorrected_ak4jets = WH_utils.getAK4Jets(
-            events.Jet, self.lepton, isMC=self.isMC
+        # uncorrected jets
+        ak4jets = WH_utils.getAK4Jets(
+            events.Jet,
+            events.run,
+            iso=events.WH_lepton if not self.VRGJ else events.WH_gamma,
+            isMC=self.isMC,
         )
-        jets_c, met_c = apply_jecs(
-            self,
-            Sample=self.sample,
-            events=events,
-            prefix="",
-        )
-        jet_HEM_Cut, _ = jetHEMFilter(self, jets_c, events.run)
-        jets_c = jets_c[jet_HEM_Cut]
-        self.jets_jec = WH_utils.getAK4Jets(jets_c, self.lepton, self.isMC)
-        output["vars"]["ngood_ak4jets"] = ak.num(self.jets_jec).to_list()
+        output["vars"]["n_ak4jets"] = ak.num(ak4jets).to_list()
+        output["vars"]["ht"] = ak.sum(ak4jets.pt, axis=-1).to_list()
 
-        # ht
-        output["vars"]["ht"] = ak.sum(uncorrected_ak4jets.pt, axis=-1).to_list()
-        output["vars"]["nuncorrected_ak4jets"] = ak.num(uncorrected_ak4jets).to_list()
-
-        output["vars"]["ht_JEC"] = ak.sum(self.jets_jec.pt, axis=-1).to_list()
-        if self.isMC and self.do_syst:
-            jets_jec_JERUp = WH_utils.getAK4Jets(
-                jets_c["JER"].up, self.lepton, self.isMC
-            )
-            jets_jec_JERDown = WH_utils.getAK4Jets(
-                jets_c["JER"].down, self.lepton, self.isMC
-            )
-            jets_jec_JESUp = WH_utils.getAK4Jets(
-                jets_c["JES_jes"].up, self.lepton, self.isMC
-            )
-            jets_jec_JESDown = WH_utils.getAK4Jets(
-                jets_c["JES_jes"].down, self.lepton, self.isMC
-            )
-
-            output["vars"]["ht_JEC" + "_JER_up"] = ak.sum(
-                jets_jec_JERUp.pt, axis=-1
-            ).to_list()
-            output["vars"]["ht_JEC" + "_JER_down"] = ak.sum(
-                jets_jec_JERDown.pt, axis=-1
-            ).to_list()
-            output["vars"]["ht_JEC" + "_JES_up"] = ak.sum(
-                jets_jec_JESUp.pt, axis=-1
-            ).to_list()
-            output["vars"]["ht_JEC" + "_JES_down"] = ak.sum(
-                jets_jec_JESDown.pt, axis=-1
-            ).to_list()
+        # gen variables
+        if "LHE" in events.fields:
+            if "Vpt" in events.LHE.fields:
+                output["vars"]["LHE_Vpt"] = events.LHE.Vpt
 
         # saving number of bjets for different definitions (higher or lower requirements on b-likeliness) - see btag_utils.py
         # btag function requests eras as integers (used again for btag weights)
@@ -461,20 +454,44 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             era_int = 2015
         else:
             era_int = int(self.era)
-
         output["vars"]["nBLoose"] = ak.sum(
-            (self.jets_jec.btag >= btagcuts("Loose", era_int)), axis=1
+            (events.WH_jets_jec.btag >= btagcuts("Loose", era_int)), axis=1
         )[:]
         output["vars"]["nBMedium"] = ak.sum(
-            (self.jets_jec.btag >= btagcuts("Medium", era_int)), axis=1
+            (events.WH_jets_jec.btag >= btagcuts("Medium", era_int)), axis=1
         )[:]
         output["vars"]["nBTight"] = ak.sum(
-            (self.jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
+            (events.WH_jets_jec.btag >= btagcuts("Tight", era_int)), axis=1
         )[:]
+        # store jet information (jet pt, eta, hadronFlavor, btag) for bjet eff calculation
+        if self.isMC:
+            btag_category = ak.where(
+                (events.WH_jets_jec.btag < btagcuts("Loose", era_int)),
+                0,
+                ak.where(events.WH_jets_jec.btag < btagcuts("Tight", era_int), 1, 2),
+            )
+            maxnjets = ak.max(ak.num(events.WH_jets_jec, axis=1))
+            output["vars"]["jets_btag_category"] = ak.fill_none(
+                ak.pad_none(btag_category, maxnjets, axis=1, clip=True), -999
+            )[:, :].to_list()
+            output["vars"]["jets_pt"] = ak.fill_none(
+                ak.pad_none(events.WH_jets_jec.pt, maxnjets, axis=1, clip=True), 0.0
+            )[:, :].to_list()
+            output["vars"]["jets_eta"] = ak.fill_none(
+                ak.pad_none(events.WH_jets_jec.eta, maxnjets, axis=1, clip=True), -999
+            )[:, :].to_list()
+            output["vars"]["jets_hadronFlavor"] = ak.fill_none(
+                ak.pad_none(
+                    events.WH_jets_jec.hadronFlavour, maxnjets, axis=1, clip=True
+                ),
+                -1,
+            )[:, :].to_list()
 
         # saving kinematic variables for three leading pT jets
-        highpt_jet = ak.argsort(self.jets_jec.pt, axis=1, ascending=False, stable=True)
-        jets_pTsorted = self.jets_jec[highpt_jet]
+        highpt_jet = ak.argsort(
+            events.WH_jets_jec.pt, axis=1, ascending=False, stable=True
+        )
+        jets_pTsorted = events.WH_jets_jec[highpt_jet]
         for i in range(3):
             output["vars"]["jet" + str(i + 1) + "_pt"] = ak.fill_none(
                 ak.pad_none(jets_pTsorted.pt, i + 1, axis=1, clip=True), -999
@@ -492,34 +509,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 ak.pad_none(jets_pTsorted.mass, i + 1, axis=1, clip=True), -999
             )[:, i]
 
-        # saving kinematic variables for the leading b-tagged jet
-        highbtag_jet = ak.argsort(
-            self.jets_jec.btag, axis=1, ascending=False, stable=True
-        )
-        jets_btag_sorted = self.jets_jec[highbtag_jet]
-        output["vars"]["bjet_pt"] = ak.fill_none(
-            ak.pad_none(jets_btag_sorted.pt, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_phi"] = ak.fill_none(
-            ak.pad_none(jets_btag_sorted.phi, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_eta"] = ak.fill_none(
-            ak.pad_none(jets_btag_sorted.eta, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_qgl"] = ak.fill_none(
-            ak.pad_none(jets_pTsorted.qgl, 1, axis=1, clip=True), -999
-        )[:, 0]
-        output["vars"]["bjet_btag"] = ak.fill_none(
-            ak.pad_none(jets_pTsorted.btag, 1, axis=1, clip=True), -999
-        )[:, 0]
-
-        # save MET
-        self.MET = WH_utils.make_MET_4v(met_c)
-
-        # saving kinematic variables for the deltaphi(min(jet,MET)) jet
-        self.jets_jec.deltaPhiMET = WH_utils.MET_delta_phi(self.jets_jec, self.MET)
-        sorted_deltaphiMET_jets = self.jets_jec[
-            ak.argsort(self.jets_jec.deltaPhiMET, axis=1, ascending=True)
+        # saving kinematic variables for the deltaphi(min(jet,WH MET)) jet
+        jets_deltaPhiMET = WH_utils.MET_delta_phi(events.WH_jets_jec, events.WH_MET)
+        sorted_deltaphiMET_jets = events.WH_jets_jec[
+            ak.argsort(jets_deltaPhiMET, axis=1, ascending=True)
         ]
         output["vars"]["minDeltaPhiMETJet_pt"] = ak.fill_none(
             ak.pad_none(sorted_deltaphiMET_jets.pt, 1, axis=1, clip=True), -999
@@ -544,42 +537,32 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["MET_pt"] = events.MET.pt
         output["vars"]["MET_phi"] = events.MET.phi
         output["vars"]["MET_sumEt"] = events.MET.sumEt
-        output["vars"]["MET_JEC_phi"] = self.MET.phi
-        output["vars"]["MET_JEC_pt"] = self.MET.pt
+        output["vars"]["MET_significance"] = events.MET.significance
+        output["vars"]["MET_covXX"] = events.MET.covXX
+        output["vars"]["MET_covXY"] = events.MET.covXY
+        output["vars"]["MET_covYY"] = events.MET.covYY
+        output["vars"]["MET_sumPtUnclustered"] = events.MET.sumPtUnclustered
+        output["vars"]["WH_MET_pt"] = events.WH_MET.pt
+        output["vars"]["WH_MET_phi"] = events.WH_MET.phi
+        output["vars"]["WH_MET_sumEt"] = events.WH_MET.sumEt
 
-        # corrections on MET
-        if self.isMC and self.do_syst:
+        # systematic variations of MET
+        if self.isMC:
 
             output["vars"]["PuppiMET_pt_JER_up"] = events.PuppiMET.ptJERUp
             output["vars"]["PuppiMET_pt_JER_down"] = events.PuppiMET.ptJERDown
             output["vars"]["PuppiMET_pt_JES_up"] = events.PuppiMET.ptJESUp
             output["vars"]["PuppiMET_pt_JES_down"] = events.PuppiMET.ptJESDown
+            output["vars"]["PuppiMET_pt_Unclustered_up"] = events.PuppiMET.ptUnclusteredUp
+            output["vars"]["PuppiMET_pt_Unclustered_down"] = events.PuppiMET.ptUnclusteredDown
             output["vars"]["PuppiMET_phi_JER_up"] = events.PuppiMET.phiJERUp
             output["vars"]["PuppiMET_phi_JER_down"] = events.PuppiMET.phiJERDown
             output["vars"]["PuppiMET_phi_JES_up"] = events.PuppiMET.phiJESUp
             output["vars"]["PuppiMET_phi_JES_down"] = events.PuppiMET.phiJESDown
-            output["vars"]["MET_JEC_pt_JER_up"] = met_c.JER.up.pt
-            output["vars"]["MET_JEC_pt_JER_down"] = met_c.JER.up.pt
-            output["vars"]["MET_JEC_pt_JES_up"] = met_c.JES_jes.up.pt
-            output["vars"]["MET_JEC_pt_JES_down"] = met_c.JES_jes.down.pt
-            output["vars"][
-                "MET_JEC_pt_UnclusteredEnergy_up"
-            ] = met_c.MET_UnclusteredEnergy.up.pt
-            output["vars"][
-                "MET_JEC_pt_UnclusteredEnergy_down"
-            ] = met_c.MET_UnclusteredEnergy.down.pt
-            output["vars"]["MET_JEC_phi"] = met_c.phi
-            output["vars"]["MET_JEC_phi_JER_up"] = met_c.JER.up.phi
-            output["vars"]["MET_JEC_phi_JER_down"] = met_c.JER.down.phi
-            output["vars"]["MET_JEC_phi_JES_up"] = met_c.JES_jes.up.phi
-            output["vars"]["MET_JEC_phi_JES_down"] = met_c.JES_jes.down.phi
-            output["vars"][
-                "MET_JEC_phi_UnclusteredEnergy_up"
-            ] = met_c.MET_UnclusteredEnergy.up.phi
-            output["vars"][
-                "MET_JEC_phi_UnclusteredEnergy_down"
-            ] = met_c.MET_UnclusteredEnergy.down.phi
+            output["vars"]["PuppiMET_phi_Unclustered_up"] = events.PuppiMET.phiUnclusteredUp
+            output["vars"]["PuppiMET_phi_Unclustered_down"] = events.PuppiMET.phiUnclusteredDown
 
+        # event weights
         if self.isMC:
             output["vars"]["Pileup_nTrueInt"] = events.Pileup.nTrueInt
             psweights = GetPSWeights(self, events)  # Parton Shower weights
@@ -590,11 +573,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 output["vars"]["PSWeight_FSR_down"] = psweights[3]
             else:
                 output["vars"]["PSWeight"] = psweights
-
-            bTagWeights = doBTagWeights(
-                events, self.jets_jec, era_int, "L", do_syst=self.do_syst
-            )  # Does not change selection
-            output["vars"]["bTagWeight"] = bTagWeights["central"][:]  # BTag weights
 
             prefireweights = GetPrefireWeights(self, events)  # Prefire weights
             output["vars"]["prefire_nom"] = prefireweights[0]
@@ -610,7 +588,7 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         cleaned_darkphis = ak.Array(len(events) * [0])
         if self.isMC:
             genParts = WH_utils.getGenPart(events)
-            genSUEP = genParts[(abs(genParts.pdgID) == 25)]
+            genSUEP = genParts[(abs(genParts.pdgId) == 25)]
 
             # we need to grab the last SUEP in the chain for each event
             SUEP_genMass = [g[-1].mass if len(g) > 0 else 0 for g in genSUEP]
@@ -621,7 +599,6 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             # grab the daughters of the scalar
             darkphis = WH_utils.getGenDarkPseudoscalars(events)
             cleaned_darkphis = darkphis[abs(darkphis.eta) < 2.5]
-
         output["vars"]["SUEP_genMass"] = SUEP_genMass
         output["vars"]["SUEP_genPt"] = SUEP_genPt
         output["vars"]["SUEP_genEta"] = SUEP_genEta
@@ -630,82 +607,229 @@ class SUEP_cluster_WH(processor.ProcessorABC):
         output["vars"]["n_darkphis_inTracker"] = ak.num(cleaned_darkphis, axis=-1)
 
         # saving tight lepton kinematics
-        output["vars"]["lepton_pt"] = self.lepton.pt
-        output["vars"]["lepton_eta"] = self.lepton.eta
-        output["vars"]["lepton_phi"] = self.lepton.phi
-        output["vars"]["lepton_mass"] = self.lepton.mass
-        output["vars"]["lepton_flavor"] = self.lepton.pdgID
-        output["vars"]["lepton_ID"] = self.lepton.ID
-        output["vars"]["lepton_IDMVA"] = self.lepton.IDMVA
-        output["vars"]["lepton_iso"] = self.lepton.iso
-        output["vars"]["lepton_isoMVA"] = self.lepton.isoMVA
-        output["vars"]["lepton_miniIso"] = self.lepton.miniIso
-        output["vars"]["lepton_dxy"] = self.lepton.dxy
-        output["vars"]["lepton_dz"] = self.lepton.dz
+        if "WH_lepton" in events.fields:
+
+            output["vars"]["lepton_pt"] = events.WH_lepton.pt
+            if self.isMC: output["vars"]["lepton_pt_prevar"] = events.WH_lepton.pt_prevar
+            output["vars"]["lepton_eta"] = events.WH_lepton.eta
+            output["vars"]["lepton_phi"] = events.WH_lepton.phi
+            output["vars"]["lepton_mass"] = events.WH_lepton.mass
+            output["vars"]["lepton_flavor"] = events.WH_lepton.pdgId
+            output["vars"]["lepton_ID"] = events.WH_lepton.ID
+            output["vars"]["lepton_IDMVA"] = events.WH_lepton.IDMVA
+            output["vars"]["lepton_iso"] = events.WH_lepton.iso
+            output["vars"]["lepton_isoMVA"] = events.WH_lepton.isoMVA
+            output["vars"]["lepton_miniIso"] = events.WH_lepton.miniIso
+            output["vars"]["lepton_dxy"] = events.WH_lepton.dxy
+            output["vars"]["lepton_dz"] = events.WH_lepton.dz
+            output["vars"]["lepton_pfIsoId"] = events.WH_lepton.pfIsoId
+
+            # saving min, max delta R, phi, eta between any jet and the tight lepton
+            jet_lepton_combinations_deltaR = np.abs(
+                events.WH_jets_jec.deltaR(events.WH_lepton)
+            )
+            jet_lepton_combinations_deltaPhi = np.abs(
+                events.WH_jets_jec.deltaphi(events.WH_lepton)
+            )
+            jet_lepton_combinations_deltaEta = np.abs(
+                events.WH_jets_jec.deltaeta(events.WH_lepton)
+            )
+            output["vars"]["minDeltaRJetLepton"] = ak.fill_none(
+                ak.min(jet_lepton_combinations_deltaR, axis=-1), -999
+            )
+            output["vars"]["maxDeltaRJetLepton"] = ak.fill_none(
+                ak.max(jet_lepton_combinations_deltaR, axis=-1), -999
+            )
+            output["vars"]["minDeltaPhiJetLepton"] = ak.fill_none(
+                ak.min(jet_lepton_combinations_deltaPhi, axis=-1), -999
+            )
+            output["vars"]["maxDeltaPhiJetLepton"] = ak.fill_none(
+                ak.max(jet_lepton_combinations_deltaPhi, axis=-1), -999
+            )
+            output["vars"]["minDeltaEtaJetLepton"] = ak.fill_none(
+                ak.min(jet_lepton_combinations_deltaEta, axis=-1), -999
+            )
+            output["vars"]["maxDeltaEtaJetLepton"] = ak.fill_none(
+                ak.max(jet_lepton_combinations_deltaEta, axis=-1), -999
+            )
+
+            # lepton scale factors
+            unflattened_leptons = ak.unflatten(events.WH_lepton, np.ones(len(events), dtype=int))
+            leptonsSFs = doWHLeptonSFs(
+                unflattened_leptons[abs(unflattened_leptons.pdgId) == 11],
+                unflattened_leptons[abs(unflattened_leptons.pdgId) == 13],
+                era=self.era
+            )
+            output["vars"]["LepSF"] = leptonsSFs['LepSF']
+            output["vars"]["LepSFElUp"] = leptonsSFs['LepSFElUp']
+            output["vars"]["LepSFElDown"] = leptonsSFs['LepSFElDown']
+            output["vars"]["LepSFMuUp"] = leptonsSFs['LepSFMuUp']
+            output["vars"]["LepSFMuDown"] = leptonsSFs['LepSFMuDown']
 
         # other loose leptons
-        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events)
-        self.looseLeptons = looseLeptons
+        looseMuons, looseElectrons, looseLeptons = WH_utils.getLooseLeptons(events, isMC=self.isMC)
         output["vars"]["nLooseLeptons"] = ak.num(looseLeptons).to_list()
         output["vars"]["nLooseMuons"] = ak.num(looseMuons).to_list()
         output["vars"]["nLooseElectrons"] = ak.num(looseElectrons).to_list()
-        highpt_leptons = ak.argsort(
-            looseLeptons.pt, axis=1, ascending=False, stable=True
+
+        # loose not tight leptons
+        _, _, looseNotTightLeptons = WH_utils.getLooseNotTightLeptons(events, isMC=self.isMC)
+        highpt_looseNotTightLeptons = ak.argsort(
+            looseNotTightLeptons.pt, axis=1, ascending=False, stable=True
         )
-        looseLeptons_pTsorted = looseLeptons[highpt_leptons]
+        looseNotTightLeptons_pTsorted = looseNotTightLeptons[
+            highpt_looseNotTightLeptons
+        ]
         for i in range(3):
-            output["vars"]["looseLepton" + str(i + 1) + "_pt"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.pt, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_pt"] = ak.fill_none(
+                ak.pad_none(looseNotTightLeptons_pTsorted.pt, i + 1, axis=1, clip=True),
+                -999,
             )[:, i]
-            output["vars"]["looseLepton" + str(i + 1) + "_phi"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.phi, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_phi"] = ak.fill_none(
+                ak.pad_none(
+                    looseNotTightLeptons_pTsorted.phi, i + 1, axis=1, clip=True
+                ),
+                -999,
             )[:, i]
-            output["vars"]["looseLepton" + str(i + 1) + "_eta"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.eta, i + 1, axis=1, clip=True), -999
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_eta"] = ak.fill_none(
+                ak.pad_none(
+                    looseNotTightLeptons_pTsorted.eta, i + 1, axis=1, clip=True
+                ),
+                -999,
             )[:, i]
-            output["vars"]["looseLepton" + str(i + 1) + "_flavor"] = ak.fill_none(
-                ak.pad_none(looseLeptons_pTsorted.pdgID, i + 1, axis=1, clip=True), -999
-            )[:, i]
+            output["vars"]["looseNotTightLepton" + str(i + 1) + "_flavor"] = (
+                ak.fill_none(
+                    ak.pad_none(
+                        looseNotTightLeptons_pTsorted.pdgId, i + 1, axis=1, clip=True
+                    ),
+                    -999,
+                )[:, i]
+            )
+
+        if "nCRQCDleptons" in events.fields:
+            output["vars"]["nCRQCDleptons"] = events.nCRQCDleptons
 
         # saving W information
-        self.W = WH_utils.make_Wt_4v(self.lepton, self.MET)
-        self.W_PuppiMET = WH_utils.make_Wt_4v(self.lepton, events.PuppiMET)
-        self.W_CaloMET = WH_utils.make_Wt_4v(self.lepton, events.CaloMET)
-        output["vars"]["W_pt"] = self.W.pt
-        output["vars"]["W_phi"] = self.W.phi
-        output["vars"]["W_mt"] = WH_utils.calc_W_mt(self.lepton, self.MET)
-        output["vars"]["W_pt_PuppiMET"] = self.W_PuppiMET.pt
-        output["vars"]["W_phi_PuppiMET"] = self.W_PuppiMET.phi
-        output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(
-            self.lepton, events.PuppiMET
-        )
-        output["vars"]["W_pt_CaloMET"] = self.W_CaloMET.pt
-        output["vars"]["W_phi_CaloMET"] = self.W_CaloMET.phi
-        output["vars"]["W_mt_CaloMET"] = WH_utils.calc_W_mt(self.lepton, events.CaloMET)
+        if "WH_W" in events.fields:
+            events = ak.with_field(
+                events,
+                WH_utils.make_Wt_4v(events.WH_lepton, events.PuppiMET),
+                "WH_W_PuppiMET",
+            )
+            events = ak.with_field(
+                events,
+                WH_utils.make_Wt_4v(events.WH_lepton, events.CaloMET),
+                "WH_W_CaloMET",
+            )
+            output["vars"]["W_pt"] = events.WH_W.pt
+            output["vars"]["W_phi"] = events.WH_W.phi
+            output["vars"]["W_mt"] = WH_utils.calc_W_mt(events.WH_lepton, events.WH_MET)
+            output["vars"]["W_pt_PuppiMET"] = events.WH_W_PuppiMET.pt
+            output["vars"]["W_phi_PuppiMET"] = events.WH_W_PuppiMET.phi
+            output["vars"]["W_mt_PuppiMET"] = WH_utils.calc_W_mt(
+                events.WH_lepton, events.PuppiMET
+            )
+            output["vars"]["W_pt_CaloMET"] = events.WH_W_CaloMET.pt
+            output["vars"]["W_phi_CaloMET"] = events.WH_W_CaloMET.phi
+            output["vars"]["W_mt_CaloMET"] = WH_utils.calc_W_mt(
+                events.WH_lepton, events.CaloMET
+            )
 
-        # save genW for MC
-        if self.isMC:
-            genW = WH_utils.getGenW(events)
-            output["vars"]["genW_pt"] = ak.fill_none(
-                ak.pad_none(genW.pt, 1, axis=1, clip=True), -999
-            )[:, 0]
-            output["vars"]["genW_phi"] = ak.fill_none(
-                ak.pad_none(genW.phi, 1, axis=1, clip=True), -999
-            )[:, 0]
-            output["vars"]["genW_eta"] = ak.fill_none(
-                ak.pad_none(genW.eta, 1, axis=1, clip=True), -999
-            )[:, 0]
-            output["vars"]["genW_mass"] = ak.fill_none(
-                ak.pad_none(genW.mass, 1, axis=1, clip=True), -999
-            )[:, 0]
+            # save genW for MC
+            if self.isMC:
+                genW = WH_utils.getGenW(events)
+                output["vars"]["genW_pt"] = ak.fill_none(
+                    ak.pad_none(genW.pt, 1, axis=1, clip=True), -999
+                )[:, 0]
+                output["vars"]["genW_phi"] = ak.fill_none(
+                    ak.pad_none(genW.phi, 1, axis=1, clip=True), -999
+                )[:, 0]
+                output["vars"]["genW_eta"] = ak.fill_none(
+                    ak.pad_none(genW.eta, 1, axis=1, clip=True), -999
+                )[:, 0]
+                output["vars"]["genW_mass"] = ak.fill_none(
+                    ak.pad_none(genW.mass, 1, axis=1, clip=True), -999
+                )[:, 0]
+
+            # saving min delta phi between any jet and the W
+            jet_W_deltaPhi = np.abs(events.WH_jets_jec.deltaphi(events.WH_W))
+            output["vars"]["minDeltaPhiJetW"] = ak.fill_none(
+                ak.min(jet_W_deltaPhi, axis=-1), -999
+            )
 
         # photon information
         photons = WH_utils.getPhotons(events, self.isMC)
         output["vars"]["nphotons"] = ak.num(photons).to_list()
 
+        # tight photon information
+        if "WH_gamma" in events.fields or self.VRGJ:
+
+            output["vars"]["WH_gammaTriggerBits"] = events.WH_gammaTriggerBits
+            if not self.isMC:
+                output["vars"][
+                    "WH_gammaTriggerUnprescaleWeight"
+                ] = events.WH_gammaTriggerUnprescaleWeight
+            if "QCD_HT" in self.sample or "QCD_Pt" in self.sample:
+                output["vars"][
+                    "WH_no_doubleCountedPhotons"
+                ] = events.WH_no_doubleCountedPhotons
+            if self.isMC:
+                output = WH_utils.storeGenPhotonStuff(events, output)
+
+            output["vars"]["photon_pt"] = events.WH_gamma.pt
+            output["vars"]["photon_eta"] = events.WH_gamma.eta
+            output["vars"]["photon_phi"] = events.WH_gamma.phi
+            output["vars"]["photon_pixelSeed"] = events.WH_gamma.pixelSeed
+            output["vars"]["photon_electronVeto"] = events.WH_gamma.electronVeto
+            output["vars"]["photon_mvaID"] = events.WH_gamma.mvaID
+            output["vars"]["photon_pfRelIso03_all"] = events.WH_gamma.pfRelIso03_all
+            output["vars"]["photon_hoe"] = events.WH_gamma.hoe
+            output["vars"]["photon_r9"] = events.WH_gamma.r9
+            output["vars"]["photon_isScEtaEB"] = events.WH_gamma.isScEtaEB
+            output["vars"]["photon_isScEtaEE"] = events.WH_gamma.isScEtaEE
+            output["vars"]["photon_cutBased"] = events.WH_gamma.cutBased
+            output["vars"]["photon_sieie"] = events.WH_gamma.sieie
+
+            # saving min, max delta R, phi, eta between any jet and the tight photon
+            jet_photon_combinations_deltaR = np.abs(
+                events.WH_jets_jec.deltaR(events.WH_gamma)
+            )
+            jet_photon_combinations_deltaPhi = np.abs(
+                events.WH_jets_jec.deltaphi(events.WH_gamma)
+            )
+            jet_photon_combinations_deltaEta = np.abs(
+                events.WH_jets_jec.deltaeta(events.WH_gamma)
+            )
+            output["vars"]["minDeltaRJetPhoton"] = ak.fill_none(
+                ak.min(jet_photon_combinations_deltaR, axis=-1), -999
+            )
+            output["vars"]["maxDeltaRJetPhoton"] = ak.fill_none(
+                ak.max(jet_photon_combinations_deltaR, axis=-1), -999
+            )
+            output["vars"]["minDeltaPhiJetPhoton"] = ak.fill_none(
+                ak.min(jet_photon_combinations_deltaPhi, axis=-1), -999
+            )
+            output["vars"]["maxDeltaPhiJetPhoton"] = ak.fill_none(
+                ak.max(jet_photon_combinations_deltaPhi, axis=-1), -999
+            )
+            output["vars"]["minDeltaEtaJetPhoton"] = ak.fill_none(
+                ak.min(jet_photon_combinations_deltaEta, axis=-1), -999
+            )
+            output["vars"]["maxDeltaEtaJetPhoton"] = ak.fill_none(
+                ak.max(jet_photon_combinations_deltaEta, axis=-1), -999
+            )
+
+            # photon scale factors
+            photon_SFs = getPhotonSFs(
+                events.WH_gamma, era=self.era, wp="wp90"
+            )
+            output["vars"]["photon_SF"] = photon_SFs["nominal"]
+            output["vars"]["photon_SF_up"] = photon_SFs["up"]
+            output["vars"]["photon_SF_down"] = photon_SFs["down"]
+
         # saving min, max delta R, phi, eta between jets
         jet_combinations = ak.combinations(
-            self.jets_jec, 2, fields=["jet1", "jet2"], axis=-1
+            events.WH_jets_jec, 2, fields=["jet1", "jet2"], axis=-1
         )
         jet_combinations_deltaR = np.abs(
             jet_combinations["jet1"].deltaR(jet_combinations["jet2"])
@@ -735,36 +859,20 @@ class SUEP_cluster_WH(processor.ProcessorABC):
             ak.max(jet_combinations_deltaEta, axis=-1), -999
         )
 
-        # saving min, max delta R, phi, eta between any jet and the tight lepton
-        jet_lepton_combinations_deltaR = np.abs(self.jets_jec.deltaR(self.lepton))
-        jet_lepton_combinations_deltaPhi = np.abs(self.jets_jec.deltaphi(self.lepton))
-        jet_lepton_combinations_deltaEta = np.abs(self.jets_jec.deltaeta(self.lepton))
-        output["vars"]["minDeltaRJetLepton"] = ak.fill_none(
-            ak.min(jet_lepton_combinations_deltaR, axis=-1), -999
-        )
-        output["vars"]["maxDeltaRJetLepton"] = ak.fill_none(
-            ak.max(jet_lepton_combinations_deltaR, axis=-1), -999
-        )
-        output["vars"]["minDeltaPhiJetLepton"] = ak.fill_none(
-            ak.min(jet_lepton_combinations_deltaPhi, axis=-1), -999
-        )
-        output["vars"]["maxDeltaPhiJetLepton"] = ak.fill_none(
-            ak.max(jet_lepton_combinations_deltaPhi, axis=-1), -999
-        )
-        output["vars"]["minDeltaEtaJetLepton"] = ak.fill_none(
-            ak.min(jet_lepton_combinations_deltaEta, axis=-1), -999
-        )
-        output["vars"]["maxDeltaEtaJetLepton"] = ak.fill_none(
-            ak.max(jet_lepton_combinations_deltaEta, axis=-1), -999
-        )
+        # store tau information
+        WH_utils.storeTausInfo(events, output)
 
-        # saving min delta phi between any jet and the W
-        jet_W_deltaPhi = np.abs(self.jets_jec.deltaphi(self.W))
-        output["vars"]["minDeltaPhiJetW"] = ak.fill_none(
-            ak.min(jet_W_deltaPhi, axis=-1), -999
-        )
+        # store Z information for DY
+        if self.isMC and "DYJetsToLL" in self.sample:
+            WH_utils.storeGenZAndDaughtersInfo(events, output)
 
-    def analysis(self, events, output, out_label=""):
+        # store W information for W+jets
+        if self.isMC and "WJets" in self.sample:
+            WH_utils.storeGenWInfo(events, output)
+
+        return events
+
+    def analysis(self, events, output, out_label:str="", variation:str=""):
 
         #####################################################################################
         # ---- Basic event selection
@@ -776,85 +884,150 @@ class SUEP_cluster_WH(processor.ProcessorABC):
 
         if self.isMC == 0:
             events = applyGoldenJSON(self, events)
-            events.genWeight = np.ones(len(events))  # dummy value for data
-
         output["cutflow_goldenJSON" + out_label] += ak.sum(events.genWeight)
+
+        # output file if no events pass selections, avoids errors later on
+        if len(events) == 0:
+            print("\n\nNo events pass goldenJSON.\n\n")
+            return events, output
 
         events = WH_utils.genSelection(events, self.sample)
         output["cutflow_genCuts" + out_label] += ak.sum(events.genWeight)
 
-        events = WH_utils.triggerSelection(
-            events, self.sample, self.era, self.isMC, output, out_label
-        )
-        output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
+        if not self.VRGJ:
+            events = WH_utils.triggerSelection(
+                events, self.sample, self.era, self.isMC, output, out_label
+            )
+            output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
 
         events = WH_utils.qualityFiltersSelection(events, self.era)
         output["cutflow_qualityFilters" + out_label] += ak.sum(events.genWeight)
 
-        events = WH_utils.orthogonalitySelection(events)
+        if self.VRGJ:
+            events = WH_utils.VRGJOrthogonalitySelection(events, era=self.era, isMC=self.isMC)
+        else:
+            events = WH_utils.orthogonalitySelection(events, isMC=self.isMC)
         output["cutflow_orthogonality" + out_label] += ak.sum(events.genWeight)
-
-        events = events[ak.num(WH_utils.getAK4Jets(events.Jet, isMC=self.isMC)) > 0]
-        output["cutflow_oneAK4jet" + out_label] += ak.sum(events.genWeight)
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events passed basic event selection. Saving empty outputs.")
-            return output
+            print("\n\nNo events pass basic event selection.\n\n")
+            return events, output
 
         #####################################################################################
         # ---- Lepton selection
         # Define the lepton objects and apply single lepton selection.
+        # (For gamma+jets CR, apply photon selection.)
         #####################################################################################
 
-        _, _, tightLeptons = WH_utils.getTightLeptons(events)
+        if not self.CRQCD and not self.VRGJ:
+            events = WH_utils.oneTightLeptonSelection(events, era=self.era, isMC=self.isMC, variation=variation if (('MuScale' in variation) or ('ElScale' in variation)) else "")
+            output["cutflow_oneTightLepton" + out_label] += ak.sum(events.genWeight)
+        elif self.VRGJ:
+            events = WH_utils.onePhotonSelection(events, self.isMC)
+            output["cutflow_onePhoton" + out_label] += ak.sum(events.genWeight)
+            events = WH_utils.prescaledGammaTriggersSelection(
+                events, self.era, bool(self.isMC)
+            )
+            output["cutflow_allTriggers" + out_label] += ak.sum(events.genWeight)
+            events = WH_utils.doubleCountingGenPhotonsSelection(events, self.sample)
+            output["cutflow_doublePhotons" + out_label] += ak.sum(events.genWeight)
+        elif self.CRQCD:
+            events = WH_utils.CRQCDSelection(events)
+            output["cutflow_oneLooseLepton" + out_label] += ak.sum(events.genWeight)
 
-        # require exactly one tight lepton
-        leptonSelection = ak.num(tightLeptons) == 1
-        events = events[leptonSelection]
-        tightLeptons = tightLeptons[leptonSelection]
-        self.lepton = tightLeptons[:, 0]
-        output["cutflow_oneLepton" + out_label] += ak.sum(events.genWeight)
+        # TODO do we apply an electron filter here too?
+        # _, eventEleHEMCut = jetHEMFilter(self, events.WH_lepton, events.run)
 
         # output file if no events pass selections, avoids errors later on
         if len(events) == 0:
-            print("No events pass oneLepton.")
-            return output
+            print("\n\nNo events pass one lepton / photon.\n\n")
+            return events, output
+
+        #####################################################################################
+        # ---- Jets
+        # Grab corrected ak4jets, apply HEM filter, and require at least one ak4jet.
+        #####################################################################################
+
+        jets_factory = applyJECStoJets(
+            self.sample, self.isMC, self.era, events, events.Jet, jer=self.isMC
+        )
+        jets_jec = WH_utils.getAK4Jets(
+            jets_factory,
+            events.run,
+            iso=events.WH_lepton if not self.VRGJ else events.WH_gamma,
+            isMC=self.isMC,
+        )
+        events = ak.with_field(events, jets_factory, "WH_jets_factory")
+        events = ak.with_field(events, jets_jec, "WH_jets_jec")
+        events = events[ak.num(events.WH_jets_jec) > 0]
+        output["cutflow_oneAK4jet" + out_label] += ak.sum(events.genWeight)
+
+        # TODO do we apply HEMcut to all jets (currently done in getAK4jets) or to the events?
+
+        # TODO do we want this? (if so, should go in getAK4jets? or before we give the jets to the JEC corrector?)
+        # _, eventJetVetoCut = JetVetoMap(events.WH_jets_jec, self.era)
+
+        #####################################################################################
+        # ---- MET and W
+        # Form the MET and W objects.
+        #####################################################################################
+
+        events = ak.with_field(events, events.PuppiMET, "WH_MET")
+        if not self.VRGJ:
+            events = ak.with_field(
+                events, WH_utils.make_Wt_4v(events.WH_lepton, events.WH_MET), "WH_W"
+            )
+            events = events[events.WH_MET.pt > 20]
+            output["cutflow_MET20" + out_label] += ak.sum(events.genWeight)
+
+        if len(events) == 0:
+            print("\n\nNo events pass MET pt > 20.\n\n")
+            return events, output
 
         #####################################################################################
         # ---- Store event level information
         #####################################################################################
 
-        # these only need to be saved once, as they shouldn't change even with track killing
-        if out_label == "":
-            self.storeEventVars(
-                events,
-                output=output,
-            )
-
-        #####################################################################################
-        # ---- SUEP definition and analysis
-        #####################################################################################
-
-        # indices of events, used to keep track which events pass selections for each method
-        # and only fill those rows of the DataFrame (e.g. track killing).
-        # from now on, if any cuts are applied, the indices should be updated, and the df
-        # should be filled with the updated indices.
-        indices = np.arange(0, len(events))
-
-        self.HighestPTMethod(
-            indices,
+        events = self.storeEventVars(
             events,
             output=output,
             out_label=out_label,
         )
 
-        return output
+        #####################################################################################
+        # ---- SUEP definition and analysis
+        #####################################################################################
+
+        self.HighestPTMethod(
+            events,
+            output=output,
+            out_label=out_label,
+            variation=variation,
+        )
+
+        # cut events that don't have a SUEP candidate
+        if "SUEP_nconst_HighestPT" in output["vars"].columns:
+            # if any events have a SUEP candidate
+            method_selection = np.any(
+                [
+                    ~output["vars"]["SUEP_nconst_HighestPT"+out_label].isnull()
+                ],
+                axis=0,
+            )
+            output["vars"] = output["vars"][method_selection]
+            events = events[method_selection]
+        else:
+            # no events have a SUEP candidate
+            events = events[0:0]
+            output["vars"] = pandas_accumulator(pd.DataFrame())
+
+        return events, output
 
     def process(self, events):
         dataset = events.metadata["dataset"]
 
-        output = processor.dict_accumulator(
+        blank_output = processor.dict_accumulator(
             {
                 "gensumweight": processor.value_accumulator(float, 0),
                 "cutflow_total": processor.value_accumulator(float, 0),
@@ -865,69 +1038,59 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                 "cutflow_triggerEGamma": processor.value_accumulator(float, 0),
                 "cutflow_allTriggers": processor.value_accumulator(float, 0),
                 "cutflow_orthogonality": processor.value_accumulator(float, 0),
-                "cutflow_oneLepton": processor.value_accumulator(float, 0),
+                "cutflow_oneTightLepton": processor.value_accumulator(float, 0),
+                "cutflow_oneLooseLepton": processor.value_accumulator(float, 0),
+                "cutflow_onePhoton": processor.value_accumulator(float, 0),
+                "cutflow_doublePhotons": processor.value_accumulator(float, 0),
                 "cutflow_qualityFilters": processor.value_accumulator(float, 0),
+                "cutflow_jetHEMcut": processor.value_accumulator(float, 0),
+                "cutflow_electronHEMcut": processor.value_accumulator(float, 0),
+                "cutflow_METHEMcut": processor.value_accumulator(float, 0),
+                "cutflow_JetVetoMap": processor.value_accumulator(float, 0),
+                "cutflow_MET20": processor.value_accumulator(float, 0),
                 "cutflow_oneAK4jet": processor.value_accumulator(float, 0),
                 "cutflow_oneCluster": processor.value_accumulator(float, 0),
                 "cutflow_twoTracksInCluster": processor.value_accumulator(float, 0),
                 "vars": pandas_accumulator(pd.DataFrame()),
+                "leading_ak15_pt": Hist.new.Reg(400,0,400,name="leading_ak15_pt",label="Leading AK15 cluster $p_T$ [GeV]").Weight(),
+                "n_ak15": Hist.new.Reg(10,0,10,name="n_ak15",label="$n_{\mathrm{AK15}}$").Weight(),
+                "n_ak15_60gev": Hist.new.Reg(10,0,10,name="n_ak15_60gev",label="$n_{\mathrm{AK15}}$").Weight(),
             }
         )
 
         # gen weights
         if self.isMC:
-            output["gensumweight"] += ak.sum(events.genWeight)
+            blank_output["gensumweight"] += ak.sum(events.genWeight)
         else:
             genWeight = np.ones(len(events))
             events = ak.with_field(events, genWeight, "genWeight")
 
-        # run the analysis
-        output = self.analysis(events, output)
+        output = {}
 
-        # run the analysis with the track systematics applied
+        # run the analysis
+        output_nom = deepcopy(blank_output)
+        _, output_nom = self.analysis(events, output_nom)
+        output['nominal'] = output_nom
+
+
+        # run the analysis with the systematic variations applied
         if self.isMC and self.do_syst:
-            output.update(
-                {
-                    "cutflow_total_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_goldenJSON_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_genCuts_track_down": processor.value_accumulator(float, 0),
-                    "cutflow_triggerSingleMuon_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_triggerDoubleMuon_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_triggerEGamma_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_allTriggers_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_orthogonality_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_oneLepton_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_qualityFilters_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_oneAK4jet_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_oneCluster_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                    "cutflow_twoTracksInCluster_track_down": processor.value_accumulator(
-                        float, 0
-                    ),
-                }
-            )
-            output = self.analysis(events, output, out_label="_track_down")
+
+            # for these, we need to re-run the whole analysis
+            variations = [
+                "track_down"
+            ]
+            for variation in variations:
+                output_var = deepcopy(blank_output)
+                _, output_var = self.analysis(
+                    events,
+                    output=output_var,
+                    variation=variation,
+                )
+                output[variation] = output_var
 
         return {dataset: output}
 
     def postprocess(self, accumulator):
         return accumulator
+                                                                                   

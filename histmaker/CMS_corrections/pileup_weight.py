@@ -1,26 +1,50 @@
+import os
+import sys
+
 import numpy as np
 import uproot
 
 
 def pileup_weight(era):
     if era == "2018":
-        f_MC = uproot.open("../data/pileup/mcPileupUL2018.root")
+        f_MC = uproot.open(
+            os.path.join(
+                os.path.dirname(__file__), "../../data/pileup/mcPileupUL2018.root"
+            )
+        )
         f_data = uproot.open(
-            "../data/pileup/PileupHistogram-UL2018-100bins_withVar.root"
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../data/pileup/PileupHistogram-UL2018-100bins_withVar.root",
+            )
         )
     elif era == "2017":
-        f_MC = uproot.open("../data/pileup/mcPileupUL2017.root")
+        f_MC = uproot.open(
+            os.path.join(
+                os.path.dirname(__file__), "../../data/pileup/mcPileupUL2017.root"
+            )
+        )
         f_data = uproot.open(
-            "../data/pileup/PileupHistogram-UL2017-100bins_withVar.root"
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../data/pileup/PileupHistogram-UL2017-100bins_withVar.root",
+            )
         )
     elif era == "2016" or era == "2016apv":
-        f_MC = uproot.open("../data/pileup/mcPileupUL2016.root")
+        f_MC = uproot.open(
+            os.path.join(
+                os.path.dirname(__file__), "../../data/pileup/mcPileupUL2016.root"
+            )
+        )
         f_data = uproot.open(
-            "../data/pileup/PileupHistogram-UL2016-100bins_withVar.root"
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../data/pileup/PileupHistogram-UL2016-100bins_withVar.root",
+            )
         )
     else:
-        print(
-            "no pileup weights because no year was selected for function pileup_weight"
+        raise Exception(
+            "No pileup weights because no year was selected for function pileup_weight"
         )
 
     hist_MC = f_MC["pu_mc"].to_numpy()

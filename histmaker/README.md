@@ -1,47 +1,37 @@
 ## Making histograms for SUEP analyses
 
-## (Optional) Merge hdf5 files
-
-Once you have produced the ntuples, your next step it to head to `plotting/` and make plots. However, since there are many hdf5 files for each sample, reading in a large amount of files can be slow; we can thus merge these hdf5 files together into larger ones to reduce the amount of files to read in. This can be done using `merge_ntuples.py`, which is ran on one sample, and `submit.py`, a wrapper for `merge_ntuples.py` to run it over many samples over slurm or multithread. The syntax for this is,
-
-```
-python merge_ntuples.py --sample=<sample> --tag=<tag> --isMC=<isMC>
-```
-
-N.B.: this is only set up to grab files from remote using XRootD, for now.
-
-And the wrapper can be ran with,
-
-```
-python submit.py --tag=<tag> --code=merge  --inputList=<filelist>
-```
-
 ## Producing the histograms: overview
 
-The histogram making is to be done over the hdf5 ntuples produced by `workflows/SUEP_coffea.py`.
-This is achieved using `make_hists.py`, for example,
+The histogram making is to be done over the hdf5 ntuples.
 
-```
-python make_hists.py --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
-```
+Our script can:
 
-To automatically run make_hists.py over all the samples, use `submit.py`, which supports parallelizing using multithread or slurm:
+- create new variables
+- apply event selections
+- define and fill histograms
+- apply event weights
+- run different configurations (e.g. different selections, weights, systematic variations)
 
-```
-python submit.py --code plot --inputList <list> --sample <sample> --output <output_tag> --tag <tag> --era <year> --isMC <bool> --doSyst <bool> --channel <channel>
-```
+We use `dask` to parallelize the operation to either a local client or a Slurm cluster.
 
-This will parallelize the script, producing one .root file of histograms for each sample.
+## Setup
+
+Find in the `setup/` directory the environment `.yaml` file to create a conda environment you can use to run the scripts.
+
+Also, we had to hack an internal module of `dask` to avoid pickling issues. Copy this file to replace the native `/miniforge3/envs/<env>/lib/python<X.YZ>/site-packages/distributed/protocol/pickle.py`.
 
 ## Producing the histograms: how to configure it
 
-### Over what to run it
-Either provide:
-1. one filepath with -f
-2. ntuple --tag and --sample for something in dataDirLocal.format(tag, sample) (or dataDirXRootD with --xrootd 1). This is the structure expected from the ntuple makers.
-3. a directory of files: dataDirLocal (or dataDirXRootD with --xrootd 1)
+### Acceptable inputs
 
-### Selections, blinding, ABCD method
+Provie one of the following:
+
+1. one file, specified with `-f /path/to/file`
+2. ntuple --tag and --sample for something in `dataDirLocal.format(tag, sample)` (or `dataDirXRootD` with `--xrootd 1`). This is the structure expected from the ntuple makers.
+3. a directory of files: `dataDirLocal` (or `dataDirXRootD` with `--xrootd 1`)
+
+### Selections, Variables, and More
+
 All of these are controlled by the `config` dictionary:
 
 ```
@@ -49,12 +39,12 @@ config = {
     'Cluster' : {
         'input_method' : 'CL',
         'method_var': 'SUEP_nconst_CL',
-        'xvar' :'SUEP_S1_CL',
-        'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
-        'yvar' : 'SUEP_nconst_CL',
-        'yvar_regions' : [30, 50, 70, 1000],
         'SR' : [['SUEP_S1_CL', '>=', 0.5], ['SUEP_nconst_CL', '>=', 70]],
-        'selections' : [['ht_JEC', '>', 1200], ['ntracks','>', 0]]
+        'selections' : [['ht_JEC', '>', 1200], ['ntracks','>', 0]],
+        'new_variables': [
+            ['bJetSel', lambda x, y: (x<=1) & (y==0), ['nBLoose', nBTight']],
+            ...
+        ],
     },
     ...
 }
@@ -63,63 +53,48 @@ config = {
 This will:
 - Grab all ntuple variables from the input method `CL` and fill histograms in the output method `Cluster`.
 - Select all events that pass the `CL` method, using `method_var`.
-- Blind the SR for data.
+- Blind the SR (if you pass with `--blind 1`).
 - Apply the `selections` to the DataFrame before filling the histograms.
-- Make each histogram for each ABCD region, and make an ABCD prediction for the SR.
 
-### Defining histograms
+#### Histograms
 
-This is done in `hist_defs.py`.
-The script will call `initialize_histograms()`, in this you can define your own function which is to be called for a particular method or channel (e.g. `Cluster` above) to add the histograms you want.
-**All 1D and 2D histograms correctly named will be automatically filled by the script.**
+Histograms are defined in `hist_defs.py`, and filled in `fill_utils.py` with the function `auto_fill()`.
+**All histograms correctly named will be automatically filled by the script.**
 
-"Correctly named" means:  `2D_variable1_vs_variable2_<label>`, `variable1_<label>`, or `<region>_variable1_<label>`, where `variable1,2` are in the ntuple, `<region>` is a numeric region if you're doing ABCD, and `<label>` are the output labels (above, `Cluster`) which, if you are running systematics, will be modified to include, e.g. `Cluster_JEC_up`. See `initialize_histograms()` for some examples.
+"Correctly named" means:
+- `variable1_<label>`
+- `2D_variable1_vs_variable2_<label>`
+- `3D_variable1_vs_variable2_vs_variable3_<label>`
+- or `<region>_variable1_<label>`, where `<region>` is a region if you're doing ABCD
+where `<label>` is the output method label, e.g. `Cluster`.
 
-### Systematics
+#### Event Weights
 
-For now these are hardcoded in the script for each analysis in `plot_systematic()`.
-Systematics are either weights, or different variables that will be used to make selections.
-Each variable will be plotted in a different histogram for each systematic, the output method name will be modified to include the systematic name for those histograms.
+Event weights are handled in `CMS_corrections/EventWeightProcessor.py`, which hard-codes the application of weights based on input parameters like the channel, method, systematic, etc.
 
+`CMS_corrections` contains functions to define and calculate weights, possibly using input variables from the DataFrame.
 
-### Making new variables
+#### Systematic variations
 
-The `config` dictionary can take the argument `new_variables`, which will be read by `fill_utils.py/make_new_variable()` to combine the DataFrame columns to make new variables with arbitrary functions.
+You can run systematic variations via different configurations inside the `config` dictionary.
+You can modify the `CMS_corrections/EventWeightProcessor` class to add different weights (e.g. up or down variations) based on the systematic being run. Many of the scripts in `CMS_corrections` mentioned above also provide weights for systematic variations.
 
-The syntax is as follows:
+#### Automating new_variables
 
-```
-config = {
-    ...
-    `new_variables`: [
-        ['new_variable_name', callable, [callable inputs]]
-    ]
-    ...
-}
-```
+`var_defs.py` automates defining new variables based on input parameters for convenience.
 
-For example,
+#### Automating ABCD
+
+If you want to automatically run each histogram for each ABCD region, you can define something like the following in your configuration and run with `--doABCD 1`. This will seek to fill `A_SUEP_S1_Cluster`, `B_SUEP_S1_Cluster`, etc., so you need to also initialize those histograms, if you want them.
 
 ```
-    "new_variables": [
-        ["SUEP_ISR_deltaPhi_CL", lambda x,y : abs(x-y), ["SUEP_phi_CL", "ISR_phi_CL"]],
-        ["SUEP_ISR_deltaEta_CL", lambda x,y : abs(x-y), ["SUEP_eta_CL", "ISR_eta_CL"]]
-    ]
+    'xvar' :'SUEP_S1_CL',
+    'xvar_regions' : [0.3, 0.4, 0.5, 1.0],
+    'yvar' : 'SUEP_nconst_CL',
+    'yvar_regions' : [30, 50, 70, 1000],
 ```
 
-One could define some function in to generate a whole set of these, if putting them all in the configuration dictionary becomes cumbersome.
-
-
-## Producing the histograms: technical details
-
-The following scripts are used:
-
-1. `make_hists.py`: the main script to fill the histograms, define ABCD regions, apply selections, run systematics, and more.
-2. `CMS_corrections/*.py`: all the systematics, called from the main script
-3. `fill_utils.py`: a set of general helper functions for the main script
-4. `hist_defs.py`: defining histograms
-
-### make_hists.py
+## Some technical details
 
 The DataFrame generated by the ntuple makers has the form:
 
@@ -191,33 +166,6 @@ The main script relies from many functions in the helper script, `fill_utils.py`
        3a. Event wide variables
        3b. Input method variables
 
-### Weights, Cross sections, and Systematics
-
-The cross section and reweighting by the gen weight is done in `make_hists.py` directly, with some helper functions in `fill_utils.py`.
-The systematics can be found in `CMS_corrections/*.py`, and are applied in `make_hists.py` on MC and signal samples.
-
-1. **xsection**: These are defined in `../data/xsections_{}.json` for each HT or pT bin/sample, based on the era. These work with `gensumweight`, which is obtained from each hdf5 file's metadata, to scale that entire sample by `xsection/total_weight`, where `total_weight` here is the sum of all the files `gensumweights`. Cross sections are not applied for SUEP signal samples because of how we set up the limit code.
-
-2. **pileup**: The weights are applied to MC based on the era only, they are applied based on the variable `Pileup_nTrueInt` directly to the events, and are defined in `pileup_weight.py`.
-
-3. **track killing**: for each of the methods coming out of SUEPCoffea.py, we run through the whole method a second time with a certain % of the tracks in the event having been removed. The new method is then called `originalMethod_track_down` (e.g. `CL_track_down`). However, you don't need to add this method to the config dictionary in `make_hists.py`, the script will, for each method in config, automatically look for its track down variation, and make histograms for both. The track up variation is a symmetric variation of the difference betweeh the nominal and track_down histograms, and is also carried out in this script. Defined in `track_killing.py`.
-
-4. **Pre shower weights**: `PS_weight` column found in the DataFrame, applied to event weight.
-
-5. **GNN syst**: A systematic applied to GNN output on SUEP MC, defnied in `GNN_syst.py`. Obtained from the data vs. QCD difference when running the GNN on ISR jets instead of SUEPs. Practically, in the config for method `GNN`, need to add:
-
-   a) `fGNNsyst`: path to a json file containing the bin corrections. Expected form is a nested dictionary of dimensions: (year x GNN_model x bin_syst_list). The bin_syst_list is a list of floats that correspond to a certain % correction on a predefined set of bins.
-
-   b) `GNNsyst_bins`: set of bins corresponding to systematics as found in the file `fGNNsyst`.
-
-6. **Higgs reweight**: applied only to event weight for SUEP's with mass of 125 GeV (Higgs case), as a function of the gen pT of the SUEP. Defined in `higgs_rewight.py`
-
-7. **Trigger scale factor**: weight applied to event weight based on era only, defined in `triggerSF.py`.
-
-8. **Jet energy corrections**: applied by cutting on different variations of the `ht` variations, and using the variables that have `<input_method>_track_down`.
-
-9. [Optional] **weights**: These are weights that are defined based on each ABDC region (with the variables x_var, y_var) to force a third variable (z_var) to match for MC and data. These are produced in `plot.ipynb` and are saved as `.npy` files which are read in the script using `--weights=<file.npy>`.
-
 ## Next steps
 
-Head to `plotting/` to find some exampls for how to plot the histograms you've just produced.
+Head to `plotting/` to find some examples for how to plot the histograms you've just produced.

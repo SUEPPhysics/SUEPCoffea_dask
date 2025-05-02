@@ -30,7 +30,6 @@ import numpy as np
 sys.path.append("..")
 from make_hists import makeParser as makeHistsParser
 from merge_ntuples import makeParser as makeMergeParser
-
 from plotting.plot_utils import check_proxy
 
 # SLURM script template
@@ -66,13 +65,12 @@ def submit_slurm_job(slurm_script_file):
         return None
 
 
-def call_process(cmd, work_dir):
+def call_process(cmd):
     """This runs in a separate thread."""
     p = subprocess.Popen(
         ["bash", "-c", " ".join(shlex.split(cmd))],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=work_dir,
     )
     out, err = p.communicate()
     return (out, err)
@@ -127,18 +125,9 @@ options = parser.parse_args()
 # logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Found it necessary to run on a space with enough disk space
-work_dir_base = "/work/submit/{}/dummy_directory{}".format(
-    getpass.getuser(), np.random.randint(0, 10000)
-)
-logging.info("Copying ../../SUEPCoffea_dask to " + work_dir_base)
-os.system(f"mkdir {work_dir_base}")
-os.system(f"cp -a ../../SUEPCoffea_dask {work_dir_base}/.")
-logging.info("Working in " + work_dir_base)
-work_dir = work_dir_base + "/SUEPCoffea_dask/histmaker/"
-
 # Set up processing-specific options
 if options.method == "slurm":
+    work_dir = os.path.dirname(os.path.abspath(__file__))
     log_dir = "/work/submit/{}/SUEP/logs/slurm_{}_{}/".format(
         os.environ["USER"],
         options.code,
@@ -148,7 +137,7 @@ if options.method == "slurm":
         os.mkdir(log_dir)
     if options.code == "plot":
         memory = "12GB"
-        time = "02:00:00"
+        time = "12:00:00"
     elif options.code == "merge":
         memory = "32GB"
         time = "12:00:00"
@@ -164,7 +153,7 @@ with open(options.input) as f:
 
 # Making sure that the proxy is good
 if options.code == "merge" or options.xrootd:
-    lifetime = check_proxy(time_min=10)
+    _, lifetime = check_proxy(time_min=10)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
 
 # Loop over samples
@@ -179,9 +168,13 @@ for i, sample in enumerate(samples):
     logging.info(f"Processing sample {i+1}/{len(samples)}: {sample}")
 
     # skip if the output file already exists, unless you --force
+    if hasattr(options, "pkl") and options.pkl:
+        filetype = "pkl"
+    else:
+        filetype = "root"
     if options.code == "plot" and (
         os.path.isfile(
-            f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.root"
+            f"/data/submit/{getpass.getuser()}/SUEP/outputs/{sample}_{options.output}.{filetype}"
         )
         and not options.force
     ):
@@ -229,7 +222,7 @@ for i, sample in enumerate(samples):
 
     # Method to execute the code with
     if options.method == "multithread":
-        results.append(pool.apply_async(call_process, (cmd, work_dir)))
+        results.append(pool.apply_async(call_process, (cmd,)))
 
     elif options.method == "slurm":
         # Generate the SLURM script content
@@ -262,47 +255,3 @@ if options.method == "multithread":
         if "error" in str(err).lower():
             logging.info(str(err))
             logging.info(" ----------------- ")
-
-    # clean up
-    os.system(f"rm -rf {work_dir}")
-
-# if submitted slurm jobs, send one final job to clean up the dummy directory
-if options.method == "slurm" and len(job_ids) > 0:
-    cleanup_script = """#!/bin/bash
-#SBATCH --job-name=cleanup_job
-#SBATCH --output={log_dir}cleanup_job.out
-#SBATCH --error={log_dir}cleanup_job.err
-#SBATCH --time=02:00:00
-#SBATCH --mem=100MB
-#SBATCH --partition=submit,submit-gpu
-
-while true; do
-    all_finished=true
-    for job_id in {job_ids}; do
-        echo "checking $job_id"
-        job_state=$(sacct -j $job_id -X -n -o state)
-        job_state=$(echo $job_state | xargs)
-        echo "job state: $job_state"
-        if [[ "$job_state" != "COMPLETED" && "$job_state" != "FAILED" ]]; then
-            all_finished=false
-            break
-        fi
-    done
-    if $all_finished; then
-        echo "All jobs finished, cleaning up"
-        echo "rm -rf {work_dir_base}"
-        rm -rf {work_dir_base}
-        break
-    fi
-    echo "Sleeping for 1 minute"
-    sleep 60
-done
-""".format(
-        log_dir=log_dir, job_ids=" ".join(job_ids), work_dir_base=work_dir_base
-    )
-
-    with open(f"{log_dir}cleanup.sh", "w") as f:
-        f.write(cleanup_script)
-
-    logging.info("Submitting cleanup job")
-    cleanup_id = submit_slurm_job(f"{log_dir}cleanup.sh")

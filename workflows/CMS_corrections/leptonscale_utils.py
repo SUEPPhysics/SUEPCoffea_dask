@@ -1,3 +1,5 @@
+import os
+
 import awkward as ak
 import numpy as np
 from coffea import lookup_tools
@@ -8,7 +10,9 @@ def doLeptonScaleVariations(events, leptons, era):
     muonIndexes = abs(leptons.pdgId) == 13
     muons = leptons[muonIndexes]
     rochester_data = lookup_tools.txt_converters.convert_rochester_file(
-        "data/MuScale/roccor.Run2.v3/RoccoR%i.txt" % (era if era != 2015 else 2016),
+        "{}/../../data/MuScale/roccor.Run2.v3/RoccoR{}.txt".format(
+            os.path.join(os.path.dirname(__file__)), (era if era != 2015 else 2016)
+        ),
         loaduncs=True,
     )
     rochester = lookup_tools.rochester_lookup.rochester_lookup(rochester_data)
@@ -87,7 +91,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -98,7 +102,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -109,7 +113,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -120,7 +124,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )
@@ -131,7 +135,7 @@ def doLeptonScaleVariations(events, leptons, era):
             "eta": electrons.eta,
             "phi": electrons.phi,
             "mass": electrons.mass,
-            "charge": electrons.pdgId / (-13),
+            "charge": electrons.pdgId / (-11),
         },
         with_name="Momentum4D",
     )

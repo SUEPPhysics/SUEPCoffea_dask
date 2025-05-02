@@ -1,49 +1,45 @@
 import awkward as ak
+import numba as nb
 import numpy as np
 
 
-def track_killing(self, tracks):
+@nb.njit
+def generate_random_akarray(builder, lengths):
     """
-    Drop 2.7%, 2.2%, and 2.1% of the tracks randomly at reco-level
-    for charged-particles with 1 < pT < 20 GeV in simulation for 2016, 2017, and
-    2018, respectively when reclustering the constituents.
-     For charged-particles with pT > 20 GeV, 1% of the tracks are dropped randomly
+    Given a ak.ArrayBuilder() and lengths of each event in the array,
+    generate an awkward array with random values between 0 and 1
     """
+    for length in lengths:
+        builder.begin_list()
+        for i in range(length):
+            builder.append(np.random.rand())
+        builder.end_list()
 
-    if self.scouting == 1:
-        block1_percent = 0.05
-        block2_percent = 0.01
-    else:
-        year_percent = {"2018": 0.021, "2017": 0.022, "2016": 0.027, "2016apv": 0.027}
-        block1_percent = year_percent[str(self.era)]
-        block2_percent = 0.01
 
-    block0_indices = tracks.pt <= 1
-    block1_indices = (tracks.pt > 1) & (tracks.pt < 20)
-    block2_indices = tracks.pt >= 20
+def track_killing(tracks, decay_mode: str):
 
-    new_indices = []
+    pt_bin_edges = [1, 1e10]
+    percents = {"generic": 0.03, "hadronic": 0.034, "leptonic": 0.042}
 
-    for i in range(len(tracks)):
-        event_indices = np.arange(len(tracks[i]))
-        event_bool = np.array([True] * len(tracks[i]))
+    event_bool = ak.zeros_like(tracks.pt, dtype=bool)
 
-        block1_event_indices = event_indices[block1_indices[i]]
-        block1_event_indices_drop = np.random.choice(
-            block1_event_indices, int((block1_percent) * len(block1_event_indices))
-        )
-        event_bool[block1_event_indices_drop] = False
+    # for each track inm each event, generate a random number between 0 and 1
+    builder = ak.ArrayBuilder()
+    generate_random_akarray(builder, ak.num(tracks.pt))
+    event_probs = builder.snapshot()
 
-        block2_event_indices = event_indices[block2_indices[i]]
-        block2_event_indices_drop = np.random.choice(
-            block2_event_indices, int((block2_percent) * len(block2_event_indices))
-        )
-        event_bool[block2_event_indices_drop] = False
+    # iterate over the pt bins
+    for j in range(len(pt_bin_edges) - 1):
 
-        new_indices.append(list(event_bool))
+        # get a mask for all tracks in the pt bin
+        pt_bin = (tracks.pt >= pt_bin_edges[j]) & (tracks.pt < pt_bin_edges[j + 1])
 
-    new_indices = ak.Array(new_indices)
-    tracks = tracks[new_indices]
+        # apply the random killing by comparing the random number to the percentage
+        # keep all tracks.pt that either passed in previous bins, or are above the percentage
+        event_bool = ((event_probs > percents[decay_mode]) & pt_bin) | event_bool
+
+    # select the tracks you want
+    tracks = tracks[event_bool]
     return tracks
 
 

@@ -5,11 +5,10 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import time
 
-from histmaker.fill_utils import get_git_info
-from plotting.plot_utils import check_proxy
+from utilities.git_utils import write_git_info
+from utilities.proxy_utils import check_proxy
 
 script_TEMPLATE = """#!/bin/bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh
@@ -30,36 +29,83 @@ hostname
 
 sleep $[ ( $RANDOM % 1000 )  + 1 ]s
 
+# singularity image is missing some things
 pip install h5py
+
+echo "----- Found Proxy in: $X509_USER_PROXY"
+echo "voms-proxy-info"
+voms-proxy-info
 
 echo "----- xrdcp the input file over"
 echo "xrdcp $2 $3.root"
-xrdcp $2 $3.root
+#######################################################################################
+max_retries=2
+retry_count=0
+success=false
 
-echo "----- Found Proxy in: $X509_USER_PROXY"
+while [ $retry_count -lt $max_retries ]; do
+    xrdcp "$2" "$3.root"
+    if [ $? -eq 0 ]; then
+        echo "File copied successfully!"
+        success=true
+        break
+    else
+        echo "Failed to copy the file. Attempt $((retry_count+1)) of $max_retries."
+        retry_count=$((retry_count+1))
+        if [ $retry_count -lt $max_retries ]; then
+            echo "Waiting 5 minutes before retrying..."
+            sleep 300
+        fi
+    fi
+done
+
+if [ "$success" = false ]; then
+    echo "Failed to copy the file after $max_retries attempts."
+    exit 1
+fi
+
+if [ ! -f "$3.root" ]; then
+    echo "File $3.root does not exist locally. Presumably something went wrong with the xrdcp command. Exiting."
+    exit 1
+fi
+#######################################################################################
+
+echo "----- Running the command"
 echo "python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root"
 python3 {condor_file} --jobNum=$1 --isMC={ismc} --era={era} --doInf={doInf} --doSyst={doSyst} --dataset={dataset} --infile=$3.root
 
-#echo "----- transferring output to scratch :"
-echo "xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}"
-xrdcp {outfile}.{file_ext} {redirector}/{outdir}/$3.{file_ext}
-
 {extras}
 
+echo "----- Transferring output"
+output_file="{outdir}/$3.{file_ext}"
+echo "xrdcp --retry 3 {outfile}.{file_ext} $output_file"
+xrdcp --retry 3 {outfile}.{file_ext} $output_file
+
+echo "----- Verifying the output file"
+redirector=${{output_file%//*}}/
+path=${{output_file#*//*/}}
+echo "xrdfs $redirector stat $path"
+xrdfs $redirector stat $path
+if [ $? -ne 0 ]; then
+    echo "Output file verification failed."
+else
+    echo "Output file verification succeeded."
+fi
+
+echo "----- Cleaning up"
 echo "rm *.{file_ext}"
 rm *.{file_ext}
-
 echo "rm $3.root"
 rm $3.root
 
 echo " ------ THE END (everyone dies !) ----- "
 """
 
-
+# the following have been dropped due to high failure rates with xrootd: T2_IT_Bari,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_BR_SPRACE,T2_AT_Vienna,T2_US_Vanderbilt,T2_ES_IFCA,T2_FI_HIP
 condor_TEMPLATE = """
 universe              = vanilla
-request_disk          = 2GB
-request_memory        = 5GB
+request_disk          = 8GB
+request_memory        = 8GB
 #request_cpus          = 1
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) $(fileid)
@@ -71,13 +117,14 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 when_to_transfer_output = ON_EXIT
+transfer_output_files = ""
 on_exit_remove        = (ExitBySignal == False) && (ExitCode == 0)
 max_retries           = 3
 use_x509userproxy     = True
 x509userproxy         = /home/submit/{user}/{proxy}
 +AccountingGroup      = "analysis.{user}"
 Requirements          = ( BOSCOCluster =!= "t3serv008.mit.edu" && BOSCOCluster =!= "ce03.cmsaf.mit.edu" && BOSCOCluster =!= "eofe8.mit.edu")
-+DESIRED_Sites        = "T2_AT_Vienna,T2_BE_IIHE,T2_BE_UCL,T2_BR_SPRACE,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CH_CSCS,T2_CH_CSCS_HPC,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC,T3_US_MIT"
++DESIRED_Sites        = "T2_BE_IIHE,T2_BE_UCL,T2_BR_UERJ,T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_CN_Beijing,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_GR_Ioannina,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_KR_KISTI,T2_MY_SIFIR,T2_MY_UPM_BIRUNI,T2_PK_NCP,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_RU_IHEP,T2_RU_INR,T2_RU_ITEP,T2_RU_JINR,T2_RU_PNPI,T2_RU_SINP,T2_TH_CUNSTDA,T2_TR_METU,T2_TW_NCHC,T2_UA_KIPT,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_CH_CMSAtHome,T3_CH_Volunteer,T3_US_HEPCloud,T3_US_NERSC,T3_US_OSG,T3_US_PSC,T3_US_SDSC,T3_US_MIT"
 +SingularityImage     = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
 +JobFlavour           = "{queue}"
 
@@ -86,6 +133,10 @@ queue jobid, fileid from {jobdir}/inputfiles.dat
 
 
 def main():
+
+    username = getpass.getuser()
+    workdir = os.getcwd()
+
     parser = argparse.ArgumentParser(description="Famous Submitter")
     parser.add_argument(
         "-i",
@@ -105,10 +156,7 @@ def main():
         "-doInf", "--doInf", type=int, default=0, help="Do inference or not."
     )
     parser.add_argument(
-        "-doSyst", "--doSyst", type=int, default=1, help="Apply systematics."
-    )
-    parser.add_argument(
-        "-p", "--private", type=int, default=0, help="Private SUEP samples."
+        "-doSyst", "--doSyst", type=int, default=0, help="Run systematic variations."
     )
     parser.add_argument(
         "-cutflow", "--cutflow", type=int, default=0, help="Cutflow analyzer."
@@ -124,13 +172,12 @@ def main():
     parser.add_argument(
         "-m", "--maxFiles", type=int, default=-1, help="maximum number of files"
     )
-    parser.add_argument("--redo-proxy", action="store_true", help="redo the voms proxy")
     parser.add_argument(
         "--channel",
         type=str,
         required=True,
         help="Channel to run.",
-        choices=["ggF", "WH"],
+        choices=["ggF", "WH", "WH-CRQCD", "WH-VRGJ"],
     )
     parser.add_argument("-sc", "--scout", type=int, default=0, help="Scouting data.")
     parser.add_argument(
@@ -143,6 +190,20 @@ def main():
         default=1,
         help="Wait time before submitting the next sample in hours (default = 1 hour). This is needed to avoid overloading the MIT T2 with xrootd requests.",
     )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default=f"root://submit50.mit.edu//data/group/cms/store/user/{username}/SUEP/",
+        help="Output condor directory. The samples fill be found under root://redirector//your/path/tag/sample.",
+    )
+    parser.add_argument(
+        "-l",
+        "--logs",
+        type=str,
+        default=f"/work/submit/{username}/SUEP/logs/",
+        help="Local path where to store the condor logs. The logs for each sample will be stored in /path/tag/sample.",
+    )
     parser.add_argument("--verbose", action="store_true", help="verbose output")
     options = parser.parse_args()
 
@@ -150,31 +211,10 @@ def main():
     if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.INFO)
-
-    # script parameters
-    username = getpass.getuser()
-    outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
-    if os.path.isdir("/data/submit/cms/store/user/" + username):
-        outdir = "/data/submit/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
-        outdir_condor = "/cms/store/user/" + username + "/SUEP/{tag}/{sample}/"
-    elif os.path.isdir("/data/submit/" + username):
-        outdir = "/data/submit/" + username + "/SUEP/{tag}/{sample}/"
-        outdir_condor = "/" + username + "/SUEP/{tag}/{sample}/"
-    else:
-        logging.error(
-            "Cannot access /data/submit/$USER or /data/submit/cms/store/user/$USER!"
-        )
-        sys.exit()
-    workdir = os.getcwd()
-    logdir = "/work/submit/" + username + "/SUEP/logs/"
-    default_input_redirector = "root://xrootd.cmsaf.mit.edu/"
-    output_redirector = "root://submit50.mit.edu/"
-    proxy_base = f"x509up_u{os.getuid()}"
-    home_base = os.environ["HOME"]
+        logging.basicConfig(level=logging.WARNING)
 
     # define which file you want to run, the output file name and extension that it produces
-    # these will be transferred back to outdir/outdir_condor
+    # these will be transferred back to the output directory
     if options.channel == "ggF":
         if options.scout == 1:
             condor_file = "condor_Scouting.py"
@@ -196,14 +236,20 @@ def main():
         condor_file = "condor_SUEP_WH.py"
         outfile = "out"
         file_ext = "hdf5"
+    elif options.channel == "WH-CRQCD":
+        condor_file = "condor_SUEP_WH_CRQCD.py"
+        outfile = "out"
+        file_ext = "hdf5"
+    elif options.channel == "WH-VRGJ":
+        condor_file = "condor_SUEP_WH_VRGJ.py"
+        outfile = "out"
+        file_ext = "hdf5"
 
     # Making sure that the proxy is good
-    lifetime = check_proxy(time_min=100)
+    proxy, lifetime = check_proxy(time_min=72)
     logging.info(f"--- proxy lifetime is {round(lifetime, 1)} hours")
-    proxy_copy = os.path.join(home_base, proxy_base)
 
     missing_samples = []
-
     with open(options.input) as stream:
         for iSample, sample_path in enumerate(stream.read().split("\n")):
             # skip commented out or incorrect sample paths
@@ -216,40 +262,98 @@ def main():
 
             # extract sample name from each sample path
             if "/" in sample_path:
-                sample_name = sample_path.split("/")[-1]
+                if sample_path.endswith(
+                    "/"
+                ):  # in case if you left an extra slash at the end..
+                    sample_name = sample_path.split("/")[-2]
+                else:
+                    sample_name = sample_path.split("/")[-1]
             else:
                 sample_name = sample_path
             if sample_name.endswith(
                 ".root"
             ):  # case where 1 file is given as input, treated as a separate sample
                 sample_name = sample_name.replace(".root", "")
+            if len(sample_name) < 1:
+                continue
 
             # if the redirector is specified, take it, and strip it from the sample path, if not use the default
             if sample_path.startswith("root://"):
                 sample_input_redirector = "root://" + sample_path.split("//")[1] + "/"
                 sample_path = sample_path.replace(sample_input_redirector, "")
             else:
-                sample_input_redirector = default_input_redirector
+                sample_input_redirector = "root://xrootd.cmsaf.mit.edu/"
 
             logging.info("-- sample : " + sample_name)
 
-            # set up the jobs directory
-            jobs_dir = "/".join([logdir, options.tag, sample_name])
-            if os.path.isdir(jobs_dir):
-                if not options.force:
-                    logging.error(" " + jobs_dir + " already exists !")
-                    continue
-                else:
-                    logging.warning(
-                        " " + jobs_dir + " already exists, forcing its deletion!"
-                    )
-                    shutil.rmtree(jobs_dir)
-                    os.makedirs(jobs_dir)
+            # create the output directory for this sample if it doesn't exist
+            fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
+            _sample_path = "/" + fin_outdir_condor.split("//")[-1]
+            _tokens = options.output.split("//")
+            _redirector = _tokens[0] + "//" + _tokens[1] + "//"
+            check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
+            _sample_dir_exists = (
+                subprocess.call(
+                    check_dir_command,
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                == 0
+            )
+            if not _sample_dir_exists:
+                logging.info(f"Creating output directory {_redirector+_sample_path}")
+                os.system(f"mkdir -p /ceph/submit/{_sample_path}")
+                # os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
             else:
+                logging.warning(
+                    f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten."
+                )
+
+            # set up the logs directory
+            jobs_dir = "/".join([options.logs, options.tag, sample_name])
+
+            # the directory doesn't exist
+            if not os.path.isdir(jobs_dir):
                 os.makedirs(jobs_dir)
+
+            # we are forcing the creation
+            elif options.force:
+                logging.warning(" " + jobs_dir + " exists, forcing its deletion!")
+                shutil.rmtree(jobs_dir)
+                os.makedirs(jobs_dir)
+
+            # if the input file doesn't exist
+            elif not os.path.exists(os.path.join(jobs_dir, "inputfiles.dat")):
+                logging.warning(
+                    " "
+                    + os.path.join(jobs_dir, "inputfiles.dat")
+                    + " doesn't exist! Clearing log directory."
+                )
+                shutil.rmtree(jobs_dir)
+                os.makedirs(jobs_dir)
+
+            # or exists, but is empty, delete it and recreate\
+            elif os.path.getsize(os.path.join(jobs_dir, "inputfiles.dat")) == 0:
+                logging.warning(
+                    " "
+                    + os.path.join(jobs_dir, "inputfiles.dat")
+                    + " exists but is empty! Clearing log directory."
+                )
+                shutil.rmtree(jobs_dir)
+                os.makedirs(jobs_dir)
+
+            else:
+                logging.error(
+                    " Log directory "
+                    + jobs_dir
+                    + " already exists, and input file list seems correct. Will not submit this sample!"
+                )
+                continue
 
             # get the filelist with xrootd
             Raw_list = []
+            logging.debug(f"xrdfs {sample_input_redirector} ls {sample_path}")
             comm = subprocess.Popen(
                 ["xrdfs", sample_input_redirector, "ls", sample_path],
                 stdout=subprocess.PIPE,
@@ -271,17 +375,34 @@ def main():
                     infiles.write(full_file + "\t" + just_file.split(".root")[0] + "\n")
                     nfiles += 1
                 infiles.close()
-            fin_outdir = outdir.format(tag=options.tag, sample=sample_name)
-            fin_outdir_condor = outdir_condor.format(
-                tag=options.tag, sample=sample_name
+
+            # create the output directory for this sample if it doesn't exist
+            fin_outdir_condor = os.path.join(options.output, options.tag, sample_name)
+            _sample_path = "/" + fin_outdir_condor.split("//")[-1]
+            _tokens = options.output.split("//")
+            _redirector = _tokens[0] + "//" + _tokens[1] + "//"
+            check_dir_command = f"xrdfs {_redirector} stat {_sample_path}"
+            _sample_dir_exists = (
+                subprocess.call(
+                    check_dir_command,
+                    shell=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                == 0
             )
-            os.system(f"mkdir -p {fin_outdir}")
+            if not _sample_dir_exists:
+                os.system(f"xrdfs {_redirector} mkdir -p {_sample_path}")
+            else:
+                logging.warning(
+                    f"Output directory {_redirector+_sample_path} already exists! Will not delete it, but data there might be ovewritten."
+                )
 
             # write the executable we give to condor
             with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
                 extras = ""
                 script = script_TEMPLATE.format(
-                    proxy=proxy_base,
+                    proxy=proxy.split("/")[-1],
                     ismc=options.isMC,
                     era=options.era,
                     doSyst=options.doSyst,
@@ -291,7 +412,6 @@ def main():
                     condor_file=condor_file,
                     outfile=outfile,
                     file_ext=file_ext,
-                    redirector=output_redirector,
                     extras=extras,
                 )
                 scriptfile.write(script)
@@ -305,12 +425,12 @@ def main():
                             workdir + "/" + condor_file,
                             workdir + "/workflows",
                             workdir + "/data",
-                            proxy_copy,
+                            proxy,
                         ]
                     ),
                     # just_file=just_file,
                     jobdir=jobs_dir,
-                    proxy=proxy_base,
+                    proxy=proxy.split("/")[-1],
                     queue=options.queue,
                     user=username,
                 )
@@ -318,15 +438,13 @@ def main():
                 condorfile.close()
 
             # write the git info to a file in the output directory where the ntuples will be stored
-            commit, diff = get_git_info()
-            current_datetime = datetime.datetime.now()
-            formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-            with open(
-                os.path.join(fin_outdir, f"gitinfo_{formatted_datetime}.txt"), "w"
-            ) as gitinfo:
-                gitinfo.write("Commit: \n" + commit + "\n")
-                gitinfo.write("Diff: \n" + diff + "\n")
-                gitinfo.close()
+            try:
+                gitfile = write_git_info()
+                os.system(f"xrdcp -s {gitfile} {fin_outdir_condor}/{gitfile}")
+                os.system(f"rm {gitfile}")
+            except Exception as e:
+                logging.error(f"Error writing git info: {e}")
+                logging.error("Git info not written to output directory.")
 
             # don't submit if it's a dryrun
             if options.dryrun:

@@ -1,6 +1,10 @@
 import awkward as ak
 import numpy as np
+import psutil
 import vector
+
+from workflows.CMS_corrections.HEM_utils import jetHEMFilter
+from workflows.CMS_corrections.leptonscale_utils import doLeptonScaleVariations
 
 
 def getGenModel(events):
@@ -30,7 +34,29 @@ def getGenModel(events):
     return genModels
 
 
-def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
+def getSignalDecayMode(sample):
+
+    import re
+
+    pattern = r"SUEP_mS(\d+\.\d+)_mPhi(\d+\.\d+)_T(\d+\.\d+)_mode(\w+)"
+
+    # Use re.search to find the first occurrence of the pattern in the sample name
+    match = re.search(pattern, sample)
+
+    if match:
+        decay = match.group(4)
+        return decay
+
+    pattern2 = r"WHleptonicpythia_(\w+)_M125.0_MD(\d+\.\d+)_T(\d+\.\d+)_HT-1_"
+    match2 = re.search(pattern2, sample)
+    if match2:
+        decay = match2.group(1)
+        return decay
+
+    raise ValueError(f"Could not find decay mode in sample name {sample}.")
+
+
+def getAK4Jets(Jets, runs, iso=None, isMC: bool = 1):
     """
     Create awkward array of jets. Applies basic selections.
     Returns: awkward array of dimensions (events x jets x 4 momentum)
@@ -46,6 +72,7 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
                 "jetId": Jets.jetId,
                 "hadronFlavour": Jets.hadronFlavour,
                 "qgl": Jets.qgl,
+                "area": Jets.area,
             },
             with_name="Momentum4D",
         )
@@ -59,6 +86,8 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
                 "btag": Jets.btagDeepFlavB,
                 "jetId": Jets.jetId,
                 "qgl": Jets.qgl,
+                "area": Jets.area,
+                "raw_factor": Jets.rawFactor,
             },
             with_name="Momentum4D",
         )
@@ -66,9 +95,13 @@ def getAK4Jets(Jets, lepton=None, isMC: bool = 1):
     jet_awk_Cut = (
         (Jets_awk.pt > 30) & (abs(Jets_awk.eta) < 2.4) & (0 < (Jets_awk.jetId & 0b010))
     )
-    # and minimum separation from lepton
-    if lepton is not None:
-        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(lepton) >= 0.4)
+    # and minimum separation from some object (e.g. lepton)
+    if iso is not None:
+        jet_awk_Cut = jet_awk_Cut & (Jets_awk.deltaR(iso) >= 0.4)
+    # and HEM filter
+    jetHEMCut, _ = jetHEMFilter(None, Jets, runs)
+    jet_awk_Cut = jet_awk_Cut & jetHEMCut
+
     Jets_correct = Jets_awk[jet_awk_Cut]
 
     return Jets_correct
@@ -82,7 +115,7 @@ def getGenPart(events):
             "eta": genParts.eta,
             "phi": genParts.phi,
             "mass": genParts.mass,
-            "pdgID": genParts.pdgId,
+            "pdgId": genParts.pdgId,
             "status": genParts.status,
             "genPartIdxMother": genParts.genPartIdxMother,
             "statusFlags": genParts.statusFlags,
@@ -98,7 +131,7 @@ def getGenW(events):
     """
     genParticles = getGenPart(events)
     genW = genParticles[
-        (abs(genParticles.pdgID) == 24) & (0 < (genParticles.statusFlags & (1 << 13)))
+        (abs(genParticles.pdgId) == 24) & (0 < (genParticles.statusFlags & (1 << 13)))
     ]
     return genW
 
@@ -110,19 +143,18 @@ def getGenDarkPseudoscalars(events):
     """
 
     genParticles = getGenPart(events)
-    darkPseudoscalarParticles = genParticles[genParticles.pdgID == 999999]
+    darkPseudoscalarParticles = genParticles[genParticles.pdgId == 999999]
 
     return darkPseudoscalarParticles
 
 
-def getTracks(events, lepton=None, leptonIsolation=None):
+def getTracks(events, iso_object=None, isolation_deltaR=0):
     Cands = ak.zip(
         {
             "pt": events.PFCands.trkPt,
             "eta": events.PFCands.trkEta,
             "phi": events.PFCands.trkPhi,
             "mass": events.PFCands.mass,
-            # "pdgID": events.PFCands.pdgID
         },
         with_name="Momentum4D",
     )
@@ -131,7 +163,6 @@ def getTracks(events, lepton=None, leptonIsolation=None):
         & (events.PFCands.trkPt >= 1)
         & (abs(events.PFCands.trkEta) <= 2.5)
         & (abs(events.PFCands.dz) < 0.05)
-        # & (events.PFCands.dzErr < 0.05)
         & (abs(events.PFCands.d0) < 0.05)
         & (events.PFCands.puppiWeight > 0.1)
     )
@@ -150,11 +181,10 @@ def getTracks(events, lepton=None, leptonIsolation=None):
     )
     cut = (
         (events.lostTracks.fromPV > 1)
-        & (events.lostTracks.pt >= 0.1)
+        & (events.lostTracks.pt >= 1)
         & (abs(events.lostTracks.eta) <= 2.5)
         & (abs(events.lostTracks.dz) < 0.05)
         & (abs(events.lostTracks.d0) < 0.05)
-        # & (events.lostTracks.dzErr < 0.05)
         & (events.lostTracks.puppiWeight > 0.1)
     )
     Lost_Tracks_cands = LostTracks[cut]
@@ -164,77 +194,176 @@ def getTracks(events, lepton=None, leptonIsolation=None):
     # dimensions of tracks = events x tracks in event x 4 momenta
     tracks = ak.concatenate([Cleaned_cands, Lost_Tracks_cands], axis=1)
 
-    if leptonIsolation:
-        # Sorting out the tracks that overlap with the lepton
-        tracks = tracks[(tracks.deltaR(lepton) >= leptonIsolation)]
+    if isolation_deltaR > 0:
+        # Sorting out the tracks that overlap with some object
+        tracks = tracks[(tracks.deltaR(iso_object) >= isolation_deltaR)]
+        Cleaned_cands = Cleaned_cands[
+            (Cleaned_cands.deltaR(iso_object) >= isolation_deltaR)
+        ]
+        Lost_Tracks_cands = Lost_Tracks_cands[
+            (Lost_Tracks_cands.deltaR(iso_object) >= isolation_deltaR)
+        ]
 
-    return tracks, Cleaned_cands
+    return tracks, Cleaned_cands, Lost_Tracks_cands
 
 
-def getLeptons(events):
+def getLeptons(events, isMC: int):
 
-    ###lepton selection criteria--4momenta collection for plotting
-    muons = ak.zip(
-        {
-            "pt": events.Muon.pt,
-            "eta": events.Muon.eta,
-            "phi": events.Muon.phi,
-            "mass": events.Muon.mass,
-            "pdgID": events.Muon.pdgId,
-            "ID": (
-                ak.values_astype(events.Muon.tightId, np.int32)
-                + ak.values_astype(events.Muon.mediumId, np.int32)
-                + ak.values_astype(events.Muon.looseId, np.int32)
-            ),  # 1=loose, 2=med, 3=tight cutbased
-            "IDMVA": events.Muon.mvaId,  # 1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight
-            "iso": events.Muon.pfRelIso04_all,  # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
-            "isoMVA": events.Muon.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
-            "miniIso": events.Muon.miniPFRelIso_all,
-            "dxy": events.Muon.dxy,
-            "dz": events.Muon.dz,
-            "charge": events.Muon.pdgId / (-13),
-            "tightId": events.Muon.tightId,
-            "pfIsoId": events.Muon.pfIsoId,
-        },
-        with_name="Momentum4D",
-    )
+    if isMC:
+        muons = ak.zip(
+            {
+                "pt": events.Muon.pt,
+                "eta": events.Muon.eta,
+                "phi": events.Muon.phi,
+                "mass": events.Muon.mass,
+                "pdgId": events.Muon.pdgId,
+                "ID": (
+                    ak.values_astype(events.Muon.tightId, np.int32)
+                    + ak.values_astype(events.Muon.mediumId, np.int32)
+                    + ak.values_astype(events.Muon.looseId, np.int32)
+                ),  # 1=loose, 2=med, 3=tight cutbased
+                "IDMVA": events.Muon.mvaId,  # 1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight
+                "iso": events.Muon.pfRelIso04_all,  # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
+                "isoMVA": events.Muon.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                "miniIso": events.Muon.miniPFRelIso_all,
+                "dxy": events.Muon.dxy,
+                "dz": events.Muon.dz,
+                "charge": events.Muon.pdgId / (-13),
+                "tightId": events.Muon.tightId,
+                "pfIsoId": events.Muon.pfIsoId,
+                "aux1": events.Muon.genPartIdx,
+                "aux2": events.Muon.pt,
+                "aux3": events.Muon.nTrackerLayers,
+                "aux4": events.Muon.pt,
+            },
+            with_name="Momentum4D",
+        )
 
-    electrons = ak.zip(
-        {
-            "pt": events.Electron.pt,
-            "eta": events.Electron.eta,
-            "phi": events.Electron.phi,
-            "mass": events.Electron.mass,
-            "pdgID": events.Electron.pdgId,
-            "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-            "IDMVA": (
-                ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
-                + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
-                + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
-            ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA (assuming they are all subsets of one another--should confirm!)
-            "iso": events.Electron.pfRelIso03_all,
-            "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
-            "miniIso": events.Electron.miniPFRelIso_all,
-            "dxy": events.Electron.dxy,
-            "dz": events.Electron.dz,
-            "charge": events.Electron.pdgId / (-11),
-            "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
-        },
-        with_name="Momentum4D",
-    )
+        if "dEscaleUp" in ak.fields(events.Electron):
+            electrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                    "pdgId": events.Electron.pdgId,
+                    "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+                    "IDMVA": (
+                        ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                        + ak.values_astype(
+                            events.Electron.mvaFall17V2Iso_WP90, np.int32
+                        )
+                        + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA
+                    "iso": events.Electron.pfRelIso03_all,
+                    "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                    "miniIso": events.Electron.miniPFRelIso_all,
+                    "dxy": events.Electron.dxy,
+                    "dz": events.Electron.dz,
+                    "charge": events.Electron.pdgId / (-11),
+                    "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
+                    "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
+                    "aux1": events.Electron.dEscaleUp,
+                    "aux2": events.Electron.dEscaleDown,
+                    "aux3": events.Electron.dEsigmaUp,
+                    "aux4": events.Electron.dEsigmaDown,
+                },
+                with_name="Momentum4D",
+            )
+        else:  # this stupid workaround is only needed because some of the background MC for 2016apv seems to be missing the scale variations for electrons
+            electrons = ak.zip(
+                {
+                    "pt": events.Electron.pt,
+                    "eta": events.Electron.eta,
+                    "phi": events.Electron.phi,
+                    "mass": events.Electron.mass,
+                    "pdgId": events.Electron.pdgId,
+                    "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+                    "IDMVA": (
+                        ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                        + ak.values_astype(
+                            events.Electron.mvaFall17V2Iso_WP90, np.int32
+                        )
+                        + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+                    ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA
+                    "iso": events.Electron.pfRelIso03_all,
+                    "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                    "miniIso": events.Electron.miniPFRelIso_all,
+                    "dxy": events.Electron.dxy,
+                    "dz": events.Electron.dz,
+                    "charge": events.Electron.pdgId / (-11),
+                    "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
+                    "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
+                    "aux1": events.Electron.pt * 0,
+                    "aux2": events.Electron.pt * 0,
+                    "aux3": events.Electron.pt * 0,
+                    "aux4": events.Electron.pt * 0,
+                },
+                with_name="Momentum4D",
+            )
+    else:
+        muons = ak.zip(
+            {
+                "pt": events.Muon.pt,
+                "eta": events.Muon.eta,
+                "phi": events.Muon.phi,
+                "mass": events.Muon.mass,
+                "pdgId": events.Muon.pdgId,
+                "ID": (
+                    ak.values_astype(events.Muon.tightId, np.int32)
+                    + ak.values_astype(events.Muon.mediumId, np.int32)
+                    + ak.values_astype(events.Muon.looseId, np.int32)
+                ),  # 1=loose, 2=med, 3=tight cutbased
+                "IDMVA": events.Muon.mvaId,  # 1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight
+                "iso": events.Muon.pfRelIso04_all,  # events.Muon.pfIsoId <--- using the rel iso float value rather than the WPs, mainly for consistency with electrons
+                "isoMVA": events.Muon.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                "miniIso": events.Muon.miniPFRelIso_all,
+                "dxy": events.Muon.dxy,
+                "dz": events.Muon.dz,
+                "charge": events.Muon.pdgId / (-13),
+                "tightId": events.Muon.tightId,
+                "pfIsoId": events.Muon.pfIsoId,
+            },
+            with_name="Momentum4D",
+        )
+        electrons = ak.zip(
+            {
+                "pt": events.Electron.pt,
+                "eta": events.Electron.eta,
+                "phi": events.Electron.phi,
+                "mass": events.Electron.mass,
+                "pdgId": events.Electron.pdgId,
+                "ID": events.Electron.cutBased,  # cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+                "IDMVA": (
+                    ak.values_astype(events.Electron.mvaFall17V2Iso_WP80, np.int32)
+                    + ak.values_astype(events.Electron.mvaFall17V2Iso_WP90, np.int32)
+                    + ak.values_astype(events.Electron.mvaFall17V2Iso_WPL, np.int32)
+                ),  # 1=loose WP, 2=WP90, 3=WP80 electron ID MVA
+                "iso": events.Electron.pfRelIso03_all,
+                "isoMVA": events.Electron.mvaTTH,  # TTH MVA lepton ID score (true leptons peak at 1)
+                "miniIso": events.Electron.miniPFRelIso_all,
+                "dxy": events.Electron.dxy,
+                "dz": events.Electron.dz,
+                "charge": events.Electron.pdgId / (-11),
+                "mvaFall17V2Iso_WP80": events.Electron.mvaFall17V2Iso_WP80,
+                "pfIsoId": ak.ones_like(events.Electron.pt) * -1,
+            },
+            with_name="Momentum4D",
+        )
 
     leptons = ak.concatenate([muons, electrons], axis=1)
 
     return muons, electrons, leptons
 
 
-def getLooseLeptons(events):
+def getLooseLeptons(events, isMC: int):
     """
     These leptons follow EXACTLY the ZH definitions, so that we can impose
     orthogonality between the ZH, offline, and WH selections.
+    WARNING: DO NOT CHANGE THIS
     """
 
-    muons, electrons, leptons = getLeptons(events)
+    muons, electrons, _ = getLeptons(events, isMC=isMC)
 
     cutLooseMuons = (
         (events.Muon.looseId)
@@ -261,12 +390,34 @@ def getLooseLeptons(events):
     return looseMuons, looseElectrons, looseLeptons
 
 
-def getTightLeptons(events):
+def getTightLeptons(events, era: str, isMC: int, variation: str = ""):
     """
     These leptons are the ones that will be used for the WH analysis.
+    We do the lepton scale variations here. Technically, one should do them
+    when we first define the lepton collections, but the main effect we are
+    concerend with is the effect on the lepton used to calculate the W.
+    Loose leptons are only used to impose orthogonality, and the scale
+    variations are quite small, so won't have a large impact there.
     """
 
-    looseMuons, looseElectrons, _ = getLooseLeptons(events)
+    looseMuons, looseElectrons, _ = getLooseLeptons(events, isMC=isMC)
+
+    if isMC:
+        looseMuonsVars = doLeptonScaleVariations(
+            events, looseMuons, int(era) if era != "2016apv" else 2015
+        )
+        looseElectronsVars = doLeptonScaleVariations(
+            events, looseElectrons, int(era) if era != "2016apv" else 2015
+        )
+
+        # re-assign pt to the pt with the lepton scales applied, and the original pt to pt_prevar
+        looseMuons = ak.with_field(looseMuons, looseMuons.pt, "pt_prevar")
+        looseElectrons = ak.with_field(looseElectrons, looseElectrons.pt, "pt_prevar")
+        variation = "_" + variation if variation != "" else ""
+        looseMuons = ak.with_field(looseMuons, looseMuonsVars[variation].pt, "pt")
+        looseElectrons = ak.with_field(
+            looseElectrons, looseElectronsVars[variation].pt, "pt"
+        )
 
     # tighter lepton ID
     cutTightMuons = (
@@ -282,6 +433,27 @@ def getTightLeptons(events):
     tightLeptons = ak.concatenate([tightMuons, tightElectrons], axis=1)
 
     return tightMuons, tightElectrons, tightLeptons
+
+
+def getLooseNotTightLeptons(events, isMC: int):
+
+    looseMuons, looseElectrons, _ = getLooseLeptons(events, isMC=isMC)
+
+    cutTightMuons = (
+        (looseMuons.tightId)
+        & (looseMuons.pfIsoId >= 5)  # PFIsoVeryTight, aka PF rel iso < 0.1
+        & (abs(looseMuons.dz) <= 0.05)
+        & (looseMuons.pt >= 30)
+    )
+    cutTightElectrons = (looseElectrons.mvaFall17V2Iso_WP80) & (looseElectrons.pt >= 35)
+
+    looseNotTightMuons = looseMuons[~cutTightMuons]
+    looseNotTightElectrons = looseElectrons[~cutTightElectrons]
+    looseNotTightLeptons = ak.concatenate(
+        [looseNotTightMuons, looseNotTightElectrons], axis=1
+    )
+
+    return looseNotTightMuons, looseNotTightElectrons, looseNotTightLeptons
 
 
 def getPhotons(events, isMC: bool = 1):
@@ -304,6 +476,7 @@ def getPhotons(events, isMC: bool = 1):
                 "cutBased": events.Photon.cutBased,
                 "isScEtaEB": events.Photon.isScEtaEB,
                 "isScEtaEE": events.Photon.isScEtaEE,
+                "sieie": events.Photon.sieie,
                 "genPartFlav ": events.Photon.genPartFlav,
             },
             with_name="Momentum4D",
@@ -324,20 +497,47 @@ def getPhotons(events, isMC: bool = 1):
                 "cutBased": events.Photon.cutBased,
                 "isScEtaEB": events.Photon.isScEtaEB,
                 "isScEtaEE": events.Photon.isScEtaEE,
+                "sieie": events.Photon.sieie,
             },
             with_name="Momentum4D",
         )
 
     cutPhotons = (
-        (events.Photon.mvaID_WP90)
+        (events.Photon.mvaID_WP90)  # don't change this without changing the photon SFs
         & (abs(events.Photon.eta) <= 2.5)
         & (events.Photon.electronVeto)
-        & (events.Photon.pt >= 15)
+        & (events.Photon.pt >= 30)
+        & (events.Photon.pfRelIso03_all < 0.15)
     )
 
     photons = photons[cutPhotons]
 
     return photons
+
+
+def getGenPhotons(events):
+    """
+    Get final state photons in the gen-level.
+    """
+    parts = getGenPart(events)
+    photons = parts[
+        (abs(parts.pdgId) == 22)
+        & (parts.statusFlags & (1 << 8) != 0)
+        & (parts.statusFlags & (1 << 13) != 0)
+    ]
+    return photons
+
+
+def storeGenPhotonStuff(events, output):
+
+    genPhotons = getGenPhotons(events)
+    deltaR_genPhotons_recoPhotons = genPhotons.deltaR(events.WH_gamma)
+    output["vars"]["minDeltaRGenRecoPhotons"] = ak.min(
+        ak.fill_none(ak.pad_none(deltaR_genPhotons_recoPhotons, 1, clip=False), -999),
+        axis=1,
+    )
+
+    return output
 
 
 def getTrigObj(events):
@@ -367,6 +567,7 @@ def genSelection(events, sample: str):
     return events
 
 
+# TODO: this function needs to be cleaned up
 def triggerSelection(
     events, sample: str, era: str, isMC: bool, output=None, out_label=None
 ):
@@ -378,28 +579,50 @@ def triggerSelection(
     # muon trigger
     triggerSingleMuon = events.HLT.IsoMu27 | events.HLT.Mu50
 
-    # photon trigger
-    if era == "2016" or era == "2016apv":
-        triggerPhoton = events.HLT.Photon175
-    elif era == "2017" or era == "2018":
-        triggerPhoton = events.HLT.Photon200
-
     if era == "2017" and (not isMC) and ("SingleElectron" in sample):
         # data 2017 is special <3<3
         # https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary#2017
 
         # remove events in the SingleMuon dataset
         events = events[~triggerSingleMuon]
-        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        # HLT.Ele115_CaloIdVT_GsfTrkIdT does not exist for ~5 fb^-1 of 2017 data, remove events where this trigger is not present
+        run_start = 299368
+        run_end = 306460
+        run_mask = (events.run > run_start) & (events.run < run_end)
+        if "Ele115_CaloIdVT_GsfTrkIdT" in ak.fields(events.HLT):
+            temp_trig = ak.where(
+                run_mask,
+                events.HLT.Ele115_CaloIdVT_GsfTrkIdT,
+                False,
+            )
+        else:
+            temp_trig = False
+
+        # events = events[run_mask]
+        # temp_trig = events.HLT.Ele115_CaloIdVT_GsfTrkIdT
 
         # Grab events associated with electron trigger: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#TrigObj
         filts = (events.TrigObj.id == 11) & ((events.TrigObj.filterBits & 1024) == 1024)
         events = events[(ak.num(events.TrigObj[filts]) > 0) | temp_trig]
-        temp_trig = events.HLT.Photon200 | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+
+        if len(events) == 0:
+            return events
+
+        # redefine to match new length of "events"
+        run_mask = (events.run > run_start) & (events.run < run_end)
+        if "Ele115_CaloIdVT_GsfTrkIdT" in ak.fields(events.HLT):
+            temp_trig = ak.where(
+                run_mask,
+                events.HLT.Ele115_CaloIdVT_GsfTrkIdT,
+                False,
+            )
+        else:
+            temp_trig = False
 
         # grab prefiltered events
         trig_obs = getTrigObj(events)
-        muons, electrons, leptons = getLeptons(events)
+        muons, electrons, leptons = getLeptons(events, isMC=isMC)
         dR = ak.Array([[] for _ in range(len(events))])
 
         for i in range(
@@ -412,47 +635,268 @@ def triggerSelection(
 
         # remove events that do not have a trig object within dR of 0.1 of an electron
         dR = ak.where(ak.num(dR, axis=-1) == 0, ak.Array([[1.0]]), dR)
-        events = events[(ak.min(dR, axis=-1) < 0.1) | temp_trig]
+        simulated_trigger = ((ak.min(dR, axis=-1) < 0.1) | (temp_trig)).to_numpy()
+        events = events[simulated_trigger]
 
         # Do cutflow and return events
         if output:
             output["cutflow_triggerEGamma" + out_label] += ak.sum(events.genWeight)
         return events
-
-    else:
+    elif era == "2016" or era == "2016apv":
+        triggerElectron = (
+            events.HLT.Ele27_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
+        )
+    elif (
+        "SingleMuon" not in sample
+    ):  # doesn't exist for 2017 and do not need to define for SingleMuon dataset ever
         triggerElectron = (
             events.HLT.Ele32_WPTight_Gsf | events.HLT.Ele115_CaloIdVT_GsfTrkIdT
         )
+
     # this is just for cutflow
     if output:
         output["cutflow_triggerSingleMuon" + out_label] += ak.sum(
             events[triggerSingleMuon].genWeight
         )
-        output["cutflow_triggerEGamma" + out_label] += ak.sum(
-            events[triggerPhoton | triggerElectron].genWeight
-        )
+        if "SingleMuon" not in sample:
+            output["cutflow_triggerEGamma" + out_label] += ak.sum(
+                events[triggerElectron].genWeight
+            )
 
     # Apply selection on events
     if isMC:
-        events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+        events = events[triggerElectron | triggerSingleMuon]
     else:
         if "SingleMuon" in sample:
             events = events[triggerSingleMuon]
         elif ("SingleElectron" in sample) or ("EGamma" in sample):
-            events = events[(triggerElectron | triggerPhoton) & (~triggerSingleMuon)]
+            events = events[(triggerElectron) & (~triggerSingleMuon)]
         else:
-            events = events[triggerElectron | triggerPhoton | triggerSingleMuon]
+            raise ValueError(
+                f"Invalid sample name: {sample}. Expected one of: SingleMuon, SingleElectron, EGamma."
+            )
 
     return events
 
 
-def orthogonalitySelection(events):
+def getGammaTriggerBits(events, era: str):
+    """
+    Form the photon trigger bits.
+    """
+
+    if era == "2018":
+        gammaTriggerBits = (
+            (events.HLT.Photon200)
+            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
+        )
+    elif era == "2017":
+        gammaTriggerBits = (
+            (events.HLT.Photon200)
+            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon120_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
+        )
+    elif era == "2016" or era == "2016apv":
+        gammaTriggerBits = (
+            (events.HLT.Photon175)
+            + (events.HLT.Photon165_R9Id90_HE10_IsoM) * 2
+            + (events.HLT.Photon90_R9Id90_HE10_IsoM) * 4
+            + (events.HLT.Photon75_R9Id90_HE10_IsoM) * 8
+            + (events.HLT.Photon50_R9Id90_HE10_IsoM) * 16
+        )
+    else:
+        raise ValueError(f"Invalid era: {era}")
+
+    return gammaTriggerBits
+
+
+def prescaledGammaTriggersSelection(events, era: str, isMC: bool):
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgHLTRunIISummary?sortcol=2;table=2;up=0
+
+    gammaTriggerBits = getGammaTriggerBits(events, era)
+    events = ak.with_field(events, gammaTriggerBits, "WH_gammaTriggerBits")
+    events = events[(events.WH_gammaTriggerBits > 0)]
+
+    gammaTriggerUnprescaleWeight = ak.zeros_like(events.genWeight)
+    if era == "2018":
+        mask_Photon200 = (events.HLT.Photon200 == 1) & (events.WH_gamma.pt > 230)
+        mask_Photon165 = (
+            (events.HLT.Photon165_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 180)
+            & (events.WH_gamma.pt < 230)
+        )
+        mask_Photon120 = (
+            (events.HLT.Photon120_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 135)
+            & (events.WH_gamma.pt < 180)
+        )
+        mask_Photon75 = (
+            (events.HLT.Photon75_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 80)
+            & (events.WH_gamma.pt < 135)
+        )
+        mask_Photon50 = (
+            (events.HLT.Photon50_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 60)
+            & (events.WH_gamma.pt < 80)
+        )
+        mask = (
+            mask_Photon200
+            | mask_Photon165
+            | mask_Photon120
+            | mask_Photon75
+            | mask_Photon50
+        )
+        if not isMC:
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon200, 1, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon165, 59.96 / 22.38, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon120, 59.96 / 7.44, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon75, 59.96 / 0.95, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon50, 59.96 / 0.24, gammaTriggerUnprescaleWeight
+            )
+    elif era == "2017":
+        mask_Photon200 = (events.HLT.Photon200 == 1) & (events.WH_gamma.pt > 230)
+        mask_Photon165 = (
+            (events.HLT.Photon165_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 180)
+            & (events.WH_gamma.pt < 230)
+        )
+        mask_Photon120 = (
+            (events.HLT.Photon120_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 135)
+            & (events.WH_gamma.pt < 180)
+        )
+        mask_Photon75 = (
+            (events.HLT.Photon75_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 80)
+            & (events.WH_gamma.pt < 135)
+        )
+        mask_Photon50 = (
+            (events.HLT.Photon50_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 60)
+            & (events.WH_gamma.pt < 80)
+        )
+        mask = (
+            mask_Photon200
+            | mask_Photon165
+            | mask_Photon120
+            | mask_Photon75
+            | mask_Photon50
+        )
+        if not isMC:
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon200, 1, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon165, 41.54 / 28.34, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon120, 41.54 / 7.80, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon75, 41.54 / 1.32, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon50, 41.54 / 0.30, gammaTriggerUnprescaleWeight
+            )
+    elif era == "2016" or era == "2016apv":
+        mask_Photon175 = (events.HLT.Photon175 == 1) & (events.WH_gamma.pt > 200)
+        mask_Photon165 = (
+            (events.HLT.Photon165_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 180)
+            & (events.WH_gamma.pt < 200)
+        )
+        mask_Photon90 = (
+            (events.HLT.Photon90_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 105)
+            & (events.WH_gamma.pt < 180)
+        )
+        mask_Photon75 = (
+            (events.HLT.Photon75_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 80)
+            & (events.WH_gamma.pt < 105)
+        )
+        mask_Photon50 = (
+            (events.HLT.Photon50_R9Id90_HE10_IsoM == 1)
+            & (events.WH_gamma.pt > 60)
+            & (events.WH_gamma.pt < 80)
+        )
+        mask = (
+            mask_Photon175
+            | mask_Photon165
+            | mask_Photon90
+            | mask_Photon75
+            | mask_Photon50
+        )
+        if not isMC:
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon175, 1, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon165, 1, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon90, 36.47 / 5.26, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon75, 36.47 / 2.61, gammaTriggerUnprescaleWeight
+            )
+            gammaTriggerUnprescaleWeight = ak.where(
+                mask_Photon50, 36.47 / 0.50, gammaTriggerUnprescaleWeight
+            )
+    else:
+        raise ValueError(f"Invalid era: {era}")
+
+    events = ak.with_field(
+        events, gammaTriggerUnprescaleWeight, "WH_gammaTriggerUnprescaleWeight"
+    )
+    events = events[mask]
+    return events
+
+
+def doubleCountingGenPhotonsSelection(events, sample: str):
+    """
+    Orthogonalize the QCD_HT samples to the GJets_HT samples.
+    Should only matters for gamma+jets control region.
+    """
+
+    if "QCD_HT" in sample or "QCD_Pt" in sample:
+        mask = (
+            (events.GenPart.status == 1)
+            & ((events.GenPart.statusFlags & 64) == 0)
+            & (events.GenPart.pdgId == 22)
+            & (events.GenPart.pt >= 25)
+            & (abs(events.GenPart.eta) < 2.5)
+        )
+        doubleCountedPhotons = events.GenPart[mask]
+        no_doubleCountedPhotons = ak.num(doubleCountedPhotons) == 0
+        events = ak.with_field(
+            events, no_doubleCountedPhotons, "WH_no_doubleCountedPhotons"
+        )
+
+    return events
+
+
+def orthogonalitySelection(events, isMC: int):
     """
     This function is used to impose orthogonality between the ZH, offline, and WH selections.
     """
 
     # follow ZH and offline lepton definitions
-    looseMuons, looseElectrons, _ = getLooseLeptons(events)
+    looseMuons, looseElectrons, _ = getLooseLeptons(events, isMC=isMC)
 
     # offline selection
     cutAnyElecs = (ak.num(looseElectrons, axis=1) > 0) & (
@@ -474,11 +918,42 @@ def orthogonalitySelection(events):
         & (ak.max(looseElectrons.pt, axis=1, mask_identity=False) >= 25)
         & (ak.sum(looseElectrons.charge, axis=1) == 0)
     )
-    cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) < 4
+    cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) == 2
     cutHasTwoLeps = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
 
     # apply orthogonality condition
     events = events[cutAnyLeps & ~cutHasTwoLeps]
+
+    return events
+
+
+def VRGJOrthogonalitySelection(events, era: str, isMC: int):
+    """
+    Stay orthogonal to ZH and WH via their respective lepton selections.
+    """
+
+    # follow ZH and offline lepton definitions
+    looseMuons, looseElectrons, _ = getLooseLeptons(events, isMC=isMC)
+
+    # ZH orthogonality
+    cutHasTwoMuons = (
+        (ak.num(looseMuons, axis=1) == 2)
+        & (ak.max(looseMuons.pt, axis=1, mask_identity=False) >= 25)
+        & (ak.sum(looseMuons.charge, axis=1) == 0)
+    )
+    cutHasTwoElecs = (
+        (ak.num(looseElectrons, axis=1) == 2)
+        & (ak.max(looseElectrons.pt, axis=1, mask_identity=False) >= 25)
+        & (ak.sum(looseElectrons.charge, axis=1) == 0)
+    )
+    cutTwoLeps = (ak.num(looseElectrons, axis=1) + ak.num(looseMuons, axis=1)) < 4
+    cutHasTwoLeps = ((cutHasTwoMuons) | (cutHasTwoElecs)) & cutTwoLeps
+    events = events[~cutHasTwoLeps]
+
+    # WH orthogonality
+    _, _, tightLeptons = getTightLeptons(events, era=era, isMC=isMC)
+    cutTightLeptons = ak.num(tightLeptons) == 0
+    events = events[cutTightLeptons]
 
     return events
 
@@ -497,7 +972,7 @@ def qualityFiltersSelection(events, era: str):
             & (events.Flag.eeBadScFilter)
             & (events.Flag.ecalBadCalibFilter)
         )
-    if era == "2016" or era == "2016apv":
+    elif era == "2016" or era == "2016apv":
         cutAnyFilter = (
             (events.Flag.goodVertices)
             & (events.Flag.globalSuperTightHalo2016Filter)
@@ -508,7 +983,92 @@ def qualityFiltersSelection(events, era: str):
             & (events.Flag.BadPFMuonDzFilter)
             & (events.Flag.eeBadScFilter)
         )
+    else:
+        raise ValueError(f"Invalid era: {era}")
     return events[cutAnyFilter]
+
+
+def oneTightLeptonSelection(
+    events,
+    era: str,
+    isMC: int,
+    variation: str = "",
+):
+
+    _, _, tightLeptons = getTightLeptons(
+        events, era=era, variation=variation, isMC=isMC
+    )
+
+    # require exactly one tight lepton
+    leptonSelection = ak.num(tightLeptons) == 1
+    events = events[leptonSelection]
+    tightLeptons = tightLeptons[leptonSelection]
+
+    if "WH_lepton" in events.fields:
+        raise Exception("WH_lepton already in events.")
+    events = ak.with_field(events, tightLeptons[:, 0], "WH_lepton")
+
+    return events
+
+
+def CRQCDSelection(events, isMC: int):
+    """
+    Defines the Control Region for QCD.
+    No tight leptons (orthogonal to SR), and exactly one loose lepton,
+    with same pT requirement that we impose on the tight lepton.
+    """
+
+    # orthogonality to SR
+    _, _, tightLeptons = getTightLeptons(events, isMC=isMC)
+    events = events[(ak.num(tightLeptons) == 0)]
+
+    # for muons, we take all the 'tightMuon' selection, except for the isolation id
+    looseMuons, _, _ = getLooseLeptons(events, isMC=isMC)
+    cutAlmostTightMuons = (
+        (looseMuons.tightId) & (abs(looseMuons.dz) <= 0.05) & (looseMuons.pt >= 30)
+    )
+    almostTightMuons = looseMuons[cutAlmostTightMuons]
+
+    # for electrons, we go looser than the 'looseElectron' in the isolation by using WPL
+    _, electrons, _ = getLeptons(events, isMC=isMC)
+    cutAlmostLooseElectrons = (
+        (events.Electron.cutBased >= 2)
+        & (events.Electron.pt >= 35)
+        & (events.Electron.mvaFall17V2Iso_WPL)
+        & (abs(events.Electron.dxy) < 0.05 + 0.05 * (abs(events.Electron.eta) > 1.479))
+        & (abs(events.Electron.dz) < 0.10 + 0.10 * (abs(events.Electron.eta) > 1.479))
+        & ((abs(events.Electron.eta) < 1.444) | (abs(events.Electron.eta) > 1.566))
+        & (abs(events.Electron.eta) < 2.5)
+    )
+    almostLooseElectrons = electrons[cutAlmostLooseElectrons]
+
+    # require exactly one lepton
+    CRQCDleptons = ak.concatenate([almostTightMuons, almostLooseElectrons], axis=1)
+    oneLeptonSelection = ak.num(CRQCDleptons) >= 1
+    events = events[oneLeptonSelection]
+    CRQCDleptons = CRQCDleptons[oneLeptonSelection]
+
+    if "WH_lepton" in events.fields:
+        raise Exception("WH_lepton already in events.")
+    events = ak.with_field(events, CRQCDleptons[:, 0], "WH_lepton")
+    events = ak.with_field(events, ak.num(CRQCDleptons), "nCRQCDleptons")
+
+    return events
+
+
+def onePhotonSelection(events, isMC: bool = 1):
+
+    # TODO we need to define an orthogonal region to the SR. Via trigger or tight lepton selection or MET or what?
+
+    photons = getPhotons(events, isMC=isMC)
+
+    # require exactly one photon
+    photonSelection = ak.num(photons) == 1
+    events = events[photonSelection]
+    photons = photons[photonSelection]
+    events = ak.with_field(events, photons[:, 0], "WH_gamma")
+
+    return events
 
 
 def make_MET_4v(MET):
@@ -578,6 +1138,132 @@ def calc_W_mt(lepton, MET):
         * (1 - np.cos(_deltaPhi_lepton_MET))  # from PDG review on kinematics, eq 38.61
     )
     return _W_mt
+
+
+def getTaus(events):
+
+    # see https://twiki.cern.ch/twiki/bin/view/CMS/TauIDRecommendationForRun2
+    taus = events.Tau
+    tau_selection = (
+        (taus.pt > 20)
+        & (abs(taus.eta) < 2.3)
+        & (abs(taus.dz) < 0.2)
+        & (taus.idAntiMu >= 1)
+        & (
+            (taus.idDeepTau2017v2p1VSe >= 8)
+            | (taus.idDeepTau2017v2p1VSmu >= 2)
+            | (taus.idDeepTau2017v2p1VSjet >= 8)
+        )
+        & (taus.decayMode != 5)
+        & (taus.decayMode != 6)
+    )
+    return taus[tau_selection]
+
+
+def storeTausInfo(events, output, sample: str = ""):
+
+    taus = getTaus(events)
+    output["vars"]["nTaus"] = ak.num(taus, axis=1).to_numpy().astype(np.int8)
+
+    if "DYJetsToLL" in sample:
+        # this is for a particular study on DY, could be dropped in future
+        for i in range(2):
+            output["vars"][f"tau{i}_pt"] = (
+                ak.fill_none(ak.pad_none(taus.pt, i + 1, clip=True)[:, i], -999)
+                .to_numpy()
+                .astype(np.float16)
+            )
+            output["vars"][f"tau{i}_eta"] = (
+                ak.fill_none(ak.pad_none(taus.eta, i + 1, clip=True)[:, i], -999)
+                .to_numpy()
+                .astype(np.float16)
+            )
+            output["vars"][f"tau{i}_phi"] = (
+                ak.fill_none(ak.pad_none(taus.phi, i + 1, clip=True)[:, i], -999)
+                .to_numpy()
+                .astype(np.float16)
+            )
+
+
+def storeGenWInfo(events, output):
+
+    ws = events.GenPart[
+        (abs(events.GenPart.pdgId) == 24) & (events.GenPart.statusFlags & (1 << 13) > 0)
+    ]
+    output["vars"][f"genW_pt"] = (
+        ak.fill_none(ak.pad_none(ws.pt, 1, axis=1, clip=True)[:, 0], -999)
+        .to_numpy()
+        .astype(np.float16)
+    )
+    output["vars"][f"genW_eta"] = (
+        ak.fill_none(ak.pad_none(ws.eta, 1, axis=1, clip=True)[:, 0], -999)
+        .to_numpy()
+        .astype(np.float16)
+    )
+    output["vars"][f"genW_phi"] = (
+        ak.fill_none(ak.pad_none(ws.phi, 1, axis=1, clip=True)[:, 0], -999)
+        .to_numpy()
+        .astype(np.float16)
+    )
+
+
+def storeGenZAndDaughtersInfo(events, output):
+
+    z_idx = ak.local_index(events.GenPart, axis=1)[
+        (abs(events.GenPart.pdgId) == 23) & (events.GenPart.statusFlags & (1 << 13) > 0)
+    ]
+    zs = events.GenPart[z_idx]
+    z_idx = ak.fill_none(
+        ak.pad_none(z_idx, 1, axis=1, clip=True),
+        -999,
+    )[:, 0]
+    daughters = events.GenPart[events.GenPart.genPartIdxMother == z_idx]
+
+    output["vars"][f"genZ_pt"] = (
+        ak.fill_none(ak.pad_none(zs.pt, 1, axis=1, clip=True)[:, 0], -999)
+        .to_numpy()
+        .astype(np.float16)
+    )
+    output["vars"][f"genZ_eta"] = (
+        ak.fill_none(ak.pad_none(zs.eta, 1, axis=1, clip=True)[:, 0], -999)
+        .to_numpy()
+        .astype(np.float16)
+    )
+    output["vars"][f"genZ_phi"] = (
+        ak.fill_none(ak.pad_none(zs.phi, 1, axis=1, clip=True)[:, 0], -999)
+        .to_numpy()
+        .astype(np.float16)
+    )
+
+    for i in range(2):
+        output["vars"][f"genZ_daughter{i}_pt"] = (
+            ak.fill_none(
+                ak.pad_none(daughters.pt, i + 1, axis=1, clip=True)[:, i], -999
+            )
+            .to_numpy()
+            .astype(np.float16)
+        )
+        output["vars"][f"genZ_daughter{i}_eta"] = (
+            ak.fill_none(
+                ak.pad_none(daughters.eta, i + 1, axis=1, clip=True)[:, i], -999
+            )
+            .to_numpy()
+            .astype(np.float16)
+        )
+        output["vars"][f"genZ_daughter{i}_phi"] = (
+            ak.fill_none(
+                ak.pad_none(daughters.phi, i + 1, axis=1, clip=True)[:, i], -999
+            )
+            .to_numpy()
+            .astype(np.float16)
+        )
+        output["vars"][f"genZ_daughter{i}_pdgId"] = (
+            ak.fill_none(
+                ak.pad_none(daughters.pdgId, i + 1, axis=1, clip=True)[:, i], -999
+            )
+            .to_numpy()
+            .astype(np.float16)
+        )
 
 
 ##########################################################################################################################
