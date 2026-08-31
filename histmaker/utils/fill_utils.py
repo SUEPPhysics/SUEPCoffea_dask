@@ -1,7 +1,5 @@
-import json
 import logging
 import os
-import subprocess
 import sys
 from collections import defaultdict
 from copy import deepcopy
@@ -652,8 +650,7 @@ def blind_DataFrame(df: pd.DataFrame, label_out: str, SR: list) -> pd.DataFrame:
     """
     if len(SR) != 2:
         sys.exit(
-            label_out
-            + """: Make sure you have correctly defined your signal region.
+            label_out + """: Make sure you have correctly defined your signal region.
             For now we only support a two-variable SR, because of the way
             this function was written. Exiting."""
         )
