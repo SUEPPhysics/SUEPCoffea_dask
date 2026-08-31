@@ -1,7 +1,7 @@
 exclude: "data/"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v5.0.0"
+    rev: "v6.0.0"
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -16,13 +16,13 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
 
-  - repo: https://github.com/psf/black
-    rev: "24.10.0"
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: "26.5.1"
     hooks:
       - id: black
 
   - repo: https://github.com/hadialqattan/pycln
-    rev: "v2.4.0"
+    rev: "v2.6.0"
     hooks:
       - id: pycln
 
@@ -34,19 +34,19 @@ repos:
   #       additional_dependencies: [flake8-bugbear]
 
   - repo: https://github.com/PyCQA/isort
-    rev: "5.13.2"
+    rev: "9.0.1"
     hooks:
       - id: isort
         args: ["--profile", "black"]
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: "v3.19.1"
+    rev: "v3.21.2"
     hooks:
       - id: pyupgrade
         args: ["--py37-plus"]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: "v2.3.0"
+    rev: "v2.4.3"
     hooks:
       - id: codespell
         args: ["-L", "sur,nd"]
@@ -63,7 +63,7 @@ repos:
       - id: rst-inline-touching-normal
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: "v0.10.0.1"
+    rev: "v0.11.0.1-1"
     hooks:
       - id: shellcheck
 
