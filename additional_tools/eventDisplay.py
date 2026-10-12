@@ -604,10 +604,8 @@ def plot(
     # Plot parameters
     ax.set_xlim(-pi, pi)
     ax.set_ylim(-4, 4)
-    ax.set_xlabel(
-        r"$\
-        phi$"
-    )
+    ax.set_xlabel(r"$\
+        phi$")
     ax.set_ylabel(r"$\eta$")
     ax.tick_params(axis="both", which="major")
 
