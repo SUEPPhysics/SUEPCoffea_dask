@@ -120,7 +120,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
                     output[field] = ak.to_numpy(jet_collection[field])
                 else:
                     temp = ak.to_numpy(jet_collection[field])
-                    output[field] = [[k for k in kk] for kk in temp]
+                    output[field] = [[*kk] for kk in temp]
         return output
 
     def h5store(
@@ -445,7 +445,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
         )
         jets = Jets[jetCut]
         # The following is the collection of events and of jets
-        return events, jets, [coll for coll in extraColls]
+        return events, jets, [*extraColls]
 
     def selectByTracks(self, events, leptons, extraColls=[]):
         ### PARTICLE FLOW CANDIDATES ###
@@ -503,7 +503,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
             & (totalTracks.deltaR(leptons[:, 1]) >= 0.4)
         ]
         nTracks = ak.num(totalTracks, axis=1)
-        return events, totalTracks, nTracks, [coll for coll in extraColls]
+        return events, totalTracks, nTracks, [*extraColls]
 
     def clusterizeTracks(self, events, tracks):
         # anti-kt, dR=1.5 jets
@@ -577,7 +577,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
                 if not isinstance(out[channel][0], pd.DataFrame):
                     out[channel][0] = self.ak_to_pandas(out[channel][0])
             self.save_dfs(
-                [out[key][0] for key in out], [key for key in out], self.chunkTag
+                [out[key][0] for key in out], [*out], self.chunkTag
             )
 
             return False
@@ -1021,7 +1021,7 @@ class SUEP_cluster_ZH(processor.ProcessorABC):
 
         self.save_dfs(
             [outputs[key][0] for key in outputs],
-            [key for key in outputs],
+            [*outputs],
             self.chunkTag,
         )
 
