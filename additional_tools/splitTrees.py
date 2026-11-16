@@ -6,7 +6,6 @@ Split SUEP samples by complete parameter points (mPhi, T, decay mode).
 Author: Carlos Erice Cid
 """
 
-
 import os
 
 import ROOT
@@ -137,7 +136,7 @@ if __name__ == "__main__":
         help="If activated, run hadd over split chunks to get merged .root files.",
     )
 
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     allInputFiles = []
     with open(options.inputFiles) as filelist:

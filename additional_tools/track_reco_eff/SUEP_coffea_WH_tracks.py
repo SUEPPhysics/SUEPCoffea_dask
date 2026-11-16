@@ -5,8 +5,6 @@ https://github.com/scikit-hep/fastjet
 Pietro Lugato, Chad Freer, Luca Lavezzo, Joey Reichert 2023
 """
 
-import os
-import time
 import warnings
 from copy import deepcopy
 
@@ -775,10 +773,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     label="Leading AK15 cluster $p_T$ [GeV]",
                 ).Weight(),
                 "n_ak15": Hist.new.Reg(
-                    10, 0, 10, name="n_ak15", label="$n_{\mathrm{AK15}}$"
+                    10, 0, 10, name="n_ak15", label=r"$n_{\mathrm{AK15}}$"
                 ).Weight(),
                 "n_ak15_60gev": Hist.new.Reg(
-                    10, 0, 10, name="n_ak15_60gev", label="$n_{\mathrm{AK15}}$"
+                    10, 0, 10, name="n_ak15_60gev", label=r"$n_{\mathrm{AK15}}$"
                 ).Weight(),
                 "pt_e_matched": Hist.new.Reg(
                     300, 0, 100, name="e_matched_pt", label="$p_T$ [GeV]"
@@ -793,19 +791,19 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     300, 0, 100, name="mu_unmatched_pt", label="$p_T$ [GeV]"
                 ).Weight(),
                 "phi_e_matched": Hist.new.Reg(
-                    100, -6, 6, name="e_matched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="e_matched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "phi_e_unmatched": Hist.new.Reg(
-                    100, -6, 6, name="e_unmatched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="e_unmatched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "phi_mu_matched": Hist.new.Reg(
-                    100, -6, 6, name="mu_matched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="mu_matched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "phi_mu_unmatched": Hist.new.Reg(
-                    100, -6, 6, name="mu_unmatched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="mu_unmatched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "eta_e_matched": Hist.new.Reg(
-                    100, -6, 6, name="e_matched_eta", label="$\eta$ [GeV]"
+                    100, -6, 6, name="e_matched_eta", label=r"$\eta$ [GeV]"
                 ).Weight(),
                 "eta_e_unmatched": Hist.new.Reg(
                     100, -6, 6, name="e_unmatched_eta", label="$η$ [GeV]"
@@ -817,16 +815,16 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     100, -6, 6, name="mu_unmatched_eta", label="$η$ [GeV]"
                 ).Weight(),
                 "minDeltaR_e_matched": Hist.new.Reg(
-                    1000, 0, 0.5, name="e_matched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="e_matched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "minDeltaR_e_unmatched": Hist.new.Reg(
-                    1000, 0, 0.5, name="e_unmatched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="e_unmatched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "minDeltaR_mu_matched": Hist.new.Reg(
-                    1000, 0, 0.5, name="mu_matched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="mu_matched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "minDeltaR_mu_unmatched": Hist.new.Reg(
-                    1000, 0, 0.5, name="mu_unmatched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="mu_unmatched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "deltaPt_e_matched": Hist.new.Reg(
                     1000,
@@ -863,10 +861,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     300, 0, 100, name="pi_unmatched_pt", label="$p_T$ [GeV]"
                 ).Weight(),
                 "phi_pi_matched": Hist.new.Reg(
-                    100, -6, 6, name="pi_matched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="pi_matched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "phi_pi_unmatched": Hist.new.Reg(
-                    100, -6, 6, name="pi_unmatched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="pi_unmatched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "eta_pi_matched": Hist.new.Reg(
                     100, -6, 6, name="pi_matched_eta", label="$η$ [GeV]"
@@ -875,10 +873,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     100, -6, 6, name="pi_unmatched_eta", label="$η$ [GeV]"
                 ).Weight(),
                 "minDeltaR_pi_matched": Hist.new.Reg(
-                    1000, 0, 0.5, name="pi_matched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="pi_matched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "minDeltaR_pi_unmatched": Hist.new.Reg(
-                    1000, 0, 0.5, name="pi_unmatched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="pi_unmatched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "deltaPt_pi_matched": Hist.new.Reg(
                     1000,
@@ -901,10 +899,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     300, 0, 100, name="kaon_unmatched_pt", label="$p_T$ [GeV]"
                 ).Weight(),
                 "phi_kaon_matched": Hist.new.Reg(
-                    100, -6, 6, name="kaon_matched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="kaon_matched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "phi_kaon_unmatched": Hist.new.Reg(
-                    100, -6, 6, name="kaon_unmatched_phi", label="$\phi$ [GeV]"
+                    100, -6, 6, name="kaon_unmatched_phi", label=r"$\phi$ [GeV]"
                 ).Weight(),
                 "eta_kaon_matched": Hist.new.Reg(
                     100, -6, 6, name="kaon_matched_eta", label="$η$ [GeV]"
@@ -913,14 +911,14 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     100, -6, 6, name="kaon_unmatched_eta", label="$η$ [GeV]"
                 ).Weight(),
                 "minDeltaR_kaon_matched": Hist.new.Reg(
-                    1000, 0, 0.5, name="kaon_matched_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 0.5, name="kaon_matched_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "minDeltaR_kaon_unmatched": Hist.new.Reg(
                     1000,
                     0,
                     0.5,
                     name="kaon_unmatched_minDeltaR",
-                    label="min $\Delta R$",
+                    label=r"min $\Delta R$",
                 ).Weight(),
                 "deltaPt_kaon_matched": Hist.new.Reg(
                     1000,
@@ -963,10 +961,10 @@ class SUEP_cluster_WH(processor.ProcessorABC):
                     100, 0, 1, name="SUEP_S1", label="Sphericity"
                 ).Weight(),
                 "gentracks_minDeltaR": Hist.new.Reg(
-                    1000, 0, 3.0, name="gentracks_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 3.0, name="gentracks_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "reco_minDeltaR": Hist.new.Reg(
-                    1000, 0, 3.0, name="reco_minDeltaR", label="min $\Delta R$"
+                    1000, 0, 3.0, name="reco_minDeltaR", label=r"min $\Delta R$"
                 ).Weight(),
                 "genW_pt_0": Hist.new.Reg(
                     400, 0, 400, name="genW_pt_0", label="Gen W $p_T$ [GeV]"
